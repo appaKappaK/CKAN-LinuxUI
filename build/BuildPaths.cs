@@ -35,6 +35,11 @@ public class BuildPaths
                          .Combine("CKAN-LinuxGUI")
                          .Combine(runtime);
 
+    public DirectoryPath LinuxGuiPackageDirectory(string runtime)
+        => BuildDirectory.Combine("package")
+                         .Combine("ckan-linux")
+                         .Combine(runtime);
+
     public BuildPaths(DirectoryPath rootDirectory, string configuration, SemVersion version)
     {
         RootDirectory = rootDirectory;

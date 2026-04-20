@@ -12,10 +12,12 @@ namespace CKAN.App.Services
     public sealed class GameInstanceService : IGameInstanceService
     {
         public GameInstanceService(IConfiguration       configuration,
-                                   RepositoryDataManager repositoryData)
+                                   RepositoryDataManager repositoryData,
+                                   IAppSettingsService   appSettingsService)
         {
             Configuration = configuration;
             RepositoryData = repositoryData;
+            AppSettings = appSettingsService;
             Manager = new GameInstanceManager(new NullUser(), configuration);
             Manager.InstanceChanged += OnInstanceChanged;
         }
@@ -25,6 +27,8 @@ namespace CKAN.App.Services
         public RepositoryDataManager RepositoryData { get; }
 
         public IConfiguration Configuration { get; }
+
+        public IAppSettingsService AppSettings { get; }
 
         public GameInstance? CurrentInstance => Manager.CurrentInstance;
 
@@ -47,7 +51,13 @@ namespace CKAN.App.Services
             => Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (Manager.GetPreferredInstance() is GameInstance inst)
+                if (AppSettings.LastInstanceName is string preferredName
+                    && preferredName.Length > 0
+                    && Manager.HasInstance(preferredName))
+                {
+                    Manager.SetCurrentInstance(preferredName);
+                }
+                else if (Manager.GetPreferredInstance() is GameInstance inst)
                 {
                     Manager.SetCurrentInstance(inst);
                 }
@@ -70,6 +80,7 @@ namespace CKAN.App.Services
         private void OnInstanceChanged(GameInstance? previous,
                                        GameInstance? current)
         {
+            AppSettings.SaveLastInstanceName(current?.Name);
             if (current == null)
             {
                 CurrentRegistryManager = null;

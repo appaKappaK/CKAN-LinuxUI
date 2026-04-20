@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+APP_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../lib/ckan-linux" && pwd)
+
+if [ ! -x "$APP_DIR/CKAN-LinuxGUI" ]; then
+    APP_DIR=/usr/lib/ckan-linux
+fi
+
+exec "$APP_DIR/CKAN-LinuxGUI" "$@"

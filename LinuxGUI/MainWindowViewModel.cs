@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using ReactiveUI;
 
@@ -16,32 +20,50 @@ namespace CKAN.LinuxGUI
 {
     public sealed class MainWindowViewModel : ReactiveObject
     {
+        private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
         private readonly IModCatalogService   modCatalogService;
+        private readonly IModSearchService    modSearchService;
+        private readonly IChangesetService    changesetService;
+        private readonly IModActionService    modActionService;
         private readonly AvaloniaUser         user;
         private readonly ObservableAsPropertyHelper<bool> canUseSelectedInstance;
 
         private string? currentInstanceName = "Loading…";
         private string  statusMessage       = "Preparing the Linux shell…";
-        private string  diagnostics         = "No diagnostic messages yet.";
-        private string  selectedInstanceSummary = "Choose an instance to inspect its details.";
-        private string  stageTitle          = "Preparing CKAN Linux";
+        private string  currentInstanceContext = "Select an install to open the mod browser.";
+        private string  diagnostics         = "No issues reported.";
+        private string  selectedInstanceSummary = "Choose an install to inspect its path and game version.";
+        private string  stageTitle          = "Loading";
         private string  stageDescription    = "Loading known game instances and startup state.";
-        private string  selectedActionLabel = "Use Selected Instance";
-        private string  selectedActionHint  = "Choose the instance that should drive the new shell.";
+        private string  selectedActionLabel = "Open Selected Install";
+        private string  selectedActionHint  = "Choose the KSP install you want to manage.";
+        private string  readyInstanceHint   = "Switch installs here without leaving the mod browser.";
         private string  modSearchText       = "";
+        private string  advancedAuthorFilter = "";
+        private string  advancedCompatibilityFilter = "";
+        private SortOptionItem? selectedSortOption;
         private string  catalogStatusMessage = "Select an instance to load the mod catalog.";
         private string  selectedModTitle     = "No mod selected";
         private string  selectedModSubtitle  = "Choose a mod to inspect its details.";
         private string  selectedModAuthors   = "";
         private string  selectedModVersions  = "";
+        private string  selectedModInstallState = "";
         private string  selectedModCompatibility = "";
         private string  selectedModModuleKind = "";
         private string  selectedModLicense = "";
         private string  selectedModReleaseDate = "";
         private string  selectedModDownloadSize = "";
         private string  selectedModRelationships = "";
+        private string  selectedModDependencyCountLabel = "";
+        private string  selectedModRecommendationCountLabel = "";
+        private string  selectedModSuggestionCountLabel = "";
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
+        private string  previewSummary = "Queue install, update, or remove actions to build a preview.";
+        private string  applyResultTitle = "";
+        private string  applyResultMessage = "";
+        private string  applyResultBackground = "#20262D";
+        private string  applyResultBorderBrush = "#2F3741";
         private int     progressPercent;
         private int     instanceCount;
         private bool    filterInstalledOnly;
@@ -49,39 +71,128 @@ namespace CKAN.LinuxGUI
         private bool    filterUpdatableOnly;
         private bool    filterCachedOnly;
         private bool    filterIncompatibleOnly;
+        private bool    filterHasReplacementOnly;
         private bool    isRefreshing;
         private bool    hasSelectedInstance;
         private bool    isCatalogLoading;
+        private bool    isPreviewLoading;
+        private bool    isApplyingChanges;
+        private bool    showAdvancedFilters;
+        private bool    showDisplaySettings;
+        private bool    previewCanApply;
         private bool    selectedModIsInstalled;
         private bool    selectedModHasUpdate;
         private bool    selectedModIsCached;
         private bool    selectedModIsIncompatible;
         private bool    selectedModHasReplacement;
+        private int     appliedUiScalePercent;
+        private double  pendingUiScalePercent;
         private InstanceSummary? selectedInstance;
         private ModListItem?     selectedMod;
+        private QueuedActionModel? selectedQueuedAction;
         private StartupStage     startupStage = StartupStage.Loading;
 
-        public MainWindowViewModel(IGameInstanceService gameInstanceService,
+        public MainWindowViewModel(IAppSettingsService  appSettingsService,
+                                   IGameInstanceService gameInstanceService,
                                    IModCatalogService   modCatalogService,
+                                   IModSearchService    modSearchService,
+                                   IChangesetService    changesetService,
+                                   IModActionService    modActionService,
                                    AvaloniaUser         user)
         {
+            this.appSettingsService   = appSettingsService;
             this.gameInstanceService = gameInstanceService;
             this.modCatalogService   = modCatalogService;
+            this.modSearchService    = modSearchService;
+            this.changesetService    = changesetService;
+            this.modActionService    = modActionService;
             this.user                = user;
 
             Instances = new ObservableCollection<InstanceSummary>();
             Mods = new ObservableCollection<ModListItem>();
+            QueuedActions = new ObservableCollection<QueuedActionModel>();
+            PreviewDownloadsRequired = new ObservableCollection<string>();
+            PreviewDependencies = new ObservableCollection<string>();
+            PreviewAutoRemovals = new ObservableCollection<string>();
+            PreviewAttentionNotes = new ObservableCollection<string>();
+            PreviewRecommendations = new ObservableCollection<string>();
+            PreviewSuggestions = new ObservableCollection<string>();
+            PreviewConflicts = new ObservableCollection<string>();
+            ApplyResultSummaryLines = new ObservableCollection<string>();
+            ApplyResultFollowUpLines = new ObservableCollection<string>();
+            SortOptions = new[]
+            {
+                new SortOptionItem { Value = ModSortOption.Name, Label = "Name" },
+                new SortOptionItem { Value = ModSortOption.Author, Label = "Author" },
+                new SortOptionItem { Value = ModSortOption.InstalledFirst, Label = "Installed First" },
+                new SortOptionItem { Value = ModSortOption.UpdatesFirst, Label = "Updates First" },
+            };
+            selectedSortOption = SortOptions[0];
+            appliedUiScalePercent = UiScaleSettings.NormalizePercent(appSettingsService.UiScalePercent);
+            pendingUiScalePercent = appliedUiScalePercent;
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing)
-                                 .Select(refreshing => !refreshing);
+                                 .CombineLatest(this.WhenAnyValue(vm => vm.IsApplyingChanges),
+                                                (refreshing, applying) => !refreshing && !applying);
             var canUseSelected = this.WhenAnyValue(vm => vm.SelectedInstance,
                                                    vm => vm.IsRefreshing,
-                                                   (inst, refreshing) => inst != null && !refreshing);
+                                                   vm => vm.IsApplyingChanges,
+                                                   (inst, refreshing, applying) => inst != null && !refreshing && !applying);
+            var canQueueInstall = this.WhenAnyValue(vm => vm.SelectedMod,
+                                                    vm => vm.IsApplyingChanges,
+                                                    (mod, applying) => mod != null
+                                                                       && !applying
+                                                                       && !mod.IsInstalled
+                                                                       && !mod.IsIncompatible);
+            var canQueueUpdate = this.WhenAnyValue(vm => vm.SelectedMod,
+                                                   vm => vm.IsApplyingChanges,
+                                                   (mod, applying) => mod?.IsInstalled == true
+                                                                      && mod.HasUpdate
+                                                                      && !applying);
+            var canQueueRemove = this.WhenAnyValue(vm => vm.SelectedMod,
+                                                   vm => vm.IsApplyingChanges,
+                                                   (mod, applying) => mod?.IsInstalled == true
+                                                                      && !applying);
+            var canRemoveQueuedAction = this.WhenAnyValue(vm => vm.SelectedQueuedAction,
+                                                          vm => vm.IsApplyingChanges,
+                                                          (action, applying) => action != null && !applying);
+            var canClearQueue = this.WhenAnyValue(vm => vm.HasQueuedActions,
+                                                  vm => vm.IsApplyingChanges,
+                                                  (hasActions, applying) => hasActions && !applying);
+            var canToggleAdvancedFilters = this.WhenAnyValue(vm => vm.IsApplyingChanges,
+                                                             applying => !applying);
+            var canClearFilters = this.WhenAnyValue(vm => vm.HasActiveFilters,
+                                                    vm => vm.IsApplyingChanges,
+                                                    (hasFilters, applying) => hasFilters && !applying);
+            var canRestartForUiScale = this.WhenAnyValue(vm => vm.UiScaleNeedsRestart,
+                                                         vm => vm.IsRefreshing,
+                                                         vm => vm.IsApplyingChanges,
+                                                         (needsRestart, refreshing, applying)
+                                                             => needsRestart && !refreshing && !applying);
+            var canApplyChanges = this.WhenAnyValue(vm => vm.HasQueuedActions,
+                                                    vm => vm.PreviewCanApply,
+                                                    vm => vm.IsPreviewLoading,
+                                                    vm => vm.IsApplyingChanges,
+                                                    (hasActions, canApply, previewLoading, applying)
+                                                        => hasActions && canApply && !previewLoading && !applying);
 
             RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
             SetCurrentInstanceCommand = ReactiveCommand.CreateFromTask(
                 SetCurrentInstanceAsync,
                 canUseSelected);
+            QueueInstallCommand = ReactiveCommand.Create(QueueInstallSelected, canQueueInstall);
+            QueueUpdateCommand = ReactiveCommand.Create(QueueUpdateSelected, canQueueUpdate);
+            QueueRemoveCommand = ReactiveCommand.Create(QueueRemoveSelected, canQueueRemove);
+            RemoveQueuedActionCommand = ReactiveCommand.Create(RemoveSelectedQueuedAction, canRemoveQueuedAction);
+            ClearQueueCommand = ReactiveCommand.Create(ClearQueuedActions, canClearQueue);
+            ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
+            ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearFilters);
+            ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
+            ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
+            ResetUiScaleCommand = ReactiveCommand.Create(ResetUiScale);
+            RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
+                                                                          canRestartForUiScale);
+            ApplyChangesCommand = ReactiveCommand.CreateFromTask(ApplyQueuedChangesAsync, canApplyChanges);
             canUseSelectedInstance = canUseSelected
                 .ToProperty(this, vm => vm.CanUseSelectedInstance);
 
@@ -114,16 +225,23 @@ namespace CKAN.LinuxGUI
                     }
                 });
 
-            this.WhenAnyValue(vm => vm.ModSearchText,
-                              vm => vm.FilterInstalledOnly,
-                              vm => vm.FilterNotInstalledOnly,
-                              vm => vm.FilterUpdatableOnly,
-                              vm => vm.FilterCachedOnly,
-                              vm => vm.FilterIncompatibleOnly)
+            Observable.Merge(
+                    this.WhenAnyValue(vm => vm.ModSearchText).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedAuthorFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedCompatibilityFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterInstalledOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterNotInstalledOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterIncompatibleOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default))
                 .Skip(1)
                 .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
-                .Subscribe(_filters =>
+                .Subscribe(__ =>
                 {
+                    modSearchService.SetCurrent(CurrentFilter());
+                    PublishFilterStateLabels();
                     if (IsReady)
                     {
                         _ = LoadModCatalogAsync();
@@ -131,8 +249,10 @@ namespace CKAN.LinuxGUI
                 });
 
             gameInstanceService.CurrentInstanceChanged += OnCurrentInstanceChanged;
+            changesetService.QueueChanged += OnQueueChanged;
 
-            Footer = "Stage 2: the browser now exposes real CKAN data with stronger detail hierarchy, clearer status badges, and visible filters.";
+            ApplyStoredFilterState(modSearchService.Current);
+            RefreshQueuedActions();
             _ = RefreshAsync();
         }
 
@@ -140,9 +260,55 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<ModListItem> Mods { get; }
 
+        public ObservableCollection<QueuedActionModel> QueuedActions { get; }
+
+        public ObservableCollection<string> PreviewDownloadsRequired { get; }
+
+        public ObservableCollection<string> PreviewDependencies { get; }
+
+        public ObservableCollection<string> PreviewAutoRemovals { get; }
+
+        public ObservableCollection<string> PreviewAttentionNotes { get; }
+
+        public ObservableCollection<string> PreviewRecommendations { get; }
+
+        public ObservableCollection<string> PreviewSuggestions { get; }
+
+        public ObservableCollection<string> PreviewConflicts { get; }
+
+        public ObservableCollection<string> ApplyResultSummaryLines { get; }
+
+        public ObservableCollection<string> ApplyResultFollowUpLines { get; }
+
+        public IReadOnlyList<SortOptionItem> SortOptions { get; }
+
         public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
 
         public ReactiveCommand<Unit, Unit> SetCurrentInstanceCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> QueueInstallCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> QueueUpdateCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> QueueRemoveCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> RemoveQueuedActionCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearQueueCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleAdvancedFiltersCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearAdvancedFiltersCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleDisplaySettingsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ResetUiScaleCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> RestartToApplyUiScaleCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ApplyChangesCommand { get; }
 
         public StartupStage StartupStage
         {
@@ -155,6 +321,8 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(NeedsSelection));
                 this.RaisePropertyChanged(nameof(IsReady));
                 this.RaisePropertyChanged(nameof(HasError));
+                this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
+                this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
             }
         }
 
@@ -168,6 +336,12 @@ namespace CKAN.LinuxGUI
         {
             get => statusMessage;
             private set => this.RaiseAndSetIfChanged(ref statusMessage, value);
+        }
+
+        public string CurrentInstanceContext
+        {
+            get => currentInstanceContext;
+            private set => this.RaiseAndSetIfChanged(ref currentInstanceContext, value);
         }
 
         public string Diagnostics
@@ -206,10 +380,50 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedActionHint, value);
         }
 
+        public string ReadyInstanceHint
+        {
+            get => readyInstanceHint;
+            private set => this.RaiseAndSetIfChanged(ref readyInstanceHint, value);
+        }
+
         public string ModSearchText
         {
             get => modSearchText;
-            set => this.RaiseAndSetIfChanged(ref modSearchText, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref modSearchText, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedAuthorFilter
+        {
+            get => advancedAuthorFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedAuthorFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedCompatibilityFilter
+        {
+            get => advancedCompatibilityFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedCompatibilityFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public SortOptionItem? SelectedSortOption
+        {
+            get => selectedSortOption;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref selectedSortOption, value);
+                PublishFilterStateLabels();
+            }
         }
 
         public string CatalogStatusMessage
@@ -240,6 +454,12 @@ namespace CKAN.LinuxGUI
         {
             get => selectedModVersions;
             private set => this.RaiseAndSetIfChanged(ref selectedModVersions, value);
+        }
+
+        public string SelectedModInstallState
+        {
+            get => selectedModInstallState;
+            private set => this.RaiseAndSetIfChanged(ref selectedModInstallState, value);
         }
 
         public string SelectedModCompatibility
@@ -278,6 +498,24 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedModRelationships, value);
         }
 
+        public string SelectedModDependencyCountLabel
+        {
+            get => selectedModDependencyCountLabel;
+            private set => this.RaiseAndSetIfChanged(ref selectedModDependencyCountLabel, value);
+        }
+
+        public string SelectedModRecommendationCountLabel
+        {
+            get => selectedModRecommendationCountLabel;
+            private set => this.RaiseAndSetIfChanged(ref selectedModRecommendationCountLabel, value);
+        }
+
+        public string SelectedModSuggestionCountLabel
+        {
+            get => selectedModSuggestionCountLabel;
+            private set => this.RaiseAndSetIfChanged(ref selectedModSuggestionCountLabel, value);
+        }
+
         public string SelectedModBody
         {
             get => selectedModBody;
@@ -296,12 +534,14 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref instanceCount, value);
         }
 
-        public string Footer { get; }
-
         public bool IsRefreshing
         {
             get => isRefreshing;
-            private set => this.RaiseAndSetIfChanged(ref isRefreshing, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref isRefreshing, value);
+                this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+            }
         }
 
         public bool IsLoading => StartupStage == StartupStage.Loading;
@@ -314,6 +554,10 @@ namespace CKAN.LinuxGUI
 
         public bool HasCurrentInstance => !string.IsNullOrWhiteSpace(gameInstanceService.CurrentInstance?.Name);
 
+        public bool ShowStartupInstancePanel => !IsReady;
+
+        public bool ShowReadyInstancePanel => IsReady;
+
         public bool HasSelectedInstance
         {
             get => hasSelectedInstance;
@@ -321,6 +565,19 @@ namespace CKAN.LinuxGUI
         }
 
         public bool CanUseSelectedInstance => canUseSelectedInstance.Value;
+
+        public bool SelectedInstanceIsCurrent => SelectedInstance?.IsCurrent == true;
+
+        public bool ShowSwitchSelectedInstanceAction
+            => SelectedInstance != null
+               && !SelectedInstance.IsCurrent
+               && !IsRefreshing
+               && !IsApplyingChanges;
+
+        public string SelectedInstanceContextTitle
+            => SelectedInstanceIsCurrent
+                ? "Current Install"
+                : "Switch Target";
 
         public bool IsCatalogLoading
         {
@@ -337,6 +594,161 @@ namespace CKAN.LinuxGUI
         public bool ShowEmptyModResults => !IsCatalogLoading && Mods.Count == 0;
 
         public bool HasSelectedMod => SelectedMod != null;
+
+        public bool HasQueuedActions => QueuedActions.Count > 0;
+
+        public bool ShowEmptyQueueState => !HasQueuedActions;
+
+        public bool HasPreviewDownloadsRequired => PreviewDownloadsRequired.Count > 0;
+
+        public bool HasPreviewDependencies => PreviewDependencies.Count > 0;
+
+        public bool HasPreviewAutoRemovals => PreviewAutoRemovals.Count > 0;
+
+        public bool HasPreviewAttentionNotes => PreviewAttentionNotes.Count > 0;
+
+        public bool HasPreviewRecommendations => PreviewRecommendations.Count > 0;
+
+        public bool HasPreviewSuggestions => PreviewSuggestions.Count > 0;
+
+        public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
+
+        public bool PreviewShowsEmptyCard => !HasQueuedActions;
+
+        public bool PreviewShowsLoadingCard => HasQueuedActions && IsPreviewLoading;
+
+        public bool PreviewShowsReadyCard => HasQueuedActions && !IsPreviewLoading && PreviewCanApply;
+
+        public bool PreviewShowsBlockedCard => HasQueuedActions && !IsPreviewLoading && !PreviewCanApply;
+
+        public bool ShowAdvancedFilters
+        {
+            get => showAdvancedFilters;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref showAdvancedFilters, value);
+                modSearchService.SetShowAdvancedFilters(value);
+            }
+        }
+
+        public bool ShowDisplaySettings
+        {
+            get => showDisplaySettings;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref showDisplaySettings, value);
+                this.RaisePropertyChanged(nameof(DisplaySettingsToggleLabel));
+            }
+        }
+
+        public int AppliedUiScalePercent => appliedUiScalePercent;
+
+        public double AppliedUiScaleFactor => UiScaleSettings.ToFactor(appliedUiScalePercent);
+
+        public double PendingUiScalePercent
+        {
+            get => pendingUiScalePercent;
+            set
+            {
+                var normalized = UiScaleSettings.NormalizePercent((int)Math.Round(value));
+                if (Math.Abs(pendingUiScalePercent - normalized) < 0.001)
+                {
+                    return;
+                }
+
+                this.RaiseAndSetIfChanged(ref pendingUiScalePercent, normalized);
+                appSettingsService.SaveUiScalePercent(normalized);
+                this.RaisePropertyChanged(nameof(PendingUiScaleLabel));
+                this.RaisePropertyChanged(nameof(DisplayScaleSummary));
+                this.RaisePropertyChanged(nameof(DisplayScaleHint));
+                this.RaisePropertyChanged(nameof(UiScaleNeedsRestart));
+                this.RaisePropertyChanged(nameof(ShowResetUiScaleAction));
+            }
+        }
+
+        public int UiScaleMinimum => UiScaleSettings.MinPercent;
+
+        public int UiScaleMaximum => UiScaleSettings.MaxPercent;
+
+        public bool UiScaleNeedsRestart
+            => (int)Math.Round(PendingUiScalePercent) != AppliedUiScalePercent;
+
+        public bool ShowResetUiScaleAction
+            => (int)Math.Round(PendingUiScalePercent) != UiScaleSettings.DefaultPercent;
+
+        public string PendingUiScaleLabel => $"{(int)Math.Round(PendingUiScalePercent)}%";
+
+        public string DisplayScaleSummary
+            => UiScaleNeedsRestart
+                ? $"Current scale {AppliedUiScalePercent}%. Next launch will use {PendingUiScaleLabel}."
+                : $"Current scale {AppliedUiScalePercent}%.";
+
+        public string DisplayScaleHint
+            => UiScaleNeedsRestart
+                ? "Saved for the next launch. Restart CKAN Linux to apply the new scale."
+                : "Reduce the shell if the current layout feels oversized. Changes apply after restart.";
+
+        public string DisplaySettingsToggleLabel
+            => ShowDisplaySettings ? "Hide" : "Adjust";
+
+        public bool HasActiveAdvancedFilters
+            => !string.IsNullOrWhiteSpace(AdvancedAuthorFilter)
+               || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter)
+               || FilterHasReplacementOnly;
+
+        public bool HasActiveFilters
+            => !string.IsNullOrWhiteSpace(ModSearchText)
+               || FilterInstalledOnly
+               || FilterNotInstalledOnly
+               || FilterUpdatableOnly
+               || FilterCachedOnly
+               || FilterIncompatibleOnly
+               || HasActiveAdvancedFilters
+               || SelectedSortOption?.Value != ModSortOption.Name;
+
+        public string AdvancedFilterSummary
+        {
+            get
+            {
+                if (!HasActiveAdvancedFilters && SelectedSortOption?.Value == ModSortOption.Name)
+                {
+                    return "Author, compatibility, replacement, and sort are all at their defaults.";
+                }
+
+                var parts = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrWhiteSpace(AdvancedAuthorFilter))
+                {
+                    parts.Add($"Author: {AdvancedAuthorFilter.Trim()}");
+                }
+                if (!string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter))
+                {
+                    parts.Add($"Compatibility: {AdvancedCompatibilityFilter.Trim()}");
+                }
+                if (FilterHasReplacementOnly)
+                {
+                    parts.Add("Replacement only");
+                }
+                if (SelectedSortOption?.Value != ModSortOption.Name)
+                {
+                    parts.Add($"Sort: {SelectedSortOption?.Label}");
+                }
+
+                return string.Join(" • ", parts);
+            }
+        }
+
+        public bool ShowInstallAction => SelectedMod != null
+                                         && !SelectedMod.IsInstalled
+                                         && !SelectedMod.IsIncompatible;
+
+        public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
+                                        && SelectedMod.HasUpdate;
+
+        public bool ShowRemoveAction => SelectedMod?.IsInstalled == true;
+
+        public bool HasSelectedModQueuedAction
+            => SelectedMod != null
+               && changesetService.FindQueuedAction(SelectedMod.Identifier) != null;
 
         public bool SelectedModIsInstalled
         {
@@ -368,6 +780,168 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedModHasReplacement, value);
         }
 
+        public string QueueCountLabel
+            => QueuedActions.Count switch
+            {
+                0 => "Queue empty",
+                1 => "1 pending action",
+                _ => $"{QueuedActions.Count} pending actions",
+            };
+
+        public string PreviewSummary
+        {
+            get => previewSummary;
+            private set => this.RaiseAndSetIfChanged(ref previewSummary, value);
+        }
+
+        public bool HasApplyResult => !string.IsNullOrWhiteSpace(ApplyResultTitle);
+
+        public string ApplyResultTitle
+        {
+            get => applyResultTitle;
+            private set => this.RaiseAndSetIfChanged(ref applyResultTitle, value);
+        }
+
+        public string ApplyResultMessage
+        {
+            get => applyResultMessage;
+            private set => this.RaiseAndSetIfChanged(ref applyResultMessage, value);
+        }
+
+        public string ApplyResultBackground
+        {
+            get => applyResultBackground;
+            private set => this.RaiseAndSetIfChanged(ref applyResultBackground, value);
+        }
+
+        public string ApplyResultBorderBrush
+        {
+            get => applyResultBorderBrush;
+            private set => this.RaiseAndSetIfChanged(ref applyResultBorderBrush, value);
+        }
+
+        public bool HasApplyResultSummaryLines => ApplyResultSummaryLines.Count > 0;
+
+        public bool HasApplyResultFollowUpLines => ApplyResultFollowUpLines.Count > 0;
+
+        public bool IsPreviewLoading
+        {
+            get => isPreviewLoading;
+            private set => this.RaiseAndSetIfChanged(ref isPreviewLoading, value);
+        }
+
+        public bool PreviewCanApply
+        {
+            get => previewCanApply;
+            private set => this.RaiseAndSetIfChanged(ref previewCanApply, value);
+        }
+
+        public bool IsApplyingChanges
+        {
+            get => isApplyingChanges;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref isApplyingChanges, value);
+                this.RaisePropertyChanged(nameof(PreviewStatusLabel));
+                this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+            }
+        }
+
+        public string PreviewStatusLabel
+            => IsApplyingChanges
+                ? "Applying changes…"
+                : IsPreviewLoading
+                ? "Building preview…"
+                : PreviewCanApply
+                    ? HasPreviewAttentionNotes
+                        ? "Preview ready with prompts"
+                        : "Preview clean"
+                    : HasPreviewAttentionNotes && !HasPreviewConflicts
+                        ? "Resolve setup notes before applying"
+                        : "Resolve conflicts before applying";
+
+        public string PreviewOutcomeTitle
+            => PreviewShowsLoadingCard
+                ? "Building Preview"
+                : PreviewShowsReadyCard
+                    ? HasPreviewAttentionNotes
+                        ? "Ready with Prompts"
+                        : "Ready to Apply"
+                    : PreviewShowsBlockedCard
+                        ? HasPreviewAttentionNotes && !HasPreviewConflicts
+                            ? "Needs Setup"
+                            : "Needs Attention"
+                        : "No Pending Actions";
+
+        public string PreviewImpactSummary
+        {
+            get
+            {
+                if (PreviewShowsEmptyCard)
+                {
+                    return "Queue install, update, or remove actions to see dependencies, auto-removals, and conflicts before applying.";
+                }
+
+                var parts = new List<string>
+                {
+                    CountLabel(QueuedActions.Count, "queued action", "queued actions"),
+                };
+
+                if (PreviewDownloadsRequired.Count > 0)
+                {
+                    parts.Add(CountLabel(PreviewDownloadsRequired.Count, "download", "downloads"));
+                }
+                if (PreviewDependencies.Count > 0)
+                {
+                    parts.Add(CountLabel(PreviewDependencies.Count, "dependency install", "dependency installs"));
+                }
+                if (PreviewAutoRemovals.Count > 0)
+                {
+                    parts.Add(CountLabel(PreviewAutoRemovals.Count, "auto-removal", "auto-removals"));
+                }
+                if (PreviewConflicts.Count > 0)
+                {
+                    parts.Add(CountLabel(PreviewConflicts.Count, "conflict", "conflicts"));
+                }
+
+                return string.Join(" • ", parts);
+            }
+        }
+
+        public string PreviewQueuedCountLabel
+            => CountLabel(QueuedActions.Count, "Queued Action", "Queued Actions");
+
+        public string PreviewDownloadCountLabel
+            => CountLabel(PreviewDownloadsRequired.Count, "Download", "Downloads");
+
+        public string PreviewDependencyCountLabel
+            => CountLabel(PreviewDependencies.Count, "Dependency Install", "Dependency Installs");
+
+        public string PreviewAutoRemovalCountLabel
+            => CountLabel(PreviewAutoRemovals.Count, "Auto-Removal", "Auto-Removals");
+
+        public string PreviewConflictCountLabel
+            => CountLabel(PreviewConflicts.Count, "Conflict", "Conflicts");
+
+        public string PreviewAttentionCountLabel
+            => CountLabel(PreviewAttentionNotes.Count, "Attention Note", "Attention Notes");
+
+        public string SelectedModQueueStatus
+        {
+            get
+            {
+                if (SelectedMod == null)
+                {
+                    return "Choose a mod to add an install, update, or remove intent.";
+                }
+
+                var queued = changesetService.FindQueuedAction(SelectedMod.Identifier);
+                return queued == null
+                    ? "No queued action for this mod yet."
+                    : $"{queued.ActionText} queued: {queued.DetailText}";
+            }
+        }
+
         public bool FilterInstalledOnly
         {
             get => filterInstalledOnly;
@@ -379,6 +953,7 @@ namespace CKAN.LinuxGUI
                     filterNotInstalledOnly = false;
                     this.RaisePropertyChanged(nameof(FilterNotInstalledOnly));
                 }
+                PublishFilterStateLabels();
             }
         }
 
@@ -393,25 +968,48 @@ namespace CKAN.LinuxGUI
                     filterInstalledOnly = false;
                     this.RaisePropertyChanged(nameof(FilterInstalledOnly));
                 }
+                PublishFilterStateLabels();
             }
         }
 
         public bool FilterUpdatableOnly
         {
             get => filterUpdatableOnly;
-            set => this.RaiseAndSetIfChanged(ref filterUpdatableOnly, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref filterUpdatableOnly, value);
+                PublishFilterStateLabels();
+            }
         }
 
         public bool FilterCachedOnly
         {
             get => filterCachedOnly;
-            set => this.RaiseAndSetIfChanged(ref filterCachedOnly, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref filterCachedOnly, value);
+                PublishFilterStateLabels();
+            }
         }
 
         public bool FilterIncompatibleOnly
         {
             get => filterIncompatibleOnly;
-            set => this.RaiseAndSetIfChanged(ref filterIncompatibleOnly, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref filterIncompatibleOnly, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterHasReplacementOnly
+        {
+            get => filterHasReplacementOnly;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref filterHasReplacementOnly, value);
+                PublishFilterStateLabels();
+            }
         }
 
         public string InstanceCountLabel
@@ -424,13 +1022,15 @@ namespace CKAN.LinuxGUI
 
         public string ModCountLabel
             => IsCatalogLoading
-                ? "Loading catalog…"
+                ? "Loading…"
                 : Mods.Count switch
                 {
-                    0 => "0 mods shown",
-                    1 => "1 mod shown",
-                    _ => $"{Mods.Count} mods shown",
+                    0 => "No mods",
+                    1 => "1 mod",
+                    _ => $"{Mods.Count} mods",
                 };
+
+        public FilterState ActiveFilterState => CurrentFilter();
 
         public InstanceSummary? SelectedInstance
         {
@@ -440,6 +1040,9 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref selectedInstance, value);
                 HasSelectedInstance = value != null;
                 UpdateSelectedInstanceSummary(value);
+                this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));
+                this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+                this.RaisePropertyChanged(nameof(SelectedInstanceContextTitle));
             }
         }
 
@@ -450,17 +1053,25 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref selectedMod, value);
                 this.RaisePropertyChanged(nameof(HasSelectedMod));
+                PublishSelectedModActionState();
                 _ = LoadModDetailsAsync(value?.Identifier);
             }
+        }
+
+        public QueuedActionModel? SelectedQueuedAction
+        {
+            get => selectedQueuedAction;
+            set => this.RaiseAndSetIfChanged(ref selectedQueuedAction, value);
         }
 
         private async Task RefreshAsync()
         {
             IsRefreshing = true;
+            ClearApplyResult();
             StartupStage = StartupStage.Loading;
-            Diagnostics = "Loading game instances through CKAN.App.GameInstanceService.";
+            Diagnostics = "Loading instance metadata.";
             StageTitle = "Loading Instances";
-            StageDescription = "Inspecting configured installs and determining the preferred startup instance.";
+            StageDescription = "Inspecting your configured installs and preparing the browser.";
             StatusMessage = "Checking CKAN game instances…";
 
             try
@@ -473,7 +1084,7 @@ namespace CKAN.LinuxGUI
                 Diagnostics = ex.Message;
                 StatusMessage = "Instance startup failed.";
                 StageTitle = "Could Not Load Instances";
-                StageDescription = "The shell could not load CKAN instance state. Check diagnostics, then retry.";
+                StageDescription = "CKAN Linux could not load your install data. Retry after checking the error details.";
                 StartupStage = StartupStage.Error;
             }
             finally
@@ -491,8 +1102,8 @@ namespace CKAN.LinuxGUI
 
             IsRefreshing = true;
             StatusMessage = $"Switching to {SelectedInstance.Name}…";
-            StageTitle = "Switching Instance";
-            StageDescription = "Reloading CKAN state for the selected install.";
+            StageTitle = "Switching Install";
+            StageDescription = "Reloading the selected install and refreshing the browser.";
             try
             {
                 await gameInstanceService.SetCurrentInstanceAsync(SelectedInstance.Name, CancellationToken.None);
@@ -503,7 +1114,7 @@ namespace CKAN.LinuxGUI
                 Diagnostics = ex.Message;
                 StatusMessage = $"Failed to switch to {SelectedInstance.Name}.";
                 StageTitle = "Could Not Select Instance";
-                StageDescription = "The selected instance could not be activated.";
+                StageDescription = "The selected install could not be activated.";
                 StartupStage = StartupStage.Error;
             }
             finally
@@ -535,10 +1146,10 @@ namespace CKAN.LinuxGUI
                 ClearCatalogState();
                 StartupStage = StartupStage.Empty;
                 StageTitle = "No Instances Found";
-                StageDescription = "CKAN Linux did not find a registered KSP install. Stage 1 is instance-first, so the app stops here instead of guessing.";
+                StageDescription = "No registered KSP installs were found for CKAN Linux.";
                 StatusMessage = "No known instances were found.";
-                SelectedActionLabel = "Use Selected Instance";
-                SelectedActionHint = "Add or register an instance before continuing.";
+                SelectedActionLabel = "Open Selected Install";
+                SelectedActionHint = "Add or register a KSP install before continuing.";
                 PublishInstanceStateLabels();
                 return;
             }
@@ -546,11 +1157,11 @@ namespace CKAN.LinuxGUI
             if (gameInstanceService.CurrentInstance != null)
             {
                 StartupStage = StartupStage.Ready;
-                StageTitle = "Instance Ready";
-                StageDescription = "The selected install is loaded. The shell now shows the first real mod browser surface over CKAN core data.";
+                StageTitle = "Ready";
+                StageDescription = "";
                 StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")} and activated {gameInstanceService.CurrentInstance.Name}.";
-                SelectedActionLabel = "Switch to Selected Instance";
-                SelectedActionHint = "You can swap the active install here before the mod browser is added.";
+                SelectedActionLabel = "Open Selected Install";
+                SelectedActionHint = "Choose a different install here if you want to switch contexts.";
                 _ = LoadModCatalogAsync();
             }
             else
@@ -558,10 +1169,10 @@ namespace CKAN.LinuxGUI
                 ClearCatalogState();
                 StartupStage = StartupStage.SelectionRequired;
                 StageTitle = "Choose an Instance";
-                StageDescription = "Multiple installs are known, but none is preferred. Pick one to enter the Linux shell.";
+                StageDescription = "Multiple installs are known, but none is active yet.";
                 StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")}. Select one to continue.";
-                SelectedActionLabel = "Continue With Selected Instance";
-                SelectedActionHint = "The chosen install becomes the active CKAN instance for this session.";
+                SelectedActionLabel = "Open Selected Install";
+                SelectedActionHint = "Pick the install you want to browse and manage.";
             }
 
             PublishInstanceStateLabels();
@@ -632,12 +1243,16 @@ namespace CKAN.LinuxGUI
                     ? "Author information unavailable"
                     : $"By {details.Authors}";
                 SelectedModVersions = $"Latest {details.LatestVersion}\n{(details.IsInstalled ? $"Installed {details.InstalledVersion}" : "Not installed")}";
+                SelectedModInstallState = BuildInstallState(details);
                 SelectedModCompatibility = details.Compatibility;
                 SelectedModModuleKind = details.ModuleKind;
                 SelectedModLicense = details.License;
                 SelectedModReleaseDate = details.ReleaseDate;
                 SelectedModDownloadSize = details.DownloadSize;
                 SelectedModRelationships = $"{details.DependencyCount} depends • {details.RecommendationCount} recommends • {details.SuggestionCount} suggests";
+                SelectedModDependencyCountLabel = CountLabel(details.DependencyCount, "Dependency", "Dependencies");
+                SelectedModRecommendationCountLabel = CountLabel(details.RecommendationCount, "Recommendation", "Recommendations");
+                SelectedModSuggestionCountLabel = CountLabel(details.SuggestionCount, "Suggestion", "Suggestions");
                 SelectedModIsInstalled = details.IsInstalled;
                 SelectedModHasUpdate = details.HasUpdate;
                 SelectedModIsCached = details.IsCached;
@@ -654,12 +1269,16 @@ namespace CKAN.LinuxGUI
                 SelectedModSubtitle = identifier;
                 SelectedModAuthors = "";
                 SelectedModVersions = "";
+                SelectedModInstallState = "";
                 SelectedModCompatibility = "";
                 SelectedModModuleKind = "";
                 SelectedModLicense = "";
                 SelectedModReleaseDate = "";
                 SelectedModDownloadSize = "";
                 SelectedModRelationships = "";
+                SelectedModDependencyCountLabel = "";
+                SelectedModRecommendationCountLabel = "";
+                SelectedModSuggestionCountLabel = "";
                 SelectedModIsInstalled = false;
                 SelectedModHasUpdate = false;
                 SelectedModIsCached = false;
@@ -673,21 +1292,55 @@ namespace CKAN.LinuxGUI
         {
             Dispatcher.UIThread.Post(() =>
             {
+                if (!string.Equals(CurrentInstanceName, current?.Name, StringComparison.Ordinal)
+                    && HasQueuedActions)
+                {
+                    changesetService.Clear();
+                }
+                ClearApplyResult();
                 CurrentInstanceName = current?.Name ?? "No instance selected";
                 ReloadInstances();
             });
         }
 
+        private void OnQueueChanged()
+            => Dispatcher.UIThread.Post(() =>
+            {
+                RefreshQueuedActions();
+                _ = LoadPreviewAsync();
+            });
+
         private FilterState CurrentFilter()
             => new FilterState
             {
-                SearchText       = ModSearchText,
-                InstalledOnly    = FilterInstalledOnly,
-                NotInstalledOnly = FilterNotInstalledOnly,
-                UpdatableOnly    = FilterUpdatableOnly,
-                CachedOnly       = FilterCachedOnly,
-                IncompatibleOnly = FilterIncompatibleOnly,
+                SearchText          = ModSearchText,
+                AuthorText          = AdvancedAuthorFilter,
+                CompatibilityText   = AdvancedCompatibilityFilter,
+                SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
+                InstalledOnly       = FilterInstalledOnly,
+                NotInstalledOnly    = FilterNotInstalledOnly,
+                UpdatableOnly       = FilterUpdatableOnly,
+                CachedOnly          = FilterCachedOnly,
+                IncompatibleOnly    = FilterIncompatibleOnly,
+                HasReplacementOnly  = FilterHasReplacementOnly,
             };
+
+        private void ApplyStoredFilterState(FilterState filter)
+        {
+            modSearchText = filter.SearchText ?? "";
+            advancedAuthorFilter = filter.AuthorText ?? "";
+            advancedCompatibilityFilter = filter.CompatibilityText ?? "";
+            filterInstalledOnly = filter.InstalledOnly;
+            filterNotInstalledOnly = filter.NotInstalledOnly;
+            filterUpdatableOnly = filter.UpdatableOnly;
+            filterCachedOnly = filter.CachedOnly;
+            filterIncompatibleOnly = filter.IncompatibleOnly;
+            filterHasReplacementOnly = filter.HasReplacementOnly;
+            selectedSortOption = SortOptions.FirstOrDefault(opt => opt.Value == filter.SortOption) ?? SortOptions[0];
+            showAdvancedFilters = modSearchService.ShowAdvancedFilters || HasActiveAdvancedFilters;
+            this.RaisePropertyChanged(nameof(SelectedSortOption));
+            PublishFilterStateLabels();
+        }
 
         private void UpdateSelectedInstanceSummary(InstanceSummary? instance)
         {
@@ -700,11 +1353,107 @@ namespace CKAN.LinuxGUI
             SelectedInstanceSummary = $"{instance.Name} ({instance.GameName})\n{instance.GameDir}";
         }
 
+        private void UpdateCurrentInstanceContext()
+        {
+            var current = Instances.FirstOrDefault(inst => inst.IsCurrent)
+                          ?? SelectedInstance;
+            CurrentInstanceContext = current == null
+                ? "Select an install to open the mod browser."
+                : $"{current.GameName} • {current.GameDir}";
+        }
+
+        private void UpdateReadyInstanceHint()
+        {
+            ReadyInstanceHint = InstanceCount switch
+            {
+                0 => "Add or register an install before the browser can load.",
+                1 => "This is the only registered install right now.",
+                _ => "Switch installs here without leaving the mod browser.",
+            };
+        }
+
+        private void ToggleAdvancedFilters()
+            => ShowAdvancedFilters = !ShowAdvancedFilters;
+
+        private void ToggleDisplaySettings()
+            => ShowDisplaySettings = !ShowDisplaySettings;
+
+        private void ResetUiScale()
+            => PendingUiScalePercent = UiScaleSettings.DefaultPercent;
+
+        private void ClearAdvancedFilters()
+        {
+            AdvancedAuthorFilter = "";
+            AdvancedCompatibilityFilter = "";
+            FilterHasReplacementOnly = false;
+            ShowAdvancedFilters = false;
+        }
+
+        private void ClearAllFilters()
+        {
+            ModSearchText = "";
+            FilterInstalledOnly = false;
+            FilterNotInstalledOnly = false;
+            FilterUpdatableOnly = false;
+            FilterCachedOnly = false;
+            FilterIncompatibleOnly = false;
+            SelectedSortOption = SortOptions[0];
+            ClearAdvancedFilters();
+        }
+
+        private Task RestartToApplyUiScaleAsync()
+        {
+            var processPath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(processPath))
+            {
+                Diagnostics = "The current executable path could not be determined for restart.";
+                StatusMessage = "Restart is unavailable right now.";
+                return Task.CompletedTask;
+            }
+
+            try
+            {
+                var startInfo = new ProcessStartInfo(processPath)
+                {
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory,
+                };
+
+                foreach (var arg in Environment.GetCommandLineArgs().Skip(1))
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+
+                _ = Process.Start(startInfo)
+                    ?? throw new InvalidOperationException("The restart process did not launch.");
+
+                StatusMessage = $"Restarting CKAN Linux to apply {PendingUiScaleLabel} display scale…";
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    desktop.Shutdown();
+                }
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Restart failed.";
+            }
+
+            return Task.CompletedTask;
+        }
+
         private void PublishInstanceStateLabels()
         {
+            UpdateCurrentInstanceContext();
+            UpdateReadyInstanceHint();
             this.RaisePropertyChanged(nameof(HasInstances));
             this.RaisePropertyChanged(nameof(HasCurrentInstance));
             this.RaisePropertyChanged(nameof(InstanceCountLabel));
+            this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
+            this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
+            this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));
+            this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+            this.RaisePropertyChanged(nameof(SelectedInstanceContextTitle));
         }
 
         private void ClearCatalogState()
@@ -716,18 +1465,176 @@ namespace CKAN.LinuxGUI
             PublishCatalogStateLabels();
         }
 
+        private void QueueInstallSelected()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            changesetService.QueueInstall(SelectedMod);
+            StatusMessage = $"Queued install for {SelectedMod.Name}.";
+        }
+
+        private void QueueUpdateSelected()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            changesetService.QueueUpdate(SelectedMod);
+            StatusMessage = $"Queued update for {SelectedMod.Name}.";
+        }
+
+        private void QueueRemoveSelected()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            changesetService.QueueRemove(SelectedMod);
+            StatusMessage = $"Queued removal for {SelectedMod.Name}.";
+        }
+
+        private void RemoveSelectedQueuedAction()
+        {
+            if (SelectedQueuedAction == null)
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            if (changesetService.Remove(SelectedQueuedAction.Identifier))
+            {
+                StatusMessage = $"Removed queued action for {SelectedQueuedAction.Name}.";
+            }
+        }
+
+        private void ClearQueuedActions()
+        {
+            ClearApplyResult();
+            changesetService.Clear();
+            StatusMessage = "Cleared all queued actions.";
+        }
+
+        private void RefreshQueuedActions()
+        {
+            var previousSelection = SelectedQueuedAction?.Identifier;
+
+            QueuedActions.Clear();
+            foreach (var item in changesetService.CurrentQueue)
+            {
+                QueuedActions.Add(item);
+            }
+
+            SelectedQueuedAction = previousSelection != null
+                ? QueuedActions.FirstOrDefault(item => item.Identifier == previousSelection) ?? QueuedActions.FirstOrDefault()
+                : QueuedActions.FirstOrDefault();
+
+            PublishQueueStateLabels();
+            PublishSelectedModActionState();
+        }
+
+        private async Task LoadPreviewAsync()
+        {
+            if (!HasQueuedActions)
+            {
+                ResetPreviewState();
+                return;
+            }
+
+            IsPreviewLoading = true;
+            try
+            {
+                var preview = await modActionService.PreviewChangesAsync(CancellationToken.None);
+                PreviewSummary = preview.SummaryText;
+                PreviewCanApply = preview.CanApply;
+                ReplacePreviewCollection(PreviewDownloadsRequired, preview.DownloadsRequired);
+                ReplacePreviewCollection(PreviewDependencies, preview.DependencyInstalls);
+                ReplacePreviewCollection(PreviewAutoRemovals, preview.AutoRemovals);
+                ReplacePreviewCollection(PreviewAttentionNotes, preview.AttentionNotes);
+                ReplacePreviewCollection(PreviewRecommendations, preview.Recommendations);
+                ReplacePreviewCollection(PreviewSuggestions, preview.Suggestions);
+                ReplacePreviewCollection(PreviewConflicts, preview.Conflicts);
+                PublishPreviewStateLabels();
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                PreviewSummary = "Preview generation failed.";
+                PreviewCanApply = false;
+                ReplacePreviewCollection(PreviewConflicts, new[]
+                {
+                    $"Preview failed: {ex.Message}",
+                });
+                ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+                PublishPreviewStateLabels();
+            }
+            finally
+            {
+                IsPreviewLoading = false;
+                this.RaisePropertyChanged(nameof(PreviewStatusLabel));
+            }
+        }
+
+        private async Task ApplyQueuedChangesAsync()
+        {
+            IsApplyingChanges = true;
+            try
+            {
+                var result = await modActionService.ApplyChangesAsync(CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+
+                if (result.Success)
+                {
+                    await LoadModCatalogAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                SetApplyResult(new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = "Apply Failed",
+                    Message = ex.Message,
+                });
+                Diagnostics = ex.Message;
+                StatusMessage = "Apply failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+        }
+
         private void ResetSelectedModDetails()
         {
             SelectedModTitle = "No mod selected";
             SelectedModSubtitle = "Choose a mod to inspect its details.";
             SelectedModAuthors = "";
             SelectedModVersions = "";
+            SelectedModInstallState = "";
             SelectedModCompatibility = "";
             SelectedModModuleKind = "";
             SelectedModLicense = "";
             SelectedModReleaseDate = "";
             SelectedModDownloadSize = "";
             SelectedModRelationships = "";
+            SelectedModDependencyCountLabel = "";
+            SelectedModRecommendationCountLabel = "";
+            SelectedModSuggestionCountLabel = "";
             SelectedModIsInstalled = false;
             SelectedModHasUpdate = false;
             SelectedModIsCached = false;
@@ -742,5 +1649,156 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ModCountLabel));
             this.RaisePropertyChanged(nameof(ShowEmptyModResults));
         }
+
+        private void PublishFilterStateLabels()
+        {
+            this.RaisePropertyChanged(nameof(HasActiveAdvancedFilters));
+            this.RaisePropertyChanged(nameof(HasActiveFilters));
+            this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
+        }
+
+        private void PublishQueueStateLabels()
+        {
+            this.RaisePropertyChanged(nameof(HasQueuedActions));
+            this.RaisePropertyChanged(nameof(ShowEmptyQueueState));
+            this.RaisePropertyChanged(nameof(QueueCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewShowsEmptyCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsBlockedCard));
+            this.RaisePropertyChanged(nameof(PreviewOutcomeTitle));
+            this.RaisePropertyChanged(nameof(PreviewImpactSummary));
+            this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
+        }
+
+        private void PublishSelectedModActionState()
+        {
+            this.RaisePropertyChanged(nameof(ShowInstallAction));
+            this.RaisePropertyChanged(nameof(ShowUpdateAction));
+            this.RaisePropertyChanged(nameof(ShowRemoveAction));
+            this.RaisePropertyChanged(nameof(HasSelectedModQueuedAction));
+            this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
+        }
+
+        private void PublishPreviewStateLabels()
+        {
+            this.RaisePropertyChanged(nameof(HasPreviewDownloadsRequired));
+            this.RaisePropertyChanged(nameof(HasPreviewDependencies));
+            this.RaisePropertyChanged(nameof(HasPreviewAutoRemovals));
+            this.RaisePropertyChanged(nameof(HasPreviewAttentionNotes));
+            this.RaisePropertyChanged(nameof(HasPreviewRecommendations));
+            this.RaisePropertyChanged(nameof(HasPreviewSuggestions));
+            this.RaisePropertyChanged(nameof(HasPreviewConflicts));
+            this.RaisePropertyChanged(nameof(PreviewStatusLabel));
+            this.RaisePropertyChanged(nameof(PreviewShowsEmptyCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
+            this.RaisePropertyChanged(nameof(PreviewShowsBlockedCard));
+            this.RaisePropertyChanged(nameof(PreviewOutcomeTitle));
+            this.RaisePropertyChanged(nameof(PreviewImpactSummary));
+            this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewAutoRemovalCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewConflictCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewAttentionCountLabel));
+        }
+
+        private void SetApplyResult(ApplyChangesResult result)
+        {
+            ApplyResultTitle = result.Title;
+            ApplyResultMessage = result.Message;
+            ReplacePreviewCollection(ApplyResultSummaryLines, result.SummaryLines);
+            ReplacePreviewCollection(ApplyResultFollowUpLines, result.FollowUpLines);
+
+            (ApplyResultBackground, ApplyResultBorderBrush) = result.Kind switch
+            {
+                ApplyResultKind.Success => ("#1F3A2A", "#3D7A57"),
+                ApplyResultKind.Warning => ("#4A3920", "#9A7B37"),
+                ApplyResultKind.Blocked => ("#4A232A", "#934354"),
+                ApplyResultKind.Canceled => ("#2E3540", "#566271"),
+                ApplyResultKind.Error => ("#4A232A", "#934354"),
+                _ => ("#20262D", "#2F3741"),
+            };
+
+            PublishApplyResultStateLabels();
+        }
+
+        private void ClearApplyResult()
+        {
+            ApplyResultTitle = "";
+            ApplyResultMessage = "";
+            ApplyResultBackground = "#20262D";
+            ApplyResultBorderBrush = "#2F3741";
+            ReplacePreviewCollection(ApplyResultSummaryLines, Array.Empty<string>());
+            ReplacePreviewCollection(ApplyResultFollowUpLines, Array.Empty<string>());
+            PublishApplyResultStateLabels();
+        }
+
+        private void PublishApplyResultStateLabels()
+        {
+            this.RaisePropertyChanged(nameof(HasApplyResult));
+            this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
+            this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
+        }
+
+        private void ResetPreviewState()
+        {
+            PreviewSummary = "Queue install, update, or remove actions to build a preview.";
+            PreviewCanApply = false;
+            ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewConflicts, Array.Empty<string>());
+            PublishPreviewStateLabels();
+        }
+
+        private static void ReplacePreviewCollection(ObservableCollection<string> target,
+                                                     System.Collections.Generic.IEnumerable<string> values)
+        {
+            target.Clear();
+            foreach (var value in values)
+            {
+                target.Add(value);
+            }
+        }
+
+        private static string BuildInstallState(ModDetailsModel details)
+        {
+            var parts = new List<string>();
+
+            parts.Add(details.IsInstalled
+                ? $"Installed {details.InstalledVersion}"
+                : "Not installed");
+
+            if (details.HasUpdate)
+            {
+                parts.Add($"Update available to {details.LatestVersion}");
+            }
+            if (details.IsCached)
+            {
+                parts.Add("Cached locally");
+            }
+            if (details.IsIncompatible)
+            {
+                parts.Add("Currently incompatible");
+            }
+            if (details.HasReplacement)
+            {
+                parts.Add("Replacement available");
+            }
+
+            return string.Join(" • ", parts);
+        }
+
+        private static string CountLabel(int count,
+                                         string singular,
+                                         string plural)
+            => count == 1
+                ? $"1 {singular}"
+                : $"{count} {plural}";
     }
 }

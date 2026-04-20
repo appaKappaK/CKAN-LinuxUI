@@ -7,6 +7,8 @@ namespace CKAN.App.Services
 {
     public interface IModActionService
     {
+        Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken);
+
         Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken);
     }
 }

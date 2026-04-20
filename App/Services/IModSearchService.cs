@@ -6,6 +6,10 @@ namespace CKAN.App.Services
     {
         FilterState Current { get; }
 
+        bool ShowAdvancedFilters { get; }
+
         void SetCurrent(FilterState current);
+
+        void SetShowAdvancedFilters(bool showAdvancedFilters);
     }
 }

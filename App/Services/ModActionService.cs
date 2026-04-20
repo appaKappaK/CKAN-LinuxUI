@@ -1,0 +1,669 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+using CKAN.App.Models;
+using CKAN.IO;
+
+namespace CKAN.App.Services
+{
+    public sealed class ModActionService : IModActionService
+    {
+        private readonly IGameInstanceService gameInstanceService;
+        private readonly IChangesetService    changesetService;
+        private readonly IUser                user;
+
+        public ModActionService(IGameInstanceService gameInstanceService,
+                                IChangesetService    changesetService,
+                                IUser                user)
+        {
+            this.gameInstanceService = gameInstanceService;
+            this.changesetService    = changesetService;
+            this.user                = user;
+        }
+
+        public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
+            => Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var plan = BuildExecutionPlan(cancellationToken);
+                return new ChangesetPreviewModel
+                {
+                    SummaryText        = plan.SummaryText,
+                    CanApply           = plan.CanApply,
+                    DownloadsRequired  = plan.DownloadsRequired,
+                    DependencyInstalls = plan.DependencyInstalls,
+                    AutoRemovals       = plan.AutoRemovals,
+                    AttentionNotes     = plan.AttentionNotes,
+                    Recommendations    = plan.Recommendations,
+                    Suggestions        = plan.Suggestions,
+                    Conflicts          = plan.Conflicts,
+                };
+            }, cancellationToken);
+
+        public Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken)
+            => Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var plan = BuildExecutionPlan(cancellationToken);
+                if (!plan.CanApply)
+                {
+                    var followUps = plan.AttentionNotes.Concat(plan.Conflicts)
+                                                       .Distinct()
+                                                       .ToList();
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title = plan.Conflicts.Count > 0
+                            ? "Apply Blocked"
+                            : "Apply Needs Attention",
+                        Message = plan.Conflicts.Count > 0
+                            ? $"Cannot apply queued changes: {plan.Conflicts[0]}"
+                            : followUps.FirstOrDefault() ?? plan.SummaryText,
+                        SummaryLines = BuildSummaryLines(plan),
+                        FollowUpLines = followUps,
+                    };
+                }
+
+                if (gameInstanceService.Manager.Cache is not NetModuleCache cache)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title = "Apply Unavailable",
+                        Message = "Cannot apply changes because the CKAN download cache is unavailable.",
+                        FollowUpLines = new[]
+                        {
+                            "Reload instances or restart CKAN Linux to reinitialize the download cache.",
+                        },
+                    };
+                }
+
+                try
+                {
+                    plan.RegistryManager.ScanUnmanagedFiles();
+
+                    var toInstall   = plan.RequestedInstalls.ToList();
+                    var toUpgrade   = plan.RequestedUpdates.ToList();
+                    var toUninstall = plan.RequestedRemovals.Select(im => im.identifier)
+                                                            .ToList();
+                    var autoInstalled = new HashSet<CkanModule>();
+                    var downloader = new NetAsyncModulesDownloader(user, cache, null, cancellationToken);
+                    var deduper = new InstalledFilesDeduplicator(plan.Instance,
+                                                                 gameInstanceService.Manager.Instances.Values,
+                                                                 gameInstanceService.RepositoryData);
+                    var installer = new ModuleInstaller(plan.Instance,
+                                                        cache,
+                                                        gameInstanceService.Configuration,
+                                                        user,
+                                                        cancellationToken);
+                    HashSet<string>? possibleConfigOnlyDirs = null;
+
+                    for (var resolvedAllProvidedMods = false; !resolvedAllProvidedMods;)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        using (var transaction = CkanTransaction.CreateTransactionScope())
+                        {
+                            try
+                            {
+                                if (toUninstall.Count > 0)
+                                {
+                                    installer.UninstallList(toUninstall,
+                                                            ref possibleConfigOnlyDirs,
+                                                            plan.RegistryManager,
+                                                            false,
+                                                            toInstall.Concat(toUpgrade).ToList());
+                                    toUninstall.Clear();
+                                }
+
+                                if (toInstall.Count > 0)
+                                {
+                                    installer.InstallList(toInstall,
+                                                          plan.InstallOptions!,
+                                                          plan.RegistryManager,
+                                                          ref possibleConfigOnlyDirs,
+                                                          deduper,
+                                                          null,
+                                                          downloader,
+                                                          autoInstalled,
+                                                          false);
+                                    toInstall.Clear();
+                                }
+
+                                if (toUpgrade.Count > 0)
+                                {
+                                    installer.Upgrade(toUpgrade,
+                                                      downloader,
+                                                      ref possibleConfigOnlyDirs,
+                                                      plan.RegistryManager,
+                                                      deduper,
+                                                      autoInstalled,
+                                                      true,
+                                                      false);
+                                    toUpgrade.Clear();
+                                }
+
+                                transaction.Complete();
+                                resolvedAllProvidedMods = true;
+                            }
+                            catch (TooManyModsProvideKraken ex)
+                            {
+                                if (PromptForProvidedModule(plan.RegistryManager.registry, cache, ex)
+                                    is not CkanModule chosen)
+                                {
+                                    return new ApplyChangesResult
+                                    {
+                                        Kind = ApplyResultKind.Canceled,
+                                        Success = false,
+                                        Title = "Apply Canceled",
+                                        Message = "Apply canceled while resolving a virtual dependency choice.",
+                                        FollowUpLines = new[]
+                                        {
+                                            $"Choose a provider for {ex.requested} and apply again.",
+                                        },
+                                    };
+                                }
+
+                                if (!ContainsIdentifier(toInstall, chosen.identifier)
+                                    && !ContainsIdentifier(toUpgrade, chosen.identifier))
+                                {
+                                    toInstall.Add(chosen);
+                                }
+                                autoInstalled.Add(chosen);
+                            }
+                        }
+                    }
+
+                    var leftoverConfigDirs = FilterConfigOnlyDirs(possibleConfigOnlyDirs,
+                                                                  plan.RegistryManager.registry,
+                                                                  plan.Instance);
+
+                    changesetService.Clear();
+
+                    return new ApplyChangesResult
+                    {
+                        Kind = leftoverConfigDirs.Count > 0
+                            ? ApplyResultKind.Warning
+                            : ApplyResultKind.Success,
+                        Success = true,
+                        Title = leftoverConfigDirs.Count > 0
+                            ? "Apply Completed with Follow-Up"
+                            : "Apply Completed",
+                        Message = leftoverConfigDirs.Count > 0
+                            ? $"Applied {plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)}. Kept {leftoverConfigDirs.Count} config-only director{(leftoverConfigDirs.Count == 1 ? "y" : "ies")} for manual review."
+                            : $"Applied {plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)} successfully.",
+                        SummaryLines = BuildSummaryLines(plan),
+                        FollowUpLines = leftoverConfigDirs.Count > 0
+                            ? leftoverConfigDirs.Select(dir => $"Review leftover config-only directory: {dir}")
+                                               .ToList()
+                            : Array.Empty<string>(),
+                    };
+                }
+                catch (CancelledActionKraken ex)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Canceled,
+                        Success = false,
+                        Title = "Apply Canceled",
+                        Message = string.IsNullOrWhiteSpace(ex.Message)
+                            ? "Apply canceled."
+                            : ex.Message,
+                    };
+                }
+                catch (RequestThrottledKraken ex)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title = "Apply Delayed by Rate Limit",
+                        Message = ex.Message,
+                        FollowUpLines = new[]
+                        {
+                            $"Try again after {ex.retryTime.ToLocalTime():yyyy-MM-dd HH:mm}.",
+                            $"More details: {ex.infoUrl}",
+                        },
+                    };
+                }
+                catch (Kraken ex)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Error,
+                        Success = false,
+                        Title = "Apply Failed",
+                        Message = ex.Message,
+                    };
+                }
+                catch (Exception ex)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Error,
+                        Success = false,
+                        Title = "Apply Failed",
+                        Message = $"Apply failed: {ex.Message}",
+                    };
+                }
+            }, cancellationToken);
+
+        private ExecutionPlan BuildExecutionPlan(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (gameInstanceService.CurrentInstance is not GameInstance instance
+                || gameInstanceService.CurrentRegistryManager is not RegistryManager registryManager)
+            {
+                return new ExecutionPlan
+                {
+                    SummaryText = "Preview is unavailable until a game instance and registry are loaded.",
+                    AttentionNotes = new[]
+                    {
+                        "Select or reload an install before building an apply preview.",
+                    },
+                };
+            }
+
+            var requestedActions = changesetService.CurrentQueue;
+            if (requestedActions.Count == 0)
+            {
+                return new ExecutionPlan
+                {
+                    Instance        = instance,
+                    RegistryManager = registryManager,
+                    SummaryText     = "Queue install, update, or remove actions to build a preview.",
+                };
+            }
+
+            if (gameInstanceService.Manager.Cache == null)
+            {
+                return new ExecutionPlan
+                {
+                    Instance        = instance,
+                    RegistryManager = registryManager,
+                    RequestedActions = requestedActions,
+                    SummaryText     = "Preview is unavailable because the CKAN download cache is not ready.",
+                    AttentionNotes  = new[]
+                    {
+                        "Reload instances or restart CKAN Linux to restore the download cache.",
+                    },
+                };
+            }
+
+            var registry = registryManager.registry;
+            var requestedInstalls = new List<CkanModule>();
+            var requestedUpdates  = new List<CkanModule>();
+            var requestedRemovals = new List<InstalledModule>();
+            var resolutionErrors  = new List<string>();
+
+            foreach (var action in requestedActions)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                switch (action.ActionKind)
+                {
+                    case QueuedActionKind.Install:
+                        if (TryLatestCompatible(registry, instance, action.Identifier) is CkanModule installMod)
+                        {
+                            requestedInstalls.Add(installMod);
+                        }
+                        else
+                        {
+                            resolutionErrors.Add($"Could not resolve an install candidate for {action.Name}.");
+                        }
+                        break;
+
+                    case QueuedActionKind.Update:
+                        if (registry.InstalledModule(action.Identifier) is InstalledModule installed
+                            && TryLatestCompatible(registry, instance, action.Identifier) is CkanModule updateMod)
+                        {
+                            requestedUpdates.Add(updateMod);
+                        }
+                        else
+                        {
+                            resolutionErrors.Add($"Could not resolve an update candidate for {action.Name}.");
+                        }
+                        break;
+
+                    case QueuedActionKind.Remove:
+                        if (registry.InstalledModule(action.Identifier) is InstalledModule removeMod)
+                        {
+                            requestedRemovals.Add(removeMod);
+                        }
+                        else
+                        {
+                            resolutionErrors.Add($"Could not resolve an installed module to remove for {action.Name}.");
+                        }
+                        break;
+                }
+            }
+
+            requestedInstalls = DistinctModules(requestedInstalls);
+            requestedUpdates  = DistinctModules(requestedUpdates);
+            requestedRemovals = DistinctInstalledModules(requestedRemovals);
+
+            var dependencyInstalls = new List<string>();
+            var downloadsRequired  = new List<string>();
+            var autoRemovals       = new List<string>();
+            var recommendations    = new List<string>();
+            var suggestions        = new List<string>();
+            var notices            = new List<string>();
+            var conflicts          = new List<string>();
+            var cache = gameInstanceService.Manager.Cache!;
+
+            conflicts.AddRange(resolutionErrors);
+
+            var combinedInstalls = DistinctModules(requestedInstalls.Concat(requestedUpdates));
+
+            if (conflicts.Count == 0)
+            {
+                try
+                {
+                    var autoRemovalModules = registry.FindRemovableAutoInstalled(
+                                                     combinedInstalls,
+                                                     requestedRemovals.Select(im => im.identifier)
+                                                                     .ToHashSet(StringComparer.OrdinalIgnoreCase),
+                                                     instance)
+                                                 .ToList();
+                    var allRemoving = DistinctModules(requestedRemovals.Select(im => im.Module)
+                                                                      .Concat(autoRemovalModules.Select(im => im.Module)));
+
+                    var resolver = new RelationshipResolver(combinedInstalls,
+                                                            allRemoving,
+                                                            RelationshipResolverOptions.ConflictsOpts(instance.StabilityToleranceConfig),
+                                                            registry,
+                                                            instance.Game,
+                                                            instance.VersionCriteria());
+                    var resolvedInstalls = DistinctModules(resolver.ModList(false));
+
+                    downloadsRequired.AddRange(
+                        resolvedInstalls
+                            .Where(mod => !mod.IsMetapackage && !cache.IsMaybeCachedZip(mod))
+                            .Select(mod => cache.DescribeAvailability(gameInstanceService.Configuration, mod))
+                            .Distinct()
+                            .ToList());
+
+                    dependencyInstalls.AddRange(
+                        resolvedInstalls
+                            .Where(mod => !ContainsIdentifier(combinedInstalls, mod.identifier)
+                                          && !registry.IsInstalled(mod.identifier))
+                            .Select(FormatModule)
+                            .Distinct()
+                            .ToList());
+
+                    autoRemovals.AddRange(
+                        autoRemovalModules
+                            .Select(im => FormatModule(im.Module))
+                            .Distinct()
+                            .ToList());
+
+                    conflicts.AddRange(resolver.ConflictDescriptions);
+
+                    try
+                    {
+                        if (combinedInstalls.Count > 0
+                            && ModuleInstaller.FindRecommendations(instance,
+                                                                   resolvedInstalls,
+                                                                   resolvedInstalls,
+                                                                   allRemoving,
+                                                                   Array.Empty<CkanModule>(),
+                                                                   registry,
+                                                                   out var recs,
+                                                                   out var suggs,
+                                                                   out _))
+                        {
+                            recommendations.AddRange(recs.Select(kvp
+                                => $"{FormatModule(kvp.Key)} recommended by {string.Join(", ", kvp.Value.Item2.OrderBy(v => v))}"));
+                            suggestions.AddRange(suggs.Select(kvp
+                                => $"{FormatModule(kvp.Key)} suggested by {string.Join(", ", kvp.Value.OrderBy(v => v))}"));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        conflicts.Add($"Recommendation analysis failed: {ex.Message}");
+                    }
+                }
+                catch (TooManyModsProvideKraken ex)
+                {
+                    notices.Add(
+                        $"Provider choice required for {ex.requested}. Apply will prompt you to choose one during resolution.");
+                }
+                catch (Kraken ex)
+                {
+                    conflicts.Add(ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    conflicts.Add($"Preview generation failed: {ex.Message}");
+                }
+            }
+
+            conflicts = conflicts.Distinct().ToList();
+
+            return new ExecutionPlan
+            {
+                Instance         = instance,
+                RegistryManager  = registryManager,
+                RequestedActions = requestedActions,
+                RequestedInstalls = requestedInstalls,
+                RequestedUpdates = requestedUpdates,
+                RequestedRemovals = requestedRemovals,
+                InstallOptions   = RelationshipResolverOptions.DependsOnlyOpts(instance.StabilityToleranceConfig),
+                SummaryText      = BuildSummary(requestedActions.Count,
+                                                combinedInstalls.Count,
+                                                downloadsRequired.Count,
+                                                dependencyInstalls.Count,
+                                                autoRemovals.Count,
+                                                conflicts.Count),
+                CanApply           = conflicts.Count == 0,
+                DownloadsRequired  = downloadsRequired,
+                DependencyInstalls = dependencyInstalls,
+                AutoRemovals       = autoRemovals,
+                AttentionNotes     = notices,
+                Recommendations    = recommendations.Distinct().ToList(),
+                Suggestions        = suggestions.Distinct().ToList(),
+                Conflicts          = conflicts,
+            };
+        }
+
+        private static CkanModule? TryLatestCompatible(IRegistryQuerier registry,
+                                                       GameInstance    instance,
+                                                       string          identifier)
+        {
+            try
+            {
+                return registry.LatestAvailable(identifier,
+                                                instance.StabilityToleranceConfig,
+                                                instance.VersionCriteria());
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string BuildSummary(int requestedCount,
+                                           int resolvedInstallCount,
+                                           int downloadCount,
+                                           int dependencyCount,
+                                           int autoRemovalCount,
+                                           int conflictCount)
+        {
+            var parts = new List<string>
+            {
+                $"{requestedCount} requested action{(requestedCount == 1 ? "" : "s")}",
+                $"{resolvedInstallCount} install/update target{(resolvedInstallCount == 1 ? "" : "s")}",
+            };
+
+            if (downloadCount > 0)
+            {
+                parts.Add($"{downloadCount} download{(downloadCount == 1 ? "" : "s")} required");
+            }
+            if (dependencyCount > 0)
+            {
+                parts.Add($"{dependencyCount} dependency install{(dependencyCount == 1 ? "" : "s")}");
+            }
+            if (autoRemovalCount > 0)
+            {
+                parts.Add($"{autoRemovalCount} auto-removal{(autoRemovalCount == 1 ? "" : "s")}");
+            }
+            if (conflictCount > 0)
+            {
+                parts.Add($"{conflictCount} conflict{(conflictCount == 1 ? "" : "s")}");
+            }
+
+            return string.Join(" • ", parts);
+        }
+
+        private static string FormatModule(CkanModule module)
+            => $"{module.name} ({module.identifier} {module.version})";
+
+        private CkanModule? PromptForProvidedModule(Registry registry,
+                                                    NetModuleCache cache,
+                                                    TooManyModsProvideKraken ex)
+        {
+            var choices = ex.modules.OrderByDescending(cache.IsCached)
+                                    .ThenByDescending(m => gameInstanceService.RepositoryData.GetDownloadCount(
+                                        registry.Repositories.Values,
+                                        m.identifier) ?? 0)
+                                    .ThenByDescending(m => string.Equals(m.identifier,
+                                                                         ex.requested,
+                                                                         StringComparison.OrdinalIgnoreCase))
+                                    .ThenBy(m => m.name, StringComparer.CurrentCultureIgnoreCase)
+                                    .ToArray();
+
+            var selection = user.RaiseSelectionDialog(ex.Message,
+                                                      choices.Select(m => $"{m.identifier} ({m.name})")
+                                                             .ToArray());
+
+            return selection >= 0 && selection < choices.Length
+                ? choices[selection]
+                : null;
+        }
+
+        private static List<CkanModule> DistinctModules(IEnumerable<CkanModule> modules)
+            => modules.GroupBy(mod => mod.identifier, StringComparer.OrdinalIgnoreCase)
+                      .Select(grp => grp.First())
+                      .ToList();
+
+        private static List<InstalledModule> DistinctInstalledModules(IEnumerable<InstalledModule> modules)
+            => modules.GroupBy(mod => mod.identifier, StringComparer.OrdinalIgnoreCase)
+                      .Select(grp => grp.First())
+                      .ToList();
+
+        private static bool ContainsIdentifier(IEnumerable<CkanModule> modules,
+                                               string                  identifier)
+            => modules.Any(mod => string.Equals(mod.identifier, identifier, StringComparison.OrdinalIgnoreCase));
+
+        private static HashSet<string> FilterConfigOnlyDirs(HashSet<string>? possibleConfigOnlyDirs,
+                                                            Registry         registry,
+                                                            GameInstance     instance)
+        {
+            possibleConfigOnlyDirs ??= new HashSet<string>(Platform.PathComparer);
+            possibleConfigOnlyDirs.RemoveWhere(directory =>
+            {
+                if (!Directory.Exists(directory))
+                {
+                    return true;
+                }
+
+                try
+                {
+                    return Directory.EnumerateFileSystemEntries(directory, "*", SearchOption.AllDirectories)
+                                    .Select(instance.ToRelativeGameDir)
+                                    .Any(relPath => registry.FileOwner(relPath) != null);
+                }
+                catch
+                {
+                    return false;
+                }
+            });
+            return possibleConfigOnlyDirs;
+        }
+
+        private static string Pluralize(int count)
+            => count == 1 ? "" : "s";
+
+        private static IReadOnlyList<string> BuildSummaryLines(ExecutionPlan plan)
+        {
+            var lines = new List<string>
+            {
+                $"{plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)}",
+            };
+
+            if (plan.RequestedInstalls.Count > 0)
+            {
+                lines.Add($"{plan.RequestedInstalls.Count} direct install{Pluralize(plan.RequestedInstalls.Count)}");
+            }
+            if (plan.RequestedUpdates.Count > 0)
+            {
+                lines.Add($"{plan.RequestedUpdates.Count} direct update{Pluralize(plan.RequestedUpdates.Count)}");
+            }
+            if (plan.RequestedRemovals.Count > 0)
+            {
+                lines.Add($"{plan.RequestedRemovals.Count} removal{Pluralize(plan.RequestedRemovals.Count)}");
+            }
+            if (plan.DependencyInstalls.Count > 0)
+            {
+                lines.Add($"{plan.DependencyInstalls.Count} dependency install{Pluralize(plan.DependencyInstalls.Count)}");
+            }
+            if (plan.DownloadsRequired.Count > 0)
+            {
+                lines.Add($"{plan.DownloadsRequired.Count} download{Pluralize(plan.DownloadsRequired.Count)} required");
+            }
+            if (plan.AutoRemovals.Count > 0)
+            {
+                lines.Add($"{plan.AutoRemovals.Count} auto-removal{Pluralize(plan.AutoRemovals.Count)}");
+            }
+
+            return lines;
+        }
+
+        private sealed class ExecutionPlan
+        {
+            public GameInstance Instance { get; init; } = null!;
+
+            public RegistryManager RegistryManager { get; init; } = null!;
+
+            public IReadOnlyList<QueuedActionModel> RequestedActions { get; init; }
+                = Array.Empty<QueuedActionModel>();
+
+            public IReadOnlyList<CkanModule> RequestedInstalls { get; init; }
+                = Array.Empty<CkanModule>();
+
+            public IReadOnlyList<CkanModule> RequestedUpdates { get; init; }
+                = Array.Empty<CkanModule>();
+
+            public IReadOnlyList<InstalledModule> RequestedRemovals { get; init; }
+                = Array.Empty<InstalledModule>();
+
+            public RelationshipResolverOptions? InstallOptions { get; init; }
+
+            public string SummaryText { get; init; } = "";
+
+            public bool CanApply { get; init; }
+
+            public IReadOnlyList<string> DownloadsRequired { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> DependencyInstalls { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> AutoRemovals { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> AttentionNotes { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> Recommendations { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> Suggestions { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> Conflicts { get; init; } = Array.Empty<string>();
+        }
+    }
+}

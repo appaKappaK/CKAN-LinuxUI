@@ -4,6 +4,12 @@ namespace CKAN.App.Models
     {
         public string SearchText { get; init; } = "";
 
+        public string AuthorText { get; init; } = "";
+
+        public string CompatibilityText { get; init; } = "";
+
+        public ModSortOption SortOption { get; init; } = ModSortOption.Name;
+
         public bool InstalledOnly { get; init; }
 
         public bool NotInstalledOnly { get; init; }
@@ -15,5 +21,7 @@ namespace CKAN.App.Models
         public bool CachedOnly { get; init; }
 
         public bool IncompatibleOnly { get; init; }
+
+        public bool HasReplacementOnly { get; init; }
     }
 }

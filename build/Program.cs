@@ -103,6 +103,93 @@ public sealed class LinuxGuiTask : FrostingTask<BuildContext>
     }
 }
 
+[TaskName("LinuxGUIPackage")]
+[TaskDescription("Assemble a Linux desktop package layout for the Avalonia shell")]
+[IsDependentOn(typeof(LinuxGuiTask))]
+public sealed class LinuxGuiPackageTask : FrostingTask<BuildContext>
+{
+    private static readonly int[] IconSizes = [16, 32, 48, 64, 96, 128, 256];
+
+    public override void Run(BuildContext context)
+    {
+        const string runtime = "linux-x64";
+
+        var publishDirectory = context.Paths.LinuxGuiPublishDirectory(runtime);
+        var packageDirectory = context.Paths.LinuxGuiPackageDirectory(runtime);
+        var rootDirectory    = new DirectoryInfo(packageDirectory.FullPath);
+        var binDirectory     = new DirectoryInfo(System.IO.Path.Combine(rootDirectory.FullName, "usr", "bin"));
+        var libDirectory     = new DirectoryInfo(System.IO.Path.Combine(rootDirectory.FullName, "usr", "lib", "ckan-linux"));
+        var appsDirectory    = new DirectoryInfo(System.IO.Path.Combine(rootDirectory.FullName, "usr", "share", "applications"));
+        var docsDirectory    = new DirectoryInfo(System.IO.Path.Combine(rootDirectory.FullName, "usr", "share", "doc", "ckan-linux"));
+        var packagingDir     = context.Paths.RootDirectory.Combine("LinuxGUI").Combine("packaging");
+
+        if (rootDirectory.Exists)
+        {
+            rootDirectory.Delete(true);
+        }
+
+        rootDirectory.Create();
+        binDirectory.Create();
+        libDirectory.Create();
+        appsDirectory.Create();
+        docsDirectory.Create();
+
+        CopyDirectoryContents(new DirectoryInfo(publishDirectory.FullPath), libDirectory);
+
+        var launcherSource      = new FileInfo(packagingDir.CombineWithFilePath("ckan-linux").FullPath);
+        var launcherDestination = new FileInfo(System.IO.Path.Combine(binDirectory.FullName, "ckan-linux"));
+        launcherSource.CopyTo(launcherDestination.FullName, true);
+        BuildContext.ChmodExecutable(new FilePath(launcherDestination.FullName));
+
+        var desktopSource      = new FileInfo(packagingDir.CombineWithFilePath("ckan-linux.desktop").FullPath);
+        var desktopDestination = new FileInfo(System.IO.Path.Combine(appsDirectory.FullName, "ckan-linux.desktop"));
+        desktopSource.CopyTo(desktopDestination.FullName, true);
+
+        var readmeSource      = new FileInfo(context.Paths.RootDirectory.Combine("LinuxGUI")
+                                                    .CombineWithFilePath("README.md")
+                                                    .FullPath);
+        var readmeDestination = new FileInfo(System.IO.Path.Combine(docsDirectory.FullName, "README.md"));
+        readmeSource.CopyTo(readmeDestination.FullName, true);
+
+        foreach (var size in IconSizes)
+        {
+            var iconDirectory = new DirectoryInfo(System.IO.Path.Combine(rootDirectory.FullName,
+                                                                        "usr",
+                                                                        "share",
+                                                                        "icons",
+                                                                        "hicolor",
+                                                                        $"{size}x{size}",
+                                                                        "apps"));
+            iconDirectory.Create();
+
+            var iconSource = new FileInfo(context.Paths.RootDirectory.Combine("assets")
+                                                 .CombineWithFilePath($"ckan-{size}.png")
+                                                 .FullPath);
+            iconSource.CopyTo(System.IO.Path.Combine(iconDirectory.FullName, "ckan-linux.png"), true);
+        }
+    }
+
+    private static void CopyDirectoryContents(DirectoryInfo source,
+                                              DirectoryInfo destination)
+    {
+        foreach (var directory in source.GetDirectories("*", SearchOption.AllDirectories))
+        {
+            var relativePath       = System.IO.Path.GetRelativePath(source.FullName, directory.FullName);
+            var targetSubdirectory = new DirectoryInfo(System.IO.Path.Combine(destination.FullName, relativePath));
+            targetSubdirectory.Create();
+        }
+
+        foreach (var file in source.GetFiles("*", SearchOption.AllDirectories))
+        {
+            var relativePath = System.IO.Path.GetRelativePath(source.FullName, file.FullName);
+            var targetPath   = System.IO.Path.Combine(destination.FullName, relativePath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)
+                                      ?? destination.FullName);
+            file.CopyTo(targetPath, true);
+        }
+    }
+}
+
 [TaskName("LinuxGUIVisualTests")]
 [TaskDescription("Run the Linux Avalonia visual regression tests")]
 [IsDependentOn(typeof(RestoreTask))]
@@ -119,6 +206,32 @@ public sealed class LinuxGuiVisualTestsTask : FrostingTask<BuildContext>
             NoLogo        = true,
             Verbosity     = DotNetVerbosity.Minimal,
         });
+
+        var script = context.Paths.RootDirectory.Combine("scripts")
+                                  .CombineWithFilePath("gemini_ui_review.py");
+        if (!context.FileExists(script))
+        {
+            context.Warning("Gemini review script not found, skipping optional review step.");
+            return;
+        }
+
+        try
+        {
+            var exitCode = context.StartProcess("python3", new ProcessSettings
+            {
+                WorkingDirectory = context.Paths.RootDirectory,
+                Arguments        = $"\"{script.FullPath}\" --optional --repo-root \"{context.Paths.RootDirectory.FullPath}\"",
+            });
+
+            if (exitCode != 0)
+            {
+                context.Warning($"Gemini review step exited with code {exitCode}; continuing because review is optional.");
+            }
+        }
+        catch (Exception ex)
+        {
+            context.Warning($"Gemini review step could not be started: {ex.Message}");
+        }
     }
 }
 

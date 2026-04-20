@@ -30,9 +30,8 @@ namespace CKAN.App.Services
                 PrimeRepositoryCache(context);
                 var items = BuildItems(context)
                     .Where(item => Matches(item, filter))
-                    .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                    .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                     .ToList();
+                items = SortItems(items, filter.SortOption).ToList();
                 return (IReadOnlyList<ModListItem>)items;
             }, cancellationToken);
 
@@ -66,7 +65,7 @@ namespace CKAN.App.Services
                     Summary          = displayMod.@abstract ?? "",
                     Description      = string.IsNullOrWhiteSpace(displayMod.description)
                         ? displayMod.@abstract ?? ""
-                        : displayMod.description,
+                        : displayMod.description ?? "",
                     Authors          = string.Join(", ", displayMod.author ?? new List<string>()),
                     LatestVersion    = latestCompatible?.version.ToString()
                                        ?? latestAvailable?.version.ToString()
@@ -158,23 +157,47 @@ namespace CKAN.App.Services
                                          CkanModule?     installedModule,
                                          bool            hasUpdate,
                                          bool            incompatibleOverride)
-            => new ModListItem
+        {
+            bool isInstalled = installedModule != null || context.Registry.IsAutodetected(displayMod.identifier);
+            bool isCached = IsCached(context, displayMod);
+            bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
+                                                                  context.Instance.StabilityToleranceConfig,
+                                                                  context.Instance.VersionCriteria()) != null;
+            string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
+                                                               hasUpdate,
+                                                               incompatibleOverride,
+                                                               isCached,
+                                                               hasReplacement);
+            string statusSummary = FormatStatusSummary(isInstalled,
+                                                       hasUpdate,
+                                                       incompatibleOverride,
+                                                       isCached,
+                                                       hasReplacement);
+
+            return new ModListItem
             {
-                Identifier       = displayMod.identifier,
-                Name             = displayMod.name?.Trim() ?? displayMod.identifier,
-                Author           = string.Join(", ", displayMod.author ?? new List<string>()),
-                Summary          = displayMod.@abstract?.Trim() ?? "",
-                LatestVersion    = displayMod.version.ToString(),
-                InstalledVersion = installedModule?.version.ToString() ?? "",
-                IsInstalled      = installedModule != null || context.Registry.IsAutodetected(displayMod.identifier),
-                HasUpdate        = hasUpdate,
-                IsIncompatible   = incompatibleOverride,
-                IsCached         = IsCached(context, displayMod),
-                HasReplacement   = context.Registry.GetReplacement(displayMod.identifier,
-                                                                   context.Instance.StabilityToleranceConfig,
-                                                                   context.Instance.VersionCriteria()) != null,
-                Compatibility    = FormatCompatibility(displayMod, context.Instance),
+                Identifier        = displayMod.identifier,
+                Name              = displayMod.name?.Trim() ?? displayMod.identifier,
+                Author            = string.Join(", ", displayMod.author ?? new List<string>()),
+                Summary           = displayMod.@abstract?.Trim() ?? "",
+                LatestVersion     = displayMod.version.ToString(),
+                InstalledVersion  = installedModule?.version.ToString() ?? "",
+                IsInstalled       = isInstalled,
+                HasUpdate         = hasUpdate,
+                IsIncompatible    = incompatibleOverride,
+                IsCached          = isCached,
+                HasReplacement    = hasReplacement,
+                Compatibility     = FormatCompatibility(displayMod, context.Instance),
+                PrimaryStateLabel = primaryStateLabel,
+                PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
+                                                            hasUpdate,
+                                                            incompatibleOverride,
+                                                            isCached,
+                                                            hasReplacement),
+                StatusSummary     = statusSummary,
+                HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
             };
+        }
 
         private static bool Matches(ModListItem item, FilterState filter)
         {
@@ -188,6 +211,18 @@ namespace CKAN.App.Services
                 {
                     return false;
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.AuthorText)
+                && !Contains(item.Author, filter.AuthorText.Trim()))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.CompatibilityText)
+                && !Contains(item.Compatibility, filter.CompatibilityText.Trim()))
+            {
+                return false;
             }
 
             if (filter.InstalledOnly && !item.IsInstalled)
@@ -210,6 +245,10 @@ namespace CKAN.App.Services
             {
                 return false;
             }
+            if (filter.HasReplacementOnly && !item.HasReplacement)
+            {
+                return false;
+            }
             if (filter.NewOnly && item.IsInstalled)
             {
                 return false;
@@ -220,6 +259,91 @@ namespace CKAN.App.Services
 
         private static bool Contains(string text, string search)
             => text?.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+
+        private static string FormatPrimaryStateLabel(bool isInstalled,
+                                                      bool hasUpdate,
+                                                      bool isIncompatible,
+                                                      bool isCached,
+                                                      bool hasReplacement)
+            => isIncompatible
+                ? "Incompatible"
+                : hasUpdate
+                    ? "Update Available"
+                    : isInstalled
+                        ? "Installed"
+                        : hasReplacement
+                            ? "Has Replacement"
+                            : isCached
+                                ? "Cached"
+                                : "Available";
+
+        private static string FormatPrimaryStateColor(bool isInstalled,
+                                                      bool hasUpdate,
+                                                      bool isIncompatible,
+                                                      bool isCached,
+                                                      bool hasReplacement)
+            => isIncompatible
+                ? "#7C3838"
+                : hasUpdate
+                    ? "#4B6C23"
+                    : isInstalled
+                        ? "#1B4D77"
+                        : hasReplacement
+                            ? "#5C376D"
+                            : isCached
+                                ? "#7A5B1E"
+                                : "#3B4653";
+
+        private static string FormatStatusSummary(bool isInstalled,
+                                                  bool hasUpdate,
+                                                  bool isIncompatible,
+                                                  bool isCached,
+                                                  bool hasReplacement)
+        {
+            var parts = new List<string>();
+
+            if (hasUpdate)
+            {
+                parts.Add("Installed");
+            }
+            if (isCached)
+            {
+                parts.Add("Cached");
+            }
+            if (hasReplacement)
+            {
+                parts.Add("Has replacement");
+            }
+            if (!isInstalled && !hasUpdate && !isIncompatible && !isCached && !hasReplacement)
+            {
+                parts.Add("Not installed");
+            }
+
+            return string.Join(" • ", parts);
+        }
+
+        private static IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items,
+                                                          ModSortOption         sortOption)
+            => sortOption switch
+            {
+                ModSortOption.Author
+                    => items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstalledFirst
+                    => items.OrderByDescending(item => item.IsInstalled)
+                            .ThenByDescending(item => item.HasUpdate)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.UpdatesFirst
+                    => items.OrderByDescending(item => item.HasUpdate)
+                            .ThenByDescending(item => item.IsInstalled)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                _
+                    => items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+            };
 
         private bool IsCached(CatalogContext context, CkanModule module)
             => gameInstanceService.Manager.Cache != null

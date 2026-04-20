@@ -41,10 +41,14 @@ namespace CKAN.LinuxGUI
         {
             services.AddSingleton<IConfiguration>(_ => new JsonConfiguration());
             services.AddSingleton<RepositoryDataManager>();
+            services.AddSingleton<IAppSettingsService, AppSettingsService>();
             services.AddSingleton<AvaloniaUser>();
+            services.AddSingleton<IUser>(provider => provider.GetRequiredService<AvaloniaUser>());
             services.AddSingleton<IGameInstanceService, GameInstanceService>();
             services.AddSingleton<IModCatalogService, ModCatalogService>();
             services.AddSingleton<IModSearchService, ModSearchService>();
+            services.AddSingleton<IChangesetService, ChangesetService>();
+            services.AddSingleton<IModActionService, ModActionService>();
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<MainWindow>();
         }

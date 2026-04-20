@@ -1,9 +1,13 @@
 using System;
+using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 using Avalonia.Headless.NUnit;
 
 using NUnit.Framework;
+
+using CKAN.App.Services;
 
 namespace CKAN.LinuxGUI.VisualTests
 {
@@ -27,24 +31,39 @@ namespace CKAN.LinuxGUI.VisualTests
             => RenderScenarioAsync(VisualScenario.Ready, "startup-ready");
 
         [AvaloniaTest]
+        public Task ReadyShell_NarrowWindow_Renders()
+            => RenderScenarioAsync(VisualScenario.Ready, "startup-ready-narrow", 1040, 700);
+
+        [AvaloniaTest]
         public Task ErrorShell_Renders()
             => RenderScenarioAsync(VisualScenario.Error, "startup-error");
 
-        private static async Task RenderScenarioAsync(VisualScenario scenario, string snapshotName)
+        private static async Task RenderScenarioAsync(VisualScenario scenario,
+                                                      string         snapshotName,
+                                                      double         width = 1200,
+                                                      double         height = 760)
         {
             using var service = new FakeGameInstanceService(scenario);
+            var settings = new FakeAppSettingsService();
             var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
             var viewModel = new MainWindowViewModel(
+                settings,
                 scenario == VisualScenario.Error
                     ? new ErrorGameInstanceServiceWrapper(service)
                     : service,
                 catalog,
+                search,
+                changes,
+                actions,
                 user);
-            var window = new MainWindow(viewModel);
+            var window = new MainWindow(viewModel, settings);
 
-            window.Width = 1200;
-            window.Height = 760;
+            window.Width = width;
+            window.Height = height;
 
             await Task.Delay(scenario == VisualScenario.Loading ? 40 : 150);
             VisualTestSupport.CaptureAndAssert(window, snapshotName);
@@ -54,10 +73,14 @@ namespace CKAN.LinuxGUI.VisualTests
         public async Task FilteredBrowser_Renders()
         {
             using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
             var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(service, catalog, user);
-            var window = new MainWindow(viewModel)
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
                 Height = 760,
@@ -69,6 +92,150 @@ namespace CKAN.LinuxGUI.VisualTests
             await Task.Delay(400);
 
             VisualTestSupport.CaptureAndAssert(window, "browser-filtered");
+        }
+
+        [AvaloniaTest]
+        public async Task AdvancedFilteredBrowser_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.ShowAdvancedFilters = true;
+            viewModel.AdvancedAuthorFilter = "Nertea";
+            await Task.Delay(400);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-advanced-filters");
+        }
+
+        [AvaloniaTest]
+        public async Task SortedBrowser_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedSortOption = viewModel.SortOptions.First(opt => opt.Value == CKAN.App.Models.ModSortOption.UpdatesFirst);
+            await Task.Delay(400);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-sorted");
+        }
+
+        [AvaloniaTest]
+        public async Task QueuedBrowser_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+            viewModel.QueueUpdateCommand.Execute().Subscribe();
+            await Task.Delay(200);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-queued");
+        }
+
+        [AvaloniaTest]
+        public async Task AppliedBrowser_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(
+                changes,
+                new CKAN.App.Models.ApplyChangesResult
+                {
+                    Kind = CKAN.App.Models.ApplyResultKind.Warning,
+                    Success = true,
+                    Title = "Apply Completed with Follow-Up",
+                    Message = "Applied 1 queued action. Kept 1 config-only directory for manual review.",
+                    SummaryLines = new[]
+                    {
+                        "1 queued action",
+                        "1 direct update",
+                        "1 dependency install",
+                    },
+                    FollowUpLines = new[]
+                    {
+                        "Review leftover config-only directory: GameData/Restock/PluginData",
+                    },
+                });
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+            viewModel.QueueUpdateCommand.Execute().Subscribe();
+            await Task.Delay(200);
+            viewModel.ApplyChangesCommand.Execute().Subscribe();
+            await Task.Delay(300);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-applied");
+        }
+
+        [AvaloniaTest]
+        public async Task DisplayScaleSettings_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.ShowDisplaySettings = true;
+            viewModel.PendingUiScalePercent = 90;
+            await Task.Delay(250);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-display-scale");
         }
 
         private sealed class ErrorGameInstanceServiceWrapper : CKAN.App.Services.IGameInstanceService

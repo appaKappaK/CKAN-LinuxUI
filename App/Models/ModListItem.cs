@@ -25,5 +25,13 @@ namespace CKAN.App.Models
         public bool HasReplacement { get; init; }
 
         public string Compatibility { get; init; } = "";
+
+        public string PrimaryStateLabel { get; init; } = "";
+
+        public string PrimaryStateColor { get; init; } = "#3B4653";
+
+        public string StatusSummary { get; init; } = "";
+
+        public bool HasStatusSummary { get; init; }
     }
 }

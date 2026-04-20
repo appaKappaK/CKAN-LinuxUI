@@ -4,9 +4,20 @@ namespace CKAN.App.Services
 {
     public sealed class ModSearchService : IModSearchService
     {
-        public FilterState Current { get; private set; } = new FilterState();
+        public ModSearchService(IAppSettingsService appSettingsService)
+        {
+            Current = appSettingsService.FilterState;
+            ShowAdvancedFilters = appSettingsService.ShowAdvancedFilters;
+        }
+
+        public FilterState Current { get; private set; }
+
+        public bool ShowAdvancedFilters { get; private set; }
 
         public void SetCurrent(FilterState current)
             => Current = current;
+
+        public void SetShowAdvancedFilters(bool showAdvancedFilters)
+            => ShowAdvancedFilters = showAdvancedFilters;
     }
 }

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=CKAN Linux
+Comment=Modern Linux mod manager shell for Kerbal Space Program
+Keywords=Kerbal Space Program;KSP;Mod;CKAN;
+Icon=ckan-linux
+Categories=Game;PackageManager;
+Exec=/usr/bin/ckan-linux
+TryExec=/usr/bin/ckan-linux
+Terminal=false
+Type=Application
+Version=1.0
+X-GNOME-SingleWindow=true

@@ -13,7 +13,7 @@ namespace CKAN.LinuxGUI.VisualTests
     {
         private static readonly IReadOnlyList<ModListItem> allMods = new[]
         {
-            new ModListItem
+            Decorate(new ModListItem
             {
                 Identifier       = "restock",
                 Name             = "Restock",
@@ -27,8 +27,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 IsIncompatible   = false,
                 HasReplacement   = false,
                 Compatibility    = "KSP 1.12.5",
-            },
-            new ModListItem
+            }),
+            Decorate(new ModListItem
             {
                 Identifier       = "parallax",
                 Name             = "Parallax",
@@ -42,8 +42,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 IsIncompatible   = false,
                 HasReplacement   = false,
                 Compatibility    = "KSP 1.12.5",
-            },
-            new ModListItem
+            }),
+            Decorate(new ModListItem
             {
                 Identifier       = "mechjeb2",
                 Name             = "MechJeb 2",
@@ -57,8 +57,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 IsIncompatible   = false,
                 HasReplacement   = false,
                 Compatibility    = "KSP 1.12.5",
-            },
-            new ModListItem
+            }),
+            Decorate(new ModListItem
             {
                 Identifier       = "kerbalism",
                 Name             = "Kerbalism",
@@ -72,8 +72,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 IsIncompatible   = true,
                 HasReplacement   = false,
                 Compatibility    = "Older KSP release",
-            },
-            new ModListItem
+            }),
+            Decorate(new ModListItem
             {
                 Identifier       = "planetshine",
                 Name             = "PlanetShine",
@@ -87,7 +87,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 IsIncompatible   = false,
                 HasReplacement   = false,
                 Compatibility    = "KSP 1.12.5",
-            },
+            }),
         };
 
         private static readonly IReadOnlyDictionary<string, ModDetailsModel> details
@@ -214,9 +214,8 @@ namespace CKAN.LinuxGUI.VisualTests
                                                                 CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var result = allMods.Where(item => Matches(item, filter))
-                                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                                .ToList();
+            var filtered = allMods.Where(item => Matches(item, filter));
+            var result = SortItems(filtered, filter.SortOption).ToList();
             return Task.FromResult((IReadOnlyList<ModListItem>)result);
         }
 
@@ -240,6 +239,18 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     return false;
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.AuthorText)
+                && !Contains(item.Author, filter.AuthorText.Trim()))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.CompatibilityText)
+                && !Contains(item.Compatibility, filter.CompatibilityText.Trim()))
+            {
+                return false;
             }
 
             if (filter.InstalledOnly && !item.IsInstalled)
@@ -266,11 +277,104 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 return false;
             }
+            if (filter.HasReplacementOnly && !item.HasReplacement)
+            {
+                return false;
+            }
 
             return true;
         }
 
         private static bool Contains(string text, string search)
             => text.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+
+        private static ModListItem Decorate(ModListItem item)
+        {
+            string primaryStateLabel = item.IsIncompatible
+                ? "Incompatible"
+                : item.HasUpdate
+                    ? "Update Available"
+                    : item.IsInstalled
+                        ? "Installed"
+                        : item.HasReplacement
+                            ? "Has Replacement"
+                            : item.IsCached
+                                ? "Cached"
+                                : "Available";
+            string primaryStateColor = item.IsIncompatible
+                ? "#7C3838"
+                : item.HasUpdate
+                    ? "#4B6C23"
+                    : item.IsInstalled
+                        ? "#1B4D77"
+                        : item.HasReplacement
+                            ? "#5C376D"
+                            : item.IsCached
+                                ? "#7A5B1E"
+                                : "#3B4653";
+
+            var parts = new List<string>();
+            if (item.HasUpdate)
+            {
+                parts.Add("Installed");
+            }
+            if (item.IsCached)
+            {
+                parts.Add("Cached");
+            }
+            if (item.HasReplacement)
+            {
+                parts.Add("Has replacement");
+            }
+            if (!item.IsInstalled && !item.HasUpdate && !item.IsIncompatible && !item.IsCached && !item.HasReplacement)
+            {
+                parts.Add("Not installed");
+            }
+
+            string statusSummary = string.Join(" • ", parts);
+
+            return new ModListItem
+            {
+                Identifier = item.Identifier,
+                Name = item.Name,
+                Author = item.Author,
+                Summary = item.Summary,
+                LatestVersion = item.LatestVersion,
+                InstalledVersion = item.InstalledVersion,
+                IsInstalled = item.IsInstalled,
+                HasUpdate = item.HasUpdate,
+                IsIncompatible = item.IsIncompatible,
+                IsCached = item.IsCached,
+                HasReplacement = item.HasReplacement,
+                Compatibility = item.Compatibility,
+                PrimaryStateLabel = primaryStateLabel,
+                PrimaryStateColor = primaryStateColor,
+                StatusSummary = statusSummary,
+                HasStatusSummary = !string.IsNullOrWhiteSpace(statusSummary),
+            };
+        }
+
+        private static IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items,
+                                                          ModSortOption         sortOption)
+            => sortOption switch
+            {
+                ModSortOption.Author
+                    => items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstalledFirst
+                    => items.OrderByDescending(item => item.IsInstalled)
+                            .ThenByDescending(item => item.HasUpdate)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.UpdatesFirst
+                    => items.OrderByDescending(item => item.HasUpdate)
+                            .ThenByDescending(item => item.IsInstalled)
+                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                _
+                    => items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+            };
     }
 }
