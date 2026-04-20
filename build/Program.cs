@@ -12,6 +12,7 @@ using Cake.Common.Solution.Project.Properties;
 using Cake.Common.Tools.DotNet;
 using Cake.Common.Tools.DotNet.Restore;
 using Cake.Common.Tools.DotNet.Build;
+using Cake.Common.Tools.DotNet.MSBuild;
 using Cake.Common.Tools.DotNet.Publish;
 using Cake.Common.Tools.DotNet.Test;
 using Cake.Common.Tools.ILMerge;
@@ -71,6 +72,55 @@ public sealed class NetkanTask : FrostingTask<BuildContext>;
 [TaskDescription("Build only ckan.exe")]
 [IsDependentOn(typeof(RepackCkanTask))]
 public sealed class CkanTask : FrostingTask<BuildContext>;
+
+[TaskName("LinuxGUI")]
+[TaskDescription("Build and publish the Linux Avalonia shell")]
+[IsDependentOn(typeof(RestoreTask))]
+[IsDependentOn(typeof(GenerateGlobalAssemblyVersionInfoTask))]
+public sealed class LinuxGuiTask : FrostingTask<BuildContext>
+{
+    public override void Run(BuildContext context)
+    {
+        context.DotNetBuild(context.Paths.LinuxGuiProject.FullPath, new DotNetBuildSettings
+        {
+            Configuration = context.BuildConfiguration,
+            Framework     = "net8.0",
+            NoRestore     = true,
+        });
+
+        context.DotNetPublish(context.Paths.LinuxGuiProject.FullPath, new DotNetPublishSettings
+        {
+            Configuration   = context.BuildConfiguration,
+            Framework       = "net8.0",
+            Runtime         = "linux-x64",
+            SelfContained   = true,
+            OutputDirectory = context.Paths.LinuxGuiPublishDirectory("linux-x64"),
+            MSBuildSettings = new DotNetMSBuildSettings
+            {
+                Properties = { { "PublishTrimmed", [ "false" ] } },
+            },
+        });
+    }
+}
+
+[TaskName("LinuxGUIVisualTests")]
+[TaskDescription("Run the Linux Avalonia visual regression tests")]
+[IsDependentOn(typeof(RestoreTask))]
+[IsDependentOn(typeof(GenerateGlobalAssemblyVersionInfoTask))]
+public sealed class LinuxGuiVisualTestsTask : FrostingTask<BuildContext>
+{
+    public override void Run(BuildContext context)
+    {
+        context.DotNetTest(context.Paths.LinuxGuiVisualTestsProject.FullPath, new DotNetTestSettings
+        {
+            Configuration = "NoGUI",
+            Framework     = "net8.0",
+            NoRestore     = true,
+            NoLogo        = true,
+            Verbosity     = DotNetVerbosity.Minimal,
+        });
+    }
+}
 
 [TaskName("Restore")]
 [TaskDescription("Intermediate - Download dependencies")]

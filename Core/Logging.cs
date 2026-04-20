@@ -13,14 +13,15 @@ namespace CKAN
     [ExcludeFromCodeCoverage]
     public static class Logging
     {
-        public static void Initialize()
+        public static void Initialize(string? configFileName = null)
         {
             if (LogManager.GetRepository(Assembly.GetExecutingAssembly())
                 is { Configured: false } repo)
             {
                 // if the log4net.xml file does not exist, then fall back to the existing
                 // configuration process
-                var logConfig = new FileInfo(Path.Combine(Environment.CurrentDirectory, "log4net.xml"));
+                var logConfig = new FileInfo(Path.Combine(Environment.CurrentDirectory,
+                                                          configFileName ?? "log4net.xml"));
                 if (!logConfig.Exists)
                 {
                     BasicConfigurator.Configure(repo);

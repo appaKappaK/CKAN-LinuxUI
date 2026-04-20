@@ -9,6 +9,8 @@ public class BuildPaths
     public FilePath CoreProject { get; }
     public FilePath NetkanProject { get; }
     public FilePath CmdlineProject { get; }
+    public FilePath LinuxGuiProject { get; }
+    public FilePath LinuxGuiVisualTestsProject { get; }
     public DirectoryPath BuildDirectory { get; }
     public DirectoryPath NugetDirectory { get; }
     public DirectoryPath OutDirectory { get; }
@@ -28,6 +30,11 @@ public class BuildPaths
     public FilePath CoverageOutputFile(string filename)
         => CoverageOutputDirectory.CombineWithFilePath(filename);
 
+    public DirectoryPath LinuxGuiPublishDirectory(string runtime)
+        => BuildDirectory.Combine("publish")
+                         .Combine("CKAN-LinuxGUI")
+                         .Combine(runtime);
+
     public BuildPaths(DirectoryPath rootDirectory, string configuration, SemVersion version)
     {
         RootDirectory = rootDirectory;
@@ -37,6 +44,10 @@ public class BuildPaths
                                      .CombineWithFilePath("CKAN-netkan.csproj");
         CmdlineProject = rootDirectory.Combine("Cmdline")
                                       .CombineWithFilePath("CKAN-cmdline.csproj");
+        LinuxGuiProject = rootDirectory.Combine("LinuxGUI")
+                                      .CombineWithFilePath("CKAN-LinuxGUI.csproj");
+        LinuxGuiVisualTestsProject = rootDirectory.Combine("LinuxGUI.VisualTests")
+                                                  .CombineWithFilePath("CKAN-LinuxGUI.VisualTests.csproj");
         BuildDirectory = rootDirectory.Combine("_build");
         NugetDirectory = BuildDirectory.Combine("lib").Combine("nuget");
         OutDirectory = BuildDirectory.Combine("out");

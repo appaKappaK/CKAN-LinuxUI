@@ -1,0 +1,276 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+using CKAN.App.Models;
+using CKAN.App.Services;
+
+namespace CKAN.LinuxGUI.VisualTests
+{
+    internal sealed class FakeModCatalogService : IModCatalogService
+    {
+        private static readonly IReadOnlyList<ModListItem> allMods = new[]
+        {
+            new ModListItem
+            {
+                Identifier       = "restock",
+                Name             = "Restock",
+                Author           = "Nertea",
+                Summary          = "Refreshes stock parts with a consistent art pass.",
+                LatestVersion    = "1.5.2",
+                InstalledVersion = "1.5.1",
+                IsInstalled      = true,
+                HasUpdate        = true,
+                IsCached         = true,
+                IsIncompatible   = false,
+                HasReplacement   = false,
+                Compatibility    = "KSP 1.12.5",
+            },
+            new ModListItem
+            {
+                Identifier       = "parallax",
+                Name             = "Parallax",
+                Author           = "Gameslinx",
+                Summary          = "Procedural surface scattering and planet terrain shading.",
+                LatestVersion    = "2.1.0",
+                InstalledVersion = "",
+                IsInstalled      = false,
+                HasUpdate        = false,
+                IsCached         = true,
+                IsIncompatible   = false,
+                HasReplacement   = false,
+                Compatibility    = "KSP 1.12.5",
+            },
+            new ModListItem
+            {
+                Identifier       = "mechjeb2",
+                Name             = "MechJeb 2",
+                Author           = "Sarbian",
+                Summary          = "Flight automation, maneuver planning, and vessel information.",
+                LatestVersion    = "2.14.3",
+                InstalledVersion = "2.14.3",
+                IsInstalled      = true,
+                HasUpdate        = false,
+                IsCached         = false,
+                IsIncompatible   = false,
+                HasReplacement   = false,
+                Compatibility    = "KSP 1.12.5",
+            },
+            new ModListItem
+            {
+                Identifier       = "kerbalism",
+                Name             = "Kerbalism",
+                Author           = "ShotgunNinja",
+                Summary          = "Life support, reliability, science, and long-duration mission systems.",
+                LatestVersion    = "3.19.1",
+                InstalledVersion = "",
+                IsInstalled      = false,
+                HasUpdate        = false,
+                IsCached         = false,
+                IsIncompatible   = true,
+                HasReplacement   = false,
+                Compatibility    = "Older KSP release",
+            },
+            new ModListItem
+            {
+                Identifier       = "planetshine",
+                Name             = "PlanetShine",
+                Author           = "Valerian",
+                Summary          = "Adds bounced planetary light to vessels and IVA scenes.",
+                LatestVersion    = "0.2.7.5",
+                InstalledVersion = "",
+                IsInstalled      = false,
+                HasUpdate        = false,
+                IsCached         = true,
+                IsIncompatible   = false,
+                HasReplacement   = false,
+                Compatibility    = "KSP 1.12.5",
+            },
+        };
+
+        private static readonly IReadOnlyDictionary<string, ModDetailsModel> details
+            = new Dictionary<string, ModDetailsModel>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["restock"] = new ModDetailsModel
+                {
+                    Identifier       = "restock",
+                    Title            = "Restock",
+                    Summary          = "Refreshes stock parts with a consistent art pass.",
+                    Description      = "Restock replaces stock part art with a modernized, cohesive visual pass while keeping gameplay behavior familiar.",
+                    Authors          = "Nertea",
+                    LatestVersion    = "1.5.2",
+                    InstalledVersion = "1.5.1",
+                    Compatibility    = "KSP 1.12.5",
+                    ModuleKind       = "Package",
+                    License          = "CC-BY-NC-SA-4.0",
+                    ReleaseDate      = "2025-01-14",
+                    DownloadSize     = "128 MiB",
+                    DependencyCount     = 2,
+                    RecommendationCount = 1,
+                    SuggestionCount     = 0,
+                    IsInstalled      = true,
+                    HasUpdate        = true,
+                    IsCached         = true,
+                    IsIncompatible   = false,
+                    HasReplacement   = false,
+                },
+                ["parallax"] = new ModDetailsModel
+                {
+                    Identifier       = "parallax",
+                    Title            = "Parallax",
+                    Summary          = "Procedural surface scattering and planet terrain shading.",
+                    Description      = "Parallax adds procedural terrain detail, tessellation, and dense planetary scatter systems for surface exploration.",
+                    Authors          = "Gameslinx",
+                    LatestVersion    = "2.1.0",
+                    InstalledVersion = "Not installed",
+                    Compatibility    = "KSP 1.12.5",
+                    ModuleKind       = "Package",
+                    License          = "All rights reserved",
+                    ReleaseDate      = "2024-11-08",
+                    DownloadSize     = "412 MiB",
+                    DependencyCount     = 3,
+                    RecommendationCount = 0,
+                    SuggestionCount     = 1,
+                    IsInstalled      = false,
+                    HasUpdate        = false,
+                    IsCached         = true,
+                    IsIncompatible   = false,
+                    HasReplacement   = false,
+                },
+                ["mechjeb2"] = new ModDetailsModel
+                {
+                    Identifier       = "mechjeb2",
+                    Title            = "MechJeb 2",
+                    Summary          = "Flight automation, maneuver planning, and vessel information.",
+                    Description      = "MechJeb adds ascent guidance, rendezvous tools, information readouts, and maneuver planning for complex missions.",
+                    Authors          = "Sarbian",
+                    LatestVersion    = "2.14.3",
+                    InstalledVersion = "2.14.3",
+                    Compatibility    = "KSP 1.12.5",
+                    ModuleKind       = "Package",
+                    License          = "GPL-3.0",
+                    ReleaseDate      = "2024-06-22",
+                    DownloadSize     = "19 MiB",
+                    DependencyCount     = 1,
+                    RecommendationCount = 0,
+                    SuggestionCount     = 2,
+                    IsInstalled      = true,
+                    HasUpdate        = false,
+                    IsCached         = false,
+                    IsIncompatible   = false,
+                    HasReplacement   = false,
+                },
+                ["kerbalism"] = new ModDetailsModel
+                {
+                    Identifier       = "kerbalism",
+                    Title            = "Kerbalism",
+                    Summary          = "Life support, reliability, science, and long-duration mission systems.",
+                    Description      = "Kerbalism reshapes campaign progression around life support, radiation, reliability, and expanded science mechanics.",
+                    Authors          = "ShotgunNinja",
+                    LatestVersion    = "3.19.1",
+                    InstalledVersion = "Not installed",
+                    Compatibility    = "Older KSP release",
+                    ModuleKind       = "Package",
+                    License          = "CC-BY-NC-SA-4.0",
+                    ReleaseDate      = "2023-09-19",
+                    DownloadSize     = "74 MiB",
+                    DependencyCount     = 4,
+                    RecommendationCount = 1,
+                    SuggestionCount     = 1,
+                    IsInstalled      = false,
+                    HasUpdate        = false,
+                    IsCached         = false,
+                    IsIncompatible   = true,
+                    HasReplacement   = false,
+                },
+                ["planetshine"] = new ModDetailsModel
+                {
+                    Identifier       = "planetshine",
+                    Title            = "PlanetShine",
+                    Summary          = "Adds bounced planetary light to vessels and IVA scenes.",
+                    Description      = "PlanetShine adds subtle reflected light from planets and moons, improving atmosphere without changing gameplay.",
+                    Authors          = "Valerian",
+                    LatestVersion    = "0.2.7.5",
+                    InstalledVersion = "Not installed",
+                    Compatibility    = "KSP 1.12.5",
+                    ModuleKind       = "Package",
+                    License          = "MIT",
+                    ReleaseDate      = "2022-03-12",
+                    DownloadSize     = "6 MiB",
+                    DependencyCount     = 1,
+                    RecommendationCount = 0,
+                    SuggestionCount     = 0,
+                    IsInstalled      = false,
+                    HasUpdate        = false,
+                    IsCached         = true,
+                    IsIncompatible   = false,
+                    HasReplacement   = false,
+                },
+            };
+
+        public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = allMods.Where(item => Matches(item, filter))
+                                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                                .ToList();
+            return Task.FromResult((IReadOnlyList<ModListItem>)result);
+        }
+
+        public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                         CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            details.TryGetValue(identifier, out var model);
+            return Task.FromResult(model);
+        }
+
+        private static bool Matches(ModListItem item, FilterState filter)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.SearchText))
+            {
+                var search = filter.SearchText.Trim();
+                if (!Contains(item.Name, search)
+                    && !Contains(item.Identifier, search)
+                    && !Contains(item.Author, search)
+                    && !Contains(item.Summary, search))
+                {
+                    return false;
+                }
+            }
+
+            if (filter.InstalledOnly && !item.IsInstalled)
+            {
+                return false;
+            }
+            if (filter.NotInstalledOnly && item.IsInstalled)
+            {
+                return false;
+            }
+            if (filter.UpdatableOnly && !item.HasUpdate)
+            {
+                return false;
+            }
+            if (filter.NewOnly && item.IsInstalled)
+            {
+                return false;
+            }
+            if (filter.CachedOnly && !item.IsCached)
+            {
+                return false;
+            }
+            if (filter.IncompatibleOnly && !item.IsIncompatible)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool Contains(string text, string search)
+            => text.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+    }
+}

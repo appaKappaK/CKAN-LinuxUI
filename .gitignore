@@ -8,7 +8,7 @@ test-results
 StyleCop.Cache
 .*.swp
 .fatten.out
-*.resources
+*.resources 
 *.suo
 *.orig
 *~
@@ -17,6 +17,8 @@ StyleCop.Cache
 *.pyc
 node_modules/
 venv/
+.vscode/
+**/.idea/
 
 # Build results
 [Dd]ebug/
