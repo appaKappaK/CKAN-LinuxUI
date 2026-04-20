@@ -12,6 +12,8 @@ namespace CKAN.App.Models
 
         public bool IsMaximized { get; set; }
 
+        public bool? ShowDetailsPane { get; set; }
+
         public AppWindowState Clone()
             => new AppWindowState
             {
@@ -20,6 +22,7 @@ namespace CKAN.App.Models
                 PositionX   = PositionX,
                 PositionY   = PositionY,
                 IsMaximized = IsMaximized,
+                ShowDetailsPane = ShowDetailsPane,
             };
     }
 }

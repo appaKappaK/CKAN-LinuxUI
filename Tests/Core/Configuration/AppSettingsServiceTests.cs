@@ -40,6 +40,7 @@ namespace Tests.Core.Configuration
                     PositionX   = 120,
                     PositionY   = 80,
                     IsMaximized = true,
+                    ShowDetailsPane = false,
                 });
                 first.SaveUiScalePercent(90);
 
@@ -62,6 +63,7 @@ namespace Tests.Core.Configuration
                     Assert.That(second.WindowState.PositionX, Is.EqualTo(120));
                     Assert.That(second.WindowState.PositionY, Is.EqualTo(80));
                     Assert.That(second.WindowState.IsMaximized, Is.True);
+                    Assert.That(second.WindowState.ShowDetailsPane, Is.False);
                     Assert.That(second.UiScalePercent, Is.EqualTo(90));
                 });
             }

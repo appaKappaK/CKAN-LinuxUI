@@ -7,11 +7,12 @@
         xmlns:media="using:Avalonia.Media"
         mc:Ignorable="d"
         x:Class="CKAN.LinuxGUI.MainWindow"
+        KeyDown="Window_OnKeyDown"
         x:DataType="vm:MainWindowViewModel"
         Width="1200"
         Height="760"
-        MinWidth="1024"
-        MinHeight="640"
+        MinWidth="1040"
+        MinHeight="700"
         Title="CKAN Linux">
   <Window.Styles>
     <Style Selector="ToggleButton.toolbar-chip">
@@ -25,14 +26,28 @@
       <Setter Property="Padding" Value="14,7" />
       <Setter Property="Margin" Value="0,0,8,8" />
     </Style>
+    <Style Selector="ToggleButton.browser-chip">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Margin" Value="0,0,8,6" />
+    </Style>
+    <Style Selector="Button.browser-chip">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Margin" Value="0,0,8,6" />
+    </Style>
   </Window.Styles>
-  <LayoutTransformControl HorizontalAlignment="Left"
-                          VerticalAlignment="Top">
+  <LayoutTransformControl HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch">
     <LayoutTransformControl.LayoutTransform>
       <media:ScaleTransform ScaleX="{Binding AppliedUiScaleFactor}"
                             ScaleY="{Binding AppliedUiScaleFactor}" />
     </LayoutTransformControl.LayoutTransform>
-  <Grid RowDefinitions="Auto,Auto,*">
+  <Grid HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,Auto,*">
     <Border Background="#20262D" Padding="24,20">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="2">
@@ -45,7 +60,8 @@
                 Background="#11161C"
                 CornerRadius="999"
                 Padding="14,8"
-                VerticalAlignment="Center">
+                VerticalAlignment="Center"
+                IsVisible="{Binding ShowHeaderStagePill}">
           <StackPanel Orientation="Horizontal"
                       Spacing="8">
             <TextBlock Opacity="0.7"
@@ -60,7 +76,8 @@
     <Border Grid.Row="1"
             BorderBrush="#2F3741"
             BorderThickness="0,0,0,1"
-            Padding="24,16">
+            Padding="24,16"
+            IsVisible="{Binding ShowLegacyHeader}">
       <Grid ColumnDefinitions="*,Auto,Auto">
         <StackPanel Spacing="4">
           <TextBlock FontSize="12"
@@ -98,15 +115,155 @@
       </Grid>
     </Border>
 
+    <Border Grid.Row="1"
+            BorderBrush="#2F3741"
+            BorderThickness="0,0,0,1"
+            Padding="24,14"
+            IsVisible="{Binding ShowReadyHeader}">
+      <StackPanel Spacing="12">
+        <Grid ColumnDefinitions="*,240,Auto,Auto,Auto">
+          <StackPanel Spacing="3">
+            <TextBlock FontSize="12"
+                       Opacity="0.68"
+                       Text="Current Install" />
+            <TextBlock FontSize="18"
+                       FontWeight="SemiBold"
+                       IsVisible="{Binding ShowPassiveHeaderInstanceLabel}"
+                       TextTrimming="CharacterEllipsis"
+                       Text="{Binding CurrentInstanceName}" />
+            <ComboBox MinWidth="220"
+                      IsVisible="{Binding ShowHeaderInstanceSwitcher}"
+                      ItemsSource="{Binding Instances}"
+                      SelectedItem="{Binding SelectedInstance}"
+                      SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
+              <ComboBox.ItemTemplate>
+                <DataTemplate DataType="models:InstanceSummary">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock FontSize="12"
+                       Opacity="0.72"
+                       TextTrimming="CharacterEllipsis"
+                       Text="{Binding CurrentInstanceContext}" />
+          </StackPanel>
+
+          <Border Grid.Column="1"
+                  Background="#161B21"
+                  BorderBrush="#2B323C"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="12,10">
+            <StackPanel Spacing="6">
+              <ProgressBar Height="6"
+                           Minimum="0"
+                           Maximum="100"
+                           Value="{Binding ProgressPercent}" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextTrimming="CharacterEllipsis"
+                         MaxLines="1"
+                         Text="{Binding StatusMessage}" />
+            </StackPanel>
+          </Border>
+
+          <Button Grid.Column="2"
+                  Margin="12,0,0,0"
+                  VerticalAlignment="Center"
+                  Command="{Binding ToggleDisplaySettingsCommand}"
+                  Content="Settings" />
+
+          <Button Grid.Column="3"
+                  Margin="12,0,0,0"
+                  VerticalAlignment="Center"
+                  Command="{Binding ToggleDetailsPaneCommand}"
+                  ToolTip.Tip="{Binding DetailsPaneToggleLabel}"
+                  Content="{Binding DetailsPaneToggleLabel}" />
+
+          <Button Grid.Column="4"
+                  Margin="12,0,0,0"
+                  VerticalAlignment="Center"
+                  Command="{Binding RefreshCommand}"
+                  Content="Reload" />
+        </Grid>
+
+        <Border Background="#161B21"
+                BorderBrush="#2B323C"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="14"
+                IsVisible="{Binding ShowDisplaySettings}">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock FontSize="15"
+                           FontWeight="SemiBold"
+                           Text="Display Scale" />
+                <TextBlock FontSize="12"
+                           Opacity="0.72"
+                           TextWrapping="Wrap"
+                           Text="{Binding DisplayScaleSummary}" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      VerticalAlignment="Top"
+                      Command="{Binding ToggleDisplaySettingsCommand}"
+                      Content="Close" />
+            </Grid>
+
+            <Slider Minimum="{Binding UiScaleMinimum}"
+                    Maximum="{Binding UiScaleMaximum}"
+                    TickFrequency="5"
+                    TickPlacement="Outside"
+                    IsSnapToTickEnabled="True"
+                    SmallChange="5"
+                    LargeChange="5"
+                    Value="{Binding PendingUiScalePercent}" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock FontSize="12"
+                         Opacity="0.68"
+                         Text="{Binding UiScaleMinimum}" />
+              <TextBlock Grid.Column="1"
+                         HorizontalAlignment="Center"
+                         FontWeight="SemiBold"
+                         Text="{Binding PendingUiScaleLabel}" />
+              <TextBlock Grid.Column="2"
+                         FontSize="12"
+                         Opacity="0.68"
+                         Text="{Binding UiScaleMaximum}" />
+            </Grid>
+
+            <TextBlock FontSize="12"
+                       Opacity="0.72"
+                       TextWrapping="Wrap"
+                       Text="{Binding DisplayScaleHint}" />
+
+            <WrapPanel>
+              <Button Classes="toolbar-chip"
+                      IsVisible="{Binding ShowResetUiScaleAction}"
+                      Command="{Binding ResetUiScaleCommand}"
+                      Content="Reset to 100%" />
+              <Button Classes="toolbar-chip"
+                      IsVisible="{Binding UiScaleNeedsRestart}"
+                      Command="{Binding RestartToApplyUiScaleCommand}"
+                      Content="Restart Now" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
     <Grid Grid.Row="2"
-          ColumnDefinitions="220,*"
+          ColumnDefinitions="Auto,*"
           Margin="24">
       <Border Background="#161B21"
               BorderBrush="#2B323C"
               BorderThickness="1"
               CornerRadius="12"
               Padding="16"
-              Margin="0">
+              Margin="0"
+              Width="{Binding LegacySidebarWidth}"
+              IsVisible="{Binding ShowLegacyShell}">
         <Grid RowDefinitions="*,Auto">
           <Grid Grid.Row="0">
             <Grid RowDefinitions="Auto,Auto,*,Auto"
@@ -419,24 +576,47 @@
                   CornerRadius="12"
                   Padding="24"
                   IsVisible="{Binding IsReady}">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-              <Grid RowDefinitions="Auto,Auto">
-              <Grid ColumnDefinitions="1.55*,0.9*">
+            <Grid RowDefinitions="Auto,*,Auto">
+              <Border Background="#4A3920"
+                      BorderBrush="#9A7B37"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="14"
+                      Margin="0,0,0,14"
+                      IsVisible="{Binding ShowUiScaleRestartStrip}">
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                  <TextBlock VerticalAlignment="Center"
+                             FontSize="12"
+                             Opacity="0.86"
+                             Text="{Binding UiScaleRestartStripText}" />
+                  <Button Grid.Column="1"
+                          Margin="10,0,0,0"
+                          Command="{Binding RestartToApplyUiScaleCommand}"
+                          Content="Restart Now" />
+                  <Button Grid.Column="2"
+                          Margin="10,0,0,0"
+                          Command="{Binding DismissUiScaleRestartStripCommand}"
+                          Content="Dismiss" />
+                </Grid>
+              </Border>
+
+              <Grid Grid.Row="1"
+                    ColumnDefinitions="*,Auto">
                 <Border Background="#161B21"
                         CornerRadius="10"
-                        Padding="18"
+                        Padding="16"
                         Margin="0,0,8,0">
-                  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                  <Grid RowDefinitions="Auto,Auto,*,Auto">
                     <Grid ColumnDefinitions="*,Auto"
-                          Margin="0,0,0,14">
-                      <TextBox Watermark="Search mods by name, author, or identifier"
+                          Margin="0,0,0,10">
+                      <TextBox x:Name="SearchTextBox"
+                               Watermark="Search mods by name, author, or identifier"
                                Text="{Binding ModSearchText}" />
                       <Border Grid.Column="1"
                               Background="#20262D"
                               CornerRadius="999"
-                              Padding="12,6"
-                              Margin="12,0,0,0"
+                              Padding="10,6"
+                              Margin="10,0,0,0"
                               VerticalAlignment="Center">
                         <TextBlock FontSize="12"
                                    Opacity="0.8"
@@ -444,171 +624,282 @@
                       </Border>
                     </Grid>
 
-                    <StackPanel Grid.Row="1"
-                                Spacing="8"
-                                Margin="0,0,0,14">
-                      <Border Background="#1A2027"
-                              CornerRadius="10"
-                              Padding="14">
-                        <StackPanel Spacing="10">
-                          <TextBlock FontSize="11"
-                                     Opacity="0.68"
-                                     Text="Browse Filters" />
-                          <WrapPanel HorizontalAlignment="Left"
-                                     VerticalAlignment="Center">
-                          <ToggleButton Classes="toolbar-chip"
-                                        IsChecked="{Binding FilterInstalledOnly}"
-                                        Content="Installed" />
-                          <ToggleButton Classes="toolbar-chip"
-                                        MinWidth="106"
-                                        IsChecked="{Binding FilterNotInstalledOnly}"
-                                        Content="Not Installed" />
-                          <ToggleButton Classes="toolbar-chip"
-                                        IsChecked="{Binding FilterUpdatableOnly}"
-                                        Content="Updates" />
-                          <ToggleButton Classes="toolbar-chip"
-                                        IsChecked="{Binding FilterCachedOnly}"
-                                        Content="Cached" />
-                          <ToggleButton Classes="toolbar-chip"
-                                        MinWidth="104"
-                                        IsChecked="{Binding FilterIncompatibleOnly}"
-                                        Content="Incompatible" />
-                            <Border Background="#20262D"
-                                    CornerRadius="999"
-                                    Padding="10,6"
-                                    Margin="0,0,8,8"
-                                    VerticalAlignment="Center">
-                              <StackPanel Orientation="Horizontal"
-                                          Spacing="8">
-                                <TextBlock VerticalAlignment="Center"
-                                           FontSize="12"
-                                           Opacity="0.68"
-                                           Text="Sort" />
-                                <ComboBox Width="162"
-                                          ItemsSource="{Binding SortOptions}"
-                                          SelectedItem="{Binding SelectedSortOption}">
-                                  <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                      <TextBlock Text="{Binding Label}" />
-                                    </DataTemplate>
-                                  </ComboBox.ItemTemplate>
-                                </ComboBox>
-                              </StackPanel>
-                            </Border>
-                            <Button Classes="toolbar-chip"
-                                    Command="{Binding ToggleAdvancedFiltersCommand}"
-                                    Content="Advanced Filters" />
-                            <Button Classes="toolbar-chip"
-                                    IsVisible="{Binding HasActiveFilters}"
-                                    Command="{Binding ClearFiltersCommand}"
-                                    Content="Clear Filters" />
-                          </WrapPanel>
-                          <TextBlock FontSize="12"
-                                     Opacity="0.72"
-                                     IsVisible="{Binding HasActiveAdvancedFilters}"
-                                     Text="{Binding AdvancedFilterSummary}" />
-                        </StackPanel>
-                      </Border>
-                    </StackPanel>
+                    <Grid Grid.Row="1"
+                          RowDefinitions="Auto,Auto"
+                          Margin="0,0,0,10">
+                      <WrapPanel VerticalAlignment="Center"
+                                 MaxWidth="620">
+                        <ToggleButton Classes="browser-chip"
+                                      IsChecked="{Binding FilterInstalledOnly}"
+                                      Content="Installed" />
+                        <ToggleButton Classes="browser-chip"
+                                      IsChecked="{Binding FilterNotInstalledOnly}"
+                                      Content="Not Installed" />
+                        <ToggleButton Classes="browser-chip"
+                                      IsChecked="{Binding FilterUpdatableOnly}"
+                                      Content="Updates" />
+                        <ToggleButton Classes="browser-chip"
+                                      IsChecked="{Binding FilterCachedOnly}"
+                                      Content="Cached" />
+                        <ToggleButton Classes="browser-chip"
+                                      IsChecked="{Binding FilterIncompatibleOnly}"
+                                      Content="Incompatible" />
+                      </WrapPanel>
+
+                      <Grid Grid.Row="1"
+                            ColumnDefinitions="Auto,*,Auto,Auto"
+                            Margin="0,2,0,0">
+                        <Border Background="#20262D"
+                                CornerRadius="999"
+                                Padding="10,6"
+                                VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal"
+                                      Spacing="8">
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Opacity="0.68"
+                                       Text="Sort" />
+                            <ComboBox Width="150"
+                                      ItemsSource="{Binding SortOptions}"
+                                      SelectedItem="{Binding SelectedSortOption}">
+                              <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                  <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                              </ComboBox.ItemTemplate>
+                            </ComboBox>
+                          </StackPanel>
+                        </Border>
+
+                        <TextBlock Grid.Column="1" />
+
+                        <Button Grid.Column="2"
+                                x:Name="MoreFiltersButton"
+                                Classes="browser-chip"
+                                Command="{Binding ToggleAdvancedFiltersCommand}"
+                                HorizontalAlignment="Right"
+                                Content="{Binding MoreFiltersLabel}" />
+                        <Button Grid.Column="3"
+                                Classes="browser-chip"
+                                IsVisible="{Binding HasActiveFilters}"
+                                Command="{Binding ClearFiltersCommand}"
+                                HorizontalAlignment="Right"
+                                Content="Clear Filters" />
+
+                      </Grid>
+
+                      <Popup x:Name="AdvancedFiltersPopup"
+                             IsOpen="{Binding ShowAdvancedFilters, Mode=TwoWay}"
+                             Placement="Bottom"
+                             PlacementTarget="{Binding #MoreFiltersButton}"
+                             HorizontalOffset="-206"
+                             VerticalOffset="8"
+                             IsLightDismissEnabled="True"
+                             OverlayDismissEventPassThrough="True"
+                             Opened="AdvancedFiltersPopup_OnOpened">
+                        <Border Background="#20262D"
+                                BorderBrush="#39424E"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="16"
+                                MinWidth="520"
+                                MaxWidth="560"
+                                BoxShadow="0 18 36 0 #66000000">
+                          <StackPanel Spacing="12">
+                            <TextBlock FontSize="12"
+                                       Opacity="0.76"
+                                       Text="Advanced Filters" />
+                            <Grid ColumnDefinitions="*,*,Auto">
+                              <TextBox x:Name="AdvancedAuthorFilterTextBox"
+                                       Watermark="Author contains"
+                                       Text="{Binding AdvancedAuthorFilter}" />
+                              <TextBox Grid.Column="1"
+                                       Margin="12,0,0,0"
+                                       Watermark="Compatibility contains"
+                                       Text="{Binding AdvancedCompatibilityFilter}" />
+                              <ToggleButton Grid.Column="2"
+                                            Margin="12,0,0,0"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding FilterHasReplacementOnly}"
+                                            Content="Has Replacement" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                              <TextBlock VerticalAlignment="Center"
+                                         FontSize="12"
+                                         Opacity="0.72"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding AdvancedFilterSummary}" />
+                              <Button Grid.Column="1"
+                                      Margin="12,0,0,0"
+                                      IsVisible="{Binding HasActiveAdvancedFilters}"
+                                      Command="{Binding ClearAdvancedFiltersCommand}"
+                                      Content="Clear Advanced" />
+                            </Grid>
+                          </StackPanel>
+                        </Border>
+                      </Popup>
+                    </Grid>
 
                     <Border Grid.Row="2"
-                            Background="#20262D"
+                            Background="#14191F"
+                            CornerRadius="8"
                             BorderBrush="#2B323C"
                             BorderThickness="1"
-                            CornerRadius="10"
-                            Padding="14"
-                            Margin="0,0,0,14"
-                            IsVisible="{Binding ShowAdvancedFilters}">
-                      <Grid RowDefinitions="Auto,Auto"
-                            ColumnDefinitions="*,*,Auto">
-                        <TextBox Watermark="Author contains"
-                                 Text="{Binding AdvancedAuthorFilter}" />
-                        <TextBox Grid.Column="1"
-                                 Margin="12,0,0,0"
-                                 Watermark="Compatibility contains"
-                                 Text="{Binding AdvancedCompatibilityFilter}" />
-                        <ToggleButton Grid.Column="2"
-                                      Margin="12,0,0,0"
-                                      VerticalAlignment="Center"
-                                      IsChecked="{Binding FilterHasReplacementOnly}"
-                                      Content="Has Replacement" />
-
-                        <Grid Grid.Row="1"
-                              Grid.ColumnSpan="3"
-                              ColumnDefinitions="*,Auto"
-                              Margin="0,12,0,0">
-                          <TextBlock VerticalAlignment="Center"
-                                     FontSize="12"
-                                     Opacity="0.72"
-                                     Text="{Binding AdvancedFilterSummary}" />
-                          <Button Grid.Column="1"
-                                  Margin="12,0,0,0"
-                                  IsVisible="{Binding HasActiveAdvancedFilters}"
-                                  Command="{Binding ClearAdvancedFiltersCommand}"
-                                  Content="Clear Advanced" />
-                        </Grid>
-                      </Grid>
-                    </Border>
-
-                    <Border Grid.Row="3"
-                        Background="#14191F"
-                            CornerRadius="10"
-                            Padding="10">
+                            Padding="8">
                       <Grid>
-                        <ListBox ItemsSource="{Binding Mods}"
+                        <StackPanel Spacing="12"
+                                    IsVisible="{Binding ShowCatalogSkeleton}">
+                          <Border Background="#1B2128"
+                                  CornerRadius="8"
+                                  Padding="12"
+                                  Margin="0,0,0,4">
+                            <Grid ColumnDefinitions="5,*,144">
+                              <Border Background="#24588A"
+                                      CornerRadius="8,0,0,8" />
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,12,0"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="16"
+                                        Width="168"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="108"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="292"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="2"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="86"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="74"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="98"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+
+                          <Border Background="#1B2128"
+                                  CornerRadius="8"
+                                  Padding="12"
+                                  Margin="0,0,0,4"
+                                  Opacity="0.94">
+                            <Grid ColumnDefinitions="5,*,144">
+                              <Border Background="#39424E"
+                                      CornerRadius="8,0,0,8" />
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,12,0"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="16"
+                                        Width="190"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="96"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="252"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="2"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="80"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="84"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="104"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+
+                        </StackPanel>
+
+                        <ListBox x:Name="ModsListBox"
+                                 ItemsSource="{Binding Mods}"
                                  SelectedItem="{Binding SelectedMod}"
-                                 IsVisible="{Binding HasMods}">
+                                 IsVisible="{Binding ShowModList}">
                           <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:ModListItem">
                                 <Border Background="#1B2128"
-                                        CornerRadius="10"
-                                        Margin="0,0,0,12"
+                                        CornerRadius="8"
+                                        Margin="0,0,0,3"
                                         Padding="0">
-                                  <Grid ColumnDefinitions="6,*,164">
+                                  <Grid ColumnDefinitions="5,*,120">
                                     <Border Background="{Binding PrimaryStateColor}"
-                                          CornerRadius="10,0,0,10" />
+                                          CornerRadius="8,0,0,8" />
 
                                   <Border Grid.Column="1"
-                                          Padding="14,13">
-                                    <StackPanel Spacing="10">
+                                          Padding="10,7">
+                                    <StackPanel Spacing="4">
                                       <Grid ColumnDefinitions="*,Auto">
-                                        <StackPanel Spacing="5">
-                                          <TextBlock FontSize="16"
+                                        <StackPanel Spacing="2">
+                                          <TextBlock FontSize="14"
                                                      FontWeight="SemiBold"
                                                      TextTrimming="CharacterEllipsis"
                                                      Text="{Binding Name}" />
-                                          <TextBlock FontSize="11"
-                                                     Opacity="0.62"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     Text="{Binding Identifier}" />
                                         </StackPanel>
 
                                         <Border Grid.Column="1"
                                                 Background="{Binding PrimaryStateColor}"
                                                 CornerRadius="999"
-                                                Padding="10,4"
-                                                Margin="12,0,0,0"
+                                                Padding="7,2"
+                                                Margin="8,0,0,0"
                                                 VerticalAlignment="Top">
-                                          <TextBlock FontSize="11"
+                                          <TextBlock FontSize="10"
                                                      FontWeight="SemiBold"
                                                      Text="{Binding PrimaryStateLabel}" />
                                         </Border>
                                       </Grid>
 
                                       <TextBlock TextWrapping="Wrap"
-                                                 MaxHeight="36"
+                                                 FontSize="12"
+                                                 MaxHeight="16"
+                                                 MaxLines="1"
                                                  Opacity="0.9"
+                                                 TextTrimming="CharacterEllipsis"
                                                  Text="{Binding Summary}" />
 
                                       <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock FontSize="12"
+                                        <TextBlock FontSize="11"
                                                    Opacity="0.78"
                                                    TextTrimming="CharacterEllipsis"
                                                    Text="{Binding Author}" />
                                         <TextBlock Grid.Column="1"
-                                                   FontSize="12"
+                                                   FontSize="11"
                                                    Opacity="0.72"
-                                                   Margin="16,0,0,0"
+                                                   Margin="12,0,0,0"
                                                    HorizontalAlignment="Right"
                                                    IsVisible="{Binding HasStatusSummary}"
                                                    Text="{Binding StatusSummary}" />
@@ -617,36 +908,24 @@
                                   </Border>
 
                                   <Border Grid.Column="2"
-                                          Background="#14191F"
-                                          CornerRadius="0,10,10,0"
-                                          Padding="14">
-                                    <StackPanel Spacing="12">
-                                      <StackPanel Spacing="4">
-                                        <TextBlock FontSize="11"
-                                                   Opacity="0.68"
-                                                   Text="Latest Version" />
-                                        <TextBlock FontWeight="SemiBold"
-                                                   Text="{Binding LatestVersion}" />
-                                      </StackPanel>
-
-                                      <StackPanel Spacing="4"
-                                                  IsVisible="{Binding IsInstalled}">
-                                        <TextBlock FontSize="11"
-                                                   Opacity="0.68"
-                                                   Text="Installed Version" />
-                                        <TextBlock FontWeight="SemiBold"
-                                                   Text="{Binding InstalledVersion}" />
-                                      </StackPanel>
-
-                                      <StackPanel Spacing="4">
-                                        <TextBlock FontSize="11"
-                                                   Opacity="0.68"
-                                                   Text="Compatible With" />
-                                        <TextBlock FontSize="12"
-                                                   FontWeight="SemiBold"
-                                                   TextWrapping="Wrap"
-                                                   Text="{Binding Compatibility}" />
-                                      </StackPanel>
+                                          Background="#171C22"
+                                          CornerRadius="0,8,8,0"
+                                          Padding="8,7">
+                                    <StackPanel Spacing="4">
+                                      <TextBlock FontSize="13"
+                                                 FontWeight="SemiBold"
+                                                 Text="{Binding LatestVersion}" />
+                                      <TextBlock FontSize="10"
+                                                 Opacity="0.72"
+                                                 TextTrimming="CharacterEllipsis"
+                                                 IsVisible="{Binding IsInstalled}"
+                                                 Text="{Binding InstalledVersion}" />
+                                      <TextBlock FontSize="10"
+                                                 FontWeight="SemiBold"
+                                                 Opacity="0.8"
+                                                 TextWrapping="Wrap"
+                                                 MaxLines="2"
+                                                 Text="{Binding Compatibility}" />
                                     </StackPanel>
                                   </Border>
                                 </Grid>
@@ -663,31 +942,37 @@
                                       VerticalAlignment="Center">
                             <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
-                                       Text="No Mods Match" />
+                                       Text="No mods match the current search and filters." />
                             <TextBlock Opacity="0.82"
                                        TextWrapping="Wrap"
-                                       Text="The current search text and visible filters returned no mods. Broaden the query or clear one of the filters." />
+                                       Text="Broaden the query or clear the active filters to restore the catalog list." />
+                            <Button Width="140"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding ClearFiltersCommand}"
+                                    Content="Clear Filters" />
                           </StackPanel>
                         </Border>
                       </Grid>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             Background="#20262D"
-                            CornerRadius="10"
-                            Padding="14"
-                            Margin="0,14,0,0">
+                            CornerRadius="8"
+                            Padding="10,8"
+                            Margin="0,10,0,0">
                       <Grid ColumnDefinitions="Auto,*">
-                        <ProgressBar Width="130"
-                                     Height="18"
+                        <ProgressBar Width="120"
+                                     Height="14"
                                      Minimum="0"
                                      Maximum="100"
                                      IsVisible="{Binding IsCatalogLoading}"
                                      IsIndeterminate="{Binding IsCatalogLoading}" />
                         <TextBlock Grid.Column="1"
-                                   Margin="12,0,0,0"
+                                   Margin="10,0,0,0"
                                    VerticalAlignment="Center"
-                                   TextWrapping="Wrap"
+                                   FontSize="12"
+                                   Opacity="0.78"
+                                   TextTrimming="CharacterEllipsis"
                                    Text="{Binding CatalogStatusMessage}" />
                       </Grid>
                     </Border>
@@ -697,259 +982,341 @@
                 <Border Grid.Column="1"
                         Background="#161B21"
                         CornerRadius="10"
-                        Padding="18"
-                        Margin="8,0,0,0">
-                  <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="14">
+                        Padding="16"
+                        Margin="8,0,0,0"
+                        Width="296"
+                        MinWidth="280"
+                        IsVisible="{Binding ShowDetailsPane}">
+                  <Grid>
+                    <StackPanel Spacing="12"
+                                IsVisible="{Binding ShowSelectedModPlaceholder}">
+                      <TextBlock FontSize="11"
+                                 Opacity="0.68"
+                                 Text="Mod Details" />
+                      <TextBlock FontSize="16"
+                                 FontWeight="SemiBold"
+                                 Text="No mod selected" />
+                      <TextBlock Opacity="0.8"
+                                 TextWrapping="Wrap"
+                                 Text="Choose a mod from the browser to inspect install state, compatibility, and package metadata." />
+                    </StackPanel>
+
+                    <StackPanel Spacing="14"
+                                IsVisible="{Binding ShowSelectedModLoadingState}">
                       <TextBlock FontSize="11"
                                  Opacity="0.68"
                                  Text="Mod Details" />
                       <TextBlock FontSize="16"
                                  FontWeight="SemiBold"
                                  TextWrapping="Wrap"
-                                 Text="{Binding SelectedModTitle}" />
-                      <TextBlock TextWrapping="Wrap"
-                                 Opacity="0.82"
-                                 Text="{Binding SelectedModSubtitle}" />
-                      <TextBlock FontSize="12"
-                                 Opacity="0.72"
-                                 Text="{Binding SelectedModAuthors}" />
-
-                      <WrapPanel ItemHeight="30"
-                                 IsVisible="{Binding HasSelectedMod}">
-                        <Border Background="#1B4D77"
-                                CornerRadius="999"
-                                Padding="10,4"
-                                Margin="0,0,8,0"
-                                IsVisible="{Binding SelectedModIsInstalled}">
-                          <TextBlock FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Text="Installed" />
-                        </Border>
-                        <Border Background="#4B6C23"
-                                CornerRadius="999"
-                                Padding="10,4"
-                                Margin="0,0,8,0"
-                                IsVisible="{Binding SelectedModHasUpdate}">
-                          <TextBlock FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Text="Update available" />
-                        </Border>
-                        <Border Background="#7A5B1E"
-                                CornerRadius="999"
-                                Padding="10,4"
-                                Margin="0,0,8,0"
-                                IsVisible="{Binding SelectedModIsCached}">
-                          <TextBlock FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Text="Cached" />
-                        </Border>
-                        <Border Background="#6B2B2B"
-                                CornerRadius="999"
-                                Padding="10,4"
-                                Margin="0,0,8,0"
-                                IsVisible="{Binding SelectedModIsIncompatible}">
-                          <TextBlock FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Text="Incompatible" />
-                        </Border>
-                        <Border Background="#5C376D"
-                                CornerRadius="999"
-                                Padding="10,4"
-                                Margin="0,0,8,0"
-                                IsVisible="{Binding SelectedModHasReplacement}">
-                          <TextBlock FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Text="Has replacement" />
-                        </Border>
-                      </WrapPanel>
-
+                                 Text="{Binding SelectedModLoadingTitle}" />
+                      <Border Background="#26303A"
+                              CornerRadius="5"
+                              Height="14"
+                              Width="170"
+                              HorizontalAlignment="Left" />
                       <Border Background="#20262D"
-                              CornerRadius="10"
-                              Padding="14">
-                        <StackPanel Spacing="10">
-                          <WrapPanel ItemHeight="34">
-                            <Button Margin="0,0,10,0"
-                                    IsVisible="{Binding ShowInstallAction}"
-                                    Command="{Binding QueueInstallCommand}"
-                                    Content="Queue Install" />
-                            <Button Margin="0,0,10,0"
-                                    IsVisible="{Binding ShowUpdateAction}"
-                                    Command="{Binding QueueUpdateCommand}"
-                                    Content="Queue Update" />
-                            <Button Margin="0,0,10,0"
-                                    IsVisible="{Binding ShowRemoveAction}"
-                                    Command="{Binding QueueRemoveCommand}"
-                                    Content="Queue Remove" />
-                          </WrapPanel>
-                          <TextBlock FontSize="12"
+                              Height="1"
+                              Margin="0,2" />
+                      <Grid ColumnDefinitions="Auto,*"
+                            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock FontSize="12"
+                                   Opacity="0.68"
+                                   Text="Version" />
+                        <Border Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="132"
+                                Margin="12,0,0,0"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1"
+                                   FontSize="12"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.68"
+                                   Text="Status" />
+                        <Border Grid.Row="1"
+                                Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="164"
+                                Margin="12,10,0,0"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="2"
+                                   FontSize="12"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.68"
+                                   Text="License" />
+                        <Border Grid.Row="2"
+                                Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="120"
+                                Margin="12,10,0,0"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="3"
+                                   FontSize="12"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.68"
+                                   Text="Type" />
+                        <Border Grid.Row="3"
+                                Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="108"
+                                Margin="12,10,0,0"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="4"
+                                   FontSize="12"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.68"
+                                   Text="Released" />
+                        <Border Grid.Row="4"
+                                Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="144"
+                                Margin="12,10,0,0"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="5"
+                                   FontSize="12"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.68"
+                                   Text="Download" />
+                        <Border Grid.Row="5"
+                                Grid.Column="1"
+                                Background="#26303A"
+                                CornerRadius="5"
+                                Height="12"
+                                Width="126"
+                                Margin="12,10,0,0"
+                                HorizontalAlignment="Left" />
+                      </Grid>
+                      <Border Background="#20262D"
+                              Height="1"
+                              Margin="0,2" />
+                      <Border Background="#242B34"
+                              CornerRadius="5"
+                              Height="11"
+                              Width="240"
+                              HorizontalAlignment="Left" />
+                      <Border Background="#242B34"
+                              CornerRadius="5"
+                              Height="11"
+                              Width="220"
+                              HorizontalAlignment="Left" />
+                      <Border Background="#242B34"
+                              CornerRadius="5"
+                              Height="11"
+                              Width="232"
+                              HorizontalAlignment="Left" />
+                    </StackPanel>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  IsVisible="{Binding ShowSelectedModContent}">
+                      <StackPanel Spacing="12">
+                        <TextBlock FontSize="11"
+                                   Opacity="0.68"
+                                   Text="Mod Details" />
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding SelectedModTitle}" />
+                        <TextBlock TextWrapping="Wrap"
+                                   Opacity="0.82"
+                                   Text="{Binding SelectedModSubtitle}" />
+                        <TextBlock FontSize="12"
+                                   Opacity="0.72"
+                                   Text="{Binding SelectedModAuthors}" />
+
+                        <WrapPanel ItemHeight="26"
+                                   IsVisible="{Binding HasSelectedMod}">
+                          <Border Background="#1B4D77"
+                                  CornerRadius="999"
+                                  Padding="8,3"
+                                  Margin="0,0,8,0"
+                                  IsVisible="{Binding SelectedModIsInstalled}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="Installed" />
+                          </Border>
+                          <Border Background="#4B6C23"
+                                  CornerRadius="999"
+                                  Padding="8,3"
+                                  Margin="0,0,8,0"
+                                  IsVisible="{Binding SelectedModHasUpdate}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="Update available" />
+                          </Border>
+                          <Border Background="#7A5B1E"
+                                  CornerRadius="999"
+                                  Padding="8,3"
+                                  Margin="0,0,8,0"
+                                  IsVisible="{Binding SelectedModIsCached}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="Cached" />
+                          </Border>
+                          <Border Background="#6B2B2B"
+                                  CornerRadius="999"
+                                  Padding="8,3"
+                                  Margin="0,0,8,0"
+                                  IsVisible="{Binding SelectedModIsIncompatible}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="Incompatible" />
+                          </Border>
+                          <Border Background="#5C376D"
+                                  CornerRadius="999"
+                                  Padding="8,3"
+                                  Margin="0,0,8,0"
+                                  IsVisible="{Binding SelectedModHasReplacement}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="Has replacement" />
+                          </Border>
+                        </WrapPanel>
+
+                        <Grid ColumnDefinitions="Auto,*">
+                          <StackPanel Spacing="8">
+                            <Button HorizontalAlignment="Left"
+                                    IsVisible="{Binding ShowPrimarySelectedModAction}"
+                                    Command="{Binding PrimarySelectedModActionCommand}"
+                                    Content="{Binding PrimarySelectedModActionLabel}" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1"
+                                     Margin="12,0,0,0"
+                                     VerticalAlignment="Center"
+                                     FontSize="12"
                                      Opacity="0.78"
                                      TextWrapping="Wrap"
                                      Text="{Binding SelectedModQueueStatus}" />
-                        </StackPanel>
-                      </Border>
+                        </Grid>
 
-                      <TextBlock FontSize="11"
-                                 Opacity="0.68"
-                                 IsVisible="{Binding HasSelectedMod}"
-                                 Text="Overview" />
-
-                      <Grid ColumnDefinitions="*,*"
-                            RowDefinitions="Auto,Auto"
-                            IsVisible="{Binding HasSelectedMod}">
                         <Border Background="#20262D"
-                                CornerRadius="10"
-                                Padding="12"
-                                Margin="0,0,8,8">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontSize="11"
-                                       Opacity="0.68"
-                                       Text="Versions &amp; Compatibility" />
+                                Height="1"
+                                IsVisible="{Binding HasSelectedMod}" />
+
+                        <Grid ColumnDefinitions="Auto,*"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              IsVisible="{Binding HasSelectedMod}">
+                          <TextBlock FontSize="12"
+                                     Opacity="0.68"
+                                     Text="Version" />
+                          <TextBlock Grid.Column="1"
+                                     Margin="12,0,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModVersions}" />
+
+                          <TextBlock Grid.Row="1"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Status" />
+                          <TextBlock Grid.Row="1"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModInstallState}" />
+
+                          <TextBlock Grid.Row="2"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Compatibility" />
+                          <TextBlock Grid.Row="2"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModCompatibility}" />
+
+                          <TextBlock Grid.Row="3"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Type" />
+                          <TextBlock Grid.Row="3"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModModuleKind}" />
+
+                          <TextBlock Grid.Row="4"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="License" />
+                          <TextBlock Grid.Row="4"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModLicense}" />
+
+                          <TextBlock Grid.Row="5"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Released" />
+                          <TextBlock Grid.Row="5"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModReleaseDate}" />
+
+                          <TextBlock Grid.Row="6"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Download" />
+                          <TextBlock Grid.Row="6"
+                                     Grid.Column="1"
+                                     Margin="12,8,0,0"
+                                     FontWeight="SemiBold"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding SelectedModDownloadSize}" />
+
+                          <TextBlock Grid.Row="7"
+                                     FontSize="12"
+                                     Margin="0,8,0,0"
+                                     Opacity="0.68"
+                                     Text="Relationships" />
+                          <StackPanel Grid.Row="7"
+                                      Grid.Column="1"
+                                      Margin="12,8,0,0"
+                                      Spacing="6">
                             <TextBlock FontWeight="SemiBold"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModVersions}" />
-                            <TextBlock FontSize="12"
-                                       Opacity="0.78"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModCompatibility}" />
-                          </StackPanel>
-                        </Border>
-
-                        <Border Grid.Column="1"
-                                Background="#20262D"
-                                CornerRadius="10"
-                                Padding="12"
-                                Margin="8,0,0,8">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontSize="11"
-                                       Opacity="0.68"
-                                       Text="Install State" />
-                            <TextBlock FontWeight="SemiBold"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModInstallState}" />
-                          </StackPanel>
-                        </Border>
-
-                        <Border Grid.Row="1"
-                                Background="#20262D"
-                                CornerRadius="10"
-                                Padding="12"
-                                Margin="0,8,8,0">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontSize="11"
-                                       Opacity="0.68"
-                                       Text="Package Details" />
-                            <Grid ColumnDefinitions="Auto,*"
-                                  RowDefinitions="Auto,Auto,Auto,Auto">
-                              <TextBlock FontSize="12"
-                                         Opacity="0.7"
-                                         Text="Type" />
-                              <TextBlock Grid.Column="1"
-                                         FontWeight="SemiBold"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModModuleKind}" />
-
-                              <TextBlock Grid.Row="1"
-                                         FontSize="12"
-                                         Opacity="0.7"
-                                         Margin="0,6,0,0"
-                                         Text="License" />
-                              <TextBlock Grid.Row="1"
-                                         Grid.Column="1"
-                                         Margin="0,6,0,0"
-                                         FontWeight="SemiBold"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModLicense}" />
-
-                              <TextBlock Grid.Row="2"
-                                         FontSize="12"
-                                         Opacity="0.7"
-                                         Margin="0,6,0,0"
-                                         Text="Released" />
-                              <TextBlock Grid.Row="2"
-                                         Grid.Column="1"
-                                         Margin="0,6,0,0"
-                                         FontWeight="SemiBold"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModReleaseDate}" />
-
-                              <TextBlock Grid.Row="3"
-                                         FontSize="12"
-                                         Opacity="0.7"
-                                         Margin="0,6,0,0"
-                                         Text="Download" />
-                              <TextBlock Grid.Row="3"
-                                         Grid.Column="1"
-                                         Margin="0,6,0,0"
-                                         FontWeight="SemiBold"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModDownloadSize}" />
-                            </Grid>
-                          </StackPanel>
-                        </Border>
-
-                        <Border Grid.Row="1"
-                                Grid.Column="1"
-                                Background="#20262D"
-                                CornerRadius="10"
-                                Padding="12"
-                                Margin="8,8,0,0">
-                          <StackPanel Spacing="10">
-                            <TextBlock FontSize="11"
-                                       Opacity="0.68"
-                                       Text="Relationships" />
-                            <WrapPanel ItemHeight="56">
-                              <Border Background="#161B21"
-                                      CornerRadius="8"
-                                      Padding="10"
-                                      Margin="0,0,8,8"
-                                      Width="110">
-                                <StackPanel Spacing="3">
-                                  <TextBlock FontSize="11"
-                                             Opacity="0.7"
-                                             Text="Depends" />
-                                  <TextBlock FontWeight="SemiBold"
-                                             Text="{Binding SelectedModDependencyCountLabel}" />
-                                </StackPanel>
-                              </Border>
-                              <Border Background="#161B21"
-                                      CornerRadius="8"
-                                      Padding="10"
-                                      Margin="0,0,8,8"
-                                      Width="130">
-                                <StackPanel Spacing="3">
-                                  <TextBlock FontSize="11"
-                                             Opacity="0.7"
-                                             Text="Recommends" />
-                                  <TextBlock FontWeight="SemiBold"
-                                             Text="{Binding SelectedModRecommendationCountLabel}" />
-                                </StackPanel>
-                              </Border>
-                              <Border Background="#161B21"
-                                      CornerRadius="8"
-                                      Padding="10"
-                                      Margin="0,0,8,8"
-                                      Width="110">
-                                <StackPanel Spacing="3">
-                                  <TextBlock FontSize="11"
-                                             Opacity="0.7"
-                                             Text="Suggests" />
-                                  <TextBlock FontWeight="SemiBold"
-                                             Text="{Binding SelectedModSuggestionCountLabel}" />
-                                </StackPanel>
-                              </Border>
-                            </WrapPanel>
-                            <TextBlock FontSize="12"
-                                       Opacity="0.78"
                                        TextWrapping="Wrap"
                                        Text="{Binding SelectedModRelationships}" />
+                            <TextBlock FontSize="12"
+                                       Opacity="0.78"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding SelectedModDependencyCountLabel}" />
+                            <TextBlock FontSize="12"
+                                       Opacity="0.78"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding SelectedModRecommendationCountLabel}" />
+                            <TextBlock FontSize="12"
+                                       Opacity="0.78"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding SelectedModSuggestionCountLabel}" />
                           </StackPanel>
-                        </Border>
-                      </Grid>
+                        </Grid>
 
-                      <Border Background="#20262D"
-                              CornerRadius="10"
-                              Padding="14">
+                        <Border Background="#20262D"
+                                Height="1"
+                                IsVisible="{Binding HasSelectedMod}" />
+
                         <StackPanel Spacing="8">
                           <TextBlock FontSize="11"
                                      Opacity="0.68"
@@ -957,18 +1324,101 @@
                           <TextBlock TextWrapping="Wrap"
                                      Text="{Binding SelectedModBody}" />
                         </StackPanel>
-                      </Border>
-                    </StackPanel>
-                  </ScrollViewer>
+                      </StackPanel>
+                    </ScrollViewer>
+                  </Grid>
                 </Border>
               </Grid>
 
-              <Border Grid.Row="1"
+              <Border Grid.Row="2"
+                      Background="#161B21"
+                      CornerRadius="10"
+                      Padding="14,12"
+                      Margin="0,12,0,0"
+                      IsVisible="{Binding ShowEmptyQueueStub}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock VerticalAlignment="Center"
+                             FontWeight="SemiBold"
+                             Text="No pending changes" />
+                  <TextBlock Grid.Column="1"
+                             VerticalAlignment="Center"
+                             FontSize="12"
+                             Opacity="0.7"
+                             Text="Queue install, update, or remove actions to preview changes." />
+                </Grid>
+              </Border>
+
+              <Border Grid.Row="2"
+                      Background="{Binding CollapsedQueueStubBackground}"
+                      BorderBrush="{Binding CollapsedQueueStubBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="14,12"
+                      Margin="0,12,0,0"
+                      IsVisible="{Binding ShowCollapsedQueuedActionsStub}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button HorizontalContentAlignment="Stretch"
+                          Padding="0"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Command="{Binding ToggleQueueDrawerCommand}">
+                    <StackPanel Spacing="4">
+                      <TextBlock FontWeight="SemiBold"
+                                 Text="{Binding CollapsedQueueStubTitle}" />
+                      <TextBlock FontSize="12"
+                                 Opacity="0.74"
+                                 TextWrapping="Wrap"
+                                 Text="{Binding CollapsedQueueStubSummary}" />
+                    </StackPanel>
+                  </Button>
+
+                  <Button Grid.Column="1"
+                          Margin="14,0,0,0"
+                          VerticalAlignment="Center"
+                          Command="{Binding ApplyChangesFromCollapsedQueueCommand}"
+                          Content="Apply Changes" />
+                </Grid>
+              </Border>
+
+              <Border Grid.Row="2"
+                      Background="{Binding CollapsedQueueStubBackground}"
+                      BorderBrush="{Binding CollapsedQueueStubBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="14,12"
+                      Margin="0,12,0,0"
+                      IsVisible="{Binding ShowCollapsedApplyResultStub}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button HorizontalContentAlignment="Stretch"
+                          Padding="0"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Command="{Binding ToggleQueueDrawerCommand}">
+                    <StackPanel Spacing="4">
+                      <TextBlock FontWeight="SemiBold"
+                                 Text="{Binding CollapsedQueueStubTitle}" />
+                      <TextBlock FontSize="12"
+                                 Opacity="0.82"
+                                 TextWrapping="Wrap"
+                                 Text="{Binding CollapsedQueueStubSummary}" />
+                    </StackPanel>
+                  </Button>
+
+                  <Button Grid.Column="1"
+                          Margin="14,0,0,0"
+                          VerticalAlignment="Center"
+                          Command="{Binding DismissApplyResultCommand}"
+                          Content="Dismiss" />
+                </Grid>
+              </Border>
+
+              <Border Grid.Row="2"
                       Background="#161B21"
                       CornerRadius="10"
                       Padding="18"
                       Margin="0,12,0,0"
-                      MinHeight="260">
+                      MinHeight="260"
+                      IsVisible="{Binding ShowExpandedQueuePanel}">
                 <Grid RowDefinitions="Auto,*">
                   <Border Background="#1A2027"
                           CornerRadius="10"
@@ -985,6 +1435,9 @@
                       <WrapPanel Grid.Column="1"
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Center">
+                        <Button Classes="toolbar-chip"
+                                Command="{Binding ToggleQueueDrawerCommand}"
+                                Content="Collapse" />
                         <Button Classes="toolbar-chip"
                                 Command="{Binding RemoveQueuedActionCommand}"
                                 Content="Remove Selected" />
@@ -1416,8 +1869,7 @@
                   </Grid>
                 </Grid>
               </Border>
-              </Grid>
-            </ScrollViewer>
+            </Grid>
           </Border>
 
           <Border Background="#3A1E24"

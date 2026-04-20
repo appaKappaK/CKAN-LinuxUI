@@ -238,6 +238,65 @@ namespace CKAN.LinuxGUI.VisualTests
             VisualTestSupport.CaptureAndAssert(window, "browser-display-scale");
         }
 
+        [AvaloniaTest]
+        public async Task CatalogLoadingSkeleton_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new DelayedModCatalogService(listDelayMs: 1500);
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await WaitForAsync(() => viewModel.ShowCatalogSkeleton);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-loading");
+        }
+
+        [AvaloniaTest]
+        public async Task DetailsLoadingState_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new DelayedModCatalogService(detailsDelayMs: 300);
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(180);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+            await WaitForAsync(() => viewModel.IsSelectedModLoading);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-details-loading");
+        }
+
+        private static async Task WaitForAsync(Func<bool> condition,
+                                               int        timeoutMs = 1000)
+        {
+            int waited = 0;
+            while (!condition() && waited < timeoutMs)
+            {
+                await Task.Delay(20);
+                waited += 20;
+            }
+
+            Assert.That(condition(), Is.True, "Timed out waiting for the expected visual state.");
+        }
+
         private sealed class ErrorGameInstanceServiceWrapper : CKAN.App.Services.IGameInstanceService
         {
             private readonly FakeGameInstanceService inner;

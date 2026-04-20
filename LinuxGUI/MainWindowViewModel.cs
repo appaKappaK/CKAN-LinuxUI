@@ -75,10 +75,15 @@ namespace CKAN.LinuxGUI
         private bool    isRefreshing;
         private bool    hasSelectedInstance;
         private bool    isCatalogLoading;
+        private bool    isSelectedModLoading;
         private bool    isPreviewLoading;
         private bool    isApplyingChanges;
         private bool    showAdvancedFilters;
         private bool    showDisplaySettings;
+        private bool    showDetailsPane = true;
+        private bool    uiScaleRestartStripDismissed;
+        private bool    isQueueDrawerExpanded;
+        private bool    queueDrawerStickyCollapsed;
         private bool    previewCanApply;
         private bool    selectedModIsInstalled;
         private bool    selectedModHasUpdate;
@@ -87,6 +92,7 @@ namespace CKAN.LinuxGUI
         private bool    selectedModHasReplacement;
         private int     appliedUiScalePercent;
         private double  pendingUiScalePercent;
+        private int     selectedModLoadRequestId;
         private InstanceSummary? selectedInstance;
         private ModListItem?     selectedMod;
         private QueuedActionModel? selectedQueuedAction;
@@ -130,6 +136,7 @@ namespace CKAN.LinuxGUI
             selectedSortOption = SortOptions[0];
             appliedUiScalePercent = UiScaleSettings.NormalizePercent(appSettingsService.UiScalePercent);
             pendingUiScalePercent = appliedUiScalePercent;
+            showDetailsPane = appSettingsService.WindowState.ShowDetailsPane ?? true;
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing)
                                  .CombineLatest(this.WhenAnyValue(vm => vm.IsApplyingChanges),
@@ -189,10 +196,18 @@ namespace CKAN.LinuxGUI
             ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearFilters);
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
             ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
+            ToggleDetailsPaneCommand = ReactiveCommand.Create(ToggleDetailsPane);
             ResetUiScaleCommand = ReactiveCommand.Create(ResetUiScale);
+            DismissUiScaleRestartStripCommand = ReactiveCommand.Create(DismissUiScaleRestartStrip);
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
                                                                           canRestartForUiScale);
             ApplyChangesCommand = ReactiveCommand.CreateFromTask(ApplyQueuedChangesAsync, canApplyChanges);
+            ToggleQueueDrawerCommand = ReactiveCommand.Create(ToggleQueueDrawer);
+            ApplyChangesFromCollapsedQueueCommand = ReactiveCommand.CreateFromTask(ApplyChangesFromCollapsedQueueAsync,
+                                                                                   canApplyChanges);
+            DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
+            PrimarySelectedModActionCommand = ReactiveCommand.Create(ExecutePrimarySelectedModAction,
+                                                                     this.WhenAnyValue(vm => vm.ShowPrimarySelectedModAction));
             canUseSelectedInstance = canUseSelected
                 .ToProperty(this, vm => vm.CanUseSelectedInstance);
 
@@ -304,11 +319,23 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ToggleDisplaySettingsCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ToggleDetailsPaneCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ResetUiScaleCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> DismissUiScaleRestartStripCommand { get; }
 
         public ReactiveCommand<Unit, Unit> RestartToApplyUiScaleCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ApplyChangesCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleQueueDrawerCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ApplyChangesFromCollapsedQueueCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> DismissApplyResultCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> PrimarySelectedModActionCommand { get; }
 
         public StartupStage StartupStage
         {
@@ -321,6 +348,14 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(NeedsSelection));
                 this.RaisePropertyChanged(nameof(IsReady));
                 this.RaisePropertyChanged(nameof(HasError));
+                this.RaisePropertyChanged(nameof(ShowLegacyHeader));
+                this.RaisePropertyChanged(nameof(ShowReadyHeader));
+                this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
+                this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
+                this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
+                this.RaisePropertyChanged(nameof(ShowLegacyShell));
+                this.RaisePropertyChanged(nameof(ShowReadyShell));
+                this.RaisePropertyChanged(nameof(LegacySidebarWidth));
                 this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
                 this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
             }
@@ -550,6 +585,22 @@ namespace CKAN.LinuxGUI
         public bool IsReady => StartupStage == StartupStage.Ready;
         public bool HasError => StartupStage == StartupStage.Error;
 
+        public bool ShowLegacyHeader => !IsReady;
+
+        public bool ShowReadyHeader => IsReady;
+
+        public bool ShowHeaderStagePill => !IsReady;
+
+        public bool ShowHeaderInstanceSwitcher => IsReady && InstanceCount > 1;
+
+        public bool ShowPassiveHeaderInstanceLabel => IsReady && InstanceCount <= 1;
+
+        public bool ShowLegacyShell => !IsReady;
+
+        public bool ShowReadyShell => IsReady;
+
+        public double LegacySidebarWidth => ShowLegacyShell ? 220 : 0;
+
         public bool HasInstances => InstanceCount > 0;
 
         public bool HasCurrentInstance => !string.IsNullOrWhiteSpace(gameInstanceService.CurrentInstance?.Name);
@@ -585,19 +636,63 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref isCatalogLoading, value);
+                this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
                 this.RaisePropertyChanged(nameof(ShowEmptyModResults));
             }
         }
 
         public bool HasMods => Mods.Count > 0;
 
+        public bool ShowCatalogSkeleton => IsCatalogLoading;
+
+        public bool ShowModList => !IsCatalogLoading && HasMods;
+
         public bool ShowEmptyModResults => !IsCatalogLoading && Mods.Count == 0;
 
         public bool HasSelectedMod => SelectedMod != null;
 
+        public bool IsSelectedModLoading
+        {
+            get => isSelectedModLoading;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref isSelectedModLoading, value);
+                PublishSelectedModDisplayState();
+                PublishSelectedModActionState();
+            }
+        }
+
+        public bool ShowSelectedModPlaceholder => !HasSelectedMod && !IsSelectedModLoading;
+
+        public bool ShowSelectedModLoadingState => HasSelectedMod && IsSelectedModLoading;
+
+        public bool ShowSelectedModContent => HasSelectedMod && !IsSelectedModLoading;
+
+        public string SelectedModLoadingTitle
+            => SelectedMod == null
+                ? "Loading mod details…"
+                : $"Loading {SelectedMod.Name}…";
+
         public bool HasQueuedActions => QueuedActions.Count > 0;
 
         public bool ShowEmptyQueueState => !HasQueuedActions;
+
+        public bool IsQueueDrawerExpanded
+        {
+            get => isQueueDrawerExpanded;
+            private set => this.RaiseAndSetIfChanged(ref isQueueDrawerExpanded, value);
+        }
+
+        public bool ShowEmptyQueueStub => !HasQueuedActions && !HasApplyResult;
+
+        public bool ShowCollapsedQueuedActionsStub
+            => !IsQueueDrawerExpanded && HasQueuedActions;
+
+        public bool ShowCollapsedApplyResultStub
+            => !IsQueueDrawerExpanded && !HasQueuedActions && HasApplyResult;
+
+        public bool ShowExpandedQueuePanel
+            => IsQueueDrawerExpanded && (HasQueuedActions || HasApplyResult);
 
         public bool HasPreviewDownloadsRequired => PreviewDownloadsRequired.Count > 0;
 
@@ -641,6 +736,16 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public bool ShowDetailsPane
+        {
+            get => showDetailsPane;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref showDetailsPane, value);
+                this.RaisePropertyChanged(nameof(DetailsPaneToggleLabel));
+            }
+        }
+
         public int AppliedUiScalePercent => appliedUiScalePercent;
 
         public double AppliedUiScaleFactor => UiScaleSettings.ToFactor(appliedUiScalePercent);
@@ -656,12 +761,15 @@ namespace CKAN.LinuxGUI
                     return;
                 }
 
+                uiScaleRestartStripDismissed = false;
                 this.RaiseAndSetIfChanged(ref pendingUiScalePercent, normalized);
                 appSettingsService.SaveUiScalePercent(normalized);
                 this.RaisePropertyChanged(nameof(PendingUiScaleLabel));
                 this.RaisePropertyChanged(nameof(DisplayScaleSummary));
                 this.RaisePropertyChanged(nameof(DisplayScaleHint));
                 this.RaisePropertyChanged(nameof(UiScaleNeedsRestart));
+                this.RaisePropertyChanged(nameof(ShowUiScaleRestartStrip));
+                this.RaisePropertyChanged(nameof(UiScaleRestartStripText));
                 this.RaisePropertyChanged(nameof(ShowResetUiScaleAction));
             }
         }
@@ -691,10 +799,29 @@ namespace CKAN.LinuxGUI
         public string DisplaySettingsToggleLabel
             => ShowDisplaySettings ? "Hide" : "Adjust";
 
+        public string DetailsPaneToggleLabel
+            => ShowDetailsPane ? "Hide Details" : "Show Details";
+
+        public bool ShowUiScaleRestartStrip
+            => UiScaleNeedsRestart && !uiScaleRestartStripDismissed;
+
+        public string UiScaleRestartStripText
+            => $"Current scale {AppliedUiScalePercent}%. Next launch scale {PendingUiScaleLabel}.";
+
         public bool HasActiveAdvancedFilters
             => !string.IsNullOrWhiteSpace(AdvancedAuthorFilter)
                || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter)
                || FilterHasReplacementOnly;
+
+        public int ActiveAdvancedFilterCount
+            => (string.IsNullOrWhiteSpace(AdvancedAuthorFilter) ? 0 : 1)
+               + (string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter) ? 0 : 1)
+               + (FilterHasReplacementOnly ? 1 : 0);
+
+        public string MoreFiltersLabel
+            => ActiveAdvancedFilterCount > 0
+                ? $"More Filters ({ActiveAdvancedFilterCount})"
+                : "More Filters ▾";
 
         public bool HasActiveFilters
             => !string.IsNullOrWhiteSpace(ModSearchText)
@@ -738,17 +865,57 @@ namespace CKAN.LinuxGUI
         }
 
         public bool ShowInstallAction => SelectedMod != null
+                                         && !IsSelectedModLoading
                                          && !SelectedMod.IsInstalled
                                          && !SelectedMod.IsIncompatible;
 
         public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
+                                        && !IsSelectedModLoading
                                         && SelectedMod.HasUpdate;
 
-        public bool ShowRemoveAction => SelectedMod?.IsInstalled == true;
+        public bool ShowRemoveAction => SelectedMod?.IsInstalled == true
+                                        && !IsSelectedModLoading
+                                        && !SelectedMod.HasUpdate;
 
         public bool HasSelectedModQueuedAction
             => SelectedMod != null
                && changesetService.FindQueuedAction(SelectedMod.Identifier) != null;
+
+        public bool ShowPrimarySelectedModAction
+            => !IsSelectedModLoading
+               && (HasSelectedModQueuedAction
+               || ShowInstallAction
+               || ShowUpdateAction
+               || ShowRemoveAction);
+
+        public string PrimarySelectedModActionLabel
+        {
+            get
+            {
+                var queued = SelectedMod == null
+                    ? null
+                    : changesetService.FindQueuedAction(SelectedMod.Identifier);
+                if (queued != null)
+                {
+                    return $"Cancel {queued.ActionText}";
+                }
+
+                if (ShowInstallAction)
+                {
+                    return "Queue Install";
+                }
+                if (ShowUpdateAction)
+                {
+                    return "Queue Update";
+                }
+                if (ShowRemoveAction)
+                {
+                    return "Queue Remove";
+                }
+
+                return "";
+            }
+        }
 
         public bool SelectedModIsInstalled
         {
@@ -926,6 +1093,30 @@ namespace CKAN.LinuxGUI
         public string PreviewAttentionCountLabel
             => CountLabel(PreviewAttentionNotes.Count, "Attention Note", "Attention Notes");
 
+        public string CollapsedQueueStubTitle
+            => HasQueuedActions
+                ? QueueCountLabel
+                : HasApplyResult
+                    ? ApplyResultTitle
+                    : "No pending changes";
+
+        public string CollapsedQueueStubSummary
+            => HasQueuedActions
+                ? $"{PreviewStatusLabel} • {PreviewImpactSummary}"
+                : HasApplyResult
+                    ? ApplyResultMessage
+                    : "Queue install, update, or remove actions to preview changes.";
+
+        public string CollapsedQueueStubBackground
+            => HasQueuedActions
+                ? "#161B21"
+                : ApplyResultBackground;
+
+        public string CollapsedQueueStubBorderBrush
+            => HasQueuedActions
+                ? "#2B323C"
+                : ApplyResultBorderBrush;
+
         public string SelectedModQueueStatus
         {
             get
@@ -1020,6 +1211,9 @@ namespace CKAN.LinuxGUI
                 _ => $"{InstanceCount} registered instances",
             };
 
+        public string InstanceSwitchDiscardPrompt
+            => $"You have {QueuedActions.Count} queued change{(QueuedActions.Count == 1 ? "" : "s")} for {CurrentInstanceName}. Switching installs will discard them.";
+
         public string ModCountLabel
             => IsCatalogLoading
                 ? "Loading…"
@@ -1053,6 +1247,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref selectedMod, value);
                 this.RaisePropertyChanged(nameof(HasSelectedMod));
+                PublishSelectedModDisplayState();
                 PublishSelectedModActionState();
                 _ = LoadModDetailsAsync(value?.Identifier);
             }
@@ -1121,6 +1316,30 @@ namespace CKAN.LinuxGUI
             {
                 IsRefreshing = false;
             }
+        }
+
+        public async Task<bool> TrySwitchSelectedInstanceAsync(Func<string, Task<bool>> confirmDiscardQueueAsync)
+        {
+            if (!IsReady || SelectedInstance == null || SelectedInstance.IsCurrent)
+            {
+                return false;
+            }
+
+            var target = SelectedInstance;
+            if (HasQueuedActions)
+            {
+                bool confirmed = await confirmDiscardQueueAsync(InstanceSwitchDiscardPrompt);
+                if (!confirmed)
+                {
+                    SelectedInstance = Instances.FirstOrDefault(inst => inst.IsCurrent) ?? target;
+                    return false;
+                }
+
+                DiscardQueuedActionsForInstanceSwitch();
+            }
+
+            await SetCurrentInstanceAsync();
+            return true;
         }
 
         private void ReloadInstances()
@@ -1220,15 +1439,23 @@ namespace CKAN.LinuxGUI
 
         private async Task LoadModDetailsAsync(string? identifier)
         {
+            int requestId = ++selectedModLoadRequestId;
             if (string.IsNullOrWhiteSpace(identifier) || !IsReady)
             {
+                IsSelectedModLoading = false;
                 ResetSelectedModDetails();
                 return;
             }
 
+            IsSelectedModLoading = true;
             try
             {
                 var details = await modCatalogService.GetModDetailsAsync(identifier, CancellationToken.None);
+                if (!IsCurrentSelectedModRequest(identifier, requestId))
+                {
+                    return;
+                }
+
                 if (details == null)
                 {
                     ResetSelectedModDetails();
@@ -1264,6 +1491,11 @@ namespace CKAN.LinuxGUI
             }
             catch (Exception ex)
             {
+                if (!IsCurrentSelectedModRequest(identifier, requestId))
+                {
+                    return;
+                }
+
                 Diagnostics = ex.Message;
                 SelectedModTitle = "Could not load details";
                 SelectedModSubtitle = identifier;
@@ -1285,6 +1517,13 @@ namespace CKAN.LinuxGUI
                 SelectedModIsIncompatible = false;
                 SelectedModHasReplacement = false;
                 SelectedModBody = "The selected mod failed to load its details.";
+            }
+            finally
+            {
+                if (IsCurrentSelectedModRequest(identifier, requestId))
+                {
+                    IsSelectedModLoading = false;
+                }
             }
         }
 
@@ -1378,8 +1617,91 @@ namespace CKAN.LinuxGUI
         private void ToggleDisplaySettings()
             => ShowDisplaySettings = !ShowDisplaySettings;
 
+        private void ToggleDetailsPane()
+            => ShowDetailsPane = !ShowDetailsPane;
+
         private void ResetUiScale()
             => PendingUiScalePercent = UiScaleSettings.DefaultPercent;
+
+        private void DismissUiScaleRestartStrip()
+        {
+            uiScaleRestartStripDismissed = true;
+            this.RaisePropertyChanged(nameof(ShowUiScaleRestartStrip));
+        }
+
+        private void ToggleQueueDrawer()
+        {
+            if (!HasQueuedActions && !HasApplyResult)
+            {
+                return;
+            }
+
+            if (IsQueueDrawerExpanded)
+            {
+                if (HasQueuedActions)
+                {
+                    queueDrawerStickyCollapsed = true;
+                }
+                IsQueueDrawerExpanded = false;
+            }
+            else
+            {
+                queueDrawerStickyCollapsed = false;
+                IsQueueDrawerExpanded = true;
+            }
+
+            PublishQueueStateLabels();
+        }
+
+        private async Task ApplyChangesFromCollapsedQueueAsync()
+        {
+            queueDrawerStickyCollapsed = false;
+            IsQueueDrawerExpanded = true;
+            PublishQueueStateLabels();
+            await ApplyQueuedChangesAsync();
+        }
+
+        private void DismissApplyResult()
+        {
+            ClearApplyResult();
+            if (!HasQueuedActions)
+            {
+                IsQueueDrawerExpanded = false;
+                PublishQueueStateLabels();
+            }
+        }
+
+        private void ExecutePrimarySelectedModAction()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            var queued = changesetService.FindQueuedAction(SelectedMod.Identifier);
+            if (queued != null)
+            {
+                ClearApplyResult();
+                if (changesetService.Remove(queued.Identifier))
+                {
+                    StatusMessage = $"Removed queued {queued.ActionText.ToLowerInvariant()} for {SelectedMod.Name}.";
+                }
+                return;
+            }
+
+            if (ShowInstallAction)
+            {
+                QueueInstallSelected();
+            }
+            else if (ShowUpdateAction)
+            {
+                QueueUpdateSelected();
+            }
+            else if (ShowRemoveAction)
+            {
+                QueueRemoveSelected();
+            }
+        }
 
         private void ClearAdvancedFilters()
         {
@@ -1449,6 +1771,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasInstances));
             this.RaisePropertyChanged(nameof(HasCurrentInstance));
             this.RaisePropertyChanged(nameof(InstanceCountLabel));
+            this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
+            this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
             this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
             this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
             this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));
@@ -1522,9 +1846,18 @@ namespace CKAN.LinuxGUI
             StatusMessage = "Cleared all queued actions.";
         }
 
+        private void DiscardQueuedActionsForInstanceSwitch()
+        {
+            ClearApplyResult();
+            changesetService.Clear();
+            RefreshQueuedActions();
+            ResetPreviewState();
+        }
+
         private void RefreshQueuedActions()
         {
             var previousSelection = SelectedQueuedAction?.Identifier;
+            var previousCount = QueuedActions.Count;
 
             QueuedActions.Clear();
             foreach (var item in changesetService.CurrentQueue)
@@ -1535,6 +1868,21 @@ namespace CKAN.LinuxGUI
             SelectedQueuedAction = previousSelection != null
                 ? QueuedActions.FirstOrDefault(item => item.Identifier == previousSelection) ?? QueuedActions.FirstOrDefault()
                 : QueuedActions.FirstOrDefault();
+
+            if (previousCount == 0 && QueuedActions.Count > 0)
+            {
+                queueDrawerStickyCollapsed = false;
+                IsQueueDrawerExpanded = true;
+            }
+            else if (QueuedActions.Count == 0)
+            {
+                queueDrawerStickyCollapsed = false;
+                IsQueueDrawerExpanded = false;
+            }
+            else if (queueDrawerStickyCollapsed)
+            {
+                IsQueueDrawerExpanded = false;
+            }
 
             PublishQueueStateLabels();
             PublishSelectedModActionState();
@@ -1647,21 +1995,43 @@ namespace CKAN.LinuxGUI
         {
             this.RaisePropertyChanged(nameof(HasMods));
             this.RaisePropertyChanged(nameof(ModCountLabel));
+            this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
+            this.RaisePropertyChanged(nameof(ShowModList));
             this.RaisePropertyChanged(nameof(ShowEmptyModResults));
+        }
+
+        private void PublishSelectedModDisplayState()
+        {
+            this.RaisePropertyChanged(nameof(ShowSelectedModPlaceholder));
+            this.RaisePropertyChanged(nameof(ShowSelectedModLoadingState));
+            this.RaisePropertyChanged(nameof(ShowSelectedModContent));
+            this.RaisePropertyChanged(nameof(SelectedModLoadingTitle));
         }
 
         private void PublishFilterStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasActiveAdvancedFilters));
+            this.RaisePropertyChanged(nameof(ActiveAdvancedFilterCount));
             this.RaisePropertyChanged(nameof(HasActiveFilters));
             this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
+            this.RaisePropertyChanged(nameof(MoreFiltersLabel));
         }
 
         private void PublishQueueStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasQueuedActions));
+            this.RaisePropertyChanged(nameof(IsQueueDrawerExpanded));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueState));
+            this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
+            this.RaisePropertyChanged(nameof(ShowCollapsedQueuedActionsStub));
+            this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
+            this.RaisePropertyChanged(nameof(ShowExpandedQueuePanel));
             this.RaisePropertyChanged(nameof(QueueCountLabel));
+            this.RaisePropertyChanged(nameof(InstanceSwitchDiscardPrompt));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubTitle));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubBackground));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubBorderBrush));
             this.RaisePropertyChanged(nameof(PreviewShowsEmptyCard));
             this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
             this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
@@ -1677,6 +2047,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowUpdateAction));
             this.RaisePropertyChanged(nameof(ShowRemoveAction));
             this.RaisePropertyChanged(nameof(HasSelectedModQueuedAction));
+            this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
+            this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
             this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
         }
 
@@ -1702,6 +2074,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewAutoRemovalCountLabel));
             this.RaisePropertyChanged(nameof(PreviewConflictCountLabel));
             this.RaisePropertyChanged(nameof(PreviewAttentionCountLabel));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
         }
 
         private void SetApplyResult(ApplyChangesResult result)
@@ -1740,6 +2113,13 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasApplyResult));
             this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
             this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
+            this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
+            this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
+            this.RaisePropertyChanged(nameof(ShowExpandedQueuePanel));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubTitle));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubBackground));
+            this.RaisePropertyChanged(nameof(CollapsedQueueStubBorderBrush));
         }
 
         private void ResetPreviewState()
@@ -1793,6 +2173,11 @@ namespace CKAN.LinuxGUI
 
             return string.Join(" • ", parts);
         }
+
+        private bool IsCurrentSelectedModRequest(string identifier,
+                                                 int    requestId)
+            => requestId == selectedModLoadRequestId
+               && string.Equals(identifier, SelectedMod?.Identifier, StringComparison.OrdinalIgnoreCase);
 
         private static string CountLabel(int count,
                                          string singular,

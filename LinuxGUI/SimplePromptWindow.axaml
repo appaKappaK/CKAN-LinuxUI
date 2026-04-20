@@ -23,9 +23,9 @@
                 Spacing="12"
                 Margin="0,20,0,0">
       <Button Click="CancelButton_OnClick"
-              Content="Cancel" />
+              Content="{Binding CancelLabel}" />
       <Button Click="ConfirmButton_OnClick"
-              Content="OK" />
+              Content="{Binding ConfirmLabel}" />
     </StackPanel>
   </Grid>
 </Window>

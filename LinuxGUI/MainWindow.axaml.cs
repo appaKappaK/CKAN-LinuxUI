@@ -1,7 +1,9 @@
 using System;
+using System.Threading.Tasks;
 
 using Avalonia.Controls;
 using Avalonia;
+using Avalonia.Input;
 
 using CKAN.App.Models;
 using CKAN.App.Services;
@@ -11,6 +13,7 @@ namespace CKAN.LinuxGUI
     public partial class MainWindow : Window
     {
         private readonly IAppSettingsService? appSettings;
+        private bool suppressHeaderInstanceSelection;
 
         public MainWindow()
         {
@@ -112,7 +115,106 @@ namespace CKAN.LinuxGUI
                 PositionX   = positionX,
                 PositionY   = positionY,
                 IsMaximized = WindowState == WindowState.Maximized,
+                ShowDetailsPane = (DataContext as MainWindowViewModel)?.ShowDetailsPane,
             });
         }
+
+        private async void HeaderInstanceSwitcher_OnSelectionChanged(object? sender,
+                                                                     SelectionChangedEventArgs e)
+        {
+            if (suppressHeaderInstanceSelection || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            try
+            {
+                suppressHeaderInstanceSelection = true;
+                await viewModel.TrySwitchSelectedInstanceAsync(ConfirmDiscardQueueAndSwitchAsync);
+            }
+            finally
+            {
+                suppressHeaderInstanceSelection = false;
+            }
+        }
+
+        private async Task<bool> ConfirmDiscardQueueAndSwitchAsync(string prompt)
+        {
+            var dialog = new SimplePromptWindow(prompt,
+                                                Array.Empty<string>(),
+                                                "Discard Queue and Switch",
+                                                "Cancel");
+            return await dialog.ShowDialog<int>(this) == 0;
+        }
+
+        private void AdvancedFiltersPopup_OnOpened(object? sender,
+                                                   EventArgs e)
+        {
+            AdvancedAuthorFilterTextBox.Focus();
+            AdvancedAuthorFilterTextBox.SelectAll();
+        }
+
+        private void Window_OnKeyDown(object? sender,
+                                      KeyEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            bool editableTextFocused = IsEditableTextFocused();
+
+            if (e.Key == Key.Escape)
+            {
+                if (viewModel.ShowAdvancedFilters)
+                {
+                    viewModel.ShowAdvancedFilters = false;
+                    e.Handled = true;
+                    return;
+                }
+
+                if (viewModel.ShowDisplaySettings)
+                {
+                    viewModel.ShowDisplaySettings = false;
+                    e.Handled = true;
+                    return;
+                }
+
+                if (!editableTextFocused && viewModel.SelectedMod != null)
+                {
+                    viewModel.SelectedMod = null;
+                    e.Handled = true;
+                }
+
+                return;
+            }
+
+            if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.F)
+            {
+                if (editableTextFocused)
+                {
+                    return;
+                }
+
+                SearchTextBox.Focus();
+                SearchTextBox.SelectAll();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.B)
+            {
+                if (editableTextFocused)
+                {
+                    return;
+                }
+
+                viewModel.ToggleQueueDrawerCommand.Execute().Subscribe(_ => { });
+                e.Handled = true;
+            }
+        }
+
+        private bool IsEditableTextFocused()
+            => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
     }
 }

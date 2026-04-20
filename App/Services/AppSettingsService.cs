@@ -189,7 +189,8 @@ namespace CKAN.App.Services
                && left?.Height == right?.Height
                && left?.PositionX == right?.PositionX
                && left?.PositionY == right?.PositionY
-               && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false);
+               && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false)
+               && (left?.ShowDetailsPane ?? true) == (right?.ShowDetailsPane ?? true);
 
         private sealed class StoredSettings
         {

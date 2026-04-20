@@ -21,6 +21,8 @@ namespace CKAN.LinuxGUI.VisualTests
             "startup-ready-narrow.png",
             "browser-filtered.png",
             "browser-advanced-filters.png",
+            "browser-loading.png",
+            "browser-details-loading.png",
             "browser-display-scale.png",
             "browser-queued.png",
             "browser-applied.png",

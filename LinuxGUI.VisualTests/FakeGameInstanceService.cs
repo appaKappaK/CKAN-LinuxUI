@@ -114,6 +114,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 if (inst.Name == name)
                 {
                     CurrentInstance = CreateGameInstance(inst.Name);
+                    RebuildInstances(inst.Name);
                     CurrentInstanceChanged?.Invoke(CurrentInstance);
                     break;
                 }
@@ -163,6 +164,26 @@ namespace CKAN.LinuxGUI.VisualTests
             File.WriteAllText(Path.Combine(dir, "buildID64.txt"), "3190");
             File.WriteAllText(Path.Combine(dir, "readme.txt"), "Kerbal Space Program");
             return new GameInstance(new KerbalSpaceProgram(), dir, name, new NullUser());
+        }
+
+        private void RebuildInstances(string currentName)
+        {
+            var updated = new InstanceSummary[Instances.Count];
+            for (int i = 0; i < Instances.Count; i++)
+            {
+                var inst = Instances[i];
+                updated[i] = new InstanceSummary
+                {
+                    Name = inst.Name,
+                    GameDir = inst.Name == currentName && CurrentInstance != null
+                        ? CurrentInstance.GameDir
+                        : inst.GameDir,
+                    GameName = inst.GameName,
+                    IsCurrent = string.Equals(inst.Name, currentName, StringComparison.Ordinal),
+                };
+            }
+
+            Instances = updated;
         }
     }
 }

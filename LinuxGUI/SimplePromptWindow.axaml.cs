@@ -11,10 +11,13 @@ namespace CKAN.LinuxGUI
         {
         }
 
-        public SimplePromptWindow(string prompt, IReadOnlyList<string> options)
+        public SimplePromptWindow(string                prompt,
+                                  IReadOnlyList<string> options,
+                                  string                confirmLabel = "OK",
+                                  string                cancelLabel  = "Cancel")
         {
             InitializeComponent();
-            DataContext = new PromptViewModel(prompt, options);
+            DataContext = new PromptViewModel(prompt, options, confirmLabel, cancelLabel);
         }
 
         private void ConfirmButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -29,15 +32,24 @@ namespace CKAN.LinuxGUI
 
         private sealed class PromptViewModel
         {
-            public PromptViewModel(string prompt, IReadOnlyList<string> options)
+            public PromptViewModel(string                prompt,
+                                   IReadOnlyList<string> options,
+                                   string                confirmLabel,
+                                   string                cancelLabel)
             {
                 Prompt = prompt;
                 Options = options.Count > 0 ? options : new List<string> { "Yes", "No" };
+                ConfirmLabel = string.IsNullOrWhiteSpace(confirmLabel) ? "OK" : confirmLabel;
+                CancelLabel = string.IsNullOrWhiteSpace(cancelLabel) ? "Cancel" : cancelLabel;
             }
 
             public string Prompt { get; }
 
             public IReadOnlyList<string> Options { get; }
+
+            public string ConfirmLabel { get; }
+
+            public string CancelLabel { get; }
 
             public int SelectedIndex { get; set; }
         }
