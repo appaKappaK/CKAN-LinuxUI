@@ -5,6 +5,13 @@ set -euo pipefail
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 DEV_HOME=${CKAN_LINUX_DEV_HOME:-"$HOME/.ckan-linux-dev"}
+HOST_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
+DEV_DATA_HOME="$DEV_HOME/data"
+DEV_REPOS_DIR="$DEV_DATA_HOME/CKAN/repos"
+HOST_REPOS_DIR="$HOST_DATA_HOME/CKAN/repos"
+RUN_DIR="$DEV_HOME/run"
+DEV_LOG_CONFIG_SRC="$REPO_ROOT/LinuxGUI/log4net.linuxgui.dev.xml"
+DEV_LOG_CONFIG_DEST="$RUN_DIR/log4net.linuxgui.xml"
 
 BUILD_BIN="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGUI"
 BUILD_DLL="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGUI.dll"
@@ -67,11 +74,55 @@ EOF
     exit 1
 fi
 
-mkdir -p "$DEV_HOME/data" "$DEV_HOME/config" "$DEV_HOME/cache" "$DEV_HOME/run"
+mkdir -p "$DEV_DATA_HOME" "$DEV_HOME/config" "$DEV_HOME/cache" "$RUN_DIR" "$DEV_DATA_HOME/CKAN"
 
-export XDG_DATA_HOME="$DEV_HOME/data"
+if [[ ! -L "$DEV_REPOS_DIR" && -d "$HOST_REPOS_DIR" ]]; then
+    if [[ ! -e "$DEV_REPOS_DIR" ]]; then
+        ln -s "$HOST_REPOS_DIR" "$DEV_REPOS_DIR"
+    elif [[ -d "$DEV_REPOS_DIR" && -z "$(find "$DEV_REPOS_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+        rmdir "$DEV_REPOS_DIR"
+        ln -s "$HOST_REPOS_DIR" "$DEV_REPOS_DIR"
+    fi
+fi
+
+export XDG_DATA_HOME="$DEV_DATA_HOME"
 export XDG_CONFIG_HOME="$DEV_HOME/config"
 export XDG_CACHE_HOME="$DEV_HOME/cache"
 
-cd "$DEV_HOME/run"
+if [[ -f "$DEV_LOG_CONFIG_SRC" ]]; then
+    cp "$DEV_LOG_CONFIG_SRC" "$DEV_LOG_CONFIG_DEST"
+fi
+
+SESSION_STAMP=$(date +%Y%m%d-%H%M%S)
+SESSION_LOG="$RUN_DIR/ckan-linux-session-$SESSION_STAMP.log"
+LATEST_SESSION_LOG="$RUN_DIR/ckan-linux-session.log"
+LATEST_DEBUG_LOG="$RUN_DIR/ckan-linux-debug-latest.log"
+ln -sfn "$(basename "$SESSION_LOG")" "$LATEST_SESSION_LOG"
+ln -sfn "ckan-linux-debug.log" "$LATEST_DEBUG_LOG"
+
+cd "$RUN_DIR"
+exec > >(tee -a "$SESSION_LOG") 2>&1
+
+echo "==== CKAN Linux Dev Session ===="
+echo "timestamp: $(date --iso-8601=seconds)"
+echo "repo_root: $REPO_ROOT"
+echo "cwd: $RUN_DIR"
+echo "app_cmd: ${APP_CMD[*]} $*"
+echo "build_bin: $BUILD_BIN"
+echo "publish_bin: $PUBLISH_BIN"
+echo "package_bin: $PACKAGE_BIN"
+echo "xdg_data_home: $XDG_DATA_HOME"
+echo "xdg_config_home: $XDG_CONFIG_HOME"
+echo "xdg_cache_home: $XDG_CACHE_HOME"
+echo "dev_repos_dir: $DEV_REPOS_DIR"
+echo "host_repos_dir: $HOST_REPOS_DIR"
+if [[ -L "$DEV_REPOS_DIR" ]]; then
+    echo "dev_repos_link_target: $(readlink -f "$DEV_REPOS_DIR")"
+fi
+echo "session_log: $SESSION_LOG"
+echo "latest_session_log: $LATEST_SESSION_LOG"
+echo "debug_log: $RUN_DIR/ckan-linux-debug.log"
+echo "latest_debug_log: $LATEST_DEBUG_LOG"
+echo "==============================="
+
 exec "${APP_CMD[@]}" "$@"

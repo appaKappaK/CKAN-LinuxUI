@@ -392,12 +392,9 @@ namespace CKAN.App.Services
                             .ToList());
 
                     dependencyInstalls.AddRange(
-                        resolvedInstalls
-                            .Where(mod => !ContainsIdentifier(combinedInstalls, mod.identifier)
-                                          && !registry.IsInstalled(mod.identifier))
-                            .Select(FormatModule)
-                            .Distinct()
-                            .ToList());
+                        BuildDependencyInstalls(resolvedInstalls,
+                                                combinedInstalls,
+                                                registry));
 
                     autoRemovals.AddRange(
                         autoRemovalModules
@@ -525,6 +522,100 @@ namespace CKAN.App.Services
 
         private static string FormatModule(CkanModule module)
             => $"{module.name} ({module.identifier} {module.version})";
+
+        private static IReadOnlyList<string> BuildDependencyInstalls(IReadOnlyCollection<CkanModule> resolvedInstalls,
+                                                                     IReadOnlyCollection<CkanModule> requestedInstalls,
+                                                                     Registry                        registry)
+        {
+            var reverseDependencies = BuildReverseDependencyMap(resolvedInstalls);
+            var requestedRoots = requestedInstalls.ToDictionary(mod => mod.identifier,
+                                                                mod => mod,
+                                                                StringComparer.OrdinalIgnoreCase);
+
+            return resolvedInstalls
+                   .Where(mod => !requestedRoots.ContainsKey(mod.identifier)
+                                 && !registry.IsInstalled(mod.identifier))
+                   .Select(mod =>
+                   {
+                       var requiredBy = FindRequestedDependencyRoots(mod.identifier,
+                                                                     reverseDependencies,
+                                                                     requestedRoots);
+                       return requiredBy.Count > 0
+                           ? $"{FormatModule(mod)} required by {string.Join(", ", requiredBy)}"
+                           : FormatModule(mod);
+                   })
+                   .Distinct()
+                   .ToList();
+        }
+
+        private static Dictionary<string, HashSet<string>> BuildReverseDependencyMap(IReadOnlyCollection<CkanModule> modules)
+        {
+            var reverseDependencies = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var module in modules)
+            {
+                if (module.depends == null)
+                {
+                    continue;
+                }
+
+                foreach (var dependency in module.depends)
+                {
+                    if (!dependency.MatchesAny(modules, null, null, out var matched)
+                        || matched == null)
+                    {
+                        continue;
+                    }
+
+                    if (!reverseDependencies.TryGetValue(matched.identifier, out var dependers))
+                    {
+                        dependers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        reverseDependencies[matched.identifier] = dependers;
+                    }
+
+                    dependers.Add(module.identifier);
+                }
+            }
+
+            return reverseDependencies;
+        }
+
+        private static IReadOnlyList<string> FindRequestedDependencyRoots(
+            string                                  dependencyIdentifier,
+            IReadOnlyDictionary<string, HashSet<string>> reverseDependencies,
+            IReadOnlyDictionary<string, CkanModule> requestedRoots)
+        {
+            var pending = new Queue<string>();
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var requiredBy = new SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+
+            pending.Enqueue(dependencyIdentifier);
+            visited.Add(dependencyIdentifier);
+
+            while (pending.Count > 0)
+            {
+                var current = pending.Dequeue();
+                if (!reverseDependencies.TryGetValue(current, out var dependers))
+                {
+                    continue;
+                }
+
+                foreach (var dependerIdentifier in dependers)
+                {
+                    if (requestedRoots.TryGetValue(dependerIdentifier, out var requestedRoot))
+                    {
+                        requiredBy.Add(requestedRoot.name);
+                    }
+
+                    if (visited.Add(dependerIdentifier))
+                    {
+                        pending.Enqueue(dependerIdentifier);
+                    }
+                }
+            }
+
+            return requiredBy.ToList();
+        }
 
         private CkanModule? PromptForProvidedModule(Registry registry,
                                                     NetModuleCache cache,

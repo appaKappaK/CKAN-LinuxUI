@@ -31,7 +31,10 @@ namespace CKAN.App.Services
                 var items = BuildItems(context)
                     .Where(item => Matches(item, filter))
                     .ToList();
-                items = SortItems(items, filter.SortOption).ToList();
+                items = SortItems(items,
+                                  filter.SortOption,
+                                  filter.SortDescending ?? DefaultSortDescending(filter.SortOption))
+                    .ToList();
                 return (IReadOnlyList<ModListItem>)items;
             }, cancellationToken);
 
@@ -53,6 +56,9 @@ namespace CKAN.App.Services
                 var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
                 var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
                 var displayMod       = latestCompatible ?? latestAvailable ?? installed;
+                var downloadCount    = gameInstanceService.RepositoryData.GetDownloadCount(
+                    registry.Repositories.Values,
+                    identifier);
                 if (displayMod == null)
                 {
                     return null;
@@ -79,6 +85,7 @@ namespace CKAN.App.Services
                     DownloadSize     = displayMod.download_size > 0
                         ? CkanModule.FmtSize(displayMod.download_size)
                         : "Unknown",
+                    DownloadCount    = downloadCount,
                     DependencyCount     = displayMod.depends?.Count ?? 0,
                     RecommendationCount = displayMod.recommends?.Count ?? 0,
                     SuggestionCount     = displayMod.suggests?.Count ?? 0,
@@ -158,6 +165,9 @@ namespace CKAN.App.Services
                                          bool            hasUpdate,
                                          bool            incompatibleOverride)
         {
+            int? downloadCount = gameInstanceService.RepositoryData.GetDownloadCount(
+                context.Registry.Repositories.Values,
+                displayMod.identifier);
             bool isInstalled = installedModule != null || context.Registry.IsAutodetected(displayMod.identifier);
             bool isCached = IsCached(context, displayMod);
             bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
@@ -182,6 +192,8 @@ namespace CKAN.App.Services
                 Summary           = displayMod.@abstract?.Trim() ?? "",
                 LatestVersion     = displayMod.version.ToString(),
                 InstalledVersion  = installedModule?.version.ToString() ?? "",
+                DownloadCount     = downloadCount,
+                DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
                 HasUpdate         = hasUpdate,
                 IsIncompatible    = incompatibleOverride,
@@ -237,7 +249,15 @@ namespace CKAN.App.Services
             {
                 return false;
             }
+            if (filter.CompatibleOnly && item.IsIncompatible)
+            {
+                return false;
+            }
             if (filter.CachedOnly && !item.IsCached)
+            {
+                return false;
+            }
+            if (filter.UncachedOnly && item.IsCached)
             {
                 return false;
             }
@@ -292,7 +312,7 @@ namespace CKAN.App.Services
                             ? "#5C376D"
                             : isCached
                                 ? "#7A5B1E"
-                                : "#3B4653";
+                                : "#2A6B4A";
 
         private static string FormatStatusSummary(bool isInstalled,
                                                   bool hasUpdate,
@@ -314,36 +334,63 @@ namespace CKAN.App.Services
             {
                 parts.Add("Has replacement");
             }
-            if (!isInstalled && !hasUpdate && !isIncompatible && !isCached && !hasReplacement)
-            {
-                parts.Add("Not installed");
-            }
 
             return string.Join(" • ", parts);
         }
 
         private static IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items,
-                                                          ModSortOption         sortOption)
+                                                          ModSortOption         sortOption,
+                                                          bool                  descending)
             => sortOption switch
             {
                 ModSortOption.Author
-                    => items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Popularity
+                    => descending
+                        ? items.OrderByDescending(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.InstalledFirst
-                    => items.OrderByDescending(item => item.IsInstalled)
-                            .ThenByDescending(item => item.HasUpdate)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.UpdatesFirst
-                    => items.OrderByDescending(item => item.HasUpdate)
-                            .ThenByDescending(item => item.IsInstalled)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 _
-                    => items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
             };
+
+        private static bool DefaultSortDescending(ModSortOption sortOption)
+            => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.InstalledFirst
+               || sortOption == ModSortOption.UpdatesFirst;
 
         private bool IsCached(CatalogContext context, CkanModule module)
             => gameInstanceService.Manager.Cache != null

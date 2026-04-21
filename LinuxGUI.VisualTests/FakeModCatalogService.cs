@@ -21,6 +21,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary          = "Refreshes stock parts with a consistent art pass.",
                 LatestVersion    = "1.5.2",
                 InstalledVersion = "1.5.1",
+                DownloadCount    = 452318,
+                DownloadCountLabel = "452,318",
                 IsInstalled      = true,
                 HasUpdate        = true,
                 IsCached         = true,
@@ -36,6 +38,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary          = "Procedural surface scattering and planet terrain shading.",
                 LatestVersion    = "2.1.0",
                 InstalledVersion = "",
+                DownloadCount    = 1863579,
+                DownloadCountLabel = "1,863,579",
                 IsInstalled      = false,
                 HasUpdate        = false,
                 IsCached         = true,
@@ -51,6 +55,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary          = "Flight automation, maneuver planning, and vessel information.",
                 LatestVersion    = "2.14.3",
                 InstalledVersion = "2.14.3",
+                DownloadCount    = 893441,
+                DownloadCountLabel = "893,441",
                 IsInstalled      = true,
                 HasUpdate        = false,
                 IsCached         = false,
@@ -66,6 +72,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary          = "Life support, reliability, science, and long-duration mission systems.",
                 LatestVersion    = "3.19.1",
                 InstalledVersion = "",
+                DownloadCount    = 217604,
+                DownloadCountLabel = "217,604",
                 IsInstalled      = false,
                 HasUpdate        = false,
                 IsCached         = false,
@@ -81,6 +89,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary          = "Adds bounced planetary light to vessels and IVA scenes.",
                 LatestVersion    = "0.2.7.5",
                 InstalledVersion = "",
+                DownloadCount    = 625183,
+                DownloadCountLabel = "625,183",
                 IsInstalled      = false,
                 HasUpdate        = false,
                 IsCached         = true,
@@ -107,6 +117,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     License          = "CC-BY-NC-SA-4.0",
                     ReleaseDate      = "2025-01-14",
                     DownloadSize     = "128 MiB",
+                    DownloadCount    = 452318,
                     DependencyCount     = 2,
                     RecommendationCount = 1,
                     SuggestionCount     = 0,
@@ -130,6 +141,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     License          = "All rights reserved",
                     ReleaseDate      = "2024-11-08",
                     DownloadSize     = "412 MiB",
+                    DownloadCount    = 1863579,
                     DependencyCount     = 3,
                     RecommendationCount = 0,
                     SuggestionCount     = 1,
@@ -153,6 +165,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     License          = "GPL-3.0",
                     ReleaseDate      = "2024-06-22",
                     DownloadSize     = "19 MiB",
+                    DownloadCount    = 893441,
                     DependencyCount     = 1,
                     RecommendationCount = 0,
                     SuggestionCount     = 2,
@@ -176,6 +189,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     License          = "CC-BY-NC-SA-4.0",
                     ReleaseDate      = "2023-09-19",
                     DownloadSize     = "74 MiB",
+                    DownloadCount    = 217604,
                     DependencyCount     = 4,
                     RecommendationCount = 1,
                     SuggestionCount     = 1,
@@ -199,6 +213,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     License          = "MIT",
                     ReleaseDate      = "2022-03-12",
                     DownloadSize     = "6 MiB",
+                    DownloadCount    = 625183,
                     DependencyCount     = 1,
                     RecommendationCount = 0,
                     SuggestionCount     = 0,
@@ -215,7 +230,9 @@ namespace CKAN.LinuxGUI.VisualTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             var filtered = allMods.Where(item => Matches(item, filter));
-            var result = SortItems(filtered, filter.SortOption).ToList();
+            var result = SortItems(filtered,
+                                   filter.SortOption,
+                                   filter.SortDescending ?? DefaultSortDescending(filter.SortOption)).ToList();
             return Task.FromResult((IReadOnlyList<ModListItem>)result);
         }
 
@@ -273,6 +290,14 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 return false;
             }
+            if (filter.UncachedOnly && item.IsCached)
+            {
+                return false;
+            }
+            if (filter.CompatibleOnly && item.IsIncompatible)
+            {
+                return false;
+            }
             if (filter.IncompatibleOnly && !item.IsIncompatible)
             {
                 return false;
@@ -311,7 +336,7 @@ namespace CKAN.LinuxGUI.VisualTests
                             ? "#5C376D"
                             : item.IsCached
                                 ? "#7A5B1E"
-                                : "#3B4653";
+                                : "#2A6B4A";
 
             var parts = new List<string>();
             if (item.HasUpdate)
@@ -326,10 +351,6 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 parts.Add("Has replacement");
             }
-            if (!item.IsInstalled && !item.HasUpdate && !item.IsIncompatible && !item.IsCached && !item.HasReplacement)
-            {
-                parts.Add("Not installed");
-            }
 
             string statusSummary = string.Join(" • ", parts);
 
@@ -341,6 +362,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Summary = item.Summary,
                 LatestVersion = item.LatestVersion,
                 InstalledVersion = item.InstalledVersion,
+                DownloadCount = item.DownloadCount,
+                DownloadCountLabel = item.DownloadCountLabel,
                 IsInstalled = item.IsInstalled,
                 HasUpdate = item.HasUpdate,
                 IsIncompatible = item.IsIncompatible,
@@ -355,26 +378,57 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         private static IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items,
-                                                          ModSortOption         sortOption)
+                                                          ModSortOption         sortOption,
+                                                          bool                  descending)
             => sortOption switch
             {
                 ModSortOption.Author
-                    => items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Popularity
+                    => descending
+                        ? items.OrderByDescending(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.InstalledFirst
-                    => items.OrderByDescending(item => item.IsInstalled)
-                            .ThenByDescending(item => item.HasUpdate)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.UpdatesFirst
-                    => items.OrderByDescending(item => item.HasUpdate)
-                            .ThenByDescending(item => item.IsInstalled)
-                            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 _
-                    => items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                    => descending
+                        ? items.OrderByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
             };
+
+        private static bool DefaultSortDescending(ModSortOption sortOption)
+            => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.InstalledFirst
+               || sortOption == ModSortOption.UpdatesFirst;
     }
 }

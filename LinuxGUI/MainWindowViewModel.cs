@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -20,6 +21,14 @@ namespace CKAN.LinuxGUI
 {
     public sealed class MainWindowViewModel : ReactiveObject
     {
+        private enum ModDetailsSection
+        {
+            Overview,
+            Metadata,
+            Relationships,
+            Description,
+        }
+
         private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
         private readonly IModCatalogService   modCatalogService;
@@ -28,6 +37,7 @@ namespace CKAN.LinuxGUI
         private readonly IModActionService    modActionService;
         private readonly AvaloniaUser         user;
         private readonly ObservableAsPropertyHelper<bool> canUseSelectedInstance;
+        private readonly SemaphoreSlim        catalogLoadSemaphore = new SemaphoreSlim(1, 1);
 
         private string? currentInstanceName = "Loading…";
         private string  statusMessage       = "Preparing the Linux shell…";
@@ -43,6 +53,7 @@ namespace CKAN.LinuxGUI
         private string  advancedAuthorFilter = "";
         private string  advancedCompatibilityFilter = "";
         private SortOptionItem? selectedSortOption;
+        private bool    sortDescending;
         private string  catalogStatusMessage = "Select an instance to load the mod catalog.";
         private string  selectedModTitle     = "No mod selected";
         private string  selectedModSubtitle  = "Choose a mod to inspect its details.";
@@ -54,6 +65,7 @@ namespace CKAN.LinuxGUI
         private string  selectedModLicense = "";
         private string  selectedModReleaseDate = "";
         private string  selectedModDownloadSize = "";
+        private string  selectedModDownloadCount = "";
         private string  selectedModRelationships = "";
         private string  selectedModDependencyCountLabel = "";
         private string  selectedModRecommendationCountLabel = "";
@@ -69,7 +81,9 @@ namespace CKAN.LinuxGUI
         private bool    filterInstalledOnly;
         private bool    filterNotInstalledOnly;
         private bool    filterUpdatableOnly;
+        private bool    filterCompatibleOnly;
         private bool    filterCachedOnly;
+        private bool    filterUncachedOnly;
         private bool    filterIncompatibleOnly;
         private bool    filterHasReplacementOnly;
         private bool    isRefreshing;
@@ -78,6 +92,7 @@ namespace CKAN.LinuxGUI
         private bool    isSelectedModLoading;
         private bool    isPreviewLoading;
         private bool    isApplyingChanges;
+        private bool    showSortOptions;
         private bool    showAdvancedFilters;
         private bool    showDisplaySettings;
         private bool    showDetailsPane = true;
@@ -92,7 +107,11 @@ namespace CKAN.LinuxGUI
         private bool    selectedModHasReplacement;
         private int     appliedUiScalePercent;
         private double  pendingUiScalePercent;
+        private int     catalogLoadRequestId;
         private int     selectedModLoadRequestId;
+        private int     modListScrollResetRequestId;
+        private bool    pendingModListScrollReset;
+        private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
         private InstanceSummary? selectedInstance;
         private ModListItem?     selectedMod;
         private QueuedActionModel? selectedQueuedAction;
@@ -130,10 +149,12 @@ namespace CKAN.LinuxGUI
             {
                 new SortOptionItem { Value = ModSortOption.Name, Label = "Name" },
                 new SortOptionItem { Value = ModSortOption.Author, Label = "Author" },
+                new SortOptionItem { Value = ModSortOption.Popularity, Label = "Popularity" },
                 new SortOptionItem { Value = ModSortOption.InstalledFirst, Label = "Installed First" },
                 new SortOptionItem { Value = ModSortOption.UpdatesFirst, Label = "Updates First" },
             };
             selectedSortOption = SortOptions[0];
+            sortDescending = DefaultSortDescending(ModSortOption.Name);
             appliedUiScalePercent = UiScaleSettings.NormalizePercent(appSettingsService.UiScalePercent);
             pendingUiScalePercent = appliedUiScalePercent;
             showDetailsPane = appSettingsService.WindowState.ShowDetailsPane ?? true;
@@ -193,6 +214,7 @@ namespace CKAN.LinuxGUI
             RemoveQueuedActionCommand = ReactiveCommand.Create(RemoveSelectedQueuedAction, canRemoveQueuedAction);
             ClearQueueCommand = ReactiveCommand.Create(ClearQueuedActions, canClearQueue);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
+            ToggleSortOptionsCommand = ReactiveCommand.Create(ToggleSortOptions);
             ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearFilters);
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
             ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
@@ -208,6 +230,15 @@ namespace CKAN.LinuxGUI
             DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
             PrimarySelectedModActionCommand = ReactiveCommand.Create(ExecutePrimarySelectedModAction,
                                                                      this.WhenAnyValue(vm => vm.ShowPrimarySelectedModAction));
+            ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
+            ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
+            ShowRelationshipsDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Relationships));
+            ShowDescriptionDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Description));
+            SelectNameSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Name));
+            SelectAuthorSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Author));
+            SelectPopularitySortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Popularity));
+            SelectInstalledFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.InstalledFirst));
+            SelectUpdatesFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.UpdatesFirst));
             canUseSelectedInstance = canUseSelected
                 .ToProperty(this, vm => vm.CanUseSelectedInstance);
 
@@ -247,10 +278,13 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterNotInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterCompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterUncachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterIncompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default))
+                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.SortDescending).Select(_ => Unit.Default))
                 .Skip(1)
                 .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
                 .Subscribe(__ =>
@@ -262,6 +296,12 @@ namespace CKAN.LinuxGUI
                         _ = LoadModCatalogAsync();
                     }
                 });
+
+            Observable.Merge(
+                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.SortDescending).Select(_ => Unit.Default))
+                .Skip(1)
+                .Subscribe(_ => pendingModListScrollReset = true);
 
             gameInstanceService.CurrentInstanceChanged += OnCurrentInstanceChanged;
             changesetService.QueueChanged += OnQueueChanged;
@@ -313,6 +353,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ToggleAdvancedFiltersCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ToggleSortOptionsCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ClearAdvancedFiltersCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
@@ -336,6 +378,30 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> DismissApplyResultCommand { get; }
 
         public ReactiveCommand<Unit, Unit> PrimarySelectedModActionCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowOverviewDetailsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowMetadataDetailsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowRelationshipsDetailsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowDescriptionDetailsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectNameSortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectAuthorSortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectPopularitySortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectInstalledFirstSortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectUpdatesFirstSortCommand { get; }
+
+        public int ModListScrollResetRequestId
+        {
+            get => modListScrollResetRequestId;
+            private set => this.RaiseAndSetIfChanged(ref modListScrollResetRequestId, value);
+        }
 
         public StartupStage StartupStage
         {
@@ -403,6 +469,15 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedInstanceSummary, value);
         }
 
+        public string SelectedInstanceNameLabel
+            => SelectedInstance?.Name ?? "No instance selected";
+
+        public string SelectedInstanceGameNameLabel
+            => SelectedInstance?.GameName ?? "";
+
+        public string SelectedInstanceGameDirLabel
+            => SelectedInstance?.GameDir ?? "";
+
         public string SelectedActionLabel
         {
             get => selectedActionLabel;
@@ -456,9 +531,31 @@ namespace CKAN.LinuxGUI
             get => selectedSortOption;
             set
             {
+                bool changed = selectedSortOption?.Value != value?.Value;
                 this.RaiseAndSetIfChanged(ref selectedSortOption, value);
+                if (changed && value != null)
+                {
+                    sortDescending = DefaultSortDescending(value.Value);
+                    this.RaisePropertyChanged(nameof(SortDescending));
+                }
                 PublishFilterStateLabels();
             }
+        }
+
+        public bool SortDescending
+        {
+            get => sortDescending;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref sortDescending, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool ShowSortOptions
+        {
+            get => showSortOptions;
+            set => this.RaiseAndSetIfChanged(ref showSortOptions, value);
         }
 
         public string CatalogStatusMessage
@@ -525,6 +622,12 @@ namespace CKAN.LinuxGUI
         {
             get => selectedModDownloadSize;
             private set => this.RaiseAndSetIfChanged(ref selectedModDownloadSize, value);
+        }
+
+        public string SelectedModDownloadCount
+        {
+            get => selectedModDownloadCount;
+            private set => this.RaiseAndSetIfChanged(ref selectedModDownloadCount, value);
         }
 
         public string SelectedModRelationships
@@ -637,6 +740,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref isCatalogLoading, value);
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
+                this.RaisePropertyChanged(nameof(ShowModList));
                 this.RaisePropertyChanged(nameof(ShowEmptyModResults));
             }
         }
@@ -667,6 +771,22 @@ namespace CKAN.LinuxGUI
         public bool ShowSelectedModLoadingState => HasSelectedMod && IsSelectedModLoading;
 
         public bool ShowSelectedModContent => HasSelectedMod && !IsSelectedModLoading;
+
+        public bool ShowOverviewDetailsSection => selectedModDetailsSection == ModDetailsSection.Overview;
+
+        public bool ShowMetadataDetailsSection => selectedModDetailsSection == ModDetailsSection.Metadata;
+
+        public bool ShowRelationshipsDetailsSection => selectedModDetailsSection == ModDetailsSection.Relationships;
+
+        public bool ShowDescriptionDetailsSection => selectedModDetailsSection == ModDetailsSection.Description;
+
+        public bool OverviewDetailsSectionSelected => ShowOverviewDetailsSection;
+
+        public bool MetadataDetailsSectionSelected => ShowMetadataDetailsSection;
+
+        public bool RelationshipsDetailsSectionSelected => ShowRelationshipsDetailsSection;
+
+        public bool DescriptionDetailsSectionSelected => ShowDescriptionDetailsSection;
 
         public string SelectedModLoadingTitle
             => SelectedMod == null
@@ -813,31 +933,71 @@ namespace CKAN.LinuxGUI
                || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter)
                || FilterHasReplacementOnly;
 
-        public int ActiveAdvancedFilterCount
-            => (string.IsNullOrWhiteSpace(AdvancedAuthorFilter) ? 0 : 1)
-               + (string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter) ? 0 : 1)
-               + (FilterHasReplacementOnly ? 1 : 0);
+        public int ActiveFilterCount
+            => (FilterInstalledOnly ? 1 : 0)
+               + (FilterNotInstalledOnly ? 1 : 0)
+               + (FilterUpdatableOnly ? 1 : 0)
+               + (FilterCompatibleOnly ? 1 : 0)
+               + (FilterCachedOnly ? 1 : 0)
+               + (FilterUncachedOnly ? 1 : 0)
+               + (FilterIncompatibleOnly ? 1 : 0)
+               + (FilterHasReplacementOnly ? 1 : 0)
+               + (string.IsNullOrWhiteSpace(AdvancedAuthorFilter) ? 0 : 1)
+               + (string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter) ? 0 : 1);
 
         public string MoreFiltersLabel
-            => ActiveAdvancedFilterCount > 0
-                ? $"More Filters ({ActiveAdvancedFilterCount})"
-                : "More Filters ▾";
+            => ActiveFilterCount > 0
+                ? $"Filters ({ActiveFilterCount}) ▾"
+                : "Filters ▾";
+
+        public string SortMenuLabel
+            => $"{SelectedSortOption?.Label ?? "Name"} {SortDirectionLabel(SelectedSortOption?.Value ?? ModSortOption.Name, SortDescending)} ▾";
+
+        public string NameSortLabel
+            => SortOptionLabel(ModSortOption.Name, "Name");
+
+        public string AuthorSortLabel
+            => SortOptionLabel(ModSortOption.Author, "Author");
+
+        public string PopularitySortLabel
+            => SortOptionLabel(ModSortOption.Popularity, "Popularity");
+
+        public string InstalledFirstSortLabel
+            => SortOptionLabel(ModSortOption.InstalledFirst, "Installed First");
+
+        public string UpdatesFirstSortLabel
+            => SortOptionLabel(ModSortOption.UpdatesFirst, "Updates First");
+
+        public bool NameSortSelected => SelectedSortOption?.Value == ModSortOption.Name;
+
+        public bool AuthorSortSelected => SelectedSortOption?.Value == ModSortOption.Author;
+
+        public bool PopularitySortSelected => SelectedSortOption?.Value == ModSortOption.Popularity;
+
+        public bool InstalledFirstSortSelected => SelectedSortOption?.Value == ModSortOption.InstalledFirst;
+
+        public bool UpdatesFirstSortSelected => SelectedSortOption?.Value == ModSortOption.UpdatesFirst;
 
         public bool HasActiveFilters
             => !string.IsNullOrWhiteSpace(ModSearchText)
                || FilterInstalledOnly
                || FilterNotInstalledOnly
                || FilterUpdatableOnly
+               || FilterCompatibleOnly
                || FilterCachedOnly
+               || FilterUncachedOnly
                || FilterIncompatibleOnly
                || HasActiveAdvancedFilters
-               || SelectedSortOption?.Value != ModSortOption.Name;
+               || SelectedSortOption?.Value != ModSortOption.Name
+               || SortDescending != DefaultSortDescending(SelectedSortOption?.Value ?? ModSortOption.Name);
 
         public string AdvancedFilterSummary
         {
             get
             {
-                if (!HasActiveAdvancedFilters && SelectedSortOption?.Value == ModSortOption.Name)
+                if (!HasActiveAdvancedFilters
+                    && SelectedSortOption?.Value == ModSortOption.Name
+                    && SortDescending == DefaultSortDescending(ModSortOption.Name))
                 {
                     return "Author, compatibility, replacement, and sort are all at their defaults.";
                 }
@@ -855,9 +1015,18 @@ namespace CKAN.LinuxGUI
                 {
                     parts.Add("Replacement only");
                 }
-                if (SelectedSortOption?.Value != ModSortOption.Name)
+                if (FilterCompatibleOnly)
                 {
-                    parts.Add($"Sort: {SelectedSortOption?.Label}");
+                    parts.Add("Compatible only");
+                }
+                if (FilterUncachedOnly)
+                {
+                    parts.Add("Uncached only");
+                }
+                if (SelectedSortOption?.Value != ModSortOption.Name
+                    || SortDescending != DefaultSortDescending(SelectedSortOption?.Value ?? ModSortOption.Name))
+                {
+                    parts.Add($"Sort: {(SelectedSortOption?.Label ?? "Name")} {SortDirectionLabel(SelectedSortOption?.Value ?? ModSortOption.Name, SortDescending)}");
                 }
 
                 return string.Join(" • ", parts);
@@ -916,6 +1085,37 @@ namespace CKAN.LinuxGUI
                 return "";
             }
         }
+
+        public string PrimarySelectedModActionBackground
+        {
+            get
+            {
+                var queued = SelectedMod == null
+                    ? null
+                    : changesetService.FindQueuedAction(SelectedMod.Identifier);
+                if (queued != null)
+                {
+                    return "#39424E";
+                }
+
+                if (ShowInstallAction)
+                {
+                    return "#2A6B4A";
+                }
+                if (ShowUpdateAction)
+                {
+                    return "#4B6C23";
+                }
+                if (ShowRemoveAction)
+                {
+                    return "#6B2B2B";
+                }
+
+                return "#39424E";
+            }
+        }
+
+        public string PrimarySelectedModActionBorderBrush => PrimarySelectedModActionBackground;
 
         public bool SelectedModIsInstalled
         {
@@ -1084,6 +1284,27 @@ namespace CKAN.LinuxGUI
         public string PreviewDependencyCountLabel
             => CountLabel(PreviewDependencies.Count, "Dependency Install", "Dependency Installs");
 
+        public bool ShowPreviewQueuedActions
+            => HasQueuedActions;
+
+        public string PreviewQueuedGuidance
+            => HasPreviewDependencies
+                ? "These are the direct actions you selected. CKAN will also install the required mods listed below."
+                : "These are the direct actions you selected.";
+
+        public bool ShowPreviewDependencyGuidance
+            => HasPreviewDependencies;
+
+        public string PreviewDependencyGuidanceTitle
+            => PreviewCanApply
+                ? "Dependencies Will Install Automatically"
+                : "Required Dependencies";
+
+        public string PreviewDependencyGuidance
+            => PreviewCanApply
+                ? "CKAN Linux will install the required mods below as part of Apply. You do not need to queue them one by one."
+                : "The mods below are required by your queued actions. Once blockers are cleared, CKAN Linux will install them automatically.";
+
         public string PreviewAutoRemovalCountLabel
             => CountLabel(PreviewAutoRemovals.Count, "Auto-Removal", "Auto-Removals");
 
@@ -1138,11 +1359,9 @@ namespace CKAN.LinuxGUI
             get => filterInstalledOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterInstalledOnly, value);
-                if (value && FilterNotInstalledOnly)
+                if (this.RaiseAndSetIfChanged(ref filterInstalledOnly, value) && value)
                 {
-                    filterNotInstalledOnly = false;
-                    this.RaisePropertyChanged(nameof(FilterNotInstalledOnly));
+                    ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
                 }
                 PublishFilterStateLabels();
             }
@@ -1153,11 +1372,10 @@ namespace CKAN.LinuxGUI
             get => filterNotInstalledOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterNotInstalledOnly, value);
-                if (value && FilterInstalledOnly)
+                if (this.RaiseAndSetIfChanged(ref filterNotInstalledOnly, value) && value)
                 {
-                    filterInstalledOnly = false;
-                    this.RaisePropertyChanged(nameof(FilterInstalledOnly));
+                    ClearFilter(ref filterInstalledOnly, nameof(FilterInstalledOnly));
+                    ClearFilter(ref filterUpdatableOnly, nameof(FilterUpdatableOnly));
                 }
                 PublishFilterStateLabels();
             }
@@ -1168,7 +1386,23 @@ namespace CKAN.LinuxGUI
             get => filterUpdatableOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterUpdatableOnly, value);
+                if (this.RaiseAndSetIfChanged(ref filterUpdatableOnly, value) && value)
+                {
+                    ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterCompatibleOnly
+        {
+            get => filterCompatibleOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterCompatibleOnly, value) && value)
+                {
+                    ClearFilter(ref filterIncompatibleOnly, nameof(FilterIncompatibleOnly));
+                }
                 PublishFilterStateLabels();
             }
         }
@@ -1178,7 +1412,23 @@ namespace CKAN.LinuxGUI
             get => filterCachedOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterCachedOnly, value);
+                if (this.RaiseAndSetIfChanged(ref filterCachedOnly, value) && value)
+                {
+                    ClearFilter(ref filterUncachedOnly, nameof(FilterUncachedOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterUncachedOnly
+        {
+            get => filterUncachedOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterUncachedOnly, value) && value)
+                {
+                    ClearFilter(ref filterCachedOnly, nameof(FilterCachedOnly));
+                }
                 PublishFilterStateLabels();
             }
         }
@@ -1188,7 +1438,10 @@ namespace CKAN.LinuxGUI
             get => filterIncompatibleOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterIncompatibleOnly, value);
+                if (this.RaiseAndSetIfChanged(ref filterIncompatibleOnly, value) && value)
+                {
+                    ClearFilter(ref filterCompatibleOnly, nameof(FilterCompatibleOnly));
+                }
                 PublishFilterStateLabels();
             }
         }
@@ -1210,6 +1463,15 @@ namespace CKAN.LinuxGUI
                 1 => "1 registered instance",
                 _ => $"{InstanceCount} registered instances",
             };
+
+        private void ClearFilter(ref bool field, string propertyName)
+        {
+            if (field)
+            {
+                field = false;
+                this.RaisePropertyChanged(propertyName);
+            }
+        }
 
         public string InstanceSwitchDiscardPrompt
             => $"You have {QueuedActions.Count} queued change{(QueuedActions.Count == 1 ? "" : "s")} for {CurrentInstanceName}. Switching installs will discard them.";
@@ -1237,6 +1499,9 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(SelectedInstanceContextTitle));
+                this.RaisePropertyChanged(nameof(SelectedInstanceNameLabel));
+                this.RaisePropertyChanged(nameof(SelectedInstanceGameNameLabel));
+                this.RaisePropertyChanged(nameof(SelectedInstanceGameDirLabel));
             }
         }
 
@@ -1404,36 +1669,79 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            IsCatalogLoading = true;
-            CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
-            var previousSelection = SelectedMod?.Identifier;
+            Interlocked.Increment(ref catalogLoadRequestId);
+            if (!await catalogLoadSemaphore.WaitAsync(0))
+            {
+                return;
+            }
+
             try
             {
-                var items = await modCatalogService.GetModListAsync(CurrentFilter(), CancellationToken.None);
-                Mods.Clear();
-                foreach (var item in items)
+                while (IsReady)
                 {
-                    Mods.Add(item);
+                    int activeRequestId = catalogLoadRequestId;
+                    IsCatalogLoading = true;
+                    CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
+                    var previousSelection = SelectedMod?.Identifier;
+
+                    try
+                    {
+                        var items = await modCatalogService.GetModListAsync(CurrentFilter(), CancellationToken.None);
+                        if (activeRequestId != catalogLoadRequestId)
+                        {
+                            continue;
+                        }
+
+                        Mods.Clear();
+                        foreach (var item in items)
+                        {
+                            Mods.Add(item);
+                        }
+
+                        SelectedMod = previousSelection != null
+                            ? Mods.FirstOrDefault(mod => mod.Identifier == previousSelection) ?? Mods.FirstOrDefault()
+                            : Mods.FirstOrDefault();
+
+                        if (pendingModListScrollReset)
+                        {
+                            pendingModListScrollReset = false;
+                            ModListScrollResetRequestId++;
+                        }
+
+                        CatalogStatusMessage = Mods.Count == 0
+                            ? "No mods matched the current search and filter state."
+                            : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
+                        PublishCatalogStateLabels();
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceError($"Mod catalog load failed: {ex}");
+                        if (activeRequestId != catalogLoadRequestId)
+                        {
+                            continue;
+                        }
+
+                        Diagnostics = ex.Message;
+                        CatalogStatusMessage = "Failed to load the mod catalog.";
+                    }
+                    finally
+                    {
+                        if (activeRequestId == catalogLoadRequestId)
+                        {
+                            IsCatalogLoading = false;
+                            PublishCatalogStateLabels();
+                        }
+                    }
+
+                    if (activeRequestId == catalogLoadRequestId)
+                    {
+                        break;
+                    }
                 }
-
-                SelectedMod = previousSelection != null
-                    ? Mods.FirstOrDefault(mod => mod.Identifier == previousSelection) ?? Mods.FirstOrDefault()
-                    : Mods.FirstOrDefault();
-
-                CatalogStatusMessage = Mods.Count == 0
-                    ? "No mods matched the current search and filter state."
-                    : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
-                PublishCatalogStateLabels();
-            }
-            catch (Exception ex)
-            {
-                Diagnostics = ex.Message;
-                CatalogStatusMessage = "Failed to load the mod catalog.";
             }
             finally
             {
-                IsCatalogLoading = false;
-                PublishCatalogStateLabels();
+                catalogLoadSemaphore.Release();
             }
         }
 
@@ -1443,6 +1751,7 @@ namespace CKAN.LinuxGUI
             if (string.IsNullOrWhiteSpace(identifier) || !IsReady)
             {
                 IsSelectedModLoading = false;
+                SetSelectedModDetailsSection(ModDetailsSection.Overview);
                 ResetSelectedModDetails();
                 return;
             }
@@ -1476,6 +1785,7 @@ namespace CKAN.LinuxGUI
                 SelectedModLicense = details.License;
                 SelectedModReleaseDate = details.ReleaseDate;
                 SelectedModDownloadSize = details.DownloadSize;
+                SelectedModDownloadCount = details.DownloadCount?.ToString("N0") ?? "Unknown";
                 SelectedModRelationships = $"{details.DependencyCount} depends • {details.RecommendationCount} recommends • {details.SuggestionCount} suggests";
                 SelectedModDependencyCountLabel = CountLabel(details.DependencyCount, "Dependency", "Dependencies");
                 SelectedModRecommendationCountLabel = CountLabel(details.RecommendationCount, "Recommendation", "Recommendations");
@@ -1488,6 +1798,7 @@ namespace CKAN.LinuxGUI
                 SelectedModBody = string.IsNullOrWhiteSpace(details.Description)
                     ? "No extended description is available for this mod."
                     : details.Description;
+                SetSelectedModDetailsSection(ModDetailsSection.Overview);
             }
             catch (Exception ex)
             {
@@ -1507,6 +1818,7 @@ namespace CKAN.LinuxGUI
                 SelectedModLicense = "";
                 SelectedModReleaseDate = "";
                 SelectedModDownloadSize = "";
+                SelectedModDownloadCount = "";
                 SelectedModRelationships = "";
                 SelectedModDependencyCountLabel = "";
                 SelectedModRecommendationCountLabel = "";
@@ -1517,6 +1829,7 @@ namespace CKAN.LinuxGUI
                 SelectedModIsIncompatible = false;
                 SelectedModHasReplacement = false;
                 SelectedModBody = "The selected mod failed to load its details.";
+                SetSelectedModDetailsSection(ModDetailsSection.Overview);
             }
             finally
             {
@@ -1556,10 +1869,13 @@ namespace CKAN.LinuxGUI
                 AuthorText          = AdvancedAuthorFilter,
                 CompatibilityText   = AdvancedCompatibilityFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
+                SortDescending      = SortDescending,
                 InstalledOnly       = FilterInstalledOnly,
                 NotInstalledOnly    = FilterNotInstalledOnly,
                 UpdatableOnly       = FilterUpdatableOnly,
+                CompatibleOnly      = FilterCompatibleOnly,
                 CachedOnly          = FilterCachedOnly,
+                UncachedOnly        = FilterUncachedOnly,
                 IncompatibleOnly    = FilterIncompatibleOnly,
                 HasReplacementOnly  = FilterHasReplacementOnly,
             };
@@ -1572,12 +1888,16 @@ namespace CKAN.LinuxGUI
             filterInstalledOnly = filter.InstalledOnly;
             filterNotInstalledOnly = filter.NotInstalledOnly;
             filterUpdatableOnly = filter.UpdatableOnly;
+            filterCompatibleOnly = filter.CompatibleOnly;
             filterCachedOnly = filter.CachedOnly;
+            filterUncachedOnly = filter.UncachedOnly;
             filterIncompatibleOnly = filter.IncompatibleOnly;
             filterHasReplacementOnly = filter.HasReplacementOnly;
             selectedSortOption = SortOptions.FirstOrDefault(opt => opt.Value == filter.SortOption) ?? SortOptions[0];
+            sortDescending = filter.SortDescending ?? DefaultSortDescending(filter.SortOption);
             showAdvancedFilters = modSearchService.ShowAdvancedFilters || HasActiveAdvancedFilters;
             this.RaisePropertyChanged(nameof(SelectedSortOption));
+            this.RaisePropertyChanged(nameof(SortDescending));
             PublishFilterStateLabels();
         }
 
@@ -1613,6 +1933,17 @@ namespace CKAN.LinuxGUI
 
         private void ToggleAdvancedFilters()
             => ShowAdvancedFilters = !ShowAdvancedFilters;
+
+        private void SetSelectedModDetailsSection(ModDetailsSection section)
+        {
+            if (selectedModDetailsSection == section)
+            {
+                return;
+            }
+
+            selectedModDetailsSection = section;
+            PublishSelectedModSectionState();
+        }
 
         private void ToggleDisplaySettings()
             => ShowDisplaySettings = !ShowDisplaySettings;
@@ -1717,10 +2048,31 @@ namespace CKAN.LinuxGUI
             FilterInstalledOnly = false;
             FilterNotInstalledOnly = false;
             FilterUpdatableOnly = false;
+            FilterCompatibleOnly = false;
             FilterCachedOnly = false;
+            FilterUncachedOnly = false;
             FilterIncompatibleOnly = false;
             SelectedSortOption = SortOptions[0];
+            SortDescending = DefaultSortDescending(ModSortOption.Name);
             ClearAdvancedFilters();
+        }
+
+        private void ToggleSortOptions()
+            => ShowSortOptions = !ShowSortOptions;
+
+        private void SelectSortOption(ModSortOption option)
+        {
+            if (SelectedSortOption?.Value == option)
+            {
+                SortDescending = !SortDescending;
+            }
+            else
+            {
+                SelectedSortOption = SortOptions.First(opt => opt.Value == option);
+                SortDescending = DefaultSortDescending(option);
+            }
+
+            ShowSortOptions = false;
         }
 
         private Task RestartToApplyUiScaleAsync()
@@ -1979,6 +2331,7 @@ namespace CKAN.LinuxGUI
             SelectedModLicense = "";
             SelectedModReleaseDate = "";
             SelectedModDownloadSize = "";
+            SelectedModDownloadCount = "";
             SelectedModRelationships = "";
             SelectedModDependencyCountLabel = "";
             SelectedModRecommendationCountLabel = "";
@@ -1989,6 +2342,7 @@ namespace CKAN.LinuxGUI
             SelectedModIsIncompatible = false;
             SelectedModHasReplacement = false;
             SelectedModBody = "The details pane will show summary, description, compatibility, and install state.";
+            SetSelectedModDetailsSection(ModDetailsSection.Overview);
         }
 
         private void PublishCatalogStateLabels()
@@ -2006,16 +2360,60 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowSelectedModLoadingState));
             this.RaisePropertyChanged(nameof(ShowSelectedModContent));
             this.RaisePropertyChanged(nameof(SelectedModLoadingTitle));
+            PublishSelectedModSectionState();
+        }
+
+        private void PublishSelectedModSectionState()
+        {
+            this.RaisePropertyChanged(nameof(ShowOverviewDetailsSection));
+            this.RaisePropertyChanged(nameof(ShowMetadataDetailsSection));
+            this.RaisePropertyChanged(nameof(ShowRelationshipsDetailsSection));
+            this.RaisePropertyChanged(nameof(ShowDescriptionDetailsSection));
+            this.RaisePropertyChanged(nameof(OverviewDetailsSectionSelected));
+            this.RaisePropertyChanged(nameof(MetadataDetailsSectionSelected));
+            this.RaisePropertyChanged(nameof(RelationshipsDetailsSectionSelected));
+            this.RaisePropertyChanged(nameof(DescriptionDetailsSectionSelected));
         }
 
         private void PublishFilterStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasActiveAdvancedFilters));
-            this.RaisePropertyChanged(nameof(ActiveAdvancedFilterCount));
+            this.RaisePropertyChanged(nameof(ActiveFilterCount));
             this.RaisePropertyChanged(nameof(HasActiveFilters));
             this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
             this.RaisePropertyChanged(nameof(MoreFiltersLabel));
+            this.RaisePropertyChanged(nameof(SortMenuLabel));
+            this.RaisePropertyChanged(nameof(NameSortLabel));
+            this.RaisePropertyChanged(nameof(AuthorSortLabel));
+            this.RaisePropertyChanged(nameof(PopularitySortLabel));
+            this.RaisePropertyChanged(nameof(InstalledFirstSortLabel));
+            this.RaisePropertyChanged(nameof(UpdatesFirstSortLabel));
+            this.RaisePropertyChanged(nameof(NameSortSelected));
+            this.RaisePropertyChanged(nameof(AuthorSortSelected));
+            this.RaisePropertyChanged(nameof(PopularitySortSelected));
+            this.RaisePropertyChanged(nameof(InstalledFirstSortSelected));
+            this.RaisePropertyChanged(nameof(UpdatesFirstSortSelected));
         }
+
+        private static bool DefaultSortDescending(ModSortOption sortOption)
+            => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.InstalledFirst
+               || sortOption == ModSortOption.UpdatesFirst;
+
+        private string SortOptionLabel(ModSortOption sortOption, string baseLabel)
+            => SelectedSortOption?.Value == sortOption
+                ? $"{baseLabel} {SortDirectionLabel(sortOption, SortDescending)}"
+                : baseLabel;
+
+        private static string SortDirectionLabel(ModSortOption sortOption, bool descending)
+            => sortOption switch
+            {
+                ModSortOption.Name or ModSortOption.Author => descending ? "Z→A" : "A→Z",
+                ModSortOption.Popularity => descending ? "High→Low" : "Low→High",
+                ModSortOption.InstalledFirst => descending ? "Installed→Other" : "Other→Installed",
+                ModSortOption.UpdatesFirst => descending ? "Updates→Other" : "Other→Updates",
+                _ => descending ? "Desc" : "Asc",
+            };
 
         private void PublishQueueStateLabels()
         {
@@ -2049,6 +2447,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasSelectedModQueuedAction));
             this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
+            this.RaisePropertyChanged(nameof(PrimarySelectedModActionBackground));
+            this.RaisePropertyChanged(nameof(PrimarySelectedModActionBorderBrush));
             this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
         }
 
@@ -2071,6 +2471,11 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
+            this.RaisePropertyChanged(nameof(ShowPreviewQueuedActions));
+            this.RaisePropertyChanged(nameof(PreviewQueuedGuidance));
+            this.RaisePropertyChanged(nameof(ShowPreviewDependencyGuidance));
+            this.RaisePropertyChanged(nameof(PreviewDependencyGuidanceTitle));
+            this.RaisePropertyChanged(nameof(PreviewDependencyGuidance));
             this.RaisePropertyChanged(nameof(PreviewAutoRemovalCountLabel));
             this.RaisePropertyChanged(nameof(PreviewConflictCountLabel));
             this.RaisePropertyChanged(nameof(PreviewAttentionCountLabel));

@@ -26,6 +26,8 @@ namespace CKAN.App.Models
 
         public string DownloadSize { get; init; } = "";
 
+        public int? DownloadCount { get; init; }
+
         public int DependencyCount { get; init; }
 
         public int RecommendationCount { get; init; }

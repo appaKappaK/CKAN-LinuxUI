@@ -10,6 +10,8 @@ namespace CKAN.App.Models
 
         public ModSortOption SortOption { get; init; } = ModSortOption.Name;
 
+        public bool? SortDescending { get; init; }
+
         public bool InstalledOnly { get; init; }
 
         public bool NotInstalledOnly { get; init; }
@@ -18,7 +20,11 @@ namespace CKAN.App.Models
 
         public bool NewOnly { get; init; }
 
+        public bool CompatibleOnly { get; init; }
+
         public bool CachedOnly { get; init; }
+
+        public bool UncachedOnly { get; init; }
 
         public bool IncompatibleOnly { get; init; }
 

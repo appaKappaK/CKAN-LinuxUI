@@ -14,6 +14,10 @@ namespace CKAN.App.Models
 
         public string InstalledVersion { get; init; } = "";
 
+        public int? DownloadCount { get; init; }
+
+        public string DownloadCountLabel { get; init; } = "";
+
         public bool IsInstalled { get; init; }
 
         public bool HasUpdate { get; init; }

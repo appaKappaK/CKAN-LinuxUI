@@ -175,11 +175,14 @@ namespace CKAN.App.Services
                && string.Equals(left?.AuthorText ?? "", right?.AuthorText ?? "", StringComparison.Ordinal)
                && string.Equals(left?.CompatibilityText ?? "", right?.CompatibilityText ?? "", StringComparison.Ordinal)
                && (left?.SortOption ?? ModSortOption.Name) == (right?.SortOption ?? ModSortOption.Name)
+               && (left?.SortDescending ?? false) == (right?.SortDescending ?? false)
                && (left?.InstalledOnly ?? false) == (right?.InstalledOnly ?? false)
                && (left?.NotInstalledOnly ?? false) == (right?.NotInstalledOnly ?? false)
                && (left?.UpdatableOnly ?? false) == (right?.UpdatableOnly ?? false)
                && (left?.NewOnly ?? false) == (right?.NewOnly ?? false)
+               && (left?.CompatibleOnly ?? false) == (right?.CompatibleOnly ?? false)
                && (left?.CachedOnly ?? false) == (right?.CachedOnly ?? false)
+               && (left?.UncachedOnly ?? false) == (right?.UncachedOnly ?? false)
                && (left?.IncompatibleOnly ?? false) == (right?.IncompatibleOnly ?? false)
                && (left?.HasReplacementOnly ?? false) == (right?.HasReplacementOnly ?? false);
 

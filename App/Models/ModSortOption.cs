@@ -4,6 +4,7 @@ namespace CKAN.App.Models
     {
         Name,
         Author,
+        Popularity,
         InstalledFirst,
         UpdatesFirst,
     }

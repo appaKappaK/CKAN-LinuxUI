@@ -96,5 +96,16 @@ pick a smaller or larger scale, then use `Restart to Apply` to relaunch the app
 with the new scale.
 
 The Linux shell initializes logging from `log4net.linuxgui.xml`. When you use
-`./scripts/run-linuxgui-dev.sh`, the `ckan-linux.log` file lands in the
-isolated `run/` directory instead of your normal shell working directory.
+`./scripts/run-linuxgui-dev.sh`, the launcher now writes a comprehensive dev
+session log and installs a debug-level log4net config in the isolated `run/`
+directory.
+
+The main dev log files are:
+
+- session log: `~/.ckan-linux-dev/run/ckan-linux-session.log`
+- per-run session log: `~/.ckan-linux-dev/run/ckan-linux-session-YYYYMMDD-HHMMSS.log`
+- debug app log: `~/.ckan-linux-dev/run/ckan-linux-debug.log`
+
+The session log captures launcher decisions, selected binary, XDG paths, and
+all stdout/stderr from the app process. The debug app log captures log4net
+output at `DEBUG` level.

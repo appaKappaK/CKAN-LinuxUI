@@ -202,7 +202,7 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 await Task.Delay(150);
 
-                Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("More Filters ▾"));
+                Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters ▾"));
 
                 viewModel.AdvancedAuthorFilter = "Nertea";
                 viewModel.AdvancedCompatibilityFilter = "1.12";
@@ -210,8 +210,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.ActiveAdvancedFilterCount, Is.EqualTo(3));
-                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("More Filters (3)"));
+                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(3));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters (3) ▾"));
                 });
             }
             finally

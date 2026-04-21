@@ -27,9 +27,12 @@ namespace Tests.Core.Configuration
                     AuthorText         = "Nertea",
                     CompatibilityText  = "1.12",
                     SortOption         = ModSortOption.UpdatesFirst,
+                    SortDescending     = false,
                     InstalledOnly      = true,
                     UpdatableOnly      = true,
+                    CompatibleOnly     = true,
                     CachedOnly         = true,
+                    UncachedOnly       = false,
                     IncompatibleOnly   = false,
                     HasReplacementOnly = true,
                 }, true);
@@ -54,9 +57,12 @@ namespace Tests.Core.Configuration
                     Assert.That(second.FilterState.AuthorText, Is.EqualTo("Nertea"));
                     Assert.That(second.FilterState.CompatibilityText, Is.EqualTo("1.12"));
                     Assert.That(second.FilterState.SortOption, Is.EqualTo(ModSortOption.UpdatesFirst));
+                    Assert.That(second.FilterState.SortDescending, Is.False);
                     Assert.That(second.FilterState.InstalledOnly, Is.True);
                     Assert.That(second.FilterState.UpdatableOnly, Is.True);
+                    Assert.That(second.FilterState.CompatibleOnly, Is.True);
                     Assert.That(second.FilterState.CachedOnly, Is.True);
+                    Assert.That(second.FilterState.UncachedOnly, Is.False);
                     Assert.That(second.FilterState.HasReplacementOnly, Is.True);
                     Assert.That(second.WindowState.Width, Is.EqualTo(1480));
                     Assert.That(second.WindowState.Height, Is.EqualTo(900));

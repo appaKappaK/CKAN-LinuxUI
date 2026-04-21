@@ -1,9 +1,13 @@
 using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
 using Avalonia;
 using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 using CKAN.App.Models;
 using CKAN.App.Services;
@@ -14,12 +18,14 @@ namespace CKAN.LinuxGUI
     {
         private readonly IAppSettingsService? appSettings;
         private bool suppressHeaderInstanceSelection;
+        private MainWindowViewModel? observedViewModel;
 
         public MainWindow()
         {
             InitializeComponent();
             Opened += OnOpened;
             Closing += OnClosing;
+            DataContextChanged += OnDataContextChanged;
         }
 
         public MainWindow(MainWindowViewModel viewModel) : this(viewModel, null)
@@ -36,6 +42,8 @@ namespace CKAN.LinuxGUI
         private void OnOpened(object? sender,
                               EventArgs e)
         {
+            ObserveViewModel(DataContext as MainWindowViewModel);
+
             if (appSettings == null)
             {
                 return;
@@ -63,6 +71,8 @@ namespace CKAN.LinuxGUI
         private void OnClosing(object? sender,
                                WindowClosingEventArgs e)
         {
+            ObserveViewModel(null);
+
             if (appSettings == null)
             {
                 return;
@@ -216,5 +226,52 @@ namespace CKAN.LinuxGUI
 
         private bool IsEditableTextFocused()
             => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
+
+        private void OnDataContextChanged(object? sender,
+                                          EventArgs e)
+            => ObserveViewModel(DataContext as MainWindowViewModel);
+
+        private void ObserveViewModel(MainWindowViewModel? viewModel)
+        {
+            if (ReferenceEquals(observedViewModel, viewModel))
+            {
+                return;
+            }
+
+            if (observedViewModel != null)
+            {
+                observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
+            }
+
+            observedViewModel = viewModel;
+
+            if (observedViewModel != null)
+            {
+                observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
+            }
+        }
+
+        private void ViewModel_OnPropertyChanged(object? sender,
+                                                 PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.ModListScrollResetRequestId))
+            {
+                ResetModListScrollToTop();
+            }
+        }
+
+        private void ResetModListScrollToTop()
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var scrollViewer = ModsListBox.GetVisualDescendants()
+                                              .OfType<ScrollViewer>()
+                                              .FirstOrDefault();
+                if (scrollViewer != null)
+                {
+                    scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 0);
+                }
+            }, DispatcherPriority.Background);
+        }
     }
 }
