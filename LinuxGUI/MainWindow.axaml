@@ -85,6 +85,12 @@
       <Setter Property="Background" Value="#B61BD1" />
       <Setter Property="BorderBrush" Value="#B61BD1" />
     </Style>
+    <Style Selector="ListBox#ModsListBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
     <Style Selector="ListBox#ModsListBox > ListBoxItem">
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0" />
@@ -239,12 +245,22 @@
           <Button Grid.Column="2"
                   Margin="10,0,0,0"
                   VerticalAlignment="Center"
+                  Background="#3E648A"
+                  BorderBrush="#3E648A"
+                  BorderThickness="0"
+                  CornerRadius="8"
+                  Foreground="#F4F6F8"
                   Command="{Binding ToggleDisplaySettingsCommand}"
                   Content="Settings" />
 
           <Button Grid.Column="3"
                   Margin="10,0,0,0"
                   VerticalAlignment="Center"
+                  Background="#7A3FA0"
+                  BorderBrush="#7A3FA0"
+                  BorderThickness="0"
+                  CornerRadius="8"
+                  Foreground="#F4F6F8"
                   Command="{Binding ToggleDetailsPaneCommand}"
                   ToolTip.Tip="{Binding DetailsPaneToggleLabel}"
                   Content="{Binding DetailsPaneToggleLabel}" />
@@ -252,6 +268,11 @@
           <Button Grid.Column="4"
                   Margin="10,0,0,0"
                   VerticalAlignment="Center"
+                  Background="#2F8A57"
+                  BorderBrush="#2F8A57"
+                  BorderThickness="0"
+                  CornerRadius="8"
+                  Foreground="#F4F6F8"
                   Command="{Binding RefreshCommand}"
                   Content="Reload" />
         </Grid>
@@ -324,7 +345,7 @@
 
     <Grid Grid.Row="2"
           ColumnDefinitions="Auto,*"
-          Margin="24">
+          Margin="16">
       <Border Background="#161B21"
               BorderBrush="#2B323C"
               BorderThickness="1"
@@ -559,16 +580,16 @@
       </Border>
 
       <Border Grid.Column="1"
-              Background="#161B21"
-              BorderBrush="#2B323C"
-              BorderThickness="1"
-              CornerRadius="12"
-              Padding="20"
+              Background="Transparent"
+              BorderBrush="Transparent"
+              BorderThickness="0"
+              CornerRadius="0"
+              Padding="0"
               Margin="0">
         <Grid>
-          <Border Background="#20262D"
+          <Border Background="#202930"
                   CornerRadius="12"
-                  Padding="24"
+                  Padding="16"
                   IsVisible="{Binding IsLoading}">
             <StackPanel Spacing="14"
                         VerticalAlignment="Center">
@@ -588,9 +609,9 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#20262D"
+          <Border Background="#202930"
                   CornerRadius="12"
-                  Padding="24"
+                  Padding="16"
                   IsVisible="{Binding IsEmpty}">
             <StackPanel Spacing="16">
               <TextBlock FontSize="24"
@@ -612,9 +633,9 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#20262D"
+          <Border Background="#202930"
                   CornerRadius="12"
-                  Padding="24"
+                  Padding="16"
                   IsVisible="{Binding NeedsSelection}">
             <StackPanel Spacing="18">
               <TextBlock FontSize="24"
@@ -641,9 +662,9 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#20262D"
+          <Border Background="#202930"
                   CornerRadius="12"
-                  Padding="24"
+                  Padding="16"
                   IsVisible="{Binding IsReady}">
             <Grid RowDefinitions="Auto,*,Auto">
               <Border Background="#4A3920"
@@ -1185,13 +1206,13 @@
                             Background="#20262D"
                             CornerRadius="8"
                             Padding="10,8"
-                            Margin="0,10,0,0">
+                            Margin="0,10,0,0"
+                            IsVisible="{Binding IsCatalogLoading}">
                       <Grid ColumnDefinitions="Auto,*">
                         <ProgressBar Width="120"
                                      Height="14"
                                      Minimum="0"
                                      Maximum="100"
-                                     IsVisible="{Binding IsCatalogLoading}"
                                      IsIndeterminate="{Binding IsCatalogLoading}" />
                         <TextBlock Grid.Column="1"
                                    Margin="10,0,0,0"
