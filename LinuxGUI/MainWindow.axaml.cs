@@ -164,6 +164,51 @@ namespace CKAN.LinuxGUI
             AdvancedAuthorFilterTextBox.SelectAll();
         }
 
+        private void ModRow_OnPointerPressed(object? sender,
+                                             PointerPressedEventArgs e)
+        {
+            if (sender is not Control control
+                || control.DataContext is not ModListItem mod
+                || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var updateKind = e.GetCurrentPoint(control).Properties.PointerUpdateKind;
+            if (updateKind == PointerUpdateKind.LeftButtonPressed)
+            {
+                viewModel.ActivateModFromBrowser(mod);
+                ModsListBox.Focus();
+                e.Handled = true;
+                return;
+            }
+
+            if (updateKind != PointerUpdateKind.RightButtonPressed)
+            {
+                return;
+            }
+
+            viewModel.SelectedMod = mod;
+            ModsListBox.Focus();
+
+            var menu = new ContextMenu
+            {
+                Placement = PlacementMode.Pointer,
+            };
+            menu.Classes.Add("mod-row-menu");
+
+            var toggleDetailsItem = new MenuItem
+            {
+                Header = viewModel.DetailsPaneToggleLabel,
+                Command = viewModel.ToggleDetailsPaneCommand,
+            };
+            toggleDetailsItem.Classes.Add("mod-row-menu-item");
+            menu.Items.Add(toggleDetailsItem);
+
+            menu.Open(control);
+            e.Handled = true;
+        }
+
         private void Window_OnKeyDown(object? sender,
                                       KeyEventArgs e)
         {

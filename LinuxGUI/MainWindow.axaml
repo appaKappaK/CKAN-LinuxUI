@@ -85,6 +85,32 @@
       <Setter Property="Background" Value="#B61BD1" />
       <Setter Property="BorderBrush" Value="#B61BD1" />
     </Style>
+    <Style Selector="ContextMenu.mod-row-menu /template/ Border">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#39424E" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="MenuItem.mod-row-menu-item">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="MenuItem.mod-row-menu-item:pointerover">
+      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="#475C73" />
+    </Style>
+    <Style Selector="Button.surface-view-tab">
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="MinWidth" Value="96" />
+      <Setter Property="Padding" Value="14,8" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
     <Style Selector="ListBox#ModsListBox">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
@@ -192,7 +218,7 @@
             Padding="24,8"
             IsVisible="{Binding ShowReadyHeader}">
       <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="*,220,Auto"
+        <Grid ColumnDefinitions="*,Auto,Auto"
               VerticalAlignment="Center">
           <StackPanel Spacing="1"
                       VerticalAlignment="Center">
@@ -223,11 +249,13 @@
           </StackPanel>
 
           <Border Grid.Column="1"
-                  Background="#161B21"
-                  BorderBrush="#2B323C"
+                  Background="{Binding StatusSurfaceBackground}"
+                  BorderBrush="{Binding StatusSurfaceBorderBrush}"
                   BorderThickness="1"
                   CornerRadius="10"
                   Padding="10,7"
+                  Width="220"
+                  IsVisible="{Binding ShowReadyStatusSurface}"
                   VerticalAlignment="Center">
             <StackPanel Spacing="5">
               <ProgressBar Height="4"
@@ -248,24 +276,6 @@
                       Spacing="10"
                       VerticalAlignment="Center">
             <Button VerticalAlignment="Center"
-                    Background="{Binding BrowseSurfaceButtonBackground}"
-                    BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
-                    BorderThickness="0"
-                    CornerRadius="8"
-                    Foreground="#F4F6F8"
-                    Command="{Binding ShowBrowseSurfaceCommand}"
-                    Content="Browse" />
-
-            <Button VerticalAlignment="Center"
-                    Background="{Binding PreviewSurfaceButtonBackground}"
-                    BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
-                    BorderThickness="0"
-                    CornerRadius="8"
-                    Foreground="#F4F6F8"
-                    Command="{Binding ShowPreviewSurfaceCommand}"
-                    Content="{Binding PreviewSurfaceButtonLabel}" />
-
-            <Button VerticalAlignment="Center"
                     Background="#3E648A"
                     BorderBrush="#3E648A"
                     BorderThickness="0"
@@ -273,17 +283,6 @@
                     Foreground="#F4F6F8"
                     Command="{Binding ToggleDisplaySettingsCommand}"
                     Content="Settings" />
-
-            <Button VerticalAlignment="Center"
-                    Background="#7A3FA0"
-                    BorderBrush="#7A3FA0"
-                    BorderThickness="0"
-                    CornerRadius="8"
-                    Foreground="#F4F6F8"
-                    Command="{Binding ToggleDetailsPaneCommand}"
-                    ToolTip.Tip="{Binding DetailsPaneToggleLabel}"
-                    IsVisible="{Binding ShowBrowseSurface}"
-                    Content="{Binding DetailsPaneToggleLabel}" />
 
             <Button VerticalAlignment="Center"
                     Background="#2F8A57"
@@ -685,7 +684,7 @@
                   CornerRadius="12"
                   Padding="16"
                   IsVisible="{Binding IsReady}">
-            <Grid RowDefinitions="Auto,*">
+            <Grid RowDefinitions="Auto,Auto,*">
               <Border Background="#4A3920"
                       BorderBrush="#9A7B37"
                       BorderThickness="1"
@@ -709,7 +708,32 @@
                 </Grid>
               </Border>
 
-              <Grid Grid.Row="1"
+              <Border Grid.Row="1"
+                      Background="#14191F"
+                      BorderBrush="#2B323C"
+                      BorderThickness="1"
+                      CornerRadius="10"
+                      Padding="6"
+                      Margin="0,0,0,14"
+                      HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="6">
+                  <Button Classes="surface-view-tab"
+                          Background="{Binding BrowseSurfaceButtonBackground}"
+                          BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
+                          Foreground="#F4F6F8"
+                          Command="{Binding ShowBrowseSurfaceCommand}"
+                          Content="Browse" />
+                  <Button Classes="surface-view-tab"
+                          Background="{Binding PreviewSurfaceButtonBackground}"
+                          BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
+                          Foreground="#F4F6F8"
+                          Command="{Binding ShowPreviewSurfaceCommand}"
+                          Content="{Binding PreviewSurfaceButtonLabel}" />
+                </StackPanel>
+              </Border>
+
+              <Grid Grid.Row="2"
                     ColumnDefinitions="*,Auto"
                     IsVisible="{Binding ShowBrowseSurface}">
                 <Border Background="#161B21"
@@ -1099,13 +1123,15 @@
                           <ListBox x:Name="ModsListBox"
                                    Grid.Row="1"
                                    ItemsSource="{Binding Mods}"
+                                   AutoScrollToSelectedItem="False"
                                    SelectedItem="{Binding SelectedMod}">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:ModListItem">
                                 <Border Background="#181D23"
                                         CornerRadius="5"
                                         Margin="0,0,0,1"
-                                        Padding="0">
+                                        Padding="0"
+                                        PointerPressed="ModRow_OnPointerPressed">
                                   <Grid ColumnDefinitions="3,*,212">
                                     <Border Background="{Binding PrimaryStateColor}"
                                             CornerRadius="5,0,0,5" />
@@ -1638,7 +1664,7 @@
                 </Border>
               </Grid>
 
-              <Border Grid.Row="1"
+              <Border Grid.Row="2"
                       Background="#161B21"
                       CornerRadius="10"
                       Padding="18"

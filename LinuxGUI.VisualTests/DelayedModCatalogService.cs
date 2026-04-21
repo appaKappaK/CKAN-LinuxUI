@@ -13,6 +13,12 @@ namespace CKAN.LinuxGUI.VisualTests
         private readonly int listDelayMs;
         private readonly int detailsDelayMs;
 
+        public int ModListRequestCount { get; private set; }
+
+        public int FilterOptionCountRequestCount { get; private set; }
+
+        public int ModDetailsRequestCount { get; private set; }
+
         public DelayedModCatalogService(int listDelayMs = 0,
                                         int detailsDelayMs = 0,
                                         IModCatalogService? inner = null)
@@ -25,6 +31,7 @@ namespace CKAN.LinuxGUI.VisualTests
         public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                       CancellationToken cancellationToken)
         {
+            ModListRequestCount++;
             if (listDelayMs > 0)
             {
                 await Task.Delay(listDelayMs, cancellationToken);
@@ -36,6 +43,7 @@ namespace CKAN.LinuxGUI.VisualTests
         public async Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                                CancellationToken cancellationToken)
         {
+            ModDetailsRequestCount++;
             if (detailsDelayMs > 0)
             {
                 await Task.Delay(detailsDelayMs, cancellationToken);
@@ -47,6 +55,7 @@ namespace CKAN.LinuxGUI.VisualTests
         public async Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
                                                                          CancellationToken cancellationToken)
         {
+            FilterOptionCountRequestCount++;
             if (listDelayMs > 0)
             {
                 await Task.Delay(listDelayMs, cancellationToken);

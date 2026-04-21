@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 
+using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 
 using NUnit.Framework;
@@ -29,6 +30,38 @@ namespace CKAN.LinuxGUI.VisualTests
         [AvaloniaTest]
         public Task ReadyShell_Renders()
             => RenderScenarioAsync(VisualScenario.Ready, "startup-ready");
+
+        [AvaloniaTest]
+        public async Task ReadyShell_DoesNotAutoScrollToSelectedMod()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            window.Show();
+
+            try
+            {
+                var listBox = window.FindControl<ListBox>("ModsListBox");
+                Assert.That(listBox, Is.Not.Null);
+                Assert.That(listBox!.AutoScrollToSelectedItem, Is.False);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
 
         [AvaloniaTest]
         public Task ReadyShell_NarrowWindow_Renders()

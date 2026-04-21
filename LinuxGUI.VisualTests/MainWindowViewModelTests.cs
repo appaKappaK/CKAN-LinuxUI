@@ -342,6 +342,138 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task Sorting_ReordersVisibleModsWithoutReloadingCatalog()
+        {
+            var catalog = new DelayedModCatalogService(listDelayMs: 250);
+            var (viewModel, service) = CreateViewModel(catalog: catalog);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading, timeoutMs: 1500);
+                Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
+                Assert.That(viewModel.Mods.First().Identifier, Is.EqualTo("kerbalism"));
+
+                viewModel.SelectPopularitySortCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
+                    Assert.That(viewModel.IsCatalogLoading, Is.False);
+                    Assert.That(viewModel.ModCountLabel, Is.EqualTo("5 mods"));
+                    Assert.That(viewModel.ModListScrollResetRequestId, Is.EqualTo(0));
+                    Assert.That(viewModel.Mods.First().Identifier, Is.EqualTo("parallax"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ActivateModFromBrowser_OpensDetailsAndTogglesSameSelection()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.SelectedMod != null);
+
+                var initiallySelected = viewModel.SelectedMod!;
+                viewModel.ActivateModFromBrowser(initiallySelected);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                });
+
+                viewModel.ActivateModFromBrowser(initiallySelected);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+
+                var otherMod = viewModel.Mods.First(mod => mod.Identifier != initiallySelected.Identifier);
+                viewModel.ShowDetailsPane = false;
+                viewModel.ActivateModFromBrowser(otherMod);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(otherMod.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ReadyHeader_HidesStatusSurfaceWhenIdle()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await Task.Delay(150);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.StatusMessage, Does.Contain("Loaded"));
+                    Assert.That(viewModel.ShowReadyStatusSurface, Is.False);
+                    Assert.That(viewModel.PreviewSurfaceButtonBackground, Is.EqualTo("#181D23"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ReadyHeader_ShowsStatusSurfaceForBusyAndProblemStates()
+        {
+            var (viewModel, service, user) = CreateViewModelWithUser();
+
+            try
+            {
+                await Task.Delay(150);
+                Assert.That(viewModel.ShowReadyStatusSurface, Is.False);
+
+                user.RaiseProgress("Downloading metadata…", 35);
+                await WaitForAsync(() => viewModel.ShowReadyStatusSurface);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.StatusMessage, Is.EqualTo("Downloading metadata…"));
+                    Assert.That(viewModel.ShowReadyStatusSurface, Is.True);
+                });
+
+                user.RaiseProgress("Downloads complete.", 100);
+                await WaitForAsync(() => !viewModel.ShowReadyStatusSurface);
+
+                user.RaiseError("Apply failed.");
+                await WaitForAsync(() => viewModel.ShowReadyStatusSurface);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.StatusMessage, Is.EqualTo("Apply failed."));
+                    Assert.That(viewModel.ShowReadyStatusSurface, Is.True);
+                    Assert.That(viewModel.StatusSurfaceBackground, Is.EqualTo("#4A232A"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task SelectedMod_ShowsLoadingStateUntilDetailsResolve()
         {
             var (viewModel, service) = CreateViewModel(catalog: new DelayedModCatalogService(detailsDelayMs: 250));
@@ -386,6 +518,33 @@ namespace CKAN.LinuxGUI.VisualTests
             var user = new AvaloniaUser();
             var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
             return (viewModel, service);
+        }
+
+        private static (MainWindowViewModel ViewModel, FakeGameInstanceService Service, AvaloniaUser User) CreateViewModelWithUser(
+            ApplyChangesResult? applyResult = null,
+            IModCatalogService? catalog = null)
+        {
+            var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes, applyResult);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
+            return (viewModel, service, user);
+        }
+
+        private static async Task WaitForAsync(Func<bool> condition,
+                                               int        timeoutMs = 1000)
+        {
+            int waited = 0;
+            while (!condition() && waited < timeoutMs)
+            {
+                await Task.Delay(20);
+                waited += 20;
+            }
+
+            Assert.That(condition(), Is.True, "Timed out waiting for the expected state.");
         }
 
         private sealed class DownloadReadyCatalogService : IModCatalogService

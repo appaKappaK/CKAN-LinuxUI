@@ -92,6 +92,7 @@ namespace CKAN.LinuxGUI
         private bool    isSelectedModLoading;
         private bool    isPreviewLoading;
         private bool    isApplyingChanges;
+        private bool    isUserBusy;
         private bool    showSortOptions;
         private bool    showAdvancedFilters;
         private bool    showDisplaySettings;
@@ -280,6 +281,7 @@ namespace CKAN.LinuxGUI
             user.WhenAnyValue(u => u.IsBusy)
                 .Subscribe(busy =>
                 {
+                    IsUserBusy = busy;
                     if (busy)
                     {
                         StatusMessage = string.IsNullOrWhiteSpace(user.LastMessage)
@@ -299,9 +301,7 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUncachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterIncompatibleOnly).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.SortDescending).Select(_ => Unit.Default))
+                    this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default))
                 .Skip(1)
                 .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
                 .Subscribe(__ =>
@@ -314,11 +314,18 @@ namespace CKAN.LinuxGUI
                     }
                 });
 
-            Observable.Merge(
-                    this.WhenAnyValue(vm => vm.SelectedSortOption).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.SortDescending).Select(_ => Unit.Default))
+            this.WhenAnyValue(vm => vm.SelectedSortOption, vm => vm.SortDescending)
                 .Skip(1)
-                .Subscribe(_ => pendingModListScrollReset = true);
+                .Throttle(TimeSpan.FromMilliseconds(50), RxApp.MainThreadScheduler)
+                .Subscribe(_ =>
+                {
+                    modSearchService.SetCurrent(CurrentFilter());
+                    PublishFilterStateLabels();
+                    if (IsReady)
+                    {
+                        ApplyCurrentSortToVisibleMods();
+                    }
+                });
 
             gameInstanceService.CurrentInstanceChanged += OnCurrentInstanceChanged;
             changesetService.QueueChanged += OnQueueChanged;
@@ -451,6 +458,9 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(LegacySidebarWidth));
                 this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
                 this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
             }
         }
 
@@ -463,7 +473,13 @@ namespace CKAN.LinuxGUI
         public string StatusMessage
         {
             get => statusMessage;
-            private set => this.RaiseAndSetIfChanged(ref statusMessage, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref statusMessage, value);
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
+            }
         }
 
         public string CurrentInstanceContext
@@ -706,6 +722,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref isRefreshing, value);
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
             }
         }
 
@@ -738,6 +755,13 @@ namespace CKAN.LinuxGUI
         public bool ShowStartupInstancePanel => !IsReady;
 
         public bool ShowReadyInstancePanel => IsReady;
+
+        public bool ShowReadyStatusSurface
+            => IsReady
+               && (IsRefreshing
+                   || IsApplyingChanges
+                   || IsUserBusy
+                   || ReadyStatusNeedsAttention);
 
         public bool ShowPreviewSurface
         {
@@ -969,18 +993,65 @@ namespace CKAN.LinuxGUI
             => HasQueuedActions ? $"Preview ({QueuedActions.Count})" : "Preview";
 
         public string BrowseSurfaceButtonBackground
-            => ShowBrowseSurface ? "#3E648A" : "#4B535D";
+            => ShowBrowseSurface ? "#355779" : "#181D23";
 
-        public string BrowseSurfaceButtonBorderBrush => BrowseSurfaceButtonBackground;
+        public string BrowseSurfaceButtonBorderBrush
+            => ShowBrowseSurface ? "#5A86B4" : "#2B323C";
+
+        public string StatusSurfaceBackground
+        {
+            get
+            {
+                if (HasError || MessageContains("failed") || MessageContains("could not"))
+                {
+                    return "#4A232A";
+                }
+
+                if (MessageContains("no known instances") || MessageContains("unavailable"))
+                {
+                    return "#4A3920";
+                }
+
+                return "#24394A";
+            }
+        }
+
+        public string StatusSurfaceBorderBrush
+        {
+            get
+            {
+                if (HasError || MessageContains("failed") || MessageContains("could not"))
+                {
+                    return "#934354";
+                }
+
+                if (MessageContains("no known instances") || MessageContains("unavailable"))
+                {
+                    return "#9A7B37";
+                }
+
+                return "#40647F";
+            }
+        }
+
+        private bool ReadyStatusNeedsAttention
+            => MessageContains("failed")
+               || MessageContains("could not")
+               || MessageContains("unavailable");
 
         public string PreviewSurfaceButtonBackground
             => ShowPreviewSurface
-                ? "#7A3FA0"
+                ? "#5B456F"
                 : HasQueuedActions || HasApplyResult
-                    ? "#5C376D"
-                    : "#4B535D";
+                    ? "#241C2C"
+                    : "#181D23";
 
-        public string PreviewSurfaceButtonBorderBrush => PreviewSurfaceButtonBackground;
+        public string PreviewSurfaceButtonBorderBrush
+            => ShowPreviewSurface
+                ? "#9B6BC3"
+                : HasQueuedActions || HasApplyResult
+                    ? "#694381"
+                    : "#2B323C";
 
         public bool ShowUiScaleRestartStrip
             => UiScaleNeedsRestart && !uiScaleRestartStripDismissed;
@@ -1338,6 +1409,17 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref isApplyingChanges, value);
                 this.RaisePropertyChanged(nameof(PreviewStatusLabel));
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+            }
+        }
+
+        private bool IsUserBusy
+        {
+            get => isUserBusy;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref isUserBusy, value);
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
             }
         }
 
@@ -1687,6 +1769,19 @@ namespace CKAN.LinuxGUI
             set => this.RaiseAndSetIfChanged(ref selectedQueuedAction, value);
         }
 
+        public void ActivateModFromBrowser(ModListItem mod)
+        {
+            if (SelectedMod != null
+                && string.Equals(SelectedMod.Identifier, mod.Identifier, StringComparison.OrdinalIgnoreCase))
+            {
+                ShowDetailsPane = !ShowDetailsPane;
+                return;
+            }
+
+            ShowDetailsPane = true;
+            SelectedMod = mod;
+        }
+
         private async Task RefreshAsync()
         {
             IsRefreshing = true;
@@ -1853,7 +1948,7 @@ namespace CKAN.LinuxGUI
                         var itemsTask = modCatalogService.GetModListAsync(currentFilter, CancellationToken.None);
                         var countsTask = modCatalogService.GetFilterOptionCountsAsync(currentFilter, CancellationToken.None);
                         await Task.WhenAll(itemsTask, countsTask);
-                        var items = itemsTask.Result;
+                        var items = SortItems(itemsTask.Result).ToList();
                         if (activeRequestId != catalogLoadRequestId)
                         {
                             continue;
@@ -1862,11 +1957,7 @@ namespace CKAN.LinuxGUI
                         filterOptionCounts = countsTask.Result;
                         hasFilterOptionCounts = true;
 
-                        Mods.Clear();
-                        foreach (var item in items)
-                        {
-                            Mods.Add(item);
-                        }
+                        ReplaceVisibleMods(items);
 
                         SelectedMod = previousSelection != null
                             ? Mods.FirstOrDefault(mod => mod.Identifier == previousSelection) ?? Mods.FirstOrDefault()
@@ -2251,6 +2342,36 @@ namespace CKAN.LinuxGUI
             ShowSortOptions = false;
         }
 
+        private void ApplyCurrentSortToVisibleMods()
+        {
+            if (Mods.Count <= 1)
+            {
+                ConsumePendingModListScrollReset();
+                return;
+            }
+
+            var sortedItems = SortItems(Mods).ToList();
+            for (int targetIndex = 0; targetIndex < sortedItems.Count; targetIndex++)
+            {
+                int currentIndex = Mods.IndexOf(sortedItems[targetIndex]);
+                if (currentIndex >= 0 && currentIndex != targetIndex)
+                {
+                    Mods.Move(currentIndex, targetIndex);
+                }
+            }
+
+            ConsumePendingModListScrollReset();
+        }
+
+        private void ReplaceVisibleMods(IEnumerable<ModListItem> items)
+        {
+            Mods.Clear();
+            foreach (var item in items)
+            {
+                Mods.Add(item);
+            }
+        }
+
         private Task RestartToApplyUiScaleAsync()
         {
             var processPath = Environment.ProcessPath;
@@ -2612,6 +2733,83 @@ namespace CKAN.LinuxGUI
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
 
+        private IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items)
+        {
+            ModSortOption sortOption = SelectedSortOption?.Value ?? ModSortOption.Name;
+            bool descending = SortDescending;
+
+            return sortOption switch
+            {
+                ModSortOption.Author
+                    => descending
+                        ? items.OrderByDescending(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Author, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Popularity
+                    => descending
+                        ? items.OrderByDescending(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Compatibility
+                    => descending
+                        ? items.OrderByDescending(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Version
+                    => descending
+                        ? items.OrderByDescending(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstalledFirst
+                    => descending
+                        ? items.OrderByDescending(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.IsInstalled)
+                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.UpdatesFirst
+                    => descending
+                        ? items.OrderByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.HasUpdate)
+                               .ThenByDescending(item => item.IsInstalled)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                _
+                    => descending
+                        ? items.OrderByDescending(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenByDescending(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+            };
+        }
+
+        private void ConsumePendingModListScrollReset()
+        {
+            if (pendingModListScrollReset)
+            {
+                pendingModListScrollReset = false;
+                ModListScrollResetRequestId++;
+            }
+        }
+
         private string SortOptionLabel(ModSortOption sortOption, string baseLabel)
             => SelectedSortOption?.Value == sortOption
                 ? $"{baseLabel} {SortDirectionLabel(sortOption, SortDescending)}"
@@ -2814,6 +3012,9 @@ namespace CKAN.LinuxGUI
                                                  int    requestId)
             => requestId == selectedModLoadRequestId
                && string.Equals(identifier, SelectedMod?.Identifier, StringComparison.OrdinalIgnoreCase);
+
+        private bool MessageContains(string value)
+            => StatusMessage?.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 
         private static string CountLabel(int count,
                                          string singular,
