@@ -29,7 +29,7 @@ namespace CKAN.App.Services
             => Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var plan = BuildExecutionPlan(cancellationToken);
+                var plan = BuildExecutionPlan(changesetService.CurrentApplyQueue, cancellationToken);
                 return new ChangesetPreviewModel
                 {
                     SummaryText        = plan.SummaryText,
@@ -45,11 +45,45 @@ namespace CKAN.App.Services
             }, cancellationToken);
 
         public Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken)
+            => ExecuteQueuedAsync(changesetService.CurrentApplyQueue,
+                                  changesetService.ClearApplyQueue,
+                                  downloadOnlyRun: false,
+                                  cancellationToken);
+
+        public async Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
+                                                              CancellationToken cancellationToken)
+        {
+            if (mod == null)
+            {
+                throw new ArgumentNullException(nameof(mod));
+            }
+
+            var result = await ExecuteQueuedAsync(new[]
+            {
+                CreateInstallAction(mod),
+            },
+            () => { },
+            downloadOnlyRun: false,
+            cancellationToken);
+
+            return RewordInstallNowResult(mod, result);
+        }
+
+        public Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken)
+            => ExecuteQueuedAsync(changesetService.CurrentDownloadQueue,
+                                  changesetService.ClearDownloadQueue,
+                                  downloadOnlyRun: true,
+                                  cancellationToken);
+
+        private Task<ApplyChangesResult> ExecuteQueuedAsync(IReadOnlyList<QueuedActionModel> requestedActions,
+                                                            Action                       clearQueue,
+                                                            bool                         downloadOnlyRun,
+                                                            CancellationToken            cancellationToken)
             => Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var plan = BuildExecutionPlan(cancellationToken);
+                var plan = BuildExecutionPlan(requestedActions, cancellationToken);
                 if (!plan.CanApply)
                 {
                     var followUps = plan.AttentionNotes.Concat(plan.Conflicts)
@@ -60,10 +94,12 @@ namespace CKAN.App.Services
                         Kind = ApplyResultKind.Blocked,
                         Success = false,
                         Title = plan.Conflicts.Count > 0
-                            ? "Apply Blocked"
-                            : "Apply Needs Attention",
+                            ? downloadOnlyRun ? "Downloads Blocked" : "Apply Blocked"
+                            : downloadOnlyRun ? "Downloads Need Attention" : "Apply Needs Attention",
                         Message = plan.Conflicts.Count > 0
-                            ? $"Cannot apply queued changes: {plan.Conflicts[0]}"
+                            ? downloadOnlyRun
+                                ? $"Cannot download queued mods: {plan.Conflicts[0]}"
+                                : $"Cannot apply queued changes: {plan.Conflicts[0]}"
                             : followUps.FirstOrDefault() ?? plan.SummaryText,
                         SummaryLines = BuildSummaryLines(plan),
                         FollowUpLines = followUps,
@@ -76,7 +112,7 @@ namespace CKAN.App.Services
                     {
                         Kind = ApplyResultKind.Blocked,
                         Success = false,
-                        Title = "Apply Unavailable",
+                        Title = downloadOnlyRun ? "Downloads Unavailable" : "Apply Unavailable",
                         Message = "Cannot apply changes because downloaded files are unavailable right now.",
                         FollowUpLines = new[]
                         {
@@ -121,7 +157,7 @@ namespace CKAN.App.Services
 
                     if (!hasTransactionalActions)
                     {
-                        changesetService.Clear();
+                        clearQueue();
 
                         return new ApplyChangesResult
                         {
@@ -216,7 +252,7 @@ namespace CKAN.App.Services
                                                                   plan.RegistryManager.registry,
                                                                   plan.Instance);
 
-                    changesetService.Clear();
+                    clearQueue();
 
                     return new ApplyChangesResult
                     {
@@ -243,9 +279,9 @@ namespace CKAN.App.Services
                     {
                         Kind = ApplyResultKind.Canceled,
                         Success = false,
-                        Title = "Apply Canceled",
+                        Title = downloadOnlyRun ? "Downloads Canceled" : "Apply Canceled",
                         Message = string.IsNullOrWhiteSpace(ex.Message)
-                            ? "Apply canceled."
+                            ? downloadOnlyRun ? "Downloads canceled." : "Apply canceled."
                             : ex.Message,
                     };
                 }
@@ -255,7 +291,7 @@ namespace CKAN.App.Services
                     {
                         Kind = ApplyResultKind.Blocked,
                         Success = false,
-                        Title = "Apply Delayed by Rate Limit",
+                        Title = downloadOnlyRun ? "Downloads Delayed by Rate Limit" : "Apply Delayed by Rate Limit",
                         Message = ex.Message,
                         FollowUpLines = new[]
                         {
@@ -270,7 +306,7 @@ namespace CKAN.App.Services
                     {
                         Kind = ApplyResultKind.Error,
                         Success = false,
-                        Title = "Apply Failed",
+                        Title = downloadOnlyRun ? "Downloads Failed" : "Apply Failed",
                         Message = ex.Message,
                     };
                 }
@@ -280,13 +316,14 @@ namespace CKAN.App.Services
                     {
                         Kind = ApplyResultKind.Error,
                         Success = false,
-                        Title = "Apply Failed",
-                        Message = $"Apply failed: {ex.Message}",
+                        Title = downloadOnlyRun ? "Downloads Failed" : "Apply Failed",
+                        Message = $"{(downloadOnlyRun ? "Downloads" : "Apply")} failed: {ex.Message}",
                     };
                 }
             }, cancellationToken);
 
-        private ExecutionPlan BuildExecutionPlan(CancellationToken cancellationToken)
+        private ExecutionPlan BuildExecutionPlan(IReadOnlyList<QueuedActionModel> requestedActions,
+                                                 CancellationToken            cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -303,14 +340,13 @@ namespace CKAN.App.Services
                 };
             }
 
-            var requestedActions = changesetService.CurrentQueue;
             if (requestedActions.Count == 0)
             {
                 return new ExecutionPlan
                 {
                     Instance        = instance,
                     RegistryManager = registryManager,
-                    SummaryText     = "Queue download, install, update, or remove actions to build a preview.",
+                    SummaryText     = "Queue install, update, or remove actions to build an apply preview.",
                 };
             }
 
@@ -746,6 +782,87 @@ namespace CKAN.App.Services
 
         private static string Pluralize(int count)
             => count == 1 ? "" : "s";
+
+        private static QueuedActionModel CreateInstallAction(ModListItem mod)
+            => new QueuedActionModel
+            {
+                Identifier = mod.Identifier,
+                Name       = mod.Name,
+                ActionKind = QueuedActionKind.Install,
+                ActionText = "Install",
+                DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
+                    ? "Install latest available version"
+                    : $"Install {mod.LatestVersion}",
+            };
+
+        private static ApplyChangesResult RewordInstallNowResult(ModListItem mod,
+                                                                 ApplyChangesResult result)
+        {
+            var summaryLines = result.SummaryLines
+                                     .Where(line => !line.Contains("queued action",
+                                                                   StringComparison.OrdinalIgnoreCase))
+                                     .ToList();
+            if (summaryLines.Count == 0)
+            {
+                summaryLines.Add("1 direct install");
+            }
+
+            return new ApplyChangesResult
+            {
+                Kind          = result.Kind,
+                Success       = result.Success,
+                Title         = GetInstallNowTitle(result.Kind),
+                Message       = GetInstallNowMessage(mod.Name, result),
+                SummaryLines  = summaryLines,
+                FollowUpLines = result.FollowUpLines,
+            };
+        }
+
+        private static string GetInstallNowTitle(ApplyResultKind kind)
+            => kind switch
+            {
+                ApplyResultKind.Success  => "Installed",
+                ApplyResultKind.Warning  => "Installed with Follow-Up",
+                ApplyResultKind.Blocked  => "Install Blocked",
+                ApplyResultKind.Canceled => "Install Canceled",
+                _                        => "Install Failed",
+            };
+
+        private static string GetInstallNowMessage(string moduleName,
+                                                   ApplyChangesResult result)
+        {
+            if (result.Kind == ApplyResultKind.Success)
+            {
+                return $"Installed {moduleName}.";
+            }
+
+            if (result.Kind == ApplyResultKind.Warning)
+            {
+                return $"Installed {moduleName}. Review the follow-up items below.";
+            }
+
+            if (result.Kind == ApplyResultKind.Blocked)
+            {
+                const string prefix = "Cannot apply queued changes: ";
+                return result.Message.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    ? $"Could not install {moduleName}: {result.Message[prefix.Length..]}"
+                    : $"Could not install {moduleName}: {result.Message}";
+            }
+
+            if (result.Kind == ApplyResultKind.Canceled)
+            {
+                return RewritePrefix(result.Message, "Apply canceled", "Install canceled");
+            }
+
+            return RewritePrefix(result.Message, "Apply failed", "Install failed");
+        }
+
+        private static string RewritePrefix(string message,
+                                            string sourcePrefix,
+                                            string targetPrefix)
+            => message.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase)
+                ? $"{targetPrefix}{message[sourcePrefix.Length..]}"
+                : message;
 
         private static IReadOnlyList<string> BuildSummaryLines(ExecutionPlan plan)
         {

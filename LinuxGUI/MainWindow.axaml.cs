@@ -19,6 +19,7 @@ namespace CKAN.LinuxGUI
         private readonly IAppSettingsService? appSettings;
         private bool suppressHeaderInstanceSelection;
         private MainWindowViewModel? observedViewModel;
+        private ContextMenu? activeModRowMenu;
 
         public MainWindow()
         {
@@ -72,6 +73,7 @@ namespace CKAN.LinuxGUI
                                WindowClosingEventArgs e)
         {
             ObserveViewModel(null);
+            CloseActiveModRowMenu();
 
             if (appSettings == null)
             {
@@ -125,7 +127,6 @@ namespace CKAN.LinuxGUI
                 PositionX   = positionX,
                 PositionY   = positionY,
                 IsMaximized = WindowState == WindowState.Maximized,
-                ShowDetailsPane = (DataContext as MainWindowViewModel)?.ShowDetailsPane,
             });
         }
 
@@ -177,6 +178,7 @@ namespace CKAN.LinuxGUI
             var updateKind = e.GetCurrentPoint(control).Properties.PointerUpdateKind;
             if (updateKind == PointerUpdateKind.LeftButtonPressed)
             {
+                CloseActiveModRowMenu();
                 viewModel.ActivateModFromBrowser(mod);
                 ModsListBox.Focus();
                 e.Handled = true;
@@ -190,12 +192,25 @@ namespace CKAN.LinuxGUI
 
             viewModel.SelectedMod = mod;
             ModsListBox.Focus();
+            CloseActiveModRowMenu();
 
             var menu = new ContextMenu
             {
                 Placement = PlacementMode.Pointer,
             };
             menu.Classes.Add("mod-row-menu");
+            menu.Closed += ModRowMenu_OnClosed;
+
+            if (viewModel.ShowDownloadOnlyContextAction(mod))
+            {
+                var downloadOnlyItem = new MenuItem
+                {
+                    Header = viewModel.DownloadOnlyContextLabel(mod),
+                };
+                downloadOnlyItem.Click += (_, _) => viewModel.ToggleDownloadOnlyFromBrowser(mod);
+                downloadOnlyItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(downloadOnlyItem);
+            }
 
             var toggleDetailsItem = new MenuItem
             {
@@ -205,6 +220,7 @@ namespace CKAN.LinuxGUI
             toggleDetailsItem.Classes.Add("mod-row-menu-item");
             menu.Items.Add(toggleDetailsItem);
 
+            activeModRowMenu = menu;
             menu.Open(control);
             e.Handled = true;
         }
@@ -221,6 +237,13 @@ namespace CKAN.LinuxGUI
 
             if (e.Key == Key.Escape)
             {
+                if (activeModRowMenu != null)
+                {
+                    CloseActiveModRowMenu();
+                    e.Handled = true;
+                    return;
+                }
+
                 if (viewModel.ShowAdvancedFilters)
                 {
                     viewModel.ShowAdvancedFilters = false;
@@ -266,6 +289,32 @@ namespace CKAN.LinuxGUI
 
                 viewModel.ToggleQueueDrawerCommand.Execute().Subscribe(_ => { });
                 e.Handled = true;
+            }
+        }
+
+        private void CloseActiveModRowMenu()
+        {
+            if (activeModRowMenu == null)
+            {
+                return;
+            }
+
+            var menu = activeModRowMenu;
+            activeModRowMenu = null;
+            menu.Closed -= ModRowMenu_OnClosed;
+            menu.Close();
+        }
+
+        private void ModRowMenu_OnClosed(object? sender,
+                                         EventArgs e)
+        {
+            if (sender is ContextMenu menu)
+            {
+                menu.Closed -= ModRowMenu_OnClosed;
+                if (ReferenceEquals(activeModRowMenu, menu))
+                {
+                    activeModRowMenu = null;
+                }
             }
         }
 

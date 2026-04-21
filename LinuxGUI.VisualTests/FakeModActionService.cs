@@ -29,12 +29,12 @@ namespace CKAN.LinuxGUI.VisualTests
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var queue = changesetService.CurrentQueue;
+            var queue = changesetService.CurrentApplyQueue;
             if (queue.Count == 0)
             {
                 return Task.FromResult(new ChangesetPreviewModel
                 {
-                    SummaryText = "Queue download, install, update, or remove actions to build a preview.",
+                    SummaryText = "Queue install, update, or remove actions to build a preview.",
                     CanApply    = false,
                 });
             }
@@ -76,9 +76,42 @@ namespace CKAN.LinuxGUI.VisualTests
             cancellationToken.ThrowIfCancellationRequested();
             if (applyResult.Success)
             {
-                changesetService.Clear();
+                changesetService.ClearApplyQueue();
             }
             return Task.FromResult(applyResult);
+        }
+
+        public Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
+                                                        CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Installed",
+                Message = $"Installed {mod.Name}.",
+                SummaryLines = new[]
+                {
+                    "1 direct install",
+                },
+            });
+        }
+
+        public Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (applyResult.Success)
+            {
+                changesetService.ClearDownloadQueue();
+            }
+            return Task.FromResult(new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Downloads Completed",
+                Message = "Downloaded queued items for later install.",
+            });
         }
     }
 }

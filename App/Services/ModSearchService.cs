@@ -7,7 +7,7 @@ namespace CKAN.App.Services
         public ModSearchService(IAppSettingsService appSettingsService)
         {
             Current = appSettingsService.FilterState;
-            ShowAdvancedFilters = appSettingsService.ShowAdvancedFilters;
+            ShowAdvancedFilters = false;
         }
 
         public FilterState Current { get; private set; }

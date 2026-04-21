@@ -10,5 +10,9 @@ namespace CKAN.App.Services
         Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken);
 
         Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken);
+
+        Task<ApplyChangesResult> InstallNowAsync(ModListItem mod, CancellationToken cancellationToken);
+
+        Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken);
     }
 }

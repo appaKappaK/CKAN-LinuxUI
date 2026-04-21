@@ -8,9 +8,17 @@ namespace CKAN.App.Services
     {
         IReadOnlyList<QueuedActionModel> CurrentQueue { get; }
 
+        IReadOnlyList<QueuedActionModel> CurrentApplyQueue { get; }
+
+        IReadOnlyList<QueuedActionModel> CurrentDownloadQueue { get; }
+
         event System.Action? QueueChanged;
 
         QueuedActionModel? FindQueuedAction(string identifier);
+
+        QueuedActionModel? FindQueuedApplyAction(string identifier);
+
+        QueuedActionModel? FindQueuedDownloadAction(string identifier);
 
         void QueueDownload(ModListItem mod);
 
@@ -23,5 +31,9 @@ namespace CKAN.App.Services
         bool Remove(string identifier);
 
         void Clear();
+
+        void ClearApplyQueue();
+
+        void ClearDownloadQueue();
     }
 }

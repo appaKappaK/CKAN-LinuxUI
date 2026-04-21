@@ -53,10 +53,7 @@ namespace CKAN.App.Services
         {
             get
             {
-                lock (sync)
-                {
-                    return settings.ShowAdvancedFilters;
-                }
+                return false;
             }
         }
 
@@ -101,14 +98,12 @@ namespace CKAN.App.Services
         {
             lock (sync)
             {
-                if (FilterStatesEqual(settings.FilterState, filterState)
-                    && settings.ShowAdvancedFilters == showAdvancedFilters)
+                if (FilterStatesEqual(settings.FilterState, filterState))
                 {
                     return;
                 }
 
                 settings.FilterState = filterState ?? new FilterState();
-                settings.ShowAdvancedFilters = showAdvancedFilters;
                 SaveSettings();
             }
         }
@@ -192,16 +187,13 @@ namespace CKAN.App.Services
                && left?.Height == right?.Height
                && left?.PositionX == right?.PositionX
                && left?.PositionY == right?.PositionY
-               && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false)
-               && (left?.ShowDetailsPane ?? true) == (right?.ShowDetailsPane ?? true);
+               && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false);
 
         private sealed class StoredSettings
         {
             public string? LastInstanceName { get; set; }
 
             public FilterState FilterState { get; set; } = new FilterState();
-
-            public bool ShowAdvancedFilters { get; set; }
 
             public AppWindowState WindowState { get; set; } = new AppWindowState();
 

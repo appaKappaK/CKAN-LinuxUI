@@ -116,10 +116,11 @@
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="0" />
+      <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
     </Style>
     <Style Selector="ListBox#ModsListBox > ListBoxItem">
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0" />
+      <Setter Property="Margin" Value="0,0,12,0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Background" Value="Transparent" />
@@ -130,6 +131,21 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="#B61BD1" />
       <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="ListBox#ModsListBox ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,2,2,2" />
+    </Style>
+    <Style Selector="ListBox#ModsListBox ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,2,2,2" />
+    </Style>
+    <Style Selector="ListBox#ModsListBox ScrollBar:vertical:expanded">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,2,2,2" />
     </Style>
   </Window.Styles>
   <LayoutTransformControl HorizontalAlignment="Stretch"
@@ -276,6 +292,7 @@
                       Spacing="10"
                       VerticalAlignment="Center">
             <Button VerticalAlignment="Center"
+                    x:Name="ReadySettingsButton"
                     Background="#3E648A"
                     BorderBrush="#3E648A"
                     BorderThickness="0"
@@ -295,14 +312,23 @@
           </StackPanel>
         </Grid>
 
-        <Border Background="#161B21"
-                BorderBrush="#2B323C"
-                BorderThickness="1"
-                CornerRadius="10"
-                Padding="14"
-                IsVisible="{Binding ShowDisplaySettings}">
-          <StackPanel Spacing="10">
-            <Grid ColumnDefinitions="*,Auto">
+        <Popup IsOpen="{Binding ShowDisplaySettings, Mode=TwoWay}"
+               Placement="BottomEdgeAlignedRight"
+               PlacementTarget="{Binding #ReadySettingsButton}"
+               HorizontalOffset="0"
+               VerticalOffset="8"
+               IsLightDismissEnabled="True"
+               OverlayDismissEventPassThrough="True"
+               OverlayInputPassThroughElement="{Binding #ReadySettingsButton}">
+          <Border Background="#161B21"
+                  BorderBrush="#2B323C"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="14"
+                  MinWidth="340"
+                  MaxWidth="380"
+                  BoxShadow="0 18 36 0 #66000000">
+            <StackPanel Spacing="10">
               <StackPanel Spacing="4">
                 <TextBlock FontSize="15"
                            FontWeight="SemiBold"
@@ -312,52 +338,48 @@
                            TextWrapping="Wrap"
                            Text="{Binding DisplayScaleSummary}" />
               </StackPanel>
-              <Button Grid.Column="1"
-                      VerticalAlignment="Top"
-                      Command="{Binding ToggleDisplaySettingsCommand}"
-                      Content="Close" />
-            </Grid>
 
-            <Slider Minimum="{Binding UiScaleMinimum}"
-                    Maximum="{Binding UiScaleMaximum}"
-                    TickFrequency="5"
-                    TickPlacement="Outside"
-                    IsSnapToTickEnabled="True"
-                    SmallChange="5"
-                    LargeChange="5"
-                    Value="{Binding PendingUiScalePercent}" />
+              <Slider Minimum="{Binding UiScaleMinimum}"
+                      Maximum="{Binding UiScaleMaximum}"
+                      TickFrequency="5"
+                      TickPlacement="Outside"
+                      IsSnapToTickEnabled="True"
+                      SmallChange="5"
+                      LargeChange="5"
+                      Value="{Binding PendingUiScalePercent}" />
 
-            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock FontSize="12"
+                           Opacity="0.68"
+                           Text="{Binding UiScaleMinimum}" />
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Text="{Binding PendingUiScaleLabel}" />
+                <TextBlock Grid.Column="2"
+                           FontSize="12"
+                           Opacity="0.68"
+                           Text="{Binding UiScaleMaximum}" />
+              </Grid>
+
               <TextBlock FontSize="12"
-                         Opacity="0.68"
-                         Text="{Binding UiScaleMinimum}" />
-              <TextBlock Grid.Column="1"
-                         HorizontalAlignment="Center"
-                         FontWeight="SemiBold"
-                         Text="{Binding PendingUiScaleLabel}" />
-              <TextBlock Grid.Column="2"
-                         FontSize="12"
-                         Opacity="0.68"
-                         Text="{Binding UiScaleMaximum}" />
-            </Grid>
+                         Opacity="0.72"
+                         TextWrapping="Wrap"
+                         Text="{Binding DisplayScaleHint}" />
 
-            <TextBlock FontSize="12"
-                       Opacity="0.72"
-                       TextWrapping="Wrap"
-                       Text="{Binding DisplayScaleHint}" />
-
-            <WrapPanel>
-              <Button Classes="toolbar-chip"
-                      IsVisible="{Binding ShowResetUiScaleAction}"
-                      Command="{Binding ResetUiScaleCommand}"
-                      Content="Reset to 100%" />
-              <Button Classes="toolbar-chip"
-                      IsVisible="{Binding UiScaleNeedsRestart}"
-                      Command="{Binding RestartToApplyUiScaleCommand}"
-                      Content="Restart Now" />
-            </WrapPanel>
-          </StackPanel>
-        </Border>
+              <WrapPanel>
+                <Button Classes="toolbar-chip"
+                        IsVisible="{Binding ShowResetUiScaleAction}"
+                        Command="{Binding ResetUiScaleCommand}"
+                        Content="Reset to 100%" />
+                <Button Classes="toolbar-chip"
+                        IsVisible="{Binding UiScaleNeedsRestart}"
+                        Command="{Binding RestartToApplyUiScaleCommand}"
+                        Content="Restart Now" />
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+        </Popup>
       </StackPanel>
     </Border>
 
@@ -740,8 +762,8 @@
                         CornerRadius="10"
                         Padding="12"
                         Margin="0,0,6,0">
-                  <Grid RowDefinitions="Auto,Auto,*,Auto">
-                    <Grid ColumnDefinitions="*,Auto"
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <Grid ColumnDefinitions="*,Auto,Auto"
                           Margin="0,0,0,8">
                       <TextBox x:Name="SearchTextBox"
                                Watermark="Search mods by name, author, or identifier"
@@ -751,37 +773,21 @@
                               CornerRadius="999"
                               Padding="10,6"
                               Margin="8,0,0,0"
-                              VerticalAlignment="Center">
+                                VerticalAlignment="Center">
                         <TextBlock FontSize="12"
                                    Opacity="0.8"
                                    Text="{Binding ModCountLabel}" />
                       </Border>
-                    </Grid>
-
-                    <Grid Grid.Row="1"
-                          Margin="0,0,0,8">
-                      <Grid ColumnDefinitions="*,Auto,Auto">
-                        <TextBlock Grid.Column="0" />
-
-                        <Button Grid.Column="1"
-                                x:Name="MoreFiltersButton"
-                                Classes="browser-chip"
-                                Background="{Binding MoreFiltersButtonBackground}"
-                                BorderBrush="{Binding MoreFiltersButtonBorderBrush}"
-                                Foreground="#F4F6F8"
-                                Command="{Binding ToggleAdvancedFiltersCommand}"
-                                HorizontalAlignment="Right"
-                                Content="{Binding MoreFiltersLabel}" />
-                        <Button Grid.Column="2"
-                                Classes="browser-chip"
-                                IsVisible="{Binding HasActiveFilters}"
-                                Background="{Binding ClearFiltersButtonBackground}"
-                                BorderBrush="{Binding ClearFiltersButtonBorderBrush}"
-                                Foreground="#F4F6F8"
-                                Command="{Binding ClearFiltersCommand}"
-                                HorizontalAlignment="Right"
-                                Content="Clear Filters" />
-                      </Grid>
+                      <Button Grid.Column="2"
+                              x:Name="MoreFiltersButton"
+                              Classes="browser-chip"
+                              Margin="8,0,0,6"
+                              Background="{Binding MoreFiltersButtonBackground}"
+                              BorderBrush="{Binding MoreFiltersButtonBorderBrush}"
+                              Foreground="#F4F6F8"
+                              Command="{Binding ToggleAdvancedFiltersCommand}"
+                              HorizontalAlignment="Right"
+                              Content="{Binding MoreFiltersLabel}" />
 
                       <Popup x:Name="AdvancedFiltersPopup"
                              IsOpen="{Binding ShowAdvancedFilters, Mode=TwoWay}"
@@ -879,7 +885,7 @@
                       </Popup>
                     </Grid>
 
-                    <Border Grid.Row="2"
+                    <Border Grid.Row="1"
                             Background="#14191F"
                             CornerRadius="8"
                             BorderBrush="#2B323C"
@@ -1248,7 +1254,7 @@
                       </Grid>
                     </Border>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="2"
                             Background="#20262D"
                             CornerRadius="8"
                             Padding="10,8"
@@ -1281,7 +1287,7 @@
                         Margin="8,0,0,0"
                         Width="304"
                         MinWidth="280"
-                        IsVisible="{Binding ShowDetailsPane}">
+                        IsVisible="{Binding ShowDetailsSidebar}">
                   <Grid>
                     <StackPanel Spacing="12"
                                 IsVisible="{Binding ShowSelectedModPlaceholder}">
@@ -1474,19 +1480,20 @@
                                   Margin="0,0,8,0"
                                   Padding="12,7"
                                   CornerRadius="8"
+                                  Background="#2A6B4A"
+                                  BorderBrush="#2A6B4A"
+                                  IsVisible="{Binding ShowInstallNowAction}"
+                                  Command="{Binding InstallNowSelectedModCommand}"
+                                  Content="Install Now" />
+                          <Button HorizontalAlignment="Left"
+                                  Margin="0,0,8,0"
+                                  Padding="12,7"
+                                  CornerRadius="8"
                                   Background="{Binding PrimarySelectedModActionBackground}"
                                   BorderBrush="{Binding PrimarySelectedModActionBorderBrush}"
                                   IsVisible="{Binding ShowPrimarySelectedModAction}"
                                   Command="{Binding PrimarySelectedModActionCommand}"
                                   Content="{Binding PrimarySelectedModActionLabel}" />
-                          <Button HorizontalAlignment="Left"
-                                  Padding="12,7"
-                                  CornerRadius="8"
-                                  Background="{Binding SecondarySelectedModActionBackground}"
-                                  BorderBrush="{Binding SecondarySelectedModActionBorderBrush}"
-                                  IsVisible="{Binding ShowSecondarySelectedModAction}"
-                                  Command="{Binding QueueDownloadCommand}"
-                                  Content="{Binding SecondarySelectedModActionLabel}" />
                         </WrapPanel>
 
                         <StackPanel Spacing="8">
@@ -1711,10 +1718,18 @@
                                 Command="{Binding ClearQueueCommand}"
                                 Content="Clear Queue" />
                         <Button Classes="toolbar-chip"
+                                Margin="0,0,8,0"
+                                Background="{Binding DownloadQueuedButtonBackground}"
+                                BorderBrush="{Binding DownloadQueuedButtonBorderBrush}"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasQueuedDownloadActions}"
+                                Command="{Binding DownloadQueuedCommand}"
+                                Content="Download Only" />
+                        <Button Classes="toolbar-chip"
                                 Background="{Binding ApplyChangesButtonBackground}"
                                 BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
                                 Foreground="#F4F6F8"
-                                IsVisible="{Binding HasQueuedActions}"
+                                IsVisible="{Binding HasQueuedChangeActions}"
                                 Command="{Binding ApplyChangesCommand}"
                                 Content="Apply Changes" />
                       </WrapPanel>
@@ -1778,7 +1793,7 @@
                                          Text="Nothing Queued Yet" />
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.82"
-                                         Text="Queue download, install, update, or remove actions from a selected mod to build a preflight summary before applying anything." />
+                                         Text="Queue install, update, or remove actions from a selected mod to build a preflight summary before applying anything. Right-click a mod for download-only." />
                             </StackPanel>
                           </Border>
                         </Grid>
@@ -1917,7 +1932,7 @@
                               <StackPanel Spacing="3">
                                 <TextBlock FontSize="11"
                                            Opacity="0.7"
-                                           Text="Direct Actions" />
+                                           Text="Direct Changes" />
                                 <TextBlock FontWeight="SemiBold"
                                            Text="{Binding PreviewQueuedCountLabel}" />
                               </StackPanel>
@@ -1926,11 +1941,24 @@
                                     CornerRadius="8"
                                     Padding="10"
                                     Margin="0,0,8,8"
-                                    Width="124">
+                                    Width="144">
                               <StackPanel Spacing="3">
                                 <TextBlock FontSize="11"
                                            Opacity="0.7"
-                                           Text="Downloads" />
+                                           Text="Download Only" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding PreviewDownloadQueueCountLabel}" />
+                              </StackPanel>
+                            </Border>
+                            <Border Background="#161B21"
+                                    CornerRadius="8"
+                                    Padding="10"
+                                    Margin="0,0,8,8"
+                                    Width="148">
+                              <StackPanel Spacing="3">
+                                <TextBlock FontSize="11"
+                                           Opacity="0.7"
+                                           Text="Required Downloads" />
                                 <TextBlock FontWeight="SemiBold"
                                            Text="{Binding PreviewDownloadCountLabel}" />
                               </StackPanel>
@@ -2041,6 +2069,21 @@
                                   </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                               </ItemsControl>
+                            </StackPanel>
+                          </Border>
+
+                          <Border Background="#223043"
+                                  BorderBrush="#496A92"
+                                  BorderThickness="1"
+                                  CornerRadius="8"
+                                  Padding="12"
+                                  IsVisible="{Binding ShowPreviewDownloadQueueGuidance}">
+                            <StackPanel Spacing="8">
+                              <TextBlock FontWeight="SemiBold"
+                                         Text="{Binding PreviewDownloadQueueGuidanceTitle}" />
+                              <TextBlock Opacity="0.86"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding PreviewDownloadQueueGuidance}" />
                             </StackPanel>
                           </Border>
 

@@ -71,7 +71,8 @@ namespace CKAN.LinuxGUI
         private string  selectedModRecommendationCountLabel = "";
         private string  selectedModSuggestionCountLabel = "";
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
-        private string  previewSummary = "Queue download, install, update, or remove actions to build a preview.";
+        private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod for download-only.";
+        private string  currentExecutionStatusLabel = "Applying changes…";
         private string  applyResultTitle = "";
         private string  applyResultMessage = "";
         private string  applyResultBackground = "#20262D";
@@ -153,7 +154,7 @@ namespace CKAN.LinuxGUI
             {
                 new SortOptionItem { Value = ModSortOption.Name, Label = "Name" },
                 new SortOptionItem { Value = ModSortOption.Author, Label = "Author" },
-                new SortOptionItem { Value = ModSortOption.Popularity, Label = "Popularity" },
+                new SortOptionItem { Value = ModSortOption.Popularity, Label = "Downloads" },
                 new SortOptionItem { Value = ModSortOption.Compatibility, Label = "Compatibility" },
                 new SortOptionItem { Value = ModSortOption.Version, Label = "Version" },
                 new SortOptionItem { Value = ModSortOption.InstalledFirst, Label = "Installed First" },
@@ -163,7 +164,7 @@ namespace CKAN.LinuxGUI
             sortDescending = DefaultSortDescending(ModSortOption.Name);
             appliedUiScalePercent = UiScaleSettings.NormalizePercent(appSettingsService.UiScalePercent);
             pendingUiScalePercent = appliedUiScalePercent;
-            showDetailsPane = appSettingsService.WindowState.ShowDetailsPane ?? true;
+            showDetailsPane = false;
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing)
                                  .CombineLatest(this.WhenAnyValue(vm => vm.IsApplyingChanges),
@@ -178,13 +179,6 @@ namespace CKAN.LinuxGUI
                                                                        && !applying
                                                                        && !mod.IsInstalled
                                                                        && !mod.IsIncompatible);
-            var canQueueDownload = this.WhenAnyValue(vm => vm.SelectedMod,
-                                                     vm => vm.IsApplyingChanges,
-                                                     (mod, applying) => mod != null
-                                                                        && !applying
-                                                                        && !mod.IsInstalled
-                                                                        && !mod.IsCached
-                                                                        && !mod.IsIncompatible);
             var canQueueUpdate = this.WhenAnyValue(vm => vm.SelectedMod,
                                                    vm => vm.IsApplyingChanges,
                                                    (mod, applying) => mod?.IsInstalled == true
@@ -210,18 +204,20 @@ namespace CKAN.LinuxGUI
                                                          vm => vm.IsApplyingChanges,
                                                          (needsRestart, refreshing, applying)
                                                              => needsRestart && !refreshing && !applying);
-            var canApplyChanges = this.WhenAnyValue(vm => vm.HasQueuedActions,
+            var canApplyChanges = this.WhenAnyValue(vm => vm.HasQueuedChangeActions,
                                                     vm => vm.PreviewCanApply,
                                                     vm => vm.IsPreviewLoading,
                                                     vm => vm.IsApplyingChanges,
-                                                    (hasActions, canApply, previewLoading, applying)
-                                                        => hasActions && canApply && !previewLoading && !applying);
+                                                    (hasChanges, canApply, previewLoading, applying)
+                                                        => hasChanges && canApply && !previewLoading && !applying);
+            var canDownloadQueued = this.WhenAnyValue(vm => vm.HasQueuedDownloadActions,
+                                                      vm => vm.IsApplyingChanges,
+                                                      (hasDownloads, applying) => hasDownloads && !applying);
 
             RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
             SetCurrentInstanceCommand = ReactiveCommand.CreateFromTask(
                 SetCurrentInstanceAsync,
                 canUseSelected);
-            QueueDownloadCommand = ReactiveCommand.Create(QueueDownloadSelected, canQueueDownload);
             QueueInstallCommand = ReactiveCommand.Create(QueueInstallSelected, canQueueInstall);
             QueueUpdateCommand = ReactiveCommand.Create(QueueUpdateSelected, canQueueUpdate);
             QueueRemoveCommand = ReactiveCommand.Create(QueueRemoveSelected, canQueueRemove);
@@ -240,12 +236,19 @@ namespace CKAN.LinuxGUI
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
                                                                           canRestartForUiScale);
             ApplyChangesCommand = ReactiveCommand.CreateFromTask(ApplyQueuedChangesAsync, canApplyChanges);
+            DownloadQueuedCommand = ReactiveCommand.CreateFromTask(DownloadQueuedAsync, canDownloadQueued);
             ToggleQueueDrawerCommand = ReactiveCommand.Create(ToggleQueueDrawer);
             ApplyChangesFromCollapsedQueueCommand = ReactiveCommand.CreateFromTask(ApplyChangesFromCollapsedQueueAsync,
                                                                                    canApplyChanges);
             DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
-            PrimarySelectedModActionCommand = ReactiveCommand.Create(ExecutePrimarySelectedModAction,
-                                                                     this.WhenAnyValue(vm => vm.ShowPrimarySelectedModAction));
+            PrimarySelectedModActionCommand = ReactiveCommand.Create(
+                ExecutePrimarySelectedModAction,
+                this.WhenAnyValue(vm => vm.ShowPrimarySelectedModAction,
+                                  vm => vm.IsApplyingChanges,
+                                  (showAction, applying) => showAction && !applying));
+            InstallNowSelectedModCommand = ReactiveCommand.CreateFromTask(
+                InstallNowSelectedModAsync,
+                this.WhenAnyValue(vm => vm.ShowInstallNowAction));
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
             ShowRelationshipsDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Relationships));
@@ -365,8 +368,6 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> SetCurrentInstanceCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> QueueDownloadCommand { get; }
-
         public ReactiveCommand<Unit, Unit> QueueInstallCommand { get; }
 
         public ReactiveCommand<Unit, Unit> QueueUpdateCommand { get; }
@@ -401,6 +402,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ApplyChangesCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> DownloadQueuedCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ToggleQueueDrawerCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ApplyChangesFromCollapsedQueueCommand { get; }
@@ -408,6 +411,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> DismissApplyResultCommand { get; }
 
         public ReactiveCommand<Unit, Unit> PrimarySelectedModActionCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> InstallNowSelectedModCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ShowOverviewDetailsCommand { get; }
 
@@ -839,6 +844,8 @@ namespace CKAN.LinuxGUI
 
         public bool ShowSelectedModContent => HasSelectedMod && !IsSelectedModLoading;
 
+        public bool ShowDetailsSidebar => ShowDetailsPane && HasSelectedMod;
+
         public bool ShowOverviewDetailsSection => selectedModDetailsSection == ModDetailsSection.Overview;
 
         public bool ShowMetadataDetailsSection => selectedModDetailsSection == ModDetailsSection.Metadata;
@@ -861,6 +868,16 @@ namespace CKAN.LinuxGUI
                 : $"Loading {SelectedMod.Name}…";
 
         public bool HasQueuedActions => QueuedActions.Count > 0;
+
+        public int QueuedChangeActionCount
+            => QueuedActions.Count(action => action.ActionKind != QueuedActionKind.Download);
+
+        public int QueuedDownloadActionCount
+            => QueuedActions.Count(action => action.ActionKind == QueuedActionKind.Download);
+
+        public bool HasQueuedChangeActions => QueuedChangeActionCount > 0;
+
+        public bool HasQueuedDownloadActions => QueuedDownloadActionCount > 0;
 
         public bool ShowEmptyQueueState => !HasQueuedActions;
 
@@ -897,11 +914,16 @@ namespace CKAN.LinuxGUI
 
         public bool PreviewShowsEmptyCard => !HasQueuedActions;
 
-        public bool PreviewShowsLoadingCard => HasQueuedActions && IsPreviewLoading;
+        public bool PreviewShowsLoadingCard => HasQueuedChangeActions && IsPreviewLoading;
 
-        public bool PreviewShowsReadyCard => HasQueuedActions && !IsPreviewLoading && PreviewCanApply;
+        public bool PreviewShowsReadyCard
+            => HasQueuedActions
+               && !IsPreviewLoading
+               && ((HasQueuedChangeActions && PreviewCanApply)
+                   || (!HasQueuedChangeActions && HasQueuedDownloadActions));
 
-        public bool PreviewShowsBlockedCard => HasQueuedActions && !IsPreviewLoading && !PreviewCanApply;
+        public bool PreviewShowsBlockedCard
+            => HasQueuedChangeActions && !IsPreviewLoading && !PreviewCanApply;
 
         public bool ShowAdvancedFilters
         {
@@ -930,6 +952,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref showDetailsPane, value);
                 this.RaisePropertyChanged(nameof(DetailsPaneToggleLabel));
+                this.RaisePropertyChanged(nameof(ShowDetailsSidebar));
             }
         }
 
@@ -1107,7 +1130,7 @@ namespace CKAN.LinuxGUI
         public string IncompatibleFilterLabel => FormatFilterOptionLabel("Incompatible", filterOptionCounts.Incompatible);
 
         public string SortMenuLabel
-            => $"{SelectedSortOption?.Label ?? "Name"} {SortDirectionLabel(SelectedSortOption?.Value ?? ModSortOption.Name, SortDescending)} ▾";
+            => $"{SelectedSortOption?.Label ?? "Name"} ▾";
 
         public string NameSortLabel
             => SortOptionLabel(ModSortOption.Name, "Name");
@@ -1116,7 +1139,7 @@ namespace CKAN.LinuxGUI
             => SortOptionLabel(ModSortOption.Author, "Author");
 
         public string PopularitySortLabel
-            => SortOptionLabel(ModSortOption.Popularity, "Popularity");
+            => SortOptionLabel(ModSortOption.Popularity, "Downloads");
 
         public string CompatibilitySortLabel
             => SortOptionLabel(ModSortOption.Compatibility, "Compat");
@@ -1221,12 +1244,6 @@ namespace CKAN.LinuxGUI
                                          && !SelectedMod.IsInstalled
                                          && !SelectedMod.IsIncompatible;
 
-        public bool ShowDownloadAction => SelectedMod != null
-                                          && !IsSelectedModLoading
-                                          && !SelectedMod.IsInstalled
-                                          && !SelectedMod.IsCached
-                                          && !SelectedMod.IsIncompatible;
-
         public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
                                         && !IsSelectedModLoading
                                         && SelectedMod.HasUpdate;
@@ -1237,7 +1254,16 @@ namespace CKAN.LinuxGUI
 
         public bool HasSelectedModQueuedAction
             => SelectedMod != null
-               && changesetService.FindQueuedAction(SelectedMod.Identifier) != null;
+               && changesetService.FindQueuedApplyAction(SelectedMod.Identifier) != null;
+
+        public bool HasSelectedModQueuedDownload
+            => SelectedMod != null
+               && changesetService.FindQueuedDownloadAction(SelectedMod.Identifier) != null;
+
+        public bool ShowInstallNowAction
+            => ShowInstallAction
+               && !HasSelectedModQueuedAction
+               && !IsApplyingChanges;
 
         public bool ShowPrimarySelectedModAction
             => !IsSelectedModLoading
@@ -1252,7 +1278,7 @@ namespace CKAN.LinuxGUI
             {
                 var queued = SelectedMod == null
                     ? null
-                    : changesetService.FindQueuedAction(SelectedMod.Identifier);
+                    : changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
                 if (queued != null)
                 {
                     return $"Cancel {queued.ActionText}";
@@ -1281,7 +1307,7 @@ namespace CKAN.LinuxGUI
             {
                 var queued = SelectedMod == null
                     ? null
-                    : changesetService.FindQueuedAction(SelectedMod.Identifier);
+                    : changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
                 if (queued != null)
                 {
                     return "#39424E";
@@ -1289,7 +1315,7 @@ namespace CKAN.LinuxGUI
 
                 if (ShowInstallAction)
                 {
-                    return "#2A6B4A";
+                    return "#1B4D77";
                 }
                 if (ShowUpdateAction)
                 {
@@ -1305,15 +1331,6 @@ namespace CKAN.LinuxGUI
         }
 
         public string PrimarySelectedModActionBorderBrush => PrimarySelectedModActionBackground;
-
-        public bool ShowSecondarySelectedModAction
-            => !HasSelectedModQueuedAction && ShowDownloadAction;
-
-        public string SecondarySelectedModActionLabel => "Queue Download";
-
-        public string SecondarySelectedModActionBackground => "#2B5C88";
-
-        public string SecondarySelectedModActionBorderBrush => SecondarySelectedModActionBackground;
 
         public bool SelectedModIsInstalled
         {
@@ -1349,8 +1366,8 @@ namespace CKAN.LinuxGUI
             => QueuedActions.Count switch
             {
                 0 => "Queue empty",
-                1 => "1 pending action",
-                _ => $"{QueuedActions.Count} pending actions",
+                1 => "1 pending item",
+                _ => $"{QueuedActions.Count} pending items",
             };
 
         public string PreviewSummary
@@ -1407,6 +1424,7 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref isApplyingChanges, value);
+                PublishSelectedModActionState();
                 this.RaisePropertyChanged(nameof(PreviewStatusLabel));
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
@@ -1425,24 +1443,28 @@ namespace CKAN.LinuxGUI
 
         public string PreviewStatusLabel
             => IsApplyingChanges
-                ? "Applying changes…"
+                ? currentExecutionStatusLabel
                 : IsPreviewLoading
-                ? "Resolving dependencies and downloads…"
-                : PreviewCanApply
-                    ? HasPreviewAttentionNotes
-                        ? "Apply is ready, but prompts will appear"
-                        : "Apply is ready"
-                    : HasPreviewAttentionNotes && !HasPreviewConflicts
-                        ? "Required steps must be cleared before apply"
-                        : "Conflicts must be cleared before apply";
+                    ? "Resolving dependencies and downloads…"
+                    : !HasQueuedChangeActions && HasQueuedDownloadActions
+                        ? "Download queue ready"
+                        : PreviewCanApply
+                            ? HasPreviewAttentionNotes
+                                ? "Apply is ready, but prompts will appear"
+                                : "Apply is ready"
+                            : HasPreviewAttentionNotes && !HasPreviewConflicts
+                                ? "Required steps must be cleared before apply"
+                                : "Conflicts must be cleared before apply";
 
         public string PreviewOutcomeTitle
             => PreviewShowsLoadingCard
                 ? "Analyzing Queued Changes"
                 : PreviewShowsReadyCard
-                    ? HasPreviewAttentionNotes
-                        ? "Ready with Prompts"
-                        : "Ready to Apply"
+                    ? !HasQueuedChangeActions && HasQueuedDownloadActions
+                        ? "Ready to Download"
+                        : HasPreviewAttentionNotes
+                            ? "Ready with Prompts"
+                            : "Ready to Apply"
                     : PreviewShowsBlockedCard
                         ? HasPreviewAttentionNotes && !HasPreviewConflicts
                             ? "Apply Blocked by Required Steps"
@@ -1455,12 +1477,17 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue download, install, update, or remove actions from the browser to see downloads, auto-installs, removals, and blockers before applying.";
+                    return "Queue install, update, or remove actions from the browser to see downloads, auto-installs, removals, and blockers before applying. Right-click a mod for download-only.";
                 }
 
                 if (PreviewShowsLoadingCard)
                 {
                     return "CKAN Linux is resolving install order, dependency closure, downloads, and apply blockers.";
+                }
+
+                if (!HasQueuedChangeActions && HasQueuedDownloadActions)
+                {
+                    return "Download-only items are staged separately. Use Download Only to fill the cache without changing GameData.";
                 }
 
                 if (PreviewShowsReadyCard)
@@ -1482,17 +1509,23 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue download, install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying.";
+                    return "Queue install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying. Right-click a mod for download-only.";
                 }
 
-                var parts = new List<string>
+                var parts = new List<string>();
+
+                if (QueuedChangeActionCount > 0)
                 {
-                    CountLabel(QueuedActions.Count, "queued action", "queued actions"),
-                };
+                    parts.Add(CountLabel(QueuedChangeActionCount, "queued change", "queued changes"));
+                }
+                if (QueuedDownloadActionCount > 0)
+                {
+                    parts.Add(CountLabel(QueuedDownloadActionCount, "download-only item", "download-only items"));
+                }
 
                 if (PreviewDownloadsRequired.Count > 0)
                 {
-                    parts.Add(CountLabel(PreviewDownloadsRequired.Count, "download", "downloads"));
+                    parts.Add(CountLabel(PreviewDownloadsRequired.Count, "required download", "required downloads"));
                 }
                 if (PreviewDependencies.Count > 0)
                 {
@@ -1512,10 +1545,13 @@ namespace CKAN.LinuxGUI
         }
 
         public string PreviewQueuedCountLabel
-            => CountLabel(QueuedActions.Count, "Direct Action", "Direct Actions");
+            => CountLabel(QueuedChangeActionCount, "Direct Change", "Direct Changes");
+
+        public string PreviewDownloadQueueCountLabel
+            => CountLabel(QueuedDownloadActionCount, "Download-Only Item", "Download-Only Items");
 
         public string PreviewDownloadCountLabel
-            => CountLabel(PreviewDownloadsRequired.Count, "Download", "Downloads");
+            => CountLabel(PreviewDownloadsRequired.Count, "Required Download", "Required Downloads");
 
         public string PreviewDependencyCountLabel
             => CountLabel(PreviewDependencies.Count, "Auto Install", "Auto Installs");
@@ -1524,9 +1560,23 @@ namespace CKAN.LinuxGUI
             => HasQueuedActions;
 
         public string PreviewQueuedGuidance
-            => HasPreviewDependencies
-                ? "These are the direct actions you selected. CKAN will also install the required mods listed below."
-                : "These are the direct actions you selected.";
+            => HasQueuedChangeActions && HasQueuedDownloadActions
+                ? "Install/update/remove actions and download-only staging items are listed together below. Apply Changes ignores the download-only items."
+                : HasQueuedChangeActions
+                    ? HasPreviewDependencies
+                        ? "These are the direct install/update/remove actions you selected. CKAN will also install the required mods listed below."
+                        : "These are the direct install/update/remove actions you selected."
+                    : "These items stage archives in the cache for later install and are not part of Apply Changes.";
+
+        public bool ShowPreviewDownloadQueueGuidance
+            => HasQueuedDownloadActions;
+
+        public string PreviewDownloadQueueGuidanceTitle => "Download-Only Queue";
+
+        public string PreviewDownloadQueueGuidance
+            => HasQueuedChangeActions
+                ? "These items are staged separately. Use Download Only to cache them without changing GameData. Apply Changes will leave them queued."
+                : "These items only download archives into the cache. They do not change GameData until you later queue an install or update.";
 
         public bool ShowPreviewDependencyGuidance
             => HasPreviewDependencies;
@@ -1551,13 +1601,20 @@ namespace CKAN.LinuxGUI
             => CountLabel(PreviewAttentionNotes.Count, "Required Step", "Required Steps");
 
         public string ApplyChangesButtonBackground
-            => !HasQueuedActions
+            => !HasQueuedChangeActions
                 ? "#39424E"
                 : PreviewCanApply && !IsPreviewLoading && !IsApplyingChanges
                     ? "#2A6B4A"
                     : "#5A4030";
 
         public string ApplyChangesButtonBorderBrush => ApplyChangesButtonBackground;
+
+        public string DownloadQueuedButtonBackground
+            => !HasQueuedDownloadActions || IsApplyingChanges
+                ? "#39424E"
+                : "#2B5C88";
+
+        public string DownloadQueuedButtonBorderBrush => DownloadQueuedButtonBackground;
 
         public string CollapsedQueueStubTitle
             => HasQueuedActions
@@ -1571,7 +1628,7 @@ namespace CKAN.LinuxGUI
                 ? $"{PreviewStatusLabel} • {PreviewImpactSummary}"
                 : HasApplyResult
                     ? ApplyResultMessage
-                    : "Queue download, install, update, or remove actions to preview changes.";
+                    : "Queue install, update, or remove actions to preview changes. Right-click a mod for download-only.";
 
         public string CollapsedQueueStubBackground
             => HasQueuedActions
@@ -1589,13 +1646,24 @@ namespace CKAN.LinuxGUI
             {
                 if (SelectedMod == null)
                 {
-                    return "Choose a mod to add a download, install, update, or remove intent.";
+                    return "Choose a mod to queue an install, update, or removal. Right-click a mod for download-only.";
                 }
 
-                var queued = changesetService.FindQueuedAction(SelectedMod.Identifier);
-                return queued == null
-                    ? "No queued action for this mod yet."
-                    : $"{queued.ActionText} queued: {queued.DetailText}";
+                var queuedChange = changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
+                if (queuedChange != null)
+                {
+                    return $"{queuedChange.ActionText} queued: {queuedChange.DetailText}";
+                }
+
+                var queuedDownload = changesetService.FindQueuedDownloadAction(SelectedMod.Identifier);
+                if (queuedDownload != null)
+                {
+                    return $"{queuedDownload.ActionText} queued: {queuedDownload.DetailText}";
+                }
+
+                return ShowInstallAction
+                    ? "No queued item for this mod yet. Install now, queue it for later, or right-click for download-only."
+                    : "No queued item for this mod yet. Right-click for download-only.";
             }
         }
 
@@ -1719,7 +1787,7 @@ namespace CKAN.LinuxGUI
         }
 
         public string InstanceSwitchDiscardPrompt
-            => $"You have {QueuedActions.Count} queued change{(QueuedActions.Count == 1 ? "" : "s")} for {CurrentInstanceName}. Switching installs will discard them.";
+            => $"You have {QueuedActions.Count} queued item{(QueuedActions.Count == 1 ? "" : "s")} for {CurrentInstanceName}. Switching installs will discard them.";
 
         public string ModCountLabel
             => IsCatalogLoading
@@ -1757,6 +1825,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref selectedMod, value);
                 this.RaisePropertyChanged(nameof(HasSelectedMod));
+                this.RaisePropertyChanged(nameof(ShowDetailsSidebar));
                 PublishSelectedModDisplayState();
                 PublishSelectedModActionState();
                 _ = LoadModDetailsAsync(value?.Identifier);
@@ -1780,6 +1849,49 @@ namespace CKAN.LinuxGUI
 
             ShowDetailsPane = true;
             SelectedMod = mod;
+        }
+
+        public bool ShowDownloadOnlyContextAction(ModListItem mod)
+        {
+            if (changesetService.FindQueuedDownloadAction(mod.Identifier) != null)
+            {
+                return true;
+            }
+
+            return changesetService.FindQueuedApplyAction(mod.Identifier) == null
+                   && !mod.IsInstalled
+                   && !mod.IsCached
+                   && !mod.IsIncompatible;
+        }
+
+        public string DownloadOnlyContextLabel(ModListItem mod)
+            => changesetService.FindQueuedDownloadAction(mod.Identifier) != null
+                ? "Cancel Download Only"
+                : "Download Only";
+
+        public void ToggleDownloadOnlyFromBrowser(ModListItem mod)
+        {
+            var queuedDownload = changesetService.FindQueuedDownloadAction(mod.Identifier);
+            ClearApplyResult();
+
+            if (queuedDownload != null)
+            {
+                if (changesetService.Remove(queuedDownload.Identifier))
+                {
+                    StatusMessage = $"Removed queued download-only for {mod.Name}.";
+                }
+                return;
+            }
+
+            var queuedApply = changesetService.FindQueuedApplyAction(mod.Identifier);
+            if (queuedApply != null)
+            {
+                StatusMessage = $"{queuedApply.ActionText} is already queued for {mod.Name}. Cancel it before staging download-only.";
+                return;
+            }
+
+            changesetService.QueueDownload(mod);
+            StatusMessage = $"Queued download-only for {mod.Name}.";
         }
 
         private async Task RefreshAsync()
@@ -2157,7 +2269,7 @@ namespace CKAN.LinuxGUI
             filterHasReplacementOnly = filter.HasReplacementOnly;
             selectedSortOption = SortOptions.FirstOrDefault(opt => opt.Value == filter.SortOption) ?? SortOptions[0];
             sortDescending = filter.SortDescending ?? DefaultSortDescending(filter.SortOption);
-            showAdvancedFilters = modSearchService.ShowAdvancedFilters || HasActiveAdvancedFilters;
+            showAdvancedFilters = false;
             this.RaisePropertyChanged(nameof(SelectedSortOption));
             this.RaisePropertyChanged(nameof(SortDescending));
             PublishFilterStateLabels();
@@ -2278,7 +2390,7 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            var queued = changesetService.FindQueuedAction(SelectedMod.Identifier);
+            var queued = changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
             if (queued != null)
             {
                 ClearApplyResult();
@@ -2453,18 +2565,6 @@ namespace CKAN.LinuxGUI
             StatusMessage = $"Queued install for {SelectedMod.Name}.";
         }
 
-        private void QueueDownloadSelected()
-        {
-            if (SelectedMod == null)
-            {
-                return;
-            }
-
-            ClearApplyResult();
-            changesetService.QueueDownload(SelectedMod);
-            StatusMessage = $"Queued download for {SelectedMod.Name}.";
-        }
-
         private void QueueUpdateSelected()
         {
             if (SelectedMod == null)
@@ -2507,7 +2607,7 @@ namespace CKAN.LinuxGUI
         {
             ClearApplyResult();
             changesetService.Clear();
-            StatusMessage = "Cleared all queued actions.";
+            StatusMessage = "Cleared all pending items.";
         }
 
         private void DiscardQueuedActionsForInstanceSwitch()
@@ -2561,6 +2661,23 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            if (!HasQueuedChangeActions)
+            {
+                PreviewSummary = QueuedDownloadActionCount == 1
+                    ? "1 download-only item is staged in the cache queue."
+                    : $"{QueuedDownloadActionCount} download-only items are staged in the cache queue.";
+                PreviewCanApply = false;
+                ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewConflicts, Array.Empty<string>());
+                PublishPreviewStateLabels();
+                return;
+            }
+
             IsPreviewLoading = true;
             try
             {
@@ -2602,6 +2719,7 @@ namespace CKAN.LinuxGUI
 
         private async Task ApplyQueuedChangesAsync()
         {
+            currentExecutionStatusLabel = "Applying changes…";
             IsApplyingChanges = true;
             try
             {
@@ -2625,6 +2743,84 @@ namespace CKAN.LinuxGUI
                 });
                 Diagnostics = ex.Message;
                 StatusMessage = "Apply failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+        }
+
+        private async Task InstallNowSelectedModAsync()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            var targetMod = SelectedMod;
+            ClearApplyResult();
+            currentExecutionStatusLabel = $"Installing {targetMod.Name}…";
+            IsApplyingChanges = true;
+            try
+            {
+                var result = await modActionService.InstallNowAsync(targetMod, CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+
+                if (result.Success)
+                {
+                    if (changesetService.FindQueuedDownloadAction(targetMod.Identifier) != null)
+                    {
+                        changesetService.Remove(targetMod.Identifier);
+                    }
+
+                    await LoadModCatalogAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                SetApplyResult(new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = "Install Failed",
+                    Message = ex.Message,
+                });
+                Diagnostics = ex.Message;
+                StatusMessage = "Install failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+        }
+
+        private async Task DownloadQueuedAsync()
+        {
+            currentExecutionStatusLabel = "Downloading queued files…";
+            IsApplyingChanges = true;
+            try
+            {
+                var result = await modActionService.DownloadQueuedAsync(CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+
+                if (result.Success)
+                {
+                    await LoadModCatalogAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                SetApplyResult(new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = "Downloads Failed",
+                    Message = ex.Message,
+                });
+                Diagnostics = ex.Message;
+                StatusMessage = "Downloads failed.";
             }
             finally
             {
@@ -2811,30 +3007,20 @@ namespace CKAN.LinuxGUI
         }
 
         private string SortOptionLabel(ModSortOption sortOption, string baseLabel)
-            => SelectedSortOption?.Value == sortOption
-                ? $"{baseLabel} {SortDirectionLabel(sortOption, SortDescending)}"
-                : baseLabel;
+            => baseLabel;
 
         private string FormatFilterOptionLabel(string label, int count)
             => hasFilterOptionCounts
                 ? $"{label} ({count})"
                 : label;
 
-        private static string SortDirectionLabel(ModSortOption sortOption, bool descending)
-            => sortOption switch
-            {
-                ModSortOption.Name or ModSortOption.Author => descending ? "Z→A" : "A→Z",
-                ModSortOption.Popularity => descending ? "High→Low" : "Low→High",
-                ModSortOption.Compatibility => descending ? "High→Low" : "Low→High",
-                ModSortOption.Version => descending ? "High→Low" : "Low→High",
-                ModSortOption.InstalledFirst => descending ? "Installed→Other" : "Other→Installed",
-                ModSortOption.UpdatesFirst => descending ? "Updates→Other" : "Other→Updates",
-                _ => descending ? "Desc" : "Asc",
-            };
-
         private void PublishQueueStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasQueuedActions));
+            this.RaisePropertyChanged(nameof(QueuedChangeActionCount));
+            this.RaisePropertyChanged(nameof(QueuedDownloadActionCount));
+            this.RaisePropertyChanged(nameof(HasQueuedChangeActions));
+            this.RaisePropertyChanged(nameof(HasQueuedDownloadActions));
             this.RaisePropertyChanged(nameof(IsQueueDrawerExpanded));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueState));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
@@ -2858,25 +3044,25 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewImpactSummary));
             this.RaisePropertyChanged(nameof(PreviewPanelGuidance));
             this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewDownloadQueueCountLabel));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(DownloadQueuedButtonBackground));
+            this.RaisePropertyChanged(nameof(DownloadQueuedButtonBorderBrush));
         }
 
         private void PublishSelectedModActionState()
         {
             this.RaisePropertyChanged(nameof(ShowInstallAction));
-            this.RaisePropertyChanged(nameof(ShowDownloadAction));
             this.RaisePropertyChanged(nameof(ShowUpdateAction));
             this.RaisePropertyChanged(nameof(ShowRemoveAction));
             this.RaisePropertyChanged(nameof(HasSelectedModQueuedAction));
+            this.RaisePropertyChanged(nameof(HasSelectedModQueuedDownload));
+            this.RaisePropertyChanged(nameof(ShowInstallNowAction));
             this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBackground));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBorderBrush));
-            this.RaisePropertyChanged(nameof(ShowSecondarySelectedModAction));
-            this.RaisePropertyChanged(nameof(SecondarySelectedModActionLabel));
-            this.RaisePropertyChanged(nameof(SecondarySelectedModActionBackground));
-            this.RaisePropertyChanged(nameof(SecondarySelectedModActionBorderBrush));
             this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
         }
 
@@ -2898,10 +3084,14 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewImpactSummary));
             this.RaisePropertyChanged(nameof(PreviewPanelGuidance));
             this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewDownloadQueueCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedActions));
             this.RaisePropertyChanged(nameof(PreviewQueuedGuidance));
+            this.RaisePropertyChanged(nameof(ShowPreviewDownloadQueueGuidance));
+            this.RaisePropertyChanged(nameof(PreviewDownloadQueueGuidanceTitle));
+            this.RaisePropertyChanged(nameof(PreviewDownloadQueueGuidance));
             this.RaisePropertyChanged(nameof(ShowPreviewDependencyGuidance));
             this.RaisePropertyChanged(nameof(PreviewDependencyGuidanceTitle));
             this.RaisePropertyChanged(nameof(PreviewDependencyGuidance));
@@ -2910,6 +3100,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewAttentionCountLabel));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(DownloadQueuedButtonBackground));
+            this.RaisePropertyChanged(nameof(DownloadQueuedButtonBorderBrush));
             this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
         }
 
@@ -2962,7 +3154,7 @@ namespace CKAN.LinuxGUI
 
         private void ResetPreviewState()
         {
-            PreviewSummary = "Queue download, install, update, or remove actions to build a preview.";
+            PreviewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod for download-only.";
             PreviewCanApply = false;
             ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
             ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());

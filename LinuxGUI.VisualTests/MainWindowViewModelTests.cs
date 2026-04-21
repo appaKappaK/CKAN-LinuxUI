@@ -171,7 +171,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(canceled, Is.False);
                     Assert.That(prompt, Does.Contain("discard"));
-                    Assert.That(prompt, Does.Contain("queued change"));
+                    Assert.That(prompt, Does.Contain("queued item"));
                     Assert.That(viewModel.CurrentInstanceName, Is.EqualTo("Career Save"));
                     Assert.That(viewModel.HasQueuedActions, Is.True);
                     Assert.That(viewModel.SelectedInstance?.IsCurrent, Is.True);
@@ -261,7 +261,7 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
-        public async Task QueueDownload_AppearsAsSecondaryAction_AndCanBeCanceled()
+        public async Task DownloadOnly_IsContextualAndDoesNotReplacePrimaryAction()
         {
             var catalog = new DownloadReadyCatalogService();
             var (viewModel, service) = CreateViewModel(catalog: catalog);
@@ -275,18 +275,30 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.Multiple(() =>
                 {
                     Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
-                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.True);
-                    Assert.That(viewModel.SecondarySelectedModActionLabel, Is.EqualTo("Queue Download"));
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.False);
+                    Assert.That(viewModel.DownloadOnlyContextLabel(viewModel.SelectedMod!), Is.EqualTo("Download Only"));
                 });
 
-                viewModel.QueueDownloadCommand.Execute().Subscribe(_ => { });
+                viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
                 await Task.Delay(75);
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.True);
-                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Cancel Download"));
-                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.False);
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.True);
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
+                    Assert.That(viewModel.SelectedModQueueStatus, Does.Contain("Download Only queued"));
+                });
+
+                viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.False);
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
                 });
 
                 viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
@@ -294,9 +306,70 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
-                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
-                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.True);
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.True);
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Cancel Install"));
+                    Assert.That(viewModel.ShowDownloadOnlyContextAction(viewModel.SelectedMod!), Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ApplyChanges_LeavesDownloadOnlyQueuedUntilDownloadRuns()
+        {
+            var catalog = new MixedQueueCatalogService();
+            var applyResult = new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Apply Completed",
+                Message = "Applied queued changes.",
+            };
+            var (viewModel, service) = CreateViewModel(applyResult, catalog);
+
+            try
+            {
+                await Task.Delay(150);
+
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(75);
+
+                var downloadOnlyMod = viewModel.Mods.First(mod => mod.Identifier == "download-ready");
+                viewModel.ToggleDownloadOnlyFromBrowser(downloadOnlyMod);
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasQueuedActions, Is.True);
+                    Assert.That(viewModel.HasQueuedChangeActions, Is.True);
+                    Assert.That(viewModel.HasQueuedDownloadActions, Is.True);
+                    Assert.That(viewModel.PreviewQueuedCountLabel, Is.EqualTo("1 Direct Change"));
+                    Assert.That(viewModel.PreviewDownloadQueueCountLabel, Is.EqualTo("1 Download-Only Item"));
+                });
+
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasQueuedChangeActions, Is.False);
+                    Assert.That(viewModel.HasQueuedDownloadActions, Is.True);
+                    Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("download-ready"));
+                    Assert.That(viewModel.PreviewStatusLabel, Is.EqualTo("Download queue ready"));
+                });
+
+                viewModel.DownloadQueuedCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasQueuedActions, Is.False);
+                    Assert.That(viewModel.HasQueuedDownloadActions, Is.False);
+                    Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Downloads Completed"));
                 });
             }
             finally
@@ -615,6 +688,130 @@ namespace CKAN.LinuxGUI.VisualTests
                     IsCached         = item.IsCached,
                     IsIncompatible   = item.IsIncompatible,
                     HasReplacement   = item.HasReplacement,
+                });
+            }
+        }
+
+        private sealed class MixedQueueCatalogService : IModCatalogService
+        {
+            private static readonly IReadOnlyList<ModListItem> items = new[]
+            {
+                new ModListItem
+                {
+                    Identifier         = "restock",
+                    Name               = "Restock",
+                    Author             = "Nertea",
+                    Summary            = "Refreshes stock parts with a consistent art pass.",
+                    LatestVersion      = "1.5.2",
+                    InstalledVersion   = "1.5.1",
+                    DownloadCount      = 452318,
+                    DownloadCountLabel = "452,318",
+                    IsInstalled        = true,
+                    HasUpdate          = true,
+                    IsCached           = true,
+                    IsIncompatible     = false,
+                    HasReplacement     = false,
+                    Compatibility      = "KSP 1.12.5",
+                },
+                new ModListItem
+                {
+                    Identifier         = "download-ready",
+                    Name               = "Download Ready",
+                    Author             = "Test Author",
+                    Summary            = "A compatible uncached mod that can be queued for download.",
+                    LatestVersion      = "1.0.0",
+                    InstalledVersion   = "",
+                    DownloadCount      = 42,
+                    DownloadCountLabel = "42",
+                    IsInstalled        = false,
+                    HasUpdate          = false,
+                    IsCached           = false,
+                    IsIncompatible     = false,
+                    HasReplacement     = false,
+                    Compatibility      = "KSP 1.12.5",
+                },
+            };
+
+            public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                    System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(items);
+            }
+
+            public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                       System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(new FilterOptionCounts
+                {
+                    Compatible   = 2,
+                    Installed    = 1,
+                    Updatable    = 1,
+                    Replaceable  = 0,
+                    Cached       = 1,
+                    Uncached     = 1,
+                    NotInstalled = 1,
+                    Incompatible = 0,
+                });
+            }
+
+            public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                             System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                return Task.FromResult<ModDetailsModel?>(identifier switch
+                {
+                    "restock" => new ModDetailsModel
+                    {
+                        Identifier          = "restock",
+                        Title               = "Restock",
+                        Summary             = "Refreshes stock parts with a consistent art pass.",
+                        Description         = "Restock details for mixed-queue tests.",
+                        Authors             = "Nertea",
+                        LatestVersion       = "1.5.2",
+                        InstalledVersion    = "1.5.1",
+                        Compatibility       = "KSP 1.12.5",
+                        ModuleKind          = "Package",
+                        License             = "CC-BY-NC-SA-4.0",
+                        ReleaseDate         = "2025-01-14",
+                        DownloadSize        = "128 MiB",
+                        DownloadCount       = 452318,
+                        DependencyCount     = 2,
+                        RecommendationCount = 1,
+                        SuggestionCount     = 0,
+                        IsInstalled         = true,
+                        HasUpdate           = true,
+                        IsCached            = true,
+                        IsIncompatible      = false,
+                        HasReplacement      = false,
+                    },
+                    "download-ready" => new ModDetailsModel
+                    {
+                        Identifier          = "download-ready",
+                        Title               = "Download Ready",
+                        Summary             = "A compatible uncached mod that can be queued for download.",
+                        Description         = "Download-ready mod details for mixed-queue tests.",
+                        Authors             = "Test Author",
+                        LatestVersion       = "1.0.0",
+                        InstalledVersion    = "Not installed",
+                        Compatibility       = "KSP 1.12.5",
+                        ModuleKind          = "Package",
+                        License             = "MIT",
+                        ReleaseDate         = "2026-04-20",
+                        DownloadSize        = "1 MiB",
+                        DownloadCount       = 42,
+                        DependencyCount     = 0,
+                        RecommendationCount = 0,
+                        SuggestionCount     = 0,
+                        IsInstalled         = false,
+                        HasUpdate           = false,
+                        IsCached            = false,
+                        IsIncompatible      = false,
+                        HasReplacement      = false,
+                    },
+                    _ => null,
                 });
             }
         }

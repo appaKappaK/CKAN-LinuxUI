@@ -12,10 +12,13 @@ namespace CKAN.App.Services
             = new Dictionary<string, QueuedActionModel>(StringComparer.OrdinalIgnoreCase);
 
         public IReadOnlyList<QueuedActionModel> CurrentQueue
-            => queue.Values
-                    .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                    .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
+            => SortedQueue();
+
+        public IReadOnlyList<QueuedActionModel> CurrentApplyQueue
+            => SortedQueue(item => item.ActionKind != QueuedActionKind.Download);
+
+        public IReadOnlyList<QueuedActionModel> CurrentDownloadQueue
+            => SortedQueue(item => item.ActionKind == QueuedActionKind.Download);
 
         public event Action? QueueChanged;
 
@@ -24,16 +27,22 @@ namespace CKAN.App.Services
                 ? action
                 : null;
 
+        public QueuedActionModel? FindQueuedApplyAction(string identifier)
+            => FindQueued(identifier, item => item.ActionKind != QueuedActionKind.Download);
+
+        public QueuedActionModel? FindQueuedDownloadAction(string identifier)
+            => FindQueued(identifier, item => item.ActionKind == QueuedActionKind.Download);
+
         public void QueueDownload(ModListItem mod)
             => Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
                 ActionKind = QueuedActionKind.Download,
-                ActionText = "Download",
+                ActionText = "Download Only",
                 DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
-                    ? "Latest available version for later install"
-                    : $"{mod.LatestVersion} for later install",
+                    ? "Cache latest available version for later install"
+                    : $"Cache {mod.LatestVersion} for later install",
             });
 
         public void QueueInstall(ModListItem mod)
@@ -93,9 +102,46 @@ namespace CKAN.App.Services
             QueueChanged?.Invoke();
         }
 
+        public void ClearApplyQueue()
+            => ClearWhere(item => item.ActionKind != QueuedActionKind.Download);
+
+        public void ClearDownloadQueue()
+            => ClearWhere(item => item.ActionKind == QueuedActionKind.Download);
+
         private void Upsert(QueuedActionModel action)
         {
             queue[action.Identifier] = action;
+            QueueChanged?.Invoke();
+        }
+
+        private IReadOnlyList<QueuedActionModel> SortedQueue(Func<QueuedActionModel, bool>? predicate = null)
+            => queue.Values
+                    .Where(item => predicate == null || predicate(item))
+                    .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                    .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+        private QueuedActionModel? FindQueued(string identifier,
+                                              Func<QueuedActionModel, bool> predicate)
+            => queue.TryGetValue(identifier, out var action) && predicate(action)
+                ? action
+                : null;
+
+        private void ClearWhere(Func<QueuedActionModel, bool> predicate)
+        {
+            var identifiers = queue.Values
+                                   .Where(predicate)
+                                   .Select(item => item.Identifier)
+                                   .ToList();
+            if (identifiers.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var identifier in identifiers)
+            {
+                queue.Remove(identifier);
+            }
             QueueChanged?.Invoke();
         }
     }
