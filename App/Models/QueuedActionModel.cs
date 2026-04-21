@@ -2,6 +2,7 @@ namespace CKAN.App.Models
 {
     public enum QueuedActionKind
     {
+        Download,
         Install,
         Update,
         Remove,

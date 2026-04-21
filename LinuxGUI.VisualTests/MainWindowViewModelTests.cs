@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -211,7 +212,127 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.Multiple(() =>
                 {
                     Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(3));
-                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters (3) ▾"));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Active Filters (3) ▾"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task SortChanges_DoNotCountAsFilters_AndClearFiltersPreservesSort()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await Task.Delay(150);
+
+                viewModel.SelectPopularitySortCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(50);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasActiveFilters, Is.False);
+                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(0));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters ▾"));
+                    Assert.That(viewModel.AdvancedFilterSummary, Is.EqualTo("All mods are shown."));
+                    Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Popularity));
+                });
+
+                viewModel.FilterCachedOnly = true;
+                await Task.Delay(50);
+                viewModel.ClearFiltersCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(50);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasActiveFilters, Is.False);
+                    Assert.That(viewModel.FilterCachedOnly, Is.False);
+                    Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Popularity));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task QueueDownload_AppearsAsSecondaryAction_AndCanBeCanceled()
+        {
+            var catalog = new DownloadReadyCatalogService();
+            var (viewModel, service) = CreateViewModel(catalog: catalog);
+
+            try
+            {
+                await Task.Delay(150);
+                viewModel.SelectedMod = viewModel.Mods.Single();
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
+                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.True);
+                    Assert.That(viewModel.SecondarySelectedModActionLabel, Is.EqualTo("Queue Download"));
+                });
+
+                viewModel.QueueDownloadCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.True);
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Cancel Download"));
+                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.False);
+                });
+
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
+                    Assert.That(viewModel.ShowSecondarySelectedModAction, Is.True);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task FilterLabels_ShowPreclickCountsForCurrentScope()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await Task.Delay(200);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.CompatibleFilterLabel, Is.EqualTo("Compatible (4)"));
+                    Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (2)"));
+                    Assert.That(viewModel.UpdatableFilterLabel, Is.EqualTo("Updatable (1)"));
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Downloaded (2)"));
+                    Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (3)"));
+                    Assert.That(viewModel.IncompatibleFilterLabel, Is.EqualTo("Incompatible (1)"));
+                });
+
+                viewModel.FilterCachedOnly = true;
+                await Task.Delay(250);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Downloaded (2)"));
+                    Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (1)"));
+                    Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (2)"));
+                    Assert.That(viewModel.UncachedFilterLabel, Is.EqualTo("Not Downloaded (1)"));
                 });
             }
             finally
@@ -265,6 +386,78 @@ namespace CKAN.LinuxGUI.VisualTests
             var user = new AvaloniaUser();
             var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
             return (viewModel, service);
+        }
+
+        private sealed class DownloadReadyCatalogService : IModCatalogService
+        {
+            private static readonly ModListItem item = new ModListItem
+            {
+                Identifier         = "download-ready",
+                Name               = "Download Ready",
+                Author             = "Test Author",
+                Summary            = "A compatible uncached mod that can be queued for download.",
+                LatestVersion      = "1.0.0",
+                InstalledVersion   = "",
+                DownloadCount      = 42,
+                DownloadCountLabel = "42",
+                IsInstalled        = false,
+                HasUpdate          = false,
+                IsCached           = false,
+                IsIncompatible     = false,
+                HasReplacement     = false,
+                Compatibility      = "KSP 1.12.5",
+            };
+
+            public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                    System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { item });
+            }
+
+            public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                       System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(new FilterOptionCounts
+                {
+                    Compatible   = 1,
+                    Installed    = 0,
+                    Updatable    = 0,
+                    Replaceable  = 0,
+                    Cached       = 0,
+                    Uncached     = 1,
+                    NotInstalled = 1,
+                    Incompatible = 0,
+                });
+            }
+
+            public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                             System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult<ModDetailsModel?>(new ModDetailsModel
+                {
+                    Identifier       = item.Identifier,
+                    Title            = item.Name,
+                    Summary          = item.Summary,
+                    Description      = "Download-ready mod details for action-state tests.",
+                    Authors          = item.Author,
+                    LatestVersion    = item.LatestVersion,
+                    InstalledVersion = "Not installed",
+                    Compatibility    = item.Compatibility,
+                    ModuleKind       = "Package",
+                    License          = "MIT",
+                    ReleaseDate      = "2026-04-20",
+                    DownloadSize     = "1 MiB",
+                    DownloadCount    = item.DownloadCount,
+                    IsInstalled      = item.IsInstalled,
+                    HasUpdate        = item.HasUpdate,
+                    IsCached         = item.IsCached,
+                    IsIncompatible   = item.IsIncompatible,
+                    HasReplacement   = item.HasReplacement,
+                });
+            }
         }
     }
 }

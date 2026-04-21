@@ -43,5 +43,16 @@ namespace CKAN.LinuxGUI.VisualTests
 
             return await inner.GetModDetailsAsync(identifier, cancellationToken);
         }
+
+        public async Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                         CancellationToken cancellationToken)
+        {
+            if (listDelayMs > 0)
+            {
+                await Task.Delay(listDelayMs, cancellationToken);
+            }
+
+            return await inner.GetFilterOptionCountsAsync(filter, cancellationToken);
+        }
     }
 }

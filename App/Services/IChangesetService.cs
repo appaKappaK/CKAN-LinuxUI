@@ -12,6 +12,8 @@ namespace CKAN.App.Services
 
         QueuedActionModel? FindQueuedAction(string identifier);
 
+        void QueueDownload(ModListItem mod);
+
         void QueueInstall(ModListItem mod);
 
         void QueueUpdate(ModListItem mod);

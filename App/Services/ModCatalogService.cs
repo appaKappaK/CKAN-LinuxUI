@@ -38,6 +38,32 @@ namespace CKAN.App.Services
                 return (IReadOnlyList<ModListItem>)items;
             }, cancellationToken);
 
+        public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                   CancellationToken cancellationToken)
+            => Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (CurrentContext() is not CatalogContext context)
+                {
+                    return new FilterOptionCounts();
+                }
+
+                PrimeRepositoryCache(context);
+                var items = BuildItems(context).ToList();
+
+                return new FilterOptionCounts
+                {
+                    Compatible   = CountForPreview(items, filter, WithCompatibleOnly),
+                    Installed    = CountForPreview(items, filter, WithInstalledOnly),
+                    Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
+                    Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
+                    Cached       = CountForPreview(items, filter, WithCachedOnly),
+                    Uncached     = CountForPreview(items, filter, WithUncachedOnly),
+                    NotInstalled = CountForPreview(items, filter, WithNotInstalledOnly),
+                    Incompatible = CountForPreview(items, filter, WithIncompatibleOnly),
+                };
+            }, cancellationToken);
+
         public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                          CancellationToken cancellationToken)
             => Task.Run(() =>
@@ -213,6 +239,8 @@ namespace CKAN.App.Services
 
         private static bool Matches(ModListItem item, FilterState filter)
         {
+            bool availabilityScopedToNotInstalled = !filter.InstalledOnly && !filter.UpdatableOnly;
+
             if (!string.IsNullOrWhiteSpace(filter.SearchText))
             {
                 var text = filter.SearchText.Trim();
@@ -257,7 +285,15 @@ namespace CKAN.App.Services
             {
                 return false;
             }
+            if (filter.CachedOnly && availabilityScopedToNotInstalled && item.IsInstalled)
+            {
+                return false;
+            }
             if (filter.UncachedOnly && item.IsCached)
+            {
+                return false;
+            }
+            if (filter.UncachedOnly && availabilityScopedToNotInstalled && item.IsInstalled)
             {
                 return false;
             }
@@ -277,6 +313,163 @@ namespace CKAN.App.Services
             return true;
         }
 
+        private static int CountForPreview(IReadOnlyCollection<ModListItem> items,
+                                           FilterState                     filter,
+                                           Func<FilterState, FilterState>   applyPreviewFilter)
+            => items.Count(item => Matches(item, applyPreviewFilter(filter)));
+
+        private static FilterState WithInstalledOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = true,
+                NotInstalledOnly    = false,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithNotInstalledOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = false,
+                NotInstalledOnly    = true,
+                UpdatableOnly       = false,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithUpdatableOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = false,
+                UpdatableOnly       = true,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithCompatibleOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = filter.NotInstalledOnly,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = true,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = false,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithCachedOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = filter.NotInstalledOnly,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = true,
+                UncachedOnly        = false,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithUncachedOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = filter.NotInstalledOnly,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = false,
+                UncachedOnly        = true,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithIncompatibleOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = filter.NotInstalledOnly,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = false,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = true,
+                HasReplacementOnly  = filter.HasReplacementOnly,
+            };
+
+        private static FilterState WithReplacementOnly(FilterState filter)
+            => new FilterState
+            {
+                SearchText          = filter.SearchText,
+                AuthorText          = filter.AuthorText,
+                CompatibilityText   = filter.CompatibilityText,
+                SortOption          = filter.SortOption,
+                SortDescending      = filter.SortDescending,
+                InstalledOnly       = filter.InstalledOnly,
+                NotInstalledOnly    = filter.NotInstalledOnly,
+                UpdatableOnly       = filter.UpdatableOnly,
+                NewOnly             = filter.NewOnly,
+                CompatibleOnly      = filter.CompatibleOnly,
+                CachedOnly          = filter.CachedOnly,
+                UncachedOnly        = filter.UncachedOnly,
+                IncompatibleOnly    = filter.IncompatibleOnly,
+                HasReplacementOnly  = true,
+            };
+
         private static bool Contains(string text, string search)
             => text?.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
 
@@ -293,9 +486,7 @@ namespace CKAN.App.Services
                         ? "Installed"
                         : hasReplacement
                             ? "Has Replacement"
-                            : isCached
-                                ? "Cached"
-                                : "Available";
+                            : "Available";
 
         private static string FormatPrimaryStateColor(bool isInstalled,
                                                       bool hasUpdate,
@@ -310,9 +501,7 @@ namespace CKAN.App.Services
                         ? "#1B4D77"
                         : hasReplacement
                             ? "#5C376D"
-                            : isCached
-                                ? "#7A5B1E"
-                                : "#2A6B4A";
+                            : "#2A6B4A";
 
         private static string FormatStatusSummary(bool isInstalled,
                                                   bool hasUpdate,
@@ -325,10 +514,6 @@ namespace CKAN.App.Services
             if (hasUpdate)
             {
                 parts.Add("Installed");
-            }
-            if (isCached)
-            {
-                parts.Add("Cached");
             }
             if (hasReplacement)
             {
@@ -357,6 +542,22 @@ namespace CKAN.App.Services
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderBy(item => item.DownloadCount ?? 0)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Compatibility
+                    => descending
+                        ? items.OrderByDescending(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.Version
+                    => descending
+                        ? items.OrderByDescending(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderBy(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.InstalledFirst

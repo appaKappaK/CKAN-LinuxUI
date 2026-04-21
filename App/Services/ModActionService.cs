@@ -77,10 +77,10 @@ namespace CKAN.App.Services
                         Kind = ApplyResultKind.Blocked,
                         Success = false,
                         Title = "Apply Unavailable",
-                        Message = "Cannot apply changes because the CKAN download cache is unavailable.",
+                        Message = "Cannot apply changes because downloaded files are unavailable right now.",
                         FollowUpLines = new[]
                         {
-                            "Reload instances or restart CKAN Linux to reinitialize the download cache.",
+                            "Reload instances or restart CKAN Linux to restore access to downloaded files.",
                         },
                     };
                 }
@@ -89,10 +89,19 @@ namespace CKAN.App.Services
                 {
                     plan.RegistryManager.ScanUnmanagedFiles();
 
+                    var queuedDownloads = plan.RequestedDownloads
+                                              .Where(mod => !ContainsIdentifier(plan.RequestedInstalls, mod.identifier)
+                                                            && !ContainsIdentifier(plan.RequestedUpdates, mod.identifier)
+                                                            && !mod.IsMetapackage
+                                                            && !cache.IsMaybeCachedZip(mod))
+                                              .ToList();
                     var toInstall   = plan.RequestedInstalls.ToList();
                     var toUpgrade   = plan.RequestedUpdates.ToList();
                     var toUninstall = plan.RequestedRemovals.Select(im => im.identifier)
                                                             .ToList();
+                    var hasTransactionalActions = toInstall.Count > 0
+                                                  || toUpgrade.Count > 0
+                                                  || toUninstall.Count > 0;
                     var autoInstalled = new HashSet<CkanModule>();
                     var downloader = new NetAsyncModulesDownloader(user, cache, null, cancellationToken);
                     var deduper = new InstalledFilesDeduplicator(plan.Instance,
@@ -104,6 +113,28 @@ namespace CKAN.App.Services
                                                         user,
                                                         cancellationToken);
                     HashSet<string>? possibleConfigOnlyDirs = null;
+
+                    if (queuedDownloads.Count > 0)
+                    {
+                        downloader.DownloadModules(queuedDownloads);
+                    }
+
+                    if (!hasTransactionalActions)
+                    {
+                        changesetService.Clear();
+
+                        return new ApplyChangesResult
+                        {
+                            Kind = ApplyResultKind.Success,
+                            Success = true,
+                            Title = "Downloads Completed",
+                            Message = queuedDownloads.Count > 0
+                                ? $"Downloaded {queuedDownloads.Count} queued item{Pluralize(queuedDownloads.Count)} for later install."
+                                : "All queued downloads were already available locally.",
+                            SummaryLines = BuildSummaryLines(plan),
+                            FollowUpLines = Array.Empty<string>(),
+                        };
+                    }
 
                     for (var resolvedAllProvidedMods = false; !resolvedAllProvidedMods;)
                     {
@@ -279,7 +310,7 @@ namespace CKAN.App.Services
                 {
                     Instance        = instance,
                     RegistryManager = registryManager,
-                    SummaryText     = "Queue install, update, or remove actions to build a preview.",
+                    SummaryText     = "Queue download, install, update, or remove actions to build a preview.",
                 };
             }
 
@@ -290,15 +321,16 @@ namespace CKAN.App.Services
                     Instance        = instance,
                     RegistryManager = registryManager,
                     RequestedActions = requestedActions,
-                    SummaryText     = "Preview is unavailable because the CKAN download cache is not ready.",
+                    SummaryText     = "Preview is unavailable because downloaded files are unavailable right now.",
                     AttentionNotes  = new[]
                     {
-                        "Reload instances or restart CKAN Linux to restore the download cache.",
+                        "Reload instances or restart CKAN Linux to restore access to downloaded files.",
                     },
                 };
             }
 
             var registry = registryManager.registry;
+            var requestedDownloads = new List<CkanModule>();
             var requestedInstalls = new List<CkanModule>();
             var requestedUpdates  = new List<CkanModule>();
             var requestedRemovals = new List<InstalledModule>();
@@ -310,6 +342,17 @@ namespace CKAN.App.Services
 
                 switch (action.ActionKind)
                 {
+                    case QueuedActionKind.Download:
+                        if (TryLatestCompatible(registry, instance, action.Identifier) is CkanModule downloadMod)
+                        {
+                            requestedDownloads.Add(downloadMod);
+                        }
+                        else
+                        {
+                            resolutionErrors.Add($"Could not resolve a download candidate for {action.Name}.");
+                        }
+                        break;
+
                     case QueuedActionKind.Install:
                         if (TryLatestCompatible(registry, instance, action.Identifier) is CkanModule installMod)
                         {
@@ -346,6 +389,7 @@ namespace CKAN.App.Services
                 }
             }
 
+            requestedDownloads = DistinctModules(requestedDownloads);
             requestedInstalls = DistinctModules(requestedInstalls);
             requestedUpdates  = DistinctModules(requestedUpdates);
             requestedRemovals = DistinctInstalledModules(requestedRemovals);
@@ -362,8 +406,17 @@ namespace CKAN.App.Services
             conflicts.AddRange(resolutionErrors);
 
             var combinedInstalls = DistinctModules(requestedInstalls.Concat(requestedUpdates));
+            var directDownloads = DistinctModules(
+                requestedDownloads.Where(mod => !ContainsIdentifier(combinedInstalls, mod.identifier)));
 
-            if (conflicts.Count == 0)
+            downloadsRequired.AddRange(
+                directDownloads
+                    .Where(mod => !mod.IsMetapackage && !cache.IsMaybeCachedZip(mod))
+                    .Select(mod => cache.DescribeAvailability(gameInstanceService.Configuration, mod))
+                    .Distinct()
+                    .ToList());
+
+            if (conflicts.Count == 0 && combinedInstalls.Count > 0)
             {
                 try
                 {
@@ -450,11 +503,13 @@ namespace CKAN.App.Services
                 Instance         = instance,
                 RegistryManager  = registryManager,
                 RequestedActions = requestedActions,
+                RequestedDownloads = requestedDownloads,
                 RequestedInstalls = requestedInstalls,
                 RequestedUpdates = requestedUpdates,
                 RequestedRemovals = requestedRemovals,
                 InstallOptions   = RelationshipResolverOptions.DependsOnlyOpts(instance.StabilityToleranceConfig),
                 SummaryText      = BuildSummary(requestedActions.Count,
+                                                requestedDownloads.Count,
                                                 combinedInstalls.Count,
                                                 downloadsRequired.Count,
                                                 dependencyInstalls.Count,
@@ -488,6 +543,7 @@ namespace CKAN.App.Services
         }
 
         private static string BuildSummary(int requestedCount,
+                                           int requestedDownloadCount,
                                            int resolvedInstallCount,
                                            int downloadCount,
                                            int dependencyCount,
@@ -497,8 +553,16 @@ namespace CKAN.App.Services
             var parts = new List<string>
             {
                 $"{requestedCount} requested action{(requestedCount == 1 ? "" : "s")}",
-                $"{resolvedInstallCount} install/update target{(resolvedInstallCount == 1 ? "" : "s")}",
             };
+
+            if (requestedDownloadCount > 0)
+            {
+                parts.Add($"{requestedDownloadCount} direct download{(requestedDownloadCount == 1 ? "" : "s")}");
+            }
+            if (resolvedInstallCount > 0)
+            {
+                parts.Add($"{resolvedInstallCount} install/update target{(resolvedInstallCount == 1 ? "" : "s")}");
+            }
 
             if (downloadCount > 0)
             {
@@ -690,6 +754,10 @@ namespace CKAN.App.Services
                 $"{plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)}",
             };
 
+            if (plan.RequestedDownloads.Count > 0)
+            {
+                lines.Add($"{plan.RequestedDownloads.Count} direct download{Pluralize(plan.RequestedDownloads.Count)}");
+            }
             if (plan.RequestedInstalls.Count > 0)
             {
                 lines.Add($"{plan.RequestedInstalls.Count} direct install{Pluralize(plan.RequestedInstalls.Count)}");
@@ -728,6 +796,9 @@ namespace CKAN.App.Services
                 = Array.Empty<QueuedActionModel>();
 
             public IReadOnlyList<CkanModule> RequestedInstalls { get; init; }
+                = Array.Empty<CkanModule>();
+
+            public IReadOnlyList<CkanModule> RequestedDownloads { get; init; }
                 = Array.Empty<CkanModule>();
 
             public IReadOnlyList<CkanModule> RequestedUpdates { get; init; }

@@ -11,6 +11,9 @@ namespace CKAN.App.Services
         Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                          CancellationToken cancellationToken);
 
+        Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                            CancellationToken cancellationToken);
+
         Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                   CancellationToken cancellationToken);
     }

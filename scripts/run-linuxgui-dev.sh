@@ -8,7 +8,9 @@ DEV_HOME=${CKAN_LINUX_DEV_HOME:-"$HOME/.ckan-linux-dev"}
 HOST_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
 DEV_DATA_HOME="$DEV_HOME/data"
 DEV_REPOS_DIR="$DEV_DATA_HOME/CKAN/repos"
+DEV_DOWNLOADS_DIR="$DEV_DATA_HOME/CKAN/downloads"
 HOST_REPOS_DIR="$HOST_DATA_HOME/CKAN/repos"
+HOST_DOWNLOADS_DIR="$HOST_DATA_HOME/CKAN/downloads"
 RUN_DIR="$DEV_HOME/run"
 DEV_LOG_CONFIG_SRC="$REPO_ROOT/LinuxGUI/log4net.linuxgui.dev.xml"
 DEV_LOG_CONFIG_DEST="$RUN_DIR/log4net.linuxgui.xml"
@@ -85,6 +87,15 @@ if [[ ! -L "$DEV_REPOS_DIR" && -d "$HOST_REPOS_DIR" ]]; then
     fi
 fi
 
+if [[ ! -L "$DEV_DOWNLOADS_DIR" && -d "$HOST_DOWNLOADS_DIR" ]]; then
+    if [[ ! -e "$DEV_DOWNLOADS_DIR" ]]; then
+        ln -s "$HOST_DOWNLOADS_DIR" "$DEV_DOWNLOADS_DIR"
+    elif [[ -d "$DEV_DOWNLOADS_DIR" && -z "$(find "$DEV_DOWNLOADS_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+        rmdir "$DEV_DOWNLOADS_DIR"
+        ln -s "$HOST_DOWNLOADS_DIR" "$DEV_DOWNLOADS_DIR"
+    fi
+fi
+
 export XDG_DATA_HOME="$DEV_DATA_HOME"
 export XDG_CONFIG_HOME="$DEV_HOME/config"
 export XDG_CACHE_HOME="$DEV_HOME/cache"
@@ -116,8 +127,13 @@ echo "xdg_config_home: $XDG_CONFIG_HOME"
 echo "xdg_cache_home: $XDG_CACHE_HOME"
 echo "dev_repos_dir: $DEV_REPOS_DIR"
 echo "host_repos_dir: $HOST_REPOS_DIR"
+echo "dev_downloads_dir: $DEV_DOWNLOADS_DIR"
+echo "host_downloads_dir: $HOST_DOWNLOADS_DIR"
 if [[ -L "$DEV_REPOS_DIR" ]]; then
     echo "dev_repos_link_target: $(readlink -f "$DEV_REPOS_DIR")"
+fi
+if [[ -L "$DEV_DOWNLOADS_DIR" ]]; then
+    echo "dev_downloads_link_target: $(readlink -f "$DEV_DOWNLOADS_DIR")"
 fi
 echo "session_log: $SESSION_LOG"
 echo "latest_session_log: $LATEST_SESSION_LOG"

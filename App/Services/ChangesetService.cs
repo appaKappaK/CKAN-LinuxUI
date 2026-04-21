@@ -24,6 +24,18 @@ namespace CKAN.App.Services
                 ? action
                 : null;
 
+        public void QueueDownload(ModListItem mod)
+            => Upsert(new QueuedActionModel
+            {
+                Identifier = mod.Identifier,
+                Name       = mod.Name,
+                ActionKind = QueuedActionKind.Download,
+                ActionText = "Download",
+                DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
+                    ? "Latest available version for later install"
+                    : $"{mod.LatestVersion} for later install",
+            });
+
         public void QueueInstall(ModListItem mod)
             => Upsert(new QueuedActionModel
             {

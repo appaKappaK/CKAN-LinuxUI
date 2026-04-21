@@ -34,13 +34,14 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 return Task.FromResult(new ChangesetPreviewModel
                 {
-                    SummaryText = "Queue install, update, or remove actions to build a preview.",
+                    SummaryText = "Queue download, install, update, or remove actions to build a preview.",
                     CanApply    = false,
                 });
             }
 
             var dependencyInstalls = queue
-                .Where(action => action.ActionKind != QueuedActionKind.Remove)
+                .Where(action => action.ActionKind == QueuedActionKind.Install
+                              || action.ActionKind == QueuedActionKind.Update)
                 .Select(action => $"Harmony ({action.Identifier}-dep 2.3.3)")
                 .Distinct()
                 .ToList();
