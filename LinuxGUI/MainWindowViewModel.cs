@@ -96,6 +96,7 @@ namespace CKAN.LinuxGUI
         private bool    showAdvancedFilters;
         private bool    showDisplaySettings;
         private bool    showDetailsPane = true;
+        private bool    showPreviewSurface;
         private bool    uiScaleRestartStripDismissed;
         private bool    isQueueDrawerExpanded;
         private bool    queueDrawerStickyCollapsed;
@@ -231,6 +232,8 @@ namespace CKAN.LinuxGUI
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
             ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
             ToggleDetailsPaneCommand = ReactiveCommand.Create(ToggleDetailsPane);
+            ShowBrowseSurfaceCommand = ReactiveCommand.Create(ShowBrowseSurfaceTab);
+            ShowPreviewSurfaceCommand = ReactiveCommand.Create(ShowPreviewSurfaceTab);
             ResetUiScaleCommand = ReactiveCommand.Create(ResetUiScale);
             DismissUiScaleRestartStripCommand = ReactiveCommand.Create(DismissUiScaleRestartStrip);
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
@@ -378,6 +381,10 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> ToggleDisplaySettingsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ToggleDetailsPaneCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowBrowseSurfaceCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ShowPreviewSurfaceCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ResetUiScaleCommand { get; }
 
@@ -732,6 +739,22 @@ namespace CKAN.LinuxGUI
 
         public bool ShowReadyInstancePanel => IsReady;
 
+        public bool ShowPreviewSurface
+        {
+            get => showPreviewSurface;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref showPreviewSurface, value);
+                this.RaisePropertyChanged(nameof(ShowBrowseSurface));
+                this.RaisePropertyChanged(nameof(BrowseSurfaceButtonBackground));
+                this.RaisePropertyChanged(nameof(BrowseSurfaceButtonBorderBrush));
+                this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
+                this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
+            }
+        }
+
+        public bool ShowBrowseSurface => !ShowPreviewSurface;
+
         public bool HasSelectedInstance
         {
             get => hasSelectedInstance;
@@ -941,6 +964,23 @@ namespace CKAN.LinuxGUI
 
         public string DetailsPaneToggleLabel
             => ShowDetailsPane ? "Hide Details" : "Show Details";
+
+        public string PreviewSurfaceButtonLabel
+            => HasQueuedActions ? $"Preview ({QueuedActions.Count})" : "Preview";
+
+        public string BrowseSurfaceButtonBackground
+            => ShowBrowseSurface ? "#3E648A" : "#4B535D";
+
+        public string BrowseSurfaceButtonBorderBrush => BrowseSurfaceButtonBackground;
+
+        public string PreviewSurfaceButtonBackground
+            => ShowPreviewSurface
+                ? "#7A3FA0"
+                : HasQueuedActions || HasApplyResult
+                    ? "#5C376D"
+                    : "#4B535D";
+
+        public string PreviewSurfaceButtonBorderBrush => PreviewSurfaceButtonBackground;
 
         public bool ShowUiScaleRestartStrip
             => UiScaleNeedsRestart && !uiScaleRestartStripDismissed;
@@ -2082,6 +2122,12 @@ namespace CKAN.LinuxGUI
         private void ToggleDetailsPane()
             => ShowDetailsPane = !ShowDetailsPane;
 
+        private void ShowBrowseSurfaceTab()
+            => ShowPreviewSurface = false;
+
+        private void ShowPreviewSurfaceTab()
+            => ShowPreviewSurface = true;
+
         private void ResetUiScale()
             => PendingUiScalePercent = UiScaleSettings.DefaultPercent;
 
@@ -2129,6 +2175,7 @@ namespace CKAN.LinuxGUI
             if (!HasQueuedActions)
             {
                 IsQueueDrawerExpanded = false;
+                ShowPreviewSurface = false;
                 PublishQueueStateLabels();
             }
         }
@@ -2348,6 +2395,7 @@ namespace CKAN.LinuxGUI
             changesetService.Clear();
             RefreshQueuedActions();
             ResetPreviewState();
+            ShowPreviewSurface = false;
         }
 
         private void RefreshQueuedActions()
@@ -2601,6 +2649,9 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
             this.RaisePropertyChanged(nameof(CollapsedQueueStubBackground));
             this.RaisePropertyChanged(nameof(CollapsedQueueStubBorderBrush));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonLabel));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
             this.RaisePropertyChanged(nameof(PreviewShowsEmptyCard));
             this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
             this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
@@ -2700,6 +2751,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasApplyResult));
             this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
             this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
             this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
             this.RaisePropertyChanged(nameof(ShowExpandedQueuePanel));

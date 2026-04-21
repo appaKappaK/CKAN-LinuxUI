@@ -192,7 +192,7 @@
             Padding="24,8"
             IsVisible="{Binding ShowReadyHeader}">
       <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="*,220,Auto,Auto,Auto"
+        <Grid ColumnDefinitions="*,220,Auto"
               VerticalAlignment="Center">
           <StackPanel Spacing="1"
                       VerticalAlignment="Center">
@@ -242,39 +242,58 @@
             </StackPanel>
           </Border>
 
-          <Button Grid.Column="2"
-                  Margin="10,0,0,0"
-                  VerticalAlignment="Center"
-                  Background="#3E648A"
-                  BorderBrush="#3E648A"
-                  BorderThickness="0"
-                  CornerRadius="8"
-                  Foreground="#F4F6F8"
-                  Command="{Binding ToggleDisplaySettingsCommand}"
-                  Content="Settings" />
+          <StackPanel Grid.Column="2"
+                      Margin="10,0,0,0"
+                      Orientation="Horizontal"
+                      Spacing="10"
+                      VerticalAlignment="Center">
+            <Button VerticalAlignment="Center"
+                    Background="{Binding BrowseSurfaceButtonBackground}"
+                    BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Foreground="#F4F6F8"
+                    Command="{Binding ShowBrowseSurfaceCommand}"
+                    Content="Browse" />
 
-          <Button Grid.Column="3"
-                  Margin="10,0,0,0"
-                  VerticalAlignment="Center"
-                  Background="#7A3FA0"
-                  BorderBrush="#7A3FA0"
-                  BorderThickness="0"
-                  CornerRadius="8"
-                  Foreground="#F4F6F8"
-                  Command="{Binding ToggleDetailsPaneCommand}"
-                  ToolTip.Tip="{Binding DetailsPaneToggleLabel}"
-                  Content="{Binding DetailsPaneToggleLabel}" />
+            <Button VerticalAlignment="Center"
+                    Background="{Binding PreviewSurfaceButtonBackground}"
+                    BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Foreground="#F4F6F8"
+                    Command="{Binding ShowPreviewSurfaceCommand}"
+                    Content="{Binding PreviewSurfaceButtonLabel}" />
 
-          <Button Grid.Column="4"
-                  Margin="10,0,0,0"
-                  VerticalAlignment="Center"
-                  Background="#2F8A57"
-                  BorderBrush="#2F8A57"
-                  BorderThickness="0"
-                  CornerRadius="8"
-                  Foreground="#F4F6F8"
-                  Command="{Binding RefreshCommand}"
-                  Content="Reload" />
+            <Button VerticalAlignment="Center"
+                    Background="#3E648A"
+                    BorderBrush="#3E648A"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Foreground="#F4F6F8"
+                    Command="{Binding ToggleDisplaySettingsCommand}"
+                    Content="Settings" />
+
+            <Button VerticalAlignment="Center"
+                    Background="#7A3FA0"
+                    BorderBrush="#7A3FA0"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Foreground="#F4F6F8"
+                    Command="{Binding ToggleDetailsPaneCommand}"
+                    ToolTip.Tip="{Binding DetailsPaneToggleLabel}"
+                    IsVisible="{Binding ShowBrowseSurface}"
+                    Content="{Binding DetailsPaneToggleLabel}" />
+
+            <Button VerticalAlignment="Center"
+                    Background="#2F8A57"
+                    BorderBrush="#2F8A57"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Foreground="#F4F6F8"
+                    Command="{Binding RefreshCommand}"
+                    Content="Reload" />
+          </StackPanel>
         </Grid>
 
         <Border Background="#161B21"
@@ -666,7 +685,7 @@
                   CornerRadius="12"
                   Padding="16"
                   IsVisible="{Binding IsReady}">
-            <Grid RowDefinitions="Auto,*,Auto">
+            <Grid RowDefinitions="Auto,*">
               <Border Background="#4A3920"
                       BorderBrush="#9A7B37"
                       BorderThickness="1"
@@ -691,7 +710,8 @@
               </Border>
 
               <Grid Grid.Row="1"
-                    ColumnDefinitions="*,Auto">
+                    ColumnDefinitions="*,Auto"
+                    IsVisible="{Binding ShowBrowseSurface}">
                 <Border Background="#161B21"
                         CornerRadius="10"
                         Padding="12"
@@ -1618,95 +1638,11 @@
                 </Border>
               </Grid>
 
-              <Border Grid.Row="2"
-                      Background="#161B21"
-                      CornerRadius="10"
-                      Padding="14,12"
-                      Margin="0,12,0,0"
-                      IsVisible="{Binding ShowEmptyQueueStub}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock VerticalAlignment="Center"
-                             FontWeight="SemiBold"
-                             Text="No pending changes" />
-                  <TextBlock Grid.Column="1"
-                             VerticalAlignment="Center"
-                             FontSize="12"
-                             Opacity="0.7"
-                             Text="Queue download, install, update, or remove actions to preview changes." />
-                </Grid>
-              </Border>
-
-              <Border Grid.Row="2"
-                      Background="{Binding CollapsedQueueStubBackground}"
-                      BorderBrush="{Binding CollapsedQueueStubBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="14,12"
-                      Margin="0,12,0,0"
-                      IsVisible="{Binding ShowCollapsedQueuedActionsStub}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <Button HorizontalContentAlignment="Stretch"
-                          Padding="0"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          Command="{Binding ToggleQueueDrawerCommand}">
-                    <StackPanel Spacing="4">
-                      <TextBlock FontWeight="SemiBold"
-                                 Text="{Binding CollapsedQueueStubTitle}" />
-                      <TextBlock FontSize="12"
-                                 Opacity="0.74"
-                                 TextWrapping="Wrap"
-                                 Text="{Binding CollapsedQueueStubSummary}" />
-                    </StackPanel>
-                  </Button>
-
-                  <Button Grid.Column="1"
-                          Margin="14,0,0,0"
-                          VerticalAlignment="Center"
-                          Command="{Binding ApplyChangesFromCollapsedQueueCommand}"
-                          Content="Apply Changes" />
-                </Grid>
-              </Border>
-
-              <Border Grid.Row="2"
-                      Background="{Binding CollapsedQueueStubBackground}"
-                      BorderBrush="{Binding CollapsedQueueStubBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="14,12"
-                      Margin="0,12,0,0"
-                      IsVisible="{Binding ShowCollapsedApplyResultStub}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <Button HorizontalContentAlignment="Stretch"
-                          Padding="0"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          Command="{Binding ToggleQueueDrawerCommand}">
-                    <StackPanel Spacing="4">
-                      <TextBlock FontWeight="SemiBold"
-                                 Text="{Binding CollapsedQueueStubTitle}" />
-                      <TextBlock FontSize="12"
-                                 Opacity="0.82"
-                                 TextWrapping="Wrap"
-                                 Text="{Binding CollapsedQueueStubSummary}" />
-                    </StackPanel>
-                  </Button>
-
-                  <Button Grid.Column="1"
-                          Margin="14,0,0,0"
-                          VerticalAlignment="Center"
-                          Command="{Binding DismissApplyResultCommand}"
-                          Content="Dismiss" />
-                </Grid>
-              </Border>
-
-              <Border Grid.Row="2"
+              <Border Grid.Row="1"
                       Background="#161B21"
                       CornerRadius="10"
                       Padding="18"
-                      Margin="0,12,0,0"
-                      MinHeight="260"
-                      IsVisible="{Binding ShowExpandedQueuePanel}">
+                      IsVisible="{Binding ShowPreviewSurface}">
                 <Grid RowDefinitions="Auto,*">
                   <Border Background="#1A2027"
                           CornerRadius="10"
@@ -1715,26 +1651,44 @@
                       <StackPanel Spacing="4">
                         <TextBlock FontSize="16"
                                    FontWeight="SemiBold"
-                                   Text="Pre-Apply Summary" />
+                                   Text="Preview &amp; Apply" />
                         <TextBlock FontSize="12"
                                    Opacity="0.72"
                                    Text="{Binding PreviewPanelGuidance}" />
                       </StackPanel>
                       <WrapPanel Grid.Column="1"
                                  HorizontalAlignment="Right"
-                                 VerticalAlignment="Center">
+                                 VerticalAlignment="Center"
+                                 ItemHeight="34">
                         <Button Classes="toolbar-chip"
-                                Command="{Binding ToggleQueueDrawerCommand}"
-                                Content="Collapse" />
+                                Margin="0,0,8,0"
+                                Background="#4B535D"
+                                BorderBrush="#4B535D"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasApplyResult}"
+                                Command="{Binding DismissApplyResultCommand}"
+                                Content="Dismiss Result" />
                         <Button Classes="toolbar-chip"
+                                Margin="0,0,8,0"
+                                Background="#4B535D"
+                                BorderBrush="#4B535D"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasQueuedActions}"
                                 Command="{Binding RemoveQueuedActionCommand}"
                                 Content="Remove Selected" />
                         <Button Classes="toolbar-chip"
+                                Margin="0,0,8,0"
+                                Background="#6B2B2B"
+                                BorderBrush="#6B2B2B"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasQueuedActions}"
                                 Command="{Binding ClearQueueCommand}"
                                 Content="Clear Queue" />
                         <Button Classes="toolbar-chip"
                                 Background="{Binding ApplyChangesButtonBackground}"
                                 BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasQueuedActions}"
                                 Command="{Binding ApplyChangesCommand}"
                                 Content="Apply Changes" />
                       </WrapPanel>
