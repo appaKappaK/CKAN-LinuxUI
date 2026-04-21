@@ -42,6 +42,7 @@
       <Project>{3B9AEA22-FA3B-4E43-9283-EABDD81CF271}</Project>
       <Name>CKAN-core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PluginCompat\CKAN-GUI.PluginCompat.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\_build\meta\GlobalAssemblyVersionInfo.cs">

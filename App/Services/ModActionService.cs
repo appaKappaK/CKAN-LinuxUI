@@ -69,6 +69,25 @@ namespace CKAN.App.Services
             return RewordInstallNowResult(mod, result);
         }
 
+        public async Task<ApplyChangesResult> RemoveNowAsync(ModListItem mod,
+                                                             CancellationToken cancellationToken)
+        {
+            if (mod == null)
+            {
+                throw new ArgumentNullException(nameof(mod));
+            }
+
+            var result = await ExecuteQueuedAsync(new[]
+            {
+                CreateRemoveAction(mod),
+            },
+            () => { },
+            downloadOnlyRun: false,
+            cancellationToken);
+
+            return RewordRemoveNowResult(mod, result);
+        }
+
         public Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken)
             => ExecuteQueuedAsync(changesetService.CurrentDownloadQueue,
                                   changesetService.ClearDownloadQueue,
@@ -795,6 +814,18 @@ namespace CKAN.App.Services
                     : $"Install {mod.LatestVersion}",
             };
 
+        private static QueuedActionModel CreateRemoveAction(ModListItem mod)
+            => new QueuedActionModel
+            {
+                Identifier = mod.Identifier,
+                Name       = mod.Name,
+                ActionKind = QueuedActionKind.Remove,
+                ActionText = "Remove",
+                DetailText = string.IsNullOrWhiteSpace(mod.InstalledVersion)
+                    ? "Remove installed module"
+                    : $"Remove {mod.InstalledVersion}",
+            };
+
         private static ApplyChangesResult RewordInstallNowResult(ModListItem mod,
                                                                  ApplyChangesResult result)
         {
@@ -813,6 +844,29 @@ namespace CKAN.App.Services
                 Success       = result.Success,
                 Title         = GetInstallNowTitle(result.Kind),
                 Message       = GetInstallNowMessage(mod.Name, result),
+                SummaryLines  = summaryLines,
+                FollowUpLines = result.FollowUpLines,
+            };
+        }
+
+        private static ApplyChangesResult RewordRemoveNowResult(ModListItem mod,
+                                                                ApplyChangesResult result)
+        {
+            var summaryLines = result.SummaryLines
+                                     .Where(line => !line.Contains("queued action",
+                                                                   StringComparison.OrdinalIgnoreCase))
+                                     .ToList();
+            if (summaryLines.Count == 0)
+            {
+                summaryLines.Add("1 direct removal");
+            }
+
+            return new ApplyChangesResult
+            {
+                Kind          = result.Kind,
+                Success       = result.Success,
+                Title         = GetRemoveNowTitle(result.Kind),
+                Message       = GetRemoveNowMessage(mod.Name, result),
                 SummaryLines  = summaryLines,
                 FollowUpLines = result.FollowUpLines,
             };
@@ -855,6 +909,45 @@ namespace CKAN.App.Services
             }
 
             return RewritePrefix(result.Message, "Apply failed", "Install failed");
+        }
+
+        private static string GetRemoveNowTitle(ApplyResultKind kind)
+            => kind switch
+            {
+                ApplyResultKind.Success  => "Removed",
+                ApplyResultKind.Warning  => "Removed with Follow-Up",
+                ApplyResultKind.Blocked  => "Removal Blocked",
+                ApplyResultKind.Canceled => "Removal Canceled",
+                _                        => "Removal Failed",
+            };
+
+        private static string GetRemoveNowMessage(string moduleName,
+                                                  ApplyChangesResult result)
+        {
+            if (result.Kind == ApplyResultKind.Success)
+            {
+                return $"Removed {moduleName}.";
+            }
+
+            if (result.Kind == ApplyResultKind.Warning)
+            {
+                return $"Removed {moduleName}. Review the follow-up items below.";
+            }
+
+            if (result.Kind == ApplyResultKind.Blocked)
+            {
+                const string prefix = "Cannot apply queued changes: ";
+                return result.Message.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    ? $"Could not remove {moduleName}: {result.Message[prefix.Length..]}"
+                    : $"Could not remove {moduleName}: {result.Message}";
+            }
+
+            if (result.Kind == ApplyResultKind.Canceled)
+            {
+                return RewritePrefix(result.Message, "Apply canceled", "Removal canceled");
+            }
+
+            return RewritePrefix(result.Message, "Apply failed", "Removal failed");
         }
 
         private static string RewritePrefix(string message,

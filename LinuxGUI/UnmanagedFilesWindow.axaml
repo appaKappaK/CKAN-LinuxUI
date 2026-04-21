@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.UnmanagedFilesWindow"
+        x:CompileBindings="False"
+        Width="860"
+        Height="600"
+        MinWidth="760"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        Title="Unmanaged Files"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Unmanaged Files" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding SummaryText}" />
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Margin="0,18,0,0"
+            Background="#161B21"
+            BorderBrush="#2B323C"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="12">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock FontWeight="SemiBold"
+                   Text="{Binding CountLabel}" />
+
+        <ListBox Grid.Row="1"
+                 Margin="0,12,0,0"
+                 ItemsSource="{Binding Paths}"
+                 SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border BorderBrush="#242B33"
+                      BorderThickness="0,0,0,1"
+                      Padding="0,9">
+                <TextBlock Text="{Binding}" />
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#1F3D58"
+              BorderBrush="#31597B"
+              Foreground="#F4F6F8"
+              Click="RefreshButton_OnClick"
+              Content="Refresh" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="OpenSelectedButton_OnClick"
+              IsEnabled="{Binding HasSelection}"
+              Content="Open Selected" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CloseButton_OnClick"
+              Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>

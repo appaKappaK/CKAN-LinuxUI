@@ -1,0 +1,159 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.CompatibleGameVersionsWindow"
+        x:CompileBindings="False"
+        Width="620"
+        Height="620"
+        MinWidth="560"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        Title="Compatible Game Versions"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="CheckBox.compat-option">
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Compatible Game Versions" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="Additionally install mods compatible with the following game versions." />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="Auto,*"
+          RowDefinitions="Auto,Auto"
+          Margin="0,18,0,0">
+      <TextBlock Opacity="0.72"
+                 Margin="0,0,14,8"
+                 Text="Installation:" />
+      <TextBlock Grid.Column="1"
+                 Margin="0,0,0,8"
+                 TextTrimming="CharacterEllipsis"
+                 Text="{Binding InstallationPath}" />
+
+      <TextBlock Grid.Row="1"
+                 Opacity="0.72"
+                 Margin="0,0,14,0"
+                 Text="Game version:" />
+      <TextBlock Grid.Row="1"
+                 Grid.Column="1"
+                 FontWeight="SemiBold"
+                 Text="{Binding CurrentGameVersionLabel}" />
+    </Grid>
+
+    <Grid Grid.Row="2"
+          RowDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+          Margin="0,18,0,0">
+      <TextBlock Text="Additionally install mods compatible with following game versions:" />
+
+      <Border Grid.Row="1"
+              Background="#161B21"
+              BorderBrush="#2B323C"
+              BorderThickness="1"
+              CornerRadius="8"
+              Margin="0,12,0,0"
+              Padding="12">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding Options}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <CheckBox Classes="compat-option"
+                          Content="{Binding Label}"
+                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Border>
+
+      <Grid Grid.Row="2"
+            ColumnDefinitions="Auto,*,Auto"
+            Margin="0,12,0,0">
+        <Button Classes="dialog-action"
+                Background="#1F3D58"
+                BorderBrush="#31597B"
+                Foreground="#F4F6F8"
+                Margin="0,0,12,0"
+                Click="ClearSelectionButton_OnClick"
+                Content="Clear selection" />
+        <TextBox Grid.Column="1"
+                 Margin="0,0,12,0"
+                 Watermark="Add version to list"
+                 Text="{Binding AddVersionText, Mode=TwoWay}" />
+        <Button Grid.Column="2"
+                Classes="dialog-action"
+                Background="#2E6D48"
+                BorderBrush="#3A8A5A"
+                Foreground="#F4F6F8"
+                Click="AddVersionButton_OnClick"
+                Content="Add" />
+      </Grid>
+
+      <TextBlock Grid.Row="3"
+                 FontSize="12"
+                 Margin="0,12,0,0"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding CompatibilityHint}" />
+
+      <StackPanel Grid.Row="4"
+                  Margin="0,12,0,0"
+                  Spacing="8">
+        <Border Background="#4A3920"
+                BorderBrush="#9A7B37"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10,8"
+                IsVisible="{Binding ShowStoredCompatibilityWarning}">
+          <TextBlock FontSize="12"
+                     TextWrapping="Wrap"
+                     Text="{Binding StoredCompatibilityWarningText}" />
+        </Border>
+
+        <TextBlock FontSize="12"
+                   Foreground="#F06C6C"
+                   IsVisible="{Binding ShowAddVersionValidationMessage}"
+                   TextWrapping="Wrap"
+                   Text="{Binding AddVersionValidationMessage}" />
+
+        <TextBlock FontSize="12"
+                   Foreground="#F06C6C"
+                   TextWrapping="Wrap"
+                   Text="{Binding SafetyWarningText}" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="3"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="AcceptButton_OnClick"
+              Content="Accept" />
+    </StackPanel>
+  </Grid>
+</Window>

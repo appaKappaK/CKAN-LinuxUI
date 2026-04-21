@@ -16,6 +16,9 @@ using ReactiveUI;
 
 using CKAN.App.Models;
 using CKAN.App.Services;
+using CKAN.Configuration;
+using CKAN.IO;
+using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
 {
@@ -141,6 +144,7 @@ namespace CKAN.LinuxGUI
             Instances = new ObservableCollection<InstanceSummary>();
             Mods = new ObservableCollection<ModListItem>();
             QueuedActions = new ObservableCollection<QueuedActionModel>();
+            CompatibleGameVersionOptions = new ObservableCollection<CompatibilityVersionOption>();
             PreviewDownloadsRequired = new ObservableCollection<string>();
             PreviewDependencies = new ObservableCollection<string>();
             PreviewAutoRemovals = new ObservableCollection<string>();
@@ -213,7 +217,6 @@ namespace CKAN.LinuxGUI
             var canDownloadQueued = this.WhenAnyValue(vm => vm.HasQueuedDownloadActions,
                                                       vm => vm.IsApplyingChanges,
                                                       (hasDownloads, applying) => hasDownloads && !applying);
-
             RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
             SetCurrentInstanceCommand = ReactiveCommand.CreateFromTask(
                 SetCurrentInstanceAsync,
@@ -241,6 +244,15 @@ namespace CKAN.LinuxGUI
             ApplyChangesFromCollapsedQueueCommand = ReactiveCommand.CreateFromTask(ApplyChangesFromCollapsedQueueAsync,
                                                                                    canApplyChanges);
             DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
+            OpenCurrentGameDirectoryCommand = ReactiveCommand.Create(OpenCurrentGameDirectory,
+                                                                    this.WhenAnyValue(vm => vm.HasCurrentInstance));
+            OpenUserGuideCommand = ReactiveCommand.Create(OpenUserGuide);
+            OpenDiscordCommand = ReactiveCommand.Create(OpenDiscord);
+            OpenGameSupportCommand = ReactiveCommand.Create(OpenGameSupport,
+                                                           this.WhenAnyValue(vm => vm.HasCurrentInstance));
+            ReportClientIssueCommand = ReactiveCommand.Create(ReportClientIssue);
+            ReportMetadataIssueCommand = ReactiveCommand.Create(ReportMetadataIssue,
+                                                               this.WhenAnyValue(vm => vm.HasCurrentInstance));
             PrimarySelectedModActionCommand = ReactiveCommand.Create(
                 ExecutePrimarySelectedModAction,
                 this.WhenAnyValue(vm => vm.ShowPrimarySelectedModAction,
@@ -249,6 +261,9 @@ namespace CKAN.LinuxGUI
             InstallNowSelectedModCommand = ReactiveCommand.CreateFromTask(
                 InstallNowSelectedModAsync,
                 this.WhenAnyValue(vm => vm.ShowInstallNowAction));
+            RemoveNowSelectedModCommand = ReactiveCommand.CreateFromTask(
+                RemoveNowSelectedModAsync,
+                this.WhenAnyValue(vm => vm.ShowRemoveNowAction));
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
             ShowRelationshipsDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Relationships));
@@ -344,6 +359,8 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<QueuedActionModel> QueuedActions { get; }
 
+        public ObservableCollection<CompatibilityVersionOption> CompatibleGameVersionOptions { get; }
+
         public ObservableCollection<string> PreviewDownloadsRequired { get; }
 
         public ObservableCollection<string> PreviewDependencies { get; }
@@ -410,9 +427,23 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> DismissApplyResultCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> OpenCurrentGameDirectoryCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> OpenUserGuideCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> OpenDiscordCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> OpenGameSupportCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ReportClientIssueCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ReportMetadataIssueCommand { get; }
+
         public ReactiveCommand<Unit, Unit> PrimarySelectedModActionCommand { get; }
 
         public ReactiveCommand<Unit, Unit> InstallNowSelectedModCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> RemoveNowSelectedModCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ShowOverviewDetailsCommand { get; }
 
@@ -757,6 +788,26 @@ namespace CKAN.LinuxGUI
 
         public bool HasCurrentInstance => !string.IsNullOrWhiteSpace(gameInstanceService.CurrentInstance?.Name);
 
+        public GameInstance? CurrentInstance => gameInstanceService.CurrentInstance;
+
+        public IConfiguration CurrentConfiguration => gameInstanceService.Configuration;
+
+        public GameInstanceManager CurrentManager => gameInstanceService.Manager;
+
+        public IUser CurrentUser => user;
+
+        public SteamLibrary CurrentSteamLibrary => gameInstanceService.Manager.SteamLibrary;
+
+        public Registry? CurrentRegistry => gameInstanceService.CurrentRegistryManager?.registry;
+
+        public NetModuleCache? CurrentCache => gameInstanceService.Manager.Cache;
+
+        public IReadOnlyList<GameInstance> KnownGameInstances
+            => gameInstanceService.Manager.Instances.Values.ToList();
+
+        public Task RefreshCurrentStateAsync()
+            => RefreshAsync();
+
         public bool ShowStartupInstancePanel => !IsReady;
 
         public bool ShowReadyInstancePanel => IsReady;
@@ -1005,6 +1056,46 @@ namespace CKAN.LinuxGUI
             => UiScaleNeedsRestart
                 ? "Saved for the next launch. Restart CKAN Linux to apply the new scale."
                 : "Reduce the shell if the current layout feels oversized. Changes apply after restart.";
+
+        public string CurrentCompatibleGameVersionLabel
+            => gameInstanceService.CurrentInstance?.Version()?.ToString() ?? "<NONE>";
+
+        public bool ShowCompatibleGameVersionOptions => CompatibleGameVersionOptions.Count > 0;
+
+        public bool ShowCompatibleGameVersionWarning
+            => gameInstanceService.CurrentInstance?.CompatibleVersionsAreFromDifferentGameVersion == true;
+
+        public string CompatibleGameVersionsSummary
+        {
+            get
+            {
+                var selected = CompatibleGameVersionOptions.Where(opt => opt.IsSelected)
+                                                          .Select(opt => opt.Label)
+                                                          .ToList();
+                return selected.Count == 0
+                    ? $"Current game version {CurrentCompatibleGameVersionLabel}. No extra compatibility versions are enabled."
+                    : $"Current game version {CurrentCompatibleGameVersionLabel}. Also treat {string.Join(", ", selected)} as compatible.";
+            }
+        }
+
+        public string CompatibleGameVersionsHint
+            => "Choose additional game versions CKAN should treat as compatible for this instance. The installed version is always included automatically.";
+
+        public string CompatibleGameVersionsWarningText
+        {
+            get
+            {
+                if (gameInstanceService.CurrentInstance is not GameInstance instance
+                    || !instance.CompatibleVersionsAreFromDifferentGameVersion)
+                {
+                    return "";
+                }
+
+                return instance.GameVersionWhenCompatibleVersionsWereStored == null
+                    ? "Compatibility defaults were inferred automatically. Review them before trusting older mods."
+                    : $"These compatibility selections were saved for {instance.GameVersionWhenCompatibleVersionsWereStored}. Review them for {CurrentCompatibleGameVersionLabel}.";
+            }
+        }
 
         public string DisplaySettingsToggleLabel
             => ShowDisplaySettings ? "Hide" : "Adjust";
@@ -1265,6 +1356,11 @@ namespace CKAN.LinuxGUI
                && !HasSelectedModQueuedAction
                && !IsApplyingChanges;
 
+        public bool ShowRemoveNowAction
+            => ShowRemoveAction
+               && !HasSelectedModQueuedAction
+               && !IsApplyingChanges;
+
         public bool ShowPrimarySelectedModAction
             => !IsSelectedModLoading
                && (HasSelectedModQueuedAction
@@ -1323,7 +1419,7 @@ namespace CKAN.LinuxGUI
                 }
                 if (ShowRemoveAction)
                 {
-                    return "#6B2B2B";
+                    return "#1B4D77";
                 }
 
                 return "#39424E";
@@ -1661,9 +1757,19 @@ namespace CKAN.LinuxGUI
                     return $"{queuedDownload.ActionText} queued: {queuedDownload.DetailText}";
                 }
 
-                return ShowInstallAction
-                    ? "No queued item for this mod yet. Install now, queue it for later, or right-click for download-only."
-                    : "No queued item for this mod yet. Right-click for download-only.";
+                if (ShowInstallAction)
+                {
+                    return "No queued item for this mod yet. Install now, queue it for later, or right-click for download-only.";
+                }
+
+                if (ShowRemoveAction)
+                {
+                    return "No queued item for this mod yet. Remove it now or queue the removal for later.";
+                }
+
+                return ShowUpdateAction
+                    ? "No queued item for this mod yet. Queue the update when you are ready to review it."
+                    : "No queued item for this mod yet.";
             }
         }
 
@@ -1994,6 +2100,7 @@ namespace CKAN.LinuxGUI
                 SelectedInstance = Instances.FirstOrDefault(inst => inst.Name == previousSelectionName);
             }
             SelectedInstance ??= Instances.FirstOrDefault();
+            RefreshCompatibleGameVersionOptions();
 
             if (Instances.Count == 0)
             {
@@ -2425,6 +2532,7 @@ namespace CKAN.LinuxGUI
 
         private void ClearAllFilters()
         {
+            pendingModListScrollReset = true;
             ModSearchText = "";
             FilterInstalledOnly = false;
             FilterNotInstalledOnly = false;
@@ -2434,6 +2542,26 @@ namespace CKAN.LinuxGUI
             FilterUncachedOnly = false;
             FilterIncompatibleOnly = false;
             ClearAdvancedFilters();
+        }
+
+        public async Task ApplyCompatibleGameVersionsAsync(IReadOnlyCollection<GameVersion> compatibleVersions)
+        {
+            if (gameInstanceService.CurrentInstance is not GameInstance instance)
+            {
+                return;
+            }
+
+            instance.SetCompatibleVersions(compatibleVersions.Distinct()
+                                                         .ToList());
+            RefreshCompatibleGameVersionOptions();
+            ClearApplyResult();
+            StatusMessage = "Updated compatible game versions for the current instance.";
+
+            await LoadModCatalogAsync();
+            if (HasQueuedActions)
+            {
+                await LoadPreviewAsync();
+            }
         }
 
         private void ToggleSortOptions()
@@ -2452,6 +2580,24 @@ namespace CKAN.LinuxGUI
             }
 
             ShowSortOptions = false;
+        }
+
+        private void RefreshCompatibleGameVersionOptions()
+        {
+            CompatibleGameVersionOptions.Clear();
+
+            if (gameInstanceService.CurrentInstance is not GameInstance instance)
+            {
+                PublishCompatibleGameVersionState();
+                return;
+            }
+
+            foreach (var option in CompatibilityVersionOptionBuilder.Build(instance))
+            {
+                CompatibleGameVersionOptions.Add(option);
+            }
+
+            PublishCompatibleGameVersionState();
         }
 
         private void ApplyCurrentSortToVisibleMods()
@@ -2525,13 +2671,83 @@ namespace CKAN.LinuxGUI
             return Task.CompletedTask;
         }
 
+        private void OpenCurrentGameDirectory()
+        {
+            if (CurrentInstance == null)
+            {
+                return;
+            }
+
+            LaunchExternal(CurrentInstance.GameDir,
+                           $"Opened {CurrentInstance.Name} in your file manager.",
+                           "Could not open the current game directory.");
+        }
+
+        private void OpenUserGuide()
+            => LaunchExternal(HelpURLs.UserGuide,
+                              "Opened the CKAN user guide.",
+                              "Could not open the CKAN user guide.");
+
+        private void OpenDiscord()
+            => LaunchExternal(HelpURLs.CKANDiscord,
+                              "Opened the CKAN Discord invite.",
+                              "Could not open the CKAN Discord invite.");
+
+        private void OpenGameSupport()
+        {
+            if (CurrentInstance == null)
+            {
+                return;
+            }
+
+            LaunchExternal(CurrentInstance.Game.ModSupportURL.ToString(),
+                           "Opened the KSP mod support page.",
+                           "Could not open the KSP mod support page.");
+        }
+
+        private void ReportClientIssue()
+            => LaunchExternal(HelpURLs.CKANIssues,
+                              "Opened the CKAN client issue tracker.",
+                              "Could not open the CKAN client issue tracker.");
+
+        private void ReportMetadataIssue()
+        {
+            if (CurrentInstance == null)
+            {
+                return;
+            }
+
+            LaunchExternal(CurrentInstance.Game.MetadataBugtrackerURL.ToString(),
+                           "Opened the mod metadata issue tracker.",
+                           "Could not open the mod metadata issue tracker.");
+        }
+
+        private void LaunchExternal(string target,
+                                    string successMessage,
+                                    string failureMessage)
+        {
+            if (Utilities.ProcessStartURL(target))
+            {
+                StatusMessage = successMessage;
+            }
+            else
+            {
+                Diagnostics = $"Failed to launch: {target}";
+                StatusMessage = failureMessage;
+            }
+        }
+
         private void PublishInstanceStateLabels()
         {
             UpdateCurrentInstanceContext();
             UpdateReadyInstanceHint();
             this.RaisePropertyChanged(nameof(HasInstances));
             this.RaisePropertyChanged(nameof(HasCurrentInstance));
+            this.RaisePropertyChanged(nameof(CurrentInstance));
+            this.RaisePropertyChanged(nameof(CurrentRegistry));
+            this.RaisePropertyChanged(nameof(CurrentCache));
             this.RaisePropertyChanged(nameof(InstanceCountLabel));
+            PublishCompatibleGameVersionState();
             this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
             this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
             this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
@@ -2788,6 +3004,51 @@ namespace CKAN.LinuxGUI
                 });
                 Diagnostics = ex.Message;
                 StatusMessage = "Install failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+        }
+
+        private async Task RemoveNowSelectedModAsync()
+        {
+            if (SelectedMod == null)
+            {
+                return;
+            }
+
+            var targetMod = SelectedMod;
+            ClearApplyResult();
+            currentExecutionStatusLabel = $"Removing {targetMod.Name}…";
+            IsApplyingChanges = true;
+            try
+            {
+                var result = await modActionService.RemoveNowAsync(targetMod, CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+
+                if (result.Success)
+                {
+                    if (changesetService.FindQueuedDownloadAction(targetMod.Identifier) != null)
+                    {
+                        changesetService.Remove(targetMod.Identifier);
+                    }
+
+                    await LoadModCatalogAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                SetApplyResult(new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = "Removal Failed",
+                    Message = ex.Message,
+                });
+                Diagnostics = ex.Message;
+                StatusMessage = "Removal failed.";
             }
             finally
             {
@@ -3059,11 +3320,22 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasSelectedModQueuedAction));
             this.RaisePropertyChanged(nameof(HasSelectedModQueuedDownload));
             this.RaisePropertyChanged(nameof(ShowInstallNowAction));
+            this.RaisePropertyChanged(nameof(ShowRemoveNowAction));
             this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBackground));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBorderBrush));
             this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
+        }
+
+        private void PublishCompatibleGameVersionState()
+        {
+            this.RaisePropertyChanged(nameof(CurrentCompatibleGameVersionLabel));
+            this.RaisePropertyChanged(nameof(ShowCompatibleGameVersionOptions));
+            this.RaisePropertyChanged(nameof(ShowCompatibleGameVersionWarning));
+            this.RaisePropertyChanged(nameof(CompatibleGameVersionsSummary));
+            this.RaisePropertyChanged(nameof(CompatibleGameVersionsHint));
+            this.RaisePropertyChanged(nameof(CompatibleGameVersionsWarningText));
         }
 
         private void PublishPreviewStateLabels()

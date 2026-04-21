@@ -1,0 +1,133 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.PreferredHostsWindow"
+        x:CompileBindings="False"
+        Width="840"
+        Height="560"
+        MinWidth="760"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Title="Preferred Hosts"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Button.host-move">
+      <Setter Property="MinWidth" Value="36" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#39424E" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Preferred Hosts" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="Choose which download hosts CKAN should prefer when a mod has multiple mirrors. The special placeholder marks where all other hosts should fall in the order." />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,Auto,*"
+          Margin="0,18,0,0">
+      <Border Background="#161B21"
+              BorderBrush="#2B323C"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="12">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock FontSize="14"
+                     FontWeight="SemiBold"
+                     Text="Available Hosts" />
+          <ListBox Grid.Row="1"
+                   Margin="0,12,0,0"
+                   ItemsSource="{Binding AvailableHosts}"
+                   SelectedItem="{Binding SelectedAvailableHost, Mode=TwoWay}" />
+        </Grid>
+      </Border>
+
+      <StackPanel Grid.Column="1"
+                  Margin="14,0"
+                  VerticalAlignment="Center"
+                  Spacing="10">
+        <Button Classes="host-move"
+                Click="MoveRightButton_OnClick"
+                IsEnabled="{Binding CanMoveRight}"
+                Content="▸" />
+        <Button Classes="host-move"
+                Click="MoveLeftButton_OnClick"
+                IsEnabled="{Binding CanMoveLeft}"
+                Content="◂" />
+      </StackPanel>
+
+      <Grid Grid.Column="2"
+            ColumnDefinitions="*,Auto">
+        <Border Background="#161B21"
+                BorderBrush="#2B323C"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock FontSize="14"
+                       FontWeight="SemiBold"
+                       Text="Preferred Order" />
+            <ListBox Grid.Row="1"
+                     Margin="0,12,0,0"
+                     ItemsSource="{Binding PreferredHosts}"
+                     SelectedItem="{Binding SelectedPreferredHost, Mode=TwoWay}" />
+          </Grid>
+        </Border>
+
+        <StackPanel Grid.Column="1"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Top"
+                    Spacing="10">
+          <Button Classes="host-move"
+                  Click="MoveUpButton_OnClick"
+                  IsEnabled="{Binding CanMoveUp}"
+                  Content="▴" />
+          <Button Classes="host-move"
+                  Click="MoveDownButton_OnClick"
+                  IsEnabled="{Binding CanMoveDown}"
+                  Content="▾" />
+        </StackPanel>
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="HelpButton_OnClick"
+              Content="Help" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="AcceptButton_OnClick"
+              Content="Save" />
+    </StackPanel>
+  </Grid>
+</Window>

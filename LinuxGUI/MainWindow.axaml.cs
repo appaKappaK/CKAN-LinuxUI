@@ -20,6 +20,8 @@ namespace CKAN.LinuxGUI
         private bool suppressHeaderInstanceSelection;
         private MainWindowViewModel? observedViewModel;
         private ContextMenu? activeModRowMenu;
+        private LinuxGuiPluginController? pluginController;
+        private string? pluginControllerInstanceDir;
 
         public MainWindow()
         {
@@ -74,6 +76,7 @@ namespace CKAN.LinuxGUI
         {
             ObserveViewModel(null);
             CloseActiveModRowMenu();
+            DisposePluginController();
 
             if (appSettings == null)
             {
@@ -163,6 +166,161 @@ namespace CKAN.LinuxGUI
         {
             AdvancedAuthorFilterTextBox.Focus();
             AdvancedAuthorFilterTextBox.SelectAll();
+        }
+
+        private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
+                                                                  Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentInstance is not GameInstance instance)
+            {
+                return;
+            }
+
+            var dialog = new CompatibleGameVersionsWindow(instance);
+            if (await dialog.ShowDialog<bool>(this))
+            {
+                await viewModel.ApplyCompatibleGameVersionsAsync(dialog.SelectedVersions);
+            }
+        }
+
+        private async void GameCommandLinesMenuItem_OnClick(object? sender,
+                                                            Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentInstance is not GameInstance instance)
+            {
+                return;
+            }
+
+            var dialog = new GameCommandLinesWindow(instance,
+                                                    viewModel.CurrentSteamLibrary);
+            await dialog.ShowDialog<bool>(this);
+        }
+
+        private async void PluginsMenuItem_OnClick(object? sender,
+                                                   Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentInstance == null)
+            {
+                return;
+            }
+
+            RefreshPluginControllerForCurrentInstance(viewModel.CurrentInstance);
+            if (pluginController == null)
+            {
+                return;
+            }
+
+            var dialog = new PluginsWindow(pluginController);
+            await dialog.ShowDialog(this);
+        }
+
+        private async void PreferredHostsMenuItem_OnClick(object? sender,
+                                                          Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentRegistry == null)
+            {
+                return;
+            }
+
+            var dialog = new PreferredHostsWindow(viewModel.CurrentConfiguration,
+                                                  viewModel.CurrentRegistry);
+            await dialog.ShowDialog<bool>(this);
+        }
+
+        private async void InstallationFiltersMenuItem_OnClick(object? sender,
+                                                               Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentInstance is not GameInstance instance)
+            {
+                return;
+            }
+
+            var dialog = new InstallationFiltersWindow(viewModel.CurrentConfiguration,
+                                                       instance);
+            if (await dialog.ShowDialog<bool>(this)
+                && dialog.Changed)
+            {
+                await viewModel.RefreshCurrentStateAsync();
+            }
+        }
+
+        private async void ManageGameInstancesMenuItem_OnClick(object? sender,
+                                                               Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new ManageInstancesWindow(viewModel.Instances.ToList(),
+                                                   viewModel.CurrentInstance?.Name);
+            if (await dialog.ShowDialog<bool>(this)
+                && dialog.SelectedInstanceName is string instanceName)
+            {
+                viewModel.SelectedInstance = viewModel.Instances.FirstOrDefault(inst => inst.Name == instanceName);
+                await viewModel.TrySwitchSelectedInstanceAsync(ConfirmDiscardQueueAndSwitchAsync);
+            }
+        }
+
+        private async void InstallationHistoryMenuItem_OnClick(object? sender,
+                                                               Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new InstallationHistoryWindow(viewModel.CurrentInstance);
+            await dialog.ShowDialog(this);
+        }
+
+        private async void DownloadStatisticsMenuItem_OnClick(object? sender,
+                                                              Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new DownloadStatisticsWindow(viewModel.CurrentCache,
+                                                      viewModel.CurrentRegistry);
+            await dialog.ShowDialog(this);
+        }
+
+        private async void PlayTimeMenuItem_OnClick(object? sender,
+                                                    Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new PlayTimeWindow(viewModel.KnownGameInstances);
+            await dialog.ShowDialog(this);
+        }
+
+        private async void UnmanagedFilesMenuItem_OnClick(object? sender,
+                                                          Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new UnmanagedFilesWindow(viewModel.CurrentInstance,
+                                                  viewModel.CurrentRegistry);
+            await dialog.ShowDialog(this);
+        }
+
+        private void ExitMenuItem_OnClick(object? sender,
+                                          Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            Close();
         }
 
         private void ModRow_OnPointerPressed(object? sender,
@@ -342,6 +500,14 @@ namespace CKAN.LinuxGUI
             if (observedViewModel != null)
             {
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
+                CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
+                                          observedViewModel.CurrentUser);
+                RefreshPluginControllerForCurrentInstance(observedViewModel.CurrentInstance);
+            }
+            else
+            {
+                CKAN.GUI.Main.ClearInstance();
+                DisposePluginController();
             }
         }
 
@@ -351,6 +517,13 @@ namespace CKAN.LinuxGUI
             if (e.PropertyName == nameof(MainWindowViewModel.ModListScrollResetRequestId))
             {
                 ResetModListScrollToTop();
+            }
+            else if (e.PropertyName == nameof(MainWindowViewModel.CurrentInstance)
+                     && sender is MainWindowViewModel viewModel)
+            {
+                CKAN.GUI.Main.SetInstance(viewModel.CurrentManager,
+                                          viewModel.CurrentUser);
+                RefreshPluginControllerForCurrentInstance(viewModel.CurrentInstance);
             }
         }
 
@@ -366,6 +539,39 @@ namespace CKAN.LinuxGUI
                     scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 0);
                 }
             }, DispatcherPriority.Background);
+        }
+
+        private void RefreshPluginControllerForCurrentInstance(GameInstance? instance)
+        {
+            if (instance == null)
+            {
+                DisposePluginController();
+                return;
+            }
+
+            var instanceDir = instance.GameDir;
+            if (string.IsNullOrWhiteSpace(instanceDir))
+            {
+                DisposePluginController();
+                return;
+            }
+
+            if (pluginController != null
+                && string.Equals(pluginControllerInstanceDir, instanceDir, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            DisposePluginController();
+            pluginController = new LinuxGuiPluginController(instance);
+            pluginControllerInstanceDir = instanceDir;
+        }
+
+        private void DisposePluginController()
+        {
+            pluginController?.Dispose();
+            pluginController = null;
+            pluginControllerInstanceDir = null;
         }
     }
 }

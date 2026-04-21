@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.DownloadStatisticsWindow"
+        x:CompileBindings="False"
+        Width="720"
+        Height="540"
+        MinWidth="640"
+        MinHeight="440"
+        WindowStartupLocation="CenterOwner"
+        Title="Download Statistics"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Download Statistics" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding SummaryText}" />
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Margin="0,18,0,0"
+            Background="#161B21"
+            BorderBrush="#2B323C"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="12">
+      <Grid RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock FontWeight="SemiBold"
+                     Text="Host" />
+          <TextBlock Grid.Column="1"
+                     HorizontalAlignment="Right"
+                     FontWeight="SemiBold"
+                     Text="Cached Size" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,12,0,0">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="#242B33"
+                        BorderThickness="0,0,0,1"
+                        Padding="0,10">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Host}" />
+                    <TextBlock Grid.Column="1"
+                               Opacity="0.78"
+                               Text="{Binding SizeLabel}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CloseButton_OnClick"
+              Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>

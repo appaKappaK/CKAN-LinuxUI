@@ -1,0 +1,138 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.InstallationFiltersWindow"
+        x:CompileBindings="False"
+        Width="760"
+        Height="640"
+        MinWidth="680"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Title="Installation Filters"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Button.preset-button">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="#203244" />
+      <Setter Property="BorderBrush" Value="#37516A" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Installation Filters" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding SummaryText}" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1"
+                  Margin="0,18,0,0"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16">
+        <Border Background="#161B21"
+                BorderBrush="#2B323C"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="10">
+            <TextBlock FontSize="15"
+                       FontWeight="SemiBold"
+                       Text="{Binding GlobalFiltersTitle}" />
+            <TextBox AcceptsReturn="True"
+                     MinHeight="170"
+                     Text="{Binding GlobalFiltersText, Mode=TwoWay}"
+                     TextWrapping="NoWrap"
+                     VerticalContentAlignment="Top" />
+            <StackPanel Spacing="8"
+                        IsVisible="{Binding HasPresets}">
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         Text="Common presets" />
+              <ItemsControl ItemsSource="{Binding Presets}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="preset-button"
+                            Tag="{Binding Name}"
+                            Click="AddPresetButton_OnClick"
+                            Content="{Binding ButtonLabel}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Background="#161B21"
+                BorderBrush="#2B323C"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="10">
+            <TextBlock FontSize="15"
+                       FontWeight="SemiBold"
+                       Text="{Binding InstanceFiltersTitle}" />
+            <TextBox AcceptsReturn="True"
+                     MinHeight="170"
+                     Text="{Binding InstanceFiltersText, Mode=TwoWay}"
+                     TextWrapping="NoWrap"
+                     VerticalContentAlignment="Top" />
+          </StackPanel>
+        </Border>
+
+        <Border Background="#4A3920"
+                BorderBrush="#9A7B37"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12">
+          <TextBlock FontSize="12"
+                     TextWrapping="Wrap"
+                     Text="{Binding WarningText}" />
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="HelpButton_OnClick"
+              Content="Help" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="AcceptButton_OnClick"
+              Content="Save" />
+    </StackPanel>
+  </Grid>
+</Window>

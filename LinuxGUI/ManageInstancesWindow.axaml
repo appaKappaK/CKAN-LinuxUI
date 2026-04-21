@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="using:CKAN.App.Models"
+        x:Class="CKAN.LinuxGUI.ManageInstancesWindow"
+        x:CompileBindings="False"
+        Width="760"
+        Height="540"
+        MinWidth="680"
+        MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        Title="Manage Game Instances"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="ListBox#InstancesListBox > ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Manage Game Instances" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="Review registered installs, open their folders, or switch the current instance from one place." />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          RowDefinitions="Auto,*"
+          Margin="0,18,0,0">
+      <TextBlock FontSize="13"
+                 Opacity="0.78"
+                 Text="{Binding SummaryText}" />
+
+      <ListBox x:Name="InstancesListBox"
+               Grid.Row="1"
+               Margin="0,12,0,0"
+               ItemsSource="{Binding Instances}"
+               SelectedItem="{Binding SelectedInstance, Mode=TwoWay}">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="models:InstanceSummary">
+            <Border Background="#161B21"
+                    BorderBrush="#2B323C"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="14">
+              <Grid ColumnDefinitions="*,Auto"
+                    RowDefinitions="Auto,Auto,Auto">
+                <TextBlock FontSize="16"
+                           FontWeight="SemiBold"
+                           Text="{Binding Name}" />
+                <Border Grid.Column="1"
+                        Background="#2E6D48"
+                        BorderBrush="#3A8A5A"
+                        BorderThickness="1"
+                        CornerRadius="999"
+                        Padding="8,3"
+                        IsVisible="{Binding IsCurrent}">
+                  <TextBlock FontSize="11"
+                             FontWeight="SemiBold"
+                             Text="Current" />
+                </Border>
+
+                <TextBlock Grid.Row="1"
+                           Margin="0,6,0,0"
+                           Opacity="0.74"
+                           Text="{Binding GameName}" />
+
+                <TextBlock Grid.Row="2"
+                           Margin="0,6,0,0"
+                           Opacity="0.68"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding GameDir}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#1F3D58"
+              BorderBrush="#31597B"
+              Foreground="#F4F6F8"
+              Click="OpenDirectoryButton_OnClick"
+              IsEnabled="{Binding HasSelection}"
+              Content="Open Directory" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="UseSelectedButton_OnClick"
+              IsEnabled="{Binding CanUseSelection}"
+              Content="Use Selected" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CloseButton_OnClick"
+              Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -13,6 +13,8 @@ namespace CKAN.App.Services
 
         Task<ApplyChangesResult> InstallNowAsync(ModListItem mod, CancellationToken cancellationToken);
 
+        Task<ApplyChangesResult> RemoveNowAsync(ModListItem mod, CancellationToken cancellationToken);
+
         Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken);
     }
 }

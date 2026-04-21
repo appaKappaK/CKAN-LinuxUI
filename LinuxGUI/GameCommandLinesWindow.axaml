@@ -1,0 +1,99 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.GameCommandLinesWindow"
+        x:CompileBindings="False"
+        Width="760"
+        Height="520"
+        MinWidth="640"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Title="Game Command Lines"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Game Command Lines" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding SummaryText}" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="1"
+                Margin="0,18,0,0"
+                Spacing="12">
+      <Border Background="#161B21"
+              BorderBrush="#2B323C"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="14">
+        <StackPanel Spacing="10">
+          <TextBlock FontSize="14"
+                     FontWeight="SemiBold"
+                     Text="Launch Commands" />
+          <TextBlock FontSize="12"
+                     Opacity="0.72"
+                     TextWrapping="Wrap"
+                     Text="Enter one full launch command per line. The first line is the default choice, and additional lines act as alternate launch presets." />
+          <TextBox AcceptsReturn="True"
+                   Height="250"
+                   Text="{Binding CommandLinesText, Mode=TwoWay}"
+                   TextWrapping="NoWrap"
+                   VerticalContentAlignment="Top" />
+        </StackPanel>
+      </Border>
+
+      <Border Background="#20262D"
+              BorderBrush="#39424E"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="12">
+        <TextBlock FontSize="12"
+                   Opacity="0.76"
+                   TextWrapping="Wrap"
+                   Text="{Binding DefaultsSummaryText}" />
+      </Border>
+
+      <TextBlock FontSize="12"
+                 Foreground="#F06C6C"
+                 IsVisible="{Binding ShowValidationMessage}"
+                 TextWrapping="Wrap"
+                 Text="{Binding ValidationMessage}" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#1F3D58"
+              BorderBrush="#31597B"
+              Foreground="#F4F6F8"
+              Click="ResetToDefaultsButton_OnClick"
+              Content="Reset To Defaults" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="SaveButton_OnClick"
+              Content="Save" />
+    </StackPanel>
+  </Grid>
+</Window>

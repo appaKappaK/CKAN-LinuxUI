@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CKAN-LinuxGUI", "LinuxGUI\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CKAN-LinuxGUI.VisualTests", "LinuxGUI.VisualTests\CKAN-LinuxGUI.VisualTests.csproj", "{571C504A-ECC2-49A3-B78E-0C34FCA0CF7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CKAN-GUI.PluginCompat", "PluginCompat\CKAN-GUI.PluginCompat.csproj", "{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +90,12 @@ Global
 		{571C504A-ECC2-49A3-B78E-0C34FCA0CF7B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{571C504A-ECC2-49A3-B78E-0C34FCA0CF7B}.NoGUI|Any CPU.ActiveCfg = NoGUI|Any CPU
 		{571C504A-ECC2-49A3-B78E-0C34FCA0CF7B}.NoGUI|Any CPU.Build.0 = NoGUI|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.NoGUI|Any CPU.ActiveCfg = NoGUI|Any CPU
+		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.NoGUI|Any CPU.Build.0 = NoGUI|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -98,6 +98,23 @@ namespace CKAN.LinuxGUI.VisualTests
             });
         }
 
+        public Task<ApplyChangesResult> RemoveNowAsync(ModListItem mod,
+                                                       CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Removed",
+                Message = $"Removed {mod.Name}.",
+                SummaryLines = new[]
+                {
+                    "1 direct removal",
+                },
+            });
+        }
+
         public Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

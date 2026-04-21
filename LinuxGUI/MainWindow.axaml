@@ -7,6 +7,7 @@
         xmlns:media="using:Avalonia.Media"
         mc:Ignorable="d"
         x:Class="CKAN.LinuxGUI.MainWindow"
+        x:Name="MainWindowRoot"
         KeyDown="Window_OnKeyDown"
         x:DataType="vm:MainWindowViewModel"
         Width="1200"
@@ -102,6 +103,26 @@
       <Setter Property="Background" Value="#2A323C" />
       <Setter Property="BorderBrush" Value="#475C73" />
     </Style>
+    <Style Selector="Menu#AppMenu">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="Menu#AppMenu > MenuItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="Menu#AppMenu > MenuItem:selected">
+      <Setter Property="Background" Value="#2A323C" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item:pointerover">
+      <Setter Property="Background" Value="#2A323C" />
+    </Style>
     <Style Selector="Button.surface-view-tab">
       <Setter Property="MinHeight" Value="38" />
       <Setter Property="MinWidth" Value="96" />
@@ -159,16 +180,100 @@
         RowDefinitions="Auto,Auto,*"
         Background="#171C22">
     <Border Background="#20262D"
-            Padding="24,12"
+            Padding="16,10"
             IsVisible="{Binding ShowLegacyHeader}">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Spacing="2">
-          <TextBlock FontSize="24"
-                     FontWeight="SemiBold"
-                     Text="CKAN Linux" />
-        </StackPanel>
+      <Grid ColumnDefinitions="Auto,*,Auto"
+            VerticalAlignment="Center">
+        <Menu x:Name="AppMenu"
+              VerticalAlignment="Center">
+          <MenuItem Header="File">
+            <MenuItem Classes="app-menu-item"
+                      Header="Manage game instances"
+                      Click="ManageGameInstancesMenuItem_OnClick" />
+            <Separator />
+            <MenuItem Classes="app-menu-item"
+                      Header="Open game directory"
+                      Command="{Binding OpenCurrentGameDirectoryCommand}"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Installation history"
+                      Click="InstallationHistoryMenuItem_OnClick"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Download statistics"
+                      Click="DownloadStatisticsMenuItem_OnClick"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Play time"
+                      Click="PlayTimeMenuItem_OnClick" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Unmanaged files"
+                      Click="UnmanagedFilesMenuItem_OnClick"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <Separator />
+            <MenuItem Classes="app-menu-item"
+                      Header="Reload"
+                      Command="{Binding RefreshCommand}" />
+            <Separator />
+            <MenuItem Classes="app-menu-item"
+                      Header="Exit"
+                      Click="ExitMenuItem_OnClick" />
+          </MenuItem>
+          <MenuItem Header="Settings">
+            <MenuItem Classes="app-menu-item"
+                      Header="Display scale"
+                      IsEnabled="{Binding ShowReadyHeader}"
+                      Command="{Binding ToggleDisplaySettingsCommand}" />
+            <Separator />
+            <MenuItem Classes="app-menu-item"
+                      Header="Compatible game versions"
+                      IsEnabled="{Binding HasCurrentInstance}"
+                      Click="CompatibleGameVersionsMenuItem_OnClick" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Game command lines"
+                      IsEnabled="{Binding HasCurrentInstance}"
+                      Click="GameCommandLinesMenuItem_OnClick" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Plugins"
+                      IsEnabled="{Binding HasCurrentInstance}"
+                      Click="PluginsMenuItem_OnClick" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Preferred hosts"
+                      IsEnabled="{Binding HasCurrentInstance}"
+                      Click="PreferredHostsMenuItem_OnClick" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Installation filters"
+                      IsEnabled="{Binding HasCurrentInstance}"
+                      Click="InstallationFiltersMenuItem_OnClick" />
+          </MenuItem>
+          <MenuItem Header="Help">
+            <MenuItem Classes="app-menu-item"
+                      Header="CKAN user guide"
+                      Command="{Binding OpenUserGuideCommand}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="CKAN Discord"
+                      Command="{Binding OpenDiscordCommand}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Get help for an in-game problem with mods"
+                      Command="{Binding OpenGameSupportCommand}"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Report an issue with the CKAN client"
+                      Command="{Binding ReportClientIssueCommand}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="Report an issue with mod metadata"
+                      Command="{Binding ReportMetadataIssueCommand}"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+          </MenuItem>
+        </Menu>
 
-        <Border Grid.Column="1"
+        <TextBlock Grid.Column="1"
+                   HorizontalAlignment="Center"
+                   FontSize="24"
+                   FontWeight="SemiBold"
+                   Text="CKAN Linux" />
+
+        <Border Grid.Column="2"
                 Background="#11161C"
                 CornerRadius="999"
                 Padding="14,8"
@@ -1485,6 +1590,15 @@
                                   IsVisible="{Binding ShowInstallNowAction}"
                                   Command="{Binding InstallNowSelectedModCommand}"
                                   Content="Install Now" />
+                          <Button HorizontalAlignment="Left"
+                                  Margin="0,0,8,0"
+                                  Padding="12,7"
+                                  CornerRadius="8"
+                                  Background="#6B2B2B"
+                                  BorderBrush="#6B2B2B"
+                                  IsVisible="{Binding ShowRemoveNowAction}"
+                                  Command="{Binding RemoveNowSelectedModCommand}"
+                                  Content="Remove Now" />
                           <Button HorizontalAlignment="Left"
                                   Margin="0,0,8,0"
                                   Padding="12,7"
