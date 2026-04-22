@@ -2181,6 +2181,11 @@ namespace CKAN.LinuxGUI
 
         public bool ShowDownloadOnlyContextAction(ModListItem mod)
         {
+            if (mod.IsAutodetected)
+            {
+                return false;
+            }
+
             if (changesetService.FindQueuedDownloadAction(mod.Identifier) != null)
             {
                 return true;
@@ -2221,6 +2226,12 @@ namespace CKAN.LinuxGUI
                         ? $"Removed queued add-to-cache action for {mod.Name}."
                         : $"Removed queued download-only for {mod.Name}.";
                 }
+                return;
+            }
+
+            if (mod.IsAutodetected)
+            {
+                StatusMessage = $"{mod.Name} is managed outside CKAN and cannot be added to the cache.";
                 return;
             }
 
@@ -2453,6 +2464,7 @@ namespace CKAN.LinuxGUI
                         ReplaceVisibleMods(items);
                         PublishVisibleModQueueState();
                         PruneQueuedAutodetectedRemovals(items);
+                        PruneQueuedAutodetectedDownloads(items);
 
                         SelectedMod = previousSelection != null
                             ? Mods.FirstOrDefault(mod => mod.Identifier == previousSelection) ?? Mods.FirstOrDefault()
@@ -3952,6 +3964,35 @@ namespace CKAN.LinuxGUI
             StatusMessage = invalidRemovals.Count == 1
                 ? $"Removed queued removal for {invalidRemovals[0].Name}. It was detected outside CKAN and must be removed manually from GameData."
                 : $"Removed {invalidRemovals.Count} queued removals for mods detected outside CKAN. They must be removed manually from GameData.";
+        }
+
+        private void PruneQueuedAutodetectedDownloads(IReadOnlyList<ModListItem>? catalogItems = null)
+        {
+            var autodetectedIdentifiers = (catalogItems ?? Mods)
+                                          .Where(mod => mod.IsAutodetected)
+                                          .Select(mod => mod.Identifier)
+                                          .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (autodetectedIdentifiers.Count == 0)
+            {
+                return;
+            }
+
+            var invalidDownloads = changesetService.CurrentDownloadQueue
+                                                   .Where(action => autodetectedIdentifiers.Contains(action.Identifier))
+                                                   .ToList();
+            if (invalidDownloads.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var action in invalidDownloads)
+            {
+                changesetService.Remove(action.Identifier);
+            }
+
+            StatusMessage = invalidDownloads.Count == 1
+                ? $"Removed queued cache action for {invalidDownloads[0].Name}. It is managed outside CKAN and cannot be added to the cache."
+                : $"Removed {invalidDownloads.Count} queued cache actions for mods managed outside CKAN. External mods cannot be added to the cache.";
         }
 
         private bool IsCurrentSelectedModRequest(string identifier,

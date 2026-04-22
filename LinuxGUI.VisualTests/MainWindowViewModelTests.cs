@@ -494,6 +494,59 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task AutodetectedMod_DoesNotOfferAddToCache()
+        {
+            var (viewModel, service) = CreateViewModel(catalog: new AutodetectedCatalogService());
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 1);
+                viewModel.SelectedMod = viewModel.Mods.Single();
+                await Task.Delay(100);
+
+                Assert.That(viewModel.ShowDownloadOnlyContextAction(viewModel.SelectedMod!), Is.False);
+
+                viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.False);
+                    Assert.That(viewModel.StatusMessage, Does.Contain("cannot be added to the cache"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task AutodetectedQueuedCacheAction_IsPrunedAfterCatalogLoad()
+        {
+            var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            changes.QueueDownload(AutodetectedCatalogService.Item);
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, user);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 1);
+                await WaitForAsync(() => !viewModel.HasQueuedActions);
+
+                Assert.That(viewModel.StatusMessage, Does.Contain("cannot be added to the cache"));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task ApplyChanges_LeavesDownloadOnlyQueuedUntilDownloadRuns()
         {
             var catalog = new MixedQueueCatalogService();
