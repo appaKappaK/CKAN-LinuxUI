@@ -1,7 +1,14 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace CKAN.App.Models
 {
-    public sealed class ModListItem
+    public sealed class ModListItem : INotifyPropertyChanged
     {
+        private string queueStateLabel       = "";
+        private string queueStateBackground  = "#00000000";
+        private string queueStateBorderBrush = "#00000000";
+
         public string Identifier { get; init; } = "";
 
         public string Name { get; init; } = "";
@@ -38,8 +45,71 @@ namespace CKAN.App.Models
 
         public string PrimaryStateColor { get; init; } = "#3B4653";
 
+        public string SecondaryStateLabel { get; init; } = "";
+
+        public string SecondaryStateBackground { get; init; } = "#39424E";
+
+        public string SecondaryStateBorderBrush { get; init; } = "#607286";
+
+        public bool HasSecondaryState => !string.IsNullOrWhiteSpace(SecondaryStateLabel);
+
+        public string TertiaryStateLabel { get; init; } = "";
+
+        public string TertiaryStateBackground { get; init; } = "#31424F";
+
+        public string TertiaryStateBorderBrush { get; init; } = "#4C6A86";
+
+        public bool HasTertiaryState => !string.IsNullOrWhiteSpace(TertiaryStateLabel);
+
         public string StatusSummary { get; init; } = "";
 
         public bool HasStatusSummary { get; init; }
+
+        public string QueueStateLabel
+        {
+            get => queueStateLabel;
+            set
+            {
+                if (queueStateLabel != value)
+                {
+                    queueStateLabel = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(HasQueueState));
+                }
+            }
+        }
+
+        public string QueueStateBackground
+        {
+            get => queueStateBackground;
+            set
+            {
+                if (queueStateBackground != value)
+                {
+                    queueStateBackground = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string QueueStateBorderBrush
+        {
+            get => queueStateBorderBrush;
+            set
+            {
+                if (queueStateBorderBrush != value)
+                {
+                    queueStateBorderBrush = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool HasQueueState => !string.IsNullOrWhiteSpace(QueueStateLabel);
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

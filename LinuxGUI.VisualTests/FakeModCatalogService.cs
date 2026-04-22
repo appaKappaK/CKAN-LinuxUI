@@ -480,7 +480,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
         private static ModListItem Decorate(ModListItem item)
         {
-            string primaryStateLabel = item.IsIncompatible
+            string primaryStateLabel = item.IsIncompatible && !item.IsAutodetected
                 ? "Incompatible"
                 : item.HasVersionUpdate
                     ? "Update Available"
@@ -489,7 +489,7 @@ namespace CKAN.LinuxGUI.VisualTests
                         : item.HasReplacement
                             ? "Has Replacement"
                             : "Available";
-            string primaryStateColor = item.IsIncompatible
+            string primaryStateColor = item.IsIncompatible && !item.IsAutodetected
                 ? "#9A485C"
                 : item.HasVersionUpdate
                     ? "#6A952B"
@@ -498,6 +498,12 @@ namespace CKAN.LinuxGUI.VisualTests
                         : item.HasReplacement
                             ? "#734790"
                             : "#2F7C58";
+            string secondaryStateLabel = item.IsAutodetected ? "External" : "";
+            string secondaryStateBackground = item.IsAutodetected ? "#5A4322" : "#39424E";
+            string secondaryStateBorderBrush = item.IsAutodetected ? "#9F7A40" : "#607286";
+            string tertiaryStateLabel = item.IsAutodetected && item.IsIncompatible ? "Dependency" : "";
+            string tertiaryStateBackground = "#31424F";
+            string tertiaryStateBorderBrush = "#4C6A86";
 
             var parts = new List<string>();
             if (item.HasVersionUpdate)
@@ -522,6 +528,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 DownloadCount = item.DownloadCount,
                 DownloadCountLabel = item.DownloadCountLabel,
                 IsInstalled = item.IsInstalled,
+                IsAutodetected = item.IsAutodetected,
                 HasUpdate = item.HasUpdate,
                 HasVersionUpdate = item.HasVersionUpdate,
                 IsIncompatible = item.IsIncompatible,
@@ -530,6 +537,12 @@ namespace CKAN.LinuxGUI.VisualTests
                 Compatibility = item.Compatibility,
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = primaryStateColor,
+                SecondaryStateLabel = secondaryStateLabel,
+                SecondaryStateBackground = secondaryStateBackground,
+                SecondaryStateBorderBrush = secondaryStateBorderBrush,
+                TertiaryStateLabel = tertiaryStateLabel,
+                TertiaryStateBackground = tertiaryStateBackground,
+                TertiaryStateBorderBrush = tertiaryStateBorderBrush,
                 StatusSummary = statusSummary,
                 HasStatusSummary = !string.IsNullOrWhiteSpace(statusSummary),
             };

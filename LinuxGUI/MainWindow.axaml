@@ -535,19 +535,26 @@
             </MenuItem>
           </Menu>
 
-          <StackPanel Grid.Column="1"
-                      Margin="18,0,0,0"
-                      Spacing="1"
-                      VerticalAlignment="Center">
+          <Grid Grid.Column="1"
+                Margin="18,0,0,0"
+                ColumnDefinitions="Auto,Auto,*"
+                VerticalAlignment="Center">
             <TextBlock FontSize="12"
                        Opacity="0.68"
+                       VerticalAlignment="Center"
                        Text="Current Install" />
-            <TextBlock FontSize="16"
+            <TextBlock Grid.Column="1"
+                       FontSize="16"
                        FontWeight="SemiBold"
+                       Margin="10,0,0,0"
+                       VerticalAlignment="Center"
                        IsVisible="{Binding ShowPassiveHeaderInstanceLabel}"
                        TextTrimming="CharacterEllipsis"
                        Text="{Binding CurrentInstanceName}" />
-            <ComboBox MinWidth="220"
+            <ComboBox Grid.Column="1"
+                      MinWidth="220"
+                      Margin="10,0,0,0"
+                      VerticalAlignment="Center"
                       IsVisible="{Binding ShowHeaderInstanceSwitcher}"
                       ItemsSource="{Binding Instances}"
                       SelectedItem="{Binding SelectedInstance}"
@@ -558,12 +565,15 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <TextBlock FontSize="12"
+            <TextBlock Grid.Column="2"
+                       FontSize="12"
+                       Margin="10,0,0,0"
                        Opacity="0.72"
+                       VerticalAlignment="Center"
                        MaxLines="1"
                        TextTrimming="CharacterEllipsis"
                        Text="{Binding CurrentInstanceContext}" />
-          </StackPanel>
+          </Grid>
 
           <Border Grid.Column="2"
                   Background="{Binding StatusSurfaceBackground}"
@@ -2156,72 +2166,106 @@
                                         Margin="0,0,0,1"
                                         Padding="0"
                                         PointerPressed="ModRow_OnPointerPressed">
-                                  <Grid ColumnDefinitions="4,*,220">
-                                    <Border Background="{Binding PrimaryStateColor}"
-                                            CornerRadius="5,0,0,5" />
+                                  <Grid>
+                                    <Grid ColumnDefinitions="4,*,220">
+                                      <Border Background="{Binding PrimaryStateColor}"
+                                              CornerRadius="5,0,0,5" />
 
-                                    <Border Grid.Column="1"
-                                            Padding="8,4">
-                                      <StackPanel Spacing="2">
-                                      <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Classes="row-title"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     Text="{Binding Name}" />
+                                      <Border Grid.Column="1"
+                                              Padding="8,4">
+                                        <StackPanel Spacing="2">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                          <TextBlock Classes="row-title"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Name}" />
 
-                                        <StackPanel Grid.Column="1"
-                                                    Orientation="Horizontal"
-                                                    Spacing="6"
-                                                    Margin="6,0,0,0"
-                                                    VerticalAlignment="Top">
-                                          <Border Background="{Binding PrimaryStateColor}"
-                                                  CornerRadius="999"
-                                                  Padding="6,1">
-                                            <TextBlock FontSize="10"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#F7FAFD"
-                                                       Text="{Binding PrimaryStateLabel}" />
-                                          </Border>
-                                          <Border Background="#39424E"
-                                                  BorderBrush="#607286"
-                                                  BorderThickness="1"
-                                                  CornerRadius="999"
-                                                  Padding="6,1"
-                                                  IsVisible="{Binding IsCached}">
-                                            <TextBlock FontSize="10"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#EFF4F9"
-                                                       Text="Cached" />
-                                          </Border>
-                                        </StackPanel>
-                                      </Grid>
+                                          <StackPanel Grid.Column="1"
+                                                      Orientation="Horizontal"
+                                                      Spacing="6"
+                                                      Margin="6,0,0,0"
+                                                      VerticalAlignment="Top">
+                                            <Border Background="{Binding PrimaryStateColor}"
+                                                    CornerRadius="999"
+                                                    Padding="6,1">
+                                              <TextBlock FontSize="10"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="#F7FAFD"
+                                                         Text="{Binding PrimaryStateLabel}" />
+                                            </Border>
+                                            <Border Background="#39424E"
+                                                    BorderBrush="#607286"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="6,1"
+                                                    IsVisible="{Binding IsCached}">
+                                              <TextBlock FontSize="10"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="#EFF4F9"
+                                                         Text="Cached" />
+                                            </Border>
+                                            <Border Background="{Binding SecondaryStateBackground}"
+                                                    BorderBrush="{Binding SecondaryStateBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="6,1"
+                                                    IsVisible="{Binding HasSecondaryState}">
+                                              <TextBlock FontSize="10"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="#FFF7E8"
+                                                         Text="{Binding SecondaryStateLabel}" />
+                                            </Border>
+                                            <Border Background="{Binding TertiaryStateBackground}"
+                                                    BorderBrush="{Binding TertiaryStateBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="6,1"
+                                                    IsVisible="{Binding HasTertiaryState}">
+                                              <TextBlock FontSize="10"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="#EAF4FF"
+                                                         Text="{Binding TertiaryStateLabel}" />
+                                            </Border>
+                                            <Border Background="{Binding QueueStateBackground}"
+                                                    BorderBrush="{Binding QueueStateBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="6,1"
+                                                    IsVisible="{Binding HasQueueState}">
+                                              <TextBlock FontSize="10"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="#F7FAFD"
+                                                         Text="{Binding QueueStateLabel}" />
+                                            </Border>
+                                          </StackPanel>
+                                        </Grid>
 
-                                      <TextBlock Classes="row-summary"
-                                                 TextWrapping="Wrap"
-                                                 MaxLines="1"
-                                                 TextTrimming="CharacterEllipsis"
-                                                 Text="{Binding Summary}" />
-
-                                      <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Classes="row-meta"
-                                                   VerticalAlignment="Center"
+                                        <TextBlock Classes="row-summary"
+                                                   TextWrapping="Wrap"
+                                                   MaxLines="1"
                                                    TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Author}" />
-                                        <TextBlock Grid.Column="1"
-                                                   Classes="row-status"
-                                                   Margin="8,0,0,0"
-                                                   VerticalAlignment="Center"
-                                                   HorizontalAlignment="Right"
-                                                   IsVisible="{Binding HasStatusSummary}"
-                                                   Text="{Binding StatusSummary}" />
-                                      </Grid>
-                                      </StackPanel>
-                                    </Border>
+                                                   Text="{Binding Summary}" />
 
-                                    <Border Grid.Column="2"
-                                            BorderBrush="#2E3842"
-                                            BorderThickness="1,0,0,0"
-                                            Padding="8,4">
-                                      <Grid ColumnDefinitions="78,52,*"
+                                        <Grid ColumnDefinitions="*,Auto">
+                                          <TextBlock Classes="row-meta"
+                                                     VerticalAlignment="Center"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     Text="{Binding Author}" />
+                                          <TextBlock Grid.Column="1"
+                                                     Classes="row-status"
+                                                     Margin="8,0,0,0"
+                                                     VerticalAlignment="Center"
+                                                     HorizontalAlignment="Right"
+                                                     IsVisible="{Binding HasStatusSummary}"
+                                                     Text="{Binding StatusSummary}" />
+                                        </Grid>
+                                        </StackPanel>
+                                      </Border>
+
+                                      <Border Grid.Column="2"
+                                              BorderBrush="#2E3842"
+                                              BorderThickness="1,0,0,0"
+                                              Padding="8,4">
+                                        <Grid ColumnDefinitions="78,52,*"
                                             >
                                         <TextBlock Classes="row-number"
                                                    HorizontalAlignment="Left"
@@ -2249,8 +2293,15 @@
                                                      IsVisible="{Binding IsInstalled}"
                                                      Text="{Binding InstalledVersion}" />
                                         </StackPanel>
-                                      </Grid>
-                                    </Border>
+                                        </Grid>
+                                      </Border>
+                                    </Grid>
+
+                                    <Border BorderBrush="{Binding QueueStateBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="5"
+                                            IsHitTestVisible="False"
+                                            IsVisible="{Binding HasQueueState}" />
                                   </Grid>
                                 </Border>
                               </DataTemplate>
@@ -2482,17 +2533,41 @@
                                        Foreground="#F7FAFD"
                                        Text="Update available" />
                           </Border>
+                          <Border Background="#5A4322"
+                                  BorderBrush="#9F7A40"
+                                  BorderThickness="1"
+                                  CornerRadius="999"
+                                  Padding="7,2"
+                                  Margin="0,0,6,4"
+                                  IsVisible="{Binding SelectedModIsAutodetected}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#FFF7E8"
+                                       Text="External" />
+                          </Border>
                           <Border Background="#9A485C"
                                   BorderBrush="#B35D73"
                                   BorderThickness="1"
                                   CornerRadius="999"
                                   Padding="7,2"
                                   Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModIsIncompatible}">
+                                  IsVisible="{Binding SelectedModShowsIncompatibleState}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
                                        Foreground="#FFF6F8"
                                        Text="Incompatible" />
+                          </Border>
+                          <Border Background="#31424F"
+                                  BorderBrush="#4C6A86"
+                                  BorderThickness="1"
+                                  CornerRadius="999"
+                                  Padding="7,2"
+                                  Margin="0,0,6,4"
+                                  IsVisible="{Binding SelectedModShowsDependencyState}">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#EAF4FF"
+                                       Text="Dependency" />
                           </Border>
                           <Border Background="#734790"
                                   BorderBrush="#8B5FA8"
@@ -2709,7 +2784,7 @@
                                  Text="Preview &amp; Apply" />
                       <TextBlock FontSize="12"
                                  Opacity="0.72"
-                                 Text="{Binding PreviewPanelGuidance}" />
+                                 Text="{Binding PreviewSummary}" />
                     </StackPanel>
                   </Border>
 
@@ -2914,7 +2989,7 @@
                                   BorderThickness="1"
                                   CornerRadius="10"
                                   Padding="12"
-                                  IsVisible="{Binding HasApplyResult}">
+                                  IsVisible="{Binding ShowInlineApplyResult}">
                             <StackPanel Spacing="8">
                               <TextBlock FontWeight="SemiBold"
                                          Text="{Binding ApplyResultTitle}" />
@@ -3027,7 +3102,7 @@
                                           Spacing="3">
                                 <TextBlock FontSize="11"
                                            Opacity="0.7"
-                                           Text="Download Only" />
+                                           Text="{Binding PreviewDownloadMetricTitle}" />
                                 <TextBlock FontWeight="SemiBold"
                                            Text="{Binding PreviewDownloadQueueCountLabel}" />
                               </StackPanel>
@@ -3298,7 +3373,7 @@
                                 Background="#4B535D"
                                 BorderBrush="#4B535D"
                                 Foreground="#F4F6F8"
-                                IsVisible="{Binding HasApplyResult}"
+                                IsVisible="{Binding ShowInlineApplyResult}"
                                 Command="{Binding DismissApplyResultCommand}"
                                 Content="Dismiss Result" />
                         <Button Classes="preview-action"
@@ -3314,7 +3389,7 @@
                                 Foreground="#F4F6F8"
                                 IsVisible="{Binding HasQueuedDownloadActions}"
                                 Command="{Binding DownloadQueuedCommand}"
-                                Content="Download Only" />
+                                Content="{Binding DownloadQueuedButtonLabel}" />
                         <Button Classes="preview-action"
                                 MinWidth="144"
                                 Background="{Binding ApplyChangesButtonBackground}"
@@ -3360,7 +3435,9 @@
       </Border>
     </Grid>
 
-    <Border Background="#7A0D1117"
+    <Border Grid.RowSpan="3"
+            ZIndex="100"
+            Background="#C0141A22"
             IsVisible="{Binding ShowExecutionOverlay}">
       <Grid>
         <Border Background="#1A2027"

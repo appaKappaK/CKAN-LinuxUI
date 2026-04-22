@@ -138,7 +138,8 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasApplyResult, Is.True);
                     Assert.That(viewModel.HasQueuedActions, Is.False);
                     Assert.That(viewModel.IsQueueDrawerExpanded, Is.False);
-                    Assert.That(viewModel.ShowCollapsedApplyResultStub, Is.True);
+                    Assert.That(viewModel.ShowExecutionResultOverlay, Is.True);
+                    Assert.That(viewModel.ShowCollapsedApplyResultStub, Is.False);
                 });
             }
             finally
@@ -184,6 +185,90 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.ShowExecutionResultOverlay, Is.False);
                     Assert.That(viewModel.ShowBrowseSurface, Is.True);
                     Assert.That(viewModel.HasApplyResult, Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task AutodetectedMod_ShowsExternalStateAndBlocksRemoval()
+        {
+            var (viewModel, service) = CreateViewModel(catalog: new AutodetectedCatalogService());
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 1);
+                var mod = viewModel.Mods.Single();
+                viewModel.SelectedMod = mod;
+                await Task.Delay(200);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mod.PrimaryStateLabel, Is.EqualTo("Installed"));
+                    Assert.That(mod.SecondaryStateLabel, Is.EqualTo("External"));
+                    Assert.That(viewModel.ShowRemoveAction, Is.False);
+                    Assert.That(viewModel.ShowSelectedModActionUnavailableNote, Is.True);
+                    Assert.That(viewModel.SelectedModIsAutodetected, Is.True);
+                    Assert.That(viewModel.SelectedModActionUnavailableNote, Does.Contain("managed outside CKAN"));
+                    Assert.That(viewModel.SelectedModInstallState, Is.EqualTo("Managed outside CKAN"));
+                    Assert.That(viewModel.SelectedModVersions, Does.Contain("Installed version unknown"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task AutodetectedQueuedRemoval_IsPrunedAfterCatalogLoad()
+        {
+            var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            changes.QueueRemove(AutodetectedCatalogService.Item);
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, user);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 1);
+                await WaitForAsync(() => !viewModel.HasQueuedActions);
+
+                Assert.That(viewModel.StatusMessage, Does.Contain("detected outside CKAN"));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task AutodetectedIncompatibleMod_ShowsDependencyStateInsteadOfIncompatible()
+        {
+            var (viewModel, service) = CreateViewModel(catalog: new AutodetectedDependencyCatalogService());
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 1);
+                var mod = viewModel.Mods.Single();
+                viewModel.SelectedMod = mod;
+                await Task.Delay(200);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mod.PrimaryStateLabel, Is.EqualTo("Installed"));
+                    Assert.That(mod.SecondaryStateLabel, Is.EqualTo("External"));
+                    Assert.That(mod.TertiaryStateLabel, Is.EqualTo("Dependency"));
+                    Assert.That(mod.IsIncompatible, Is.True);
+                    Assert.That(viewModel.SelectedModShowsDependencyState, Is.True);
+                    Assert.That(viewModel.SelectedModShowsIncompatibleState, Is.False);
+                    Assert.That(viewModel.SelectedModInstallState, Is.EqualTo("Managed outside CKAN"));
                 });
             }
             finally
@@ -334,6 +419,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasSelectedModQueuedDownload, Is.True);
                     Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
                     Assert.That(viewModel.SelectedModQueueStatus, Does.Contain("Download Only queued"));
+                    Assert.That(viewModel.SelectedMod!.QueueStateLabel, Is.EqualTo("Queued Download"));
                 });
 
                 viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
@@ -354,6 +440,51 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasSelectedModQueuedAction, Is.True);
                     Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Cancel Install"));
                     Assert.That(viewModel.ShowDownloadOnlyContextAction(viewModel.SelectedMod!), Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task InstalledUncachedMod_OffersAddToCache()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await Task.Delay(150);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "mechjeb2");
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowDownloadOnlyContextAction(viewModel.SelectedMod!), Is.True);
+                    Assert.That(viewModel.DownloadOnlyContextLabel(viewModel.SelectedMod!), Is.EqualTo("Add to Cache"));
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Remove"));
+                });
+
+                viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.True);
+                    Assert.That(viewModel.SelectedModQueueStatus, Does.Contain("Add to Cache queued"));
+                    Assert.That(viewModel.StatusMessage, Does.Contain("add to cache"));
+                    Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Remove"));
+                    Assert.That(viewModel.SelectedMod!.QueueStateLabel, Is.EqualTo("Queued Cache"));
+                });
+
+                viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
+                await Task.Delay(75);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasSelectedModQueuedDownload, Is.False);
+                    Assert.That(viewModel.DownloadOnlyContextLabel(viewModel.SelectedMod!), Is.EqualTo("Add to Cache"));
                 });
             }
             finally
@@ -393,7 +524,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasQueuedChangeActions, Is.True);
                     Assert.That(viewModel.HasQueuedDownloadActions, Is.True);
                     Assert.That(viewModel.PreviewQueuedCountLabel, Is.EqualTo("1 Direct Change"));
-                    Assert.That(viewModel.PreviewDownloadQueueCountLabel, Is.EqualTo("1 Download-Only Item"));
+                    Assert.That(viewModel.PreviewDownloadQueueCountLabel, Is.EqualTo("1 Queued Download"));
                 });
 
                 viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
@@ -404,7 +535,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasQueuedChangeActions, Is.False);
                     Assert.That(viewModel.HasQueuedDownloadActions, Is.True);
                     Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("download-ready"));
-                    Assert.That(viewModel.PreviewStatusLabel, Is.EqualTo("Download queue ready"));
+                    Assert.That(viewModel.PreviewStatusLabel, Is.EqualTo("Queued downloads ready"));
                 });
 
                 viewModel.DownloadQueuedCommand.Execute().Subscribe(_ => { });
@@ -736,6 +867,181 @@ namespace CKAN.LinuxGUI.VisualTests
                     IsCached         = item.IsCached,
                     IsIncompatible   = item.IsIncompatible,
                     HasReplacement   = item.HasReplacement,
+                });
+            }
+        }
+
+        private sealed class AutodetectedCatalogService : IModCatalogService
+        {
+            public static readonly ModListItem Item = new ModListItem
+            {
+                Identifier         = "finalfrontier",
+                Name               = "Final Frontier",
+                Author             = "Nereid",
+                Summary            = "Detected from loose files in GameData rather than a CKAN-managed install.",
+                LatestVersion      = "0.5.9-177",
+                InstalledVersion   = "Autodetected",
+                DownloadCount      = 144823,
+                DownloadCountLabel = "144,823",
+                IsInstalled        = true,
+                IsAutodetected     = true,
+                HasUpdate          = false,
+                HasVersionUpdate   = false,
+                IsCached           = false,
+                IsIncompatible     = false,
+                HasReplacement     = false,
+                Compatibility      = "KSP 1.12.5",
+                PrimaryStateLabel  = "Installed",
+                PrimaryStateColor  = "#2B6A98",
+                SecondaryStateLabel = "External",
+                SecondaryStateBackground = "#5A4322",
+                SecondaryStateBorderBrush = "#9F7A40",
+                StatusSummary      = "",
+                HasStatusSummary   = false,
+            };
+
+            public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                    System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { Item });
+            }
+
+            public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                       System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(new FilterOptionCounts
+                {
+                    Compatible   = 1,
+                    Installed    = 1,
+                    Updatable    = 0,
+                    Replaceable  = 0,
+                    Cached       = 0,
+                    Uncached     = 0,
+                    NotInstalled = 0,
+                    Incompatible = 0,
+                });
+            }
+
+            public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                             System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult<ModDetailsModel?>(new ModDetailsModel
+                {
+                    Identifier          = Item.Identifier,
+                    Title               = Item.Name,
+                    Summary             = Item.Summary,
+                    Description         = "This entry was detected from existing GameData contents. CKAN can use it for dependency resolution, but it cannot safely remove it automatically.",
+                    Authors             = Item.Author,
+                    LatestVersion       = Item.LatestVersion,
+                    InstalledVersion    = "Autodetected",
+                    Compatibility       = Item.Compatibility,
+                    ModuleKind          = "Package",
+                    License             = "Unknown",
+                    ReleaseDate         = "Unknown",
+                    DownloadSize        = "Unknown",
+                    DownloadCount       = Item.DownloadCount,
+                    DependencyCount     = 0,
+                    RecommendationCount = 0,
+                    SuggestionCount     = 0,
+                    IsInstalled         = true,
+                    IsAutodetected      = true,
+                    HasUpdate           = false,
+                    HasVersionUpdate    = false,
+                    IsCached            = false,
+                    IsIncompatible      = false,
+                    HasReplacement      = false,
+                });
+            }
+        }
+
+        private sealed class AutodetectedDependencyCatalogService : IModCatalogService
+        {
+            public static readonly ModListItem Item = new ModListItem
+            {
+                Identifier         = "finalfrontier",
+                Name               = "Final Frontier",
+                Author             = "Nereid",
+                Summary            = "Detected from loose files in GameData and reused for dependency checks.",
+                LatestVersion      = "1.10.0-3485",
+                InstalledVersion   = "Autodetected",
+                DownloadCount      = 322298,
+                DownloadCountLabel = "322,298",
+                IsInstalled        = true,
+                IsAutodetected     = true,
+                HasUpdate          = false,
+                HasVersionUpdate   = false,
+                IsCached           = false,
+                IsIncompatible     = true,
+                HasReplacement     = false,
+                Compatibility      = "1.10.0",
+                PrimaryStateLabel  = "Installed",
+                PrimaryStateColor  = "#2B6A98",
+                SecondaryStateLabel = "External",
+                SecondaryStateBackground = "#5A4322",
+                SecondaryStateBorderBrush = "#9F7A40",
+                TertiaryStateLabel = "Dependency",
+                TertiaryStateBackground = "#31424F",
+                TertiaryStateBorderBrush = "#4C6A86",
+                StatusSummary      = "",
+                HasStatusSummary   = false,
+            };
+
+            public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                    System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { Item });
+            }
+
+            public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                       System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(new FilterOptionCounts
+                {
+                    Compatible   = 0,
+                    Installed    = 1,
+                    Updatable    = 0,
+                    Replaceable  = 0,
+                    Cached       = 0,
+                    Uncached     = 0,
+                    NotInstalled = 0,
+                    Incompatible = 1,
+                });
+            }
+
+            public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                             System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult<ModDetailsModel?>(new ModDetailsModel
+                {
+                    Identifier          = Item.Identifier,
+                    Title               = Item.Name,
+                    Summary             = Item.Summary,
+                    Description         = "This entry is managed outside CKAN. CKAN can still use it to satisfy dependency checks, but it will not manage or remove it.",
+                    Authors             = Item.Author,
+                    LatestVersion       = Item.LatestVersion,
+                    InstalledVersion    = "Autodetected",
+                    Compatibility       = Item.Compatibility,
+                    ModuleKind          = "Package",
+                    License             = "BSD-2-clause",
+                    ReleaseDate         = "2020-07-06",
+                    DownloadSize        = "1.8 MiB",
+                    DownloadCount       = Item.DownloadCount,
+                    DependencyCount     = 0,
+                    RecommendationCount = 0,
+                    SuggestionCount     = 0,
+                    IsInstalled         = true,
+                    IsAutodetected      = true,
+                    HasUpdate           = false,
+                    HasVersionUpdate    = false,
+                    IsCached            = false,
+                    IsIncompatible      = true,
+                    HasReplacement      = false,
                 });
             }
         }

@@ -219,8 +219,10 @@ namespace CKAN.App.Services
                                                                incompatibleOverride,
                                                                isCached,
                                                                hasReplacement);
+            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected);
+            string tertiaryStateLabel = FormatTertiaryStateLabel(isAutodetected,
+                                                                 incompatibleOverride);
             string statusSummary = FormatStatusSummary(isInstalled,
-                                                       isAutodetected,
                                                        hasVersionUpdate,
                                                        incompatibleOverride,
                                                        isCached,
@@ -251,6 +253,14 @@ namespace CKAN.App.Services
                                                             incompatibleOverride,
                                                             isCached,
                                                             hasReplacement),
+                SecondaryStateLabel = secondaryStateLabel,
+                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
+                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected),
+                TertiaryStateLabel = tertiaryStateLabel,
+                TertiaryStateBackground = FormatTertiaryStateBackground(isAutodetected,
+                                                                        incompatibleOverride),
+                TertiaryStateBorderBrush = FormatTertiaryStateBorderBrush(isAutodetected,
+                                                                          incompatibleOverride),
                 StatusSummary     = statusSummary,
                 HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
             };
@@ -498,11 +508,9 @@ namespace CKAN.App.Services
                                                       bool isIncompatible,
                                                       bool isCached,
                                                       bool hasReplacement)
-            => isIncompatible
+            => isIncompatible && !isAutodetected
                 ? "Incompatible"
-                : isAutodetected
-                    ? "Unmanaged"
-                    : hasUpdate
+                : hasUpdate
                     ? "Update Available"
                     : isInstalled
                         ? "Installed"
@@ -516,11 +524,9 @@ namespace CKAN.App.Services
                                                       bool isIncompatible,
                                                       bool isCached,
                                                       bool hasReplacement)
-            => isIncompatible
+            => isIncompatible && !isAutodetected
                 ? "#9A485C"
-                : isAutodetected
-                    ? "#5E6878"
-                    : hasUpdate
+                : hasUpdate
                     ? "#6A952B"
                     : isInstalled
                         ? "#2B6A98"
@@ -528,8 +534,28 @@ namespace CKAN.App.Services
                             ? "#734790"
                             : "#2F7C58";
 
+        private static string FormatSecondaryStateLabel(bool isAutodetected)
+            => isAutodetected ? "External" : "";
+
+        private static string FormatSecondaryStateBackground(bool isAutodetected)
+            => isAutodetected ? "#5A4322" : "#39424E";
+
+        private static string FormatSecondaryStateBorderBrush(bool isAutodetected)
+            => isAutodetected ? "#9F7A40" : "#607286";
+
+        private static string FormatTertiaryStateLabel(bool isAutodetected,
+                                                       bool isIncompatible)
+            => isAutodetected && isIncompatible ? "Dependency" : "";
+
+        private static string FormatTertiaryStateBackground(bool isAutodetected,
+                                                            bool isIncompatible)
+            => isAutodetected && isIncompatible ? "#31424F" : "#31424F";
+
+        private static string FormatTertiaryStateBorderBrush(bool isAutodetected,
+                                                             bool isIncompatible)
+            => isAutodetected && isIncompatible ? "#4C6A86" : "#4C6A86";
+
         private static string FormatStatusSummary(bool isInstalled,
-                                                  bool isAutodetected,
                                                   bool hasUpdate,
                                                   bool isIncompatible,
                                                   bool isCached,
@@ -537,11 +563,7 @@ namespace CKAN.App.Services
         {
             var parts = new List<string>();
 
-            if (isAutodetected)
-            {
-                parts.Add("Detected outside CKAN");
-            }
-            else if (hasUpdate)
+            if (hasUpdate)
             {
                 parts.Add("Installed");
             }

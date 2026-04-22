@@ -39,10 +39,16 @@ namespace CKAN.App.Services
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
                 ActionKind = QueuedActionKind.Download,
-                ActionText = "Download Only",
-                DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
-                    ? "Cache latest available version for later install"
-                    : $"Cache {mod.LatestVersion} for later install",
+                ActionText = mod.IsInstalled
+                    ? "Add to Cache"
+                    : "Download Only",
+                DetailText = mod.IsInstalled
+                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
+                        ? "Cache the latest available version locally"
+                        : $"Cache {mod.LatestVersion} locally"
+                    : string.IsNullOrWhiteSpace(mod.LatestVersion)
+                        ? "Cache latest available version for later install"
+                        : $"Cache {mod.LatestVersion} for later install",
             });
 
         public void QueueInstall(ModListItem mod)
