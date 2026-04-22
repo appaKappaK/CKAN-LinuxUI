@@ -311,7 +311,15 @@ namespace CKAN.LinuxGUI
             Observable.Merge(
                     this.WhenAnyValue(vm => vm.ModSearchText).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedAuthorFilter).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.AdvancedCompatibilityFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedCompatibilityFilter).Select(_ => Unit.Default))
+                .Skip(1)
+                .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
+                .Subscribe(__ =>
+                {
+                    RefreshCatalogForFilterChange();
+                });
+
+            Observable.Merge(
                     this.WhenAnyValue(vm => vm.FilterInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterNotInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
@@ -321,16 +329,7 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterIncompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default))
                 .Skip(1)
-                .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
-                .Subscribe(__ =>
-                {
-                    modSearchService.SetCurrent(CurrentFilter());
-                    PublishFilterStateLabels();
-                    if (IsReady)
-                    {
-                        _ = LoadModCatalogAsync();
-                    }
-                });
+                .Subscribe(__ => RefreshCatalogForFilterChange());
 
             this.WhenAnyValue(vm => vm.SelectedSortOption, vm => vm.SortDescending)
                 .Skip(1)
@@ -1196,7 +1195,7 @@ namespace CKAN.LinuxGUI
                 : "Filters ▾";
 
         public string MoreFiltersButtonBackground
-            => HasActiveFilters ? "#5C376D" : "#4B535D";
+            => HasActiveFilters ? "#5C376D" : "#3E648A";
 
         public string MoreFiltersButtonBorderBrush => MoreFiltersButtonBackground;
 
@@ -1367,6 +1366,16 @@ namespace CKAN.LinuxGUI
                || ShowInstallAction
                || ShowUpdateAction
                || ShowRemoveAction);
+
+        public bool ShowSelectedModActionUnavailableNote
+            => SelectedMod?.IsInstalled == false
+               && SelectedModIsIncompatible
+               && !IsSelectedModLoading
+               && !ShowInstallNowAction
+               && !ShowPrimarySelectedModAction;
+
+        public string SelectedModActionUnavailableNote
+            => "This mod cannot be installed with the current compatibility settings. Adjust Compatible game versions in Settings if you want to allow it.";
 
         public string PrimarySelectedModActionLabel
         {
@@ -2361,6 +2370,16 @@ namespace CKAN.LinuxGUI
                 HasReplacementOnly  = FilterHasReplacementOnly,
             };
 
+        private void RefreshCatalogForFilterChange()
+        {
+            modSearchService.SetCurrent(CurrentFilter());
+            PublishFilterStateLabels();
+            if (IsReady)
+            {
+                _ = LoadModCatalogAsync();
+            }
+        }
+
         private void ApplyStoredFilterState(FilterState filter)
         {
             modSearchText = filter.SearchText ?? "";
@@ -3322,6 +3341,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowInstallNowAction));
             this.RaisePropertyChanged(nameof(ShowRemoveNowAction));
             this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
+            this.RaisePropertyChanged(nameof(ShowSelectedModActionUnavailableNote));
+            this.RaisePropertyChanged(nameof(SelectedModActionUnavailableNote));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBackground));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBorderBrush));

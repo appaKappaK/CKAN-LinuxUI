@@ -94,6 +94,22 @@
       <Project>{4336F356-33DB-442A-BF74-5E89AF47A5B9}</Project>
       <Name>CKAN-NetKAN</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LinuxGUI\CKAN-LinuxGUI.csproj"
+                      Condition=" '$(TargetFramework)' == 'net8.0' ">
+      <Project>{4D44AF4C-1B12-4A7D-962C-C16E2B89C899}</Project>
+      <Name>CKAN-LinuxGUI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PluginCompat\CKAN-GUI.PluginCompat.csproj"
+                      Condition=" '$(TargetFramework)' == 'net8.0' ">
+      <Project>{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}</Project>
+      <Name>CKAN-GUI.PluginCompat</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PluginCompat\SamplePlugin\PluginSmokePlugin.csproj"
+                      Condition=" '$(TargetFramework)' == 'net8.0' "
+                      ReferenceOutputAssembly="false">
+      <Project>{F58C4456-D86D-4250-9A54-E4CC20CD59F6}</Project>
+      <Name>PluginSmokePlugin</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="log4net.xml" CopyToOutputDirectory="PreserveNewest" />

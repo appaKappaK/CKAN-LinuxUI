@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.DisplayScaleWindow"
+        x:CompileBindings="False"
+        Width="420"
+        Height="300"
+        MinWidth="380"
+        MinHeight="260"
+        WindowStartupLocation="CenterOwner"
+        Title="Display Scale"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Display Scale" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding DisplayScaleSummary}" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="1"
+                Margin="0,18,0,0"
+                Spacing="12">
+      <Border Background="#161B21"
+              BorderBrush="#2B323C"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="14">
+        <StackPanel Spacing="12">
+          <Slider Minimum="{Binding UiScaleMinimum}"
+                  Maximum="{Binding UiScaleMaximum}"
+                  TickFrequency="5"
+                  TickPlacement="Outside"
+                  IsSnapToTickEnabled="True"
+                  SmallChange="5"
+                  LargeChange="5"
+                  Value="{Binding PendingUiScalePercent}" />
+
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock FontSize="12"
+                       Opacity="0.68"
+                       Text="{Binding UiScaleMinimum}" />
+            <TextBlock Grid.Column="1"
+                       HorizontalAlignment="Center"
+                       FontWeight="SemiBold"
+                       Text="{Binding PendingUiScaleLabel}" />
+            <TextBlock Grid.Column="2"
+                       FontSize="12"
+                       Opacity="0.68"
+                       Text="{Binding UiScaleMaximum}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Background="#20262D"
+              BorderBrush="#39424E"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="12">
+        <TextBlock FontSize="12"
+                   Opacity="0.76"
+                   TextWrapping="Wrap"
+                   Text="{Binding DisplayScaleHint}" />
+      </Border>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              IsVisible="{Binding ShowResetUiScaleAction}"
+              Background="#1F3D58"
+              BorderBrush="#31597B"
+              Foreground="#F4F6F8"
+              Command="{Binding ResetUiScaleCommand}"
+              Content="Reset to 100%" />
+      <Button Classes="dialog-action"
+              IsVisible="{Binding UiScaleNeedsRestart}"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Command="{Binding RestartToApplyUiScaleCommand}"
+              Content="Restart Now" />
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CloseButton_OnClick"
+              Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>

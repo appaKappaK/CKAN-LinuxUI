@@ -1,0 +1,43 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyName>PluginSmokePlugin</AssemblyName>
+    <OutputPath Condition=" '$(Configuration)' != '' ">..\..\_build\out\$(AssemblyName)\$(Configuration)\bin\</OutputPath>
+    <OutputPath Condition=" '$(Configuration)' == '' ">..\..\_build\out\$(AssemblyName)\VSCodeIDE\bin\</OutputPath>
+    <BaseIntermediateOutputPath Condition=" '$(Configuration)' != '' ">..\..\_build\out\$(AssemblyName)\$(Configuration)\obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition=" '$(Configuration)' == '' ">..\..\_build\out\$(AssemblyName)\VSCodeIDE\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <ProjectGuid>{F58C4456-D86D-4250-9A54-E4CC20CD59F6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>PluginSmokePlugin</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>9</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>IDE1006,CS1591</NoWarn>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CKAN-GUI.PluginCompat.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\_build\meta\GlobalAssemblyVersionInfo.cs">
+      <Link>Properties\GlobalAssemblyVersionInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\GlobalAssemblyInfo.cs">
+      <Link>Properties\GlobalAssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
+    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
+          WorkingDirectory="..\.."
+          Condition="!Exists('../../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
+    <Exec Command="sh ../../build.sh Generate-GlobalAssemblyVersionInfo"
+          Condition="!Exists('../../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+  </Target>
+</Project>

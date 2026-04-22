@@ -184,6 +184,18 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private async void DisplayScaleMenuItem_OnClick(object? sender,
+                                                        Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new DisplayScaleWindow(viewModel);
+            await dialog.ShowDialog(this);
+        }
+
         private async void GameCommandLinesMenuItem_OnClick(object? sender,
                                                             Avalonia.Interactivity.RoutedEventArgs e)
         {

@@ -69,6 +69,10 @@ cache, or app-data state with your normal CKAN setup:
 ./scripts/run-linuxgui-dev.sh
 ```
 
+If the checked-in `LinuxGUI`, `App`, `Core`, or `PluginCompat` sources are newer
+than the local framework-dependent dev build, the launcher automatically refreshes
+`_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/` before starting the app.
+
 By default this uses:
 
 - `~/.ckan-linux-dev/data`
@@ -80,6 +84,13 @@ You can override the base directory with:
 
 ```bash
 CKAN_LINUX_DEV_HOME=/path/to/dev-home ./scripts/run-linuxgui-dev.sh
+```
+
+Skip the automatic rebuild check if you deliberately want to launch the current
+artifacts as-is:
+
+```bash
+CKAN_LINUX_DEV_SKIP_BUILD=1 ./scripts/run-linuxgui-dev.sh
 ```
 
 ## Settings and Logs

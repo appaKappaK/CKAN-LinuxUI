@@ -19,6 +19,21 @@ BUILD_BIN="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGU
 BUILD_DLL="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGUI.dll"
 PUBLISH_BIN="$REPO_ROOT/_build/publish/CKAN-LinuxGUI/linux-x64/CKAN-LinuxGUI"
 PACKAGE_BIN="$REPO_ROOT/_build/package/ckan-linux/linux-x64/usr/lib/ckan-linux/CKAN-LinuxGUI"
+BUILD_STAMP_TARGETS=(
+    "$REPO_ROOT/LinuxGUI"
+    "$REPO_ROOT/App"
+    "$REPO_ROOT/Core"
+    "$REPO_ROOT/PluginCompat"
+)
+BUILD_STAMP_PATTERNS=(
+    '*.axaml'
+    '*.cs'
+    '*.csproj'
+    '*.json'
+    '*.props'
+    '*.targets'
+    '*.xaml'
+)
 
 bin_mtime() {
     stat -c '%Y' "$1"
@@ -32,6 +47,34 @@ self_contained_available() {
     local bin="$1"
     [[ -x "$bin" && -f "$(dirname "$bin")/libhostfxr.so" ]]
 }
+
+dev_build_is_stale() {
+    [[ ! -f "$BUILD_DLL" ]] && return 0
+
+    local target pattern
+    for target in "${BUILD_STAMP_TARGETS[@]}"; do
+        [[ -d "$target" ]] || continue
+        for pattern in "${BUILD_STAMP_PATTERNS[@]}"; do
+            if find "$target" -type f -name "$pattern" -newer "$BUILD_DLL" -print -quit | grep -q .; then
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
+maybe_refresh_dev_build() {
+    [[ "${CKAN_LINUX_DEV_SKIP_BUILD:-0}" == "1" ]] && return
+    runtime_available || return
+
+    if dev_build_is_stale; then
+        echo "Refreshing LinuxGUI dev build..."
+        dotnet build "$REPO_ROOT/LinuxGUI/CKAN-LinuxGUI.csproj" --no-restore
+    fi
+}
+
+maybe_refresh_dev_build
 
 latest_self_contained_bin=""
 if self_contained_available "$PUBLISH_BIN"; then

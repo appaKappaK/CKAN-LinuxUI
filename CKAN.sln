@@ -27,6 +27,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CKAN-LinuxGUI.VisualTests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CKAN-GUI.PluginCompat", "PluginCompat\CKAN-GUI.PluginCompat.csproj", "{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PluginCompat", "PluginCompat", "{A4F4FE8F-0ADF-407C-8BE2-89D626B38A85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginSmokePlugin", "PluginCompat\SamplePlugin\PluginSmokePlugin.csproj", "{F58C4456-D86D-4250-9A54-E4CC20CD59F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,6 +100,12 @@ Global
 		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.Release|Any CPU.Build.0 = Release|Any CPU
 		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.NoGUI|Any CPU.ActiveCfg = NoGUI|Any CPU
 		{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}.NoGUI|Any CPU.Build.0 = NoGUI|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.NoGUI|Any CPU.ActiveCfg = NoGUI|Any CPU
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6}.NoGUI|Any CPU.Build.0 = NoGUI|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -135,5 +145,8 @@ Global
 		$2.inheritsScope = text/x-csharp
 		$2.scope = text/x-csharp
 		$2.SpaceAfterMethodCallName = False
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F58C4456-D86D-4250-9A54-E4CC20CD59F6} = {A4F4FE8F-0ADF-407C-8BE2-89D626B38A85}
 	EndGlobalSection
 EndGlobal
