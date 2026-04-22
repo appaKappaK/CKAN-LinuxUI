@@ -613,7 +613,8 @@
 
     <Grid Grid.Row="2"
           ColumnDefinitions="Auto,*"
-          Margin="16">
+          Margin="16"
+          MinHeight="0">
       <Border Background="#161B21"
               BorderBrush="#2B323C"
               BorderThickness="1"
@@ -853,8 +854,9 @@
               BorderThickness="0"
               CornerRadius="0"
               Padding="0"
-              Margin="0">
-        <Grid>
+              Margin="0"
+              MinHeight="0">
+        <Grid MinHeight="0">
           <Border Background="#202930"
                   CornerRadius="12"
                   Padding="16"
@@ -933,8 +935,10 @@
           <Border Background="#202930"
                   CornerRadius="12"
                   Padding="16"
-                  IsVisible="{Binding IsReady}">
-            <Grid RowDefinitions="Auto,Auto,*">
+                  IsVisible="{Binding IsReady}"
+                  MinHeight="0">
+            <Grid RowDefinitions="Auto,Auto,*"
+                  MinHeight="0">
               <Border Background="#4A3920"
                       BorderBrush="#9A7B37"
                       BorderThickness="1"
@@ -985,12 +989,15 @@
 
               <Grid Grid.Row="2"
                     ColumnDefinitions="*,Auto"
-                    IsVisible="{Binding ShowBrowseSurface}">
+                    IsVisible="{Binding ShowBrowseSurface}"
+                    MinHeight="0">
                 <Border Background="#161B21"
                         CornerRadius="10"
                         Padding="12"
-                        Margin="0,0,6,0">
-                  <Grid RowDefinitions="Auto,*,Auto">
+                        Margin="0,0,6,0"
+                        MinHeight="0">
+                  <Grid RowDefinitions="Auto,*,Auto"
+                        MinHeight="0">
                     <Grid ColumnDefinitions="*,Auto,Auto"
                           Margin="0,0,0,8">
                       <TextBox x:Name="SearchTextBox"
@@ -2138,7 +2145,8 @@
                         </StackPanel>
 
                         <Grid RowDefinitions="Auto,*"
-                              IsVisible="{Binding ShowModList}">
+                              IsVisible="{Binding ShowModList}"
+                              MinHeight="0">
                           <Grid ColumnDefinitions="3,*,216"
                                 Margin="0,0,0,4">
                             <Button Grid.Column="1"
@@ -2166,6 +2174,7 @@
 
                           <ListBox x:Name="ModsListBox"
                                    Grid.Row="1"
+                                   MinHeight="0"
                                    ItemsSource="{Binding Mods}"
                                    AutoScrollToSelectedItem="False"
                                    SelectedItem="{Binding SelectedMod}">
@@ -2373,8 +2382,10 @@
                         Margin="8,0,0,0"
                         Width="292"
                         MinWidth="272"
+                        MinHeight="0"
+                        ClipToBounds="True"
                         IsVisible="{Binding ShowDetailsSidebar}">
-                  <Grid>
+                  <Grid MinHeight="0">
                     <StackPanel Spacing="12"
                                 IsVisible="{Binding ShowSelectedModPlaceholder}">
                       <TextBlock FontSize="16"
@@ -2498,6 +2509,8 @@
                     </StackPanel>
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  VerticalAlignment="Stretch"
+                                  MinHeight="0"
                                   IsVisible="{Binding ShowSelectedModContent}">
                       <StackPanel Spacing="10">
                         <TextBlock Classes="panel-title"

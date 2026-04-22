@@ -68,6 +68,31 @@ namespace CKAN.LinuxGUI.VisualTests
             => RenderScenarioAsync(VisualScenario.Ready, "startup-ready-narrow", 1040, 700);
 
         [AvaloniaTest]
+        public async Task ReadyShell_NarrowWindow_WithSelectedModDetails_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1040,
+                Height = 700,
+            };
+
+            await Task.Delay(150);
+            viewModel.ShowDetailsPane = true;
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "kerbalism");
+            await Task.Delay(400);
+
+            VisualTestSupport.CaptureAndAssert(window, "browser-details-narrow");
+        }
+
+        [AvaloniaTest]
         public Task ErrorShell_Renders()
             => RenderScenarioAsync(VisualScenario.Error, "startup-error");
 
