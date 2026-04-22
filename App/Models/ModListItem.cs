@@ -17,6 +17,8 @@ namespace CKAN.App.Models
 
         public string Summary { get; init; } = "";
 
+        public string Description { get; init; } = "";
+
         public string LatestVersion { get; init; } = "";
 
         public string InstalledVersion { get; init; } = "";

@@ -644,6 +644,33 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task Search_FindsWordsFromDescriptions()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await Task.Delay(150);
+
+                viewModel.ModSearchText = "tessellation";
+                await WaitForAsync(() => !viewModel.IsCatalogLoading
+                                         && viewModel.Mods.Count == 1
+                                         && viewModel.Mods.Single().Identifier == "parallax",
+                                  timeoutMs: 1500);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.Mods.Single().Identifier, Is.EqualTo("parallax"));
+                    Assert.That(viewModel.ModCountLabel, Is.EqualTo("1 mod"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task Sorting_ReordersVisibleModsWithoutReloadingCatalog()
         {
             var catalog = new DelayedModCatalogService(listDelayMs: 250);

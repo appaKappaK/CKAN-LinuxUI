@@ -19,6 +19,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name             = "Restock",
                 Author           = "Nertea",
                 Summary          = "Refreshes stock parts with a consistent art pass.",
+                Description      = "Restock replaces stock part art with a modernized, cohesive visual pass while keeping gameplay behavior familiar.",
                 LatestVersion    = "1.5.2",
                 InstalledVersion = "1.5.1",
                 DownloadCount    = 452318,
@@ -37,6 +38,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name             = "Parallax",
                 Author           = "Gameslinx",
                 Summary          = "Procedural surface scattering and planet terrain shading.",
+                Description      = "Parallax adds procedural terrain detail, tessellation, and dense planetary scatter systems for surface exploration.",
                 LatestVersion    = "2.1.0",
                 InstalledVersion = "",
                 DownloadCount    = 1863579,
@@ -54,6 +56,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name             = "MechJeb 2",
                 Author           = "Sarbian",
                 Summary          = "Flight automation, maneuver planning, and vessel information.",
+                Description      = "MechJeb adds ascent guidance, rendezvous tools, information readouts, and maneuver planning for complex missions.",
                 LatestVersion    = "2.14.3",
                 InstalledVersion = "2.14.3",
                 DownloadCount    = 893441,
@@ -71,6 +74,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name             = "Kerbalism",
                 Author           = "ShotgunNinja",
                 Summary          = "Life support, reliability, science, and long-duration mission systems.",
+                Description      = "Kerbalism reshapes campaign progression around life support, radiation, reliability, and expanded science mechanics.",
                 LatestVersion    = "3.19.1",
                 InstalledVersion = "",
                 DownloadCount    = 217604,
@@ -88,6 +92,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name             = "PlanetShine",
                 Author           = "Valerian",
                 Summary          = "Adds bounced planetary light to vessels and IVA scenes.",
+                Description      = "PlanetShine adds subtle reflected light from planets and moons, improving atmosphere without changing gameplay.",
                 LatestVersion    = "0.2.7.5",
                 InstalledVersion = "",
                 DownloadCount    = 625183,
@@ -274,7 +279,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 if (!Contains(item.Name, search)
                     && !Contains(item.Identifier, search)
                     && !Contains(item.Author, search)
-                    && !Contains(item.Summary, search))
+                    && !Contains(item.Summary, search)
+                    && !Contains(item.Description, search))
                 {
                     return false;
                 }
@@ -523,6 +529,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Name = item.Name,
                 Author = item.Author,
                 Summary = item.Summary,
+                Description = item.Description,
                 LatestVersion = item.LatestVersion,
                 InstalledVersion = item.InstalledVersion,
                 DownloadCount = item.DownloadCount,

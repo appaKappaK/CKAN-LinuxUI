@@ -457,6 +457,64 @@ namespace CKAN.LinuxGUI.VisualTests
             VisualTestSupport.CaptureAndAssert(window, "browser-details-loading");
         }
 
+        [AvaloniaTest]
+        public async Task DownloadsSortToggle_KeepsSelectedModAndDetailsPaneOpen()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            window.Show();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && viewModel.SelectedMod != null);
+
+                var selected = viewModel.SelectedMod!;
+                viewModel.ActivateModFromBrowser(selected);
+                await Task.Delay(50);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(selected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+
+                viewModel.SelectPopularitySortCommand.Execute().Subscribe();
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(selected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+
+                viewModel.SelectPopularitySortCommand.Execute().Subscribe();
+                await Task.Delay(100);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(selected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
         private static async Task WaitForAsync(Func<bool> condition,
                                                int        timeoutMs = 1000)
         {

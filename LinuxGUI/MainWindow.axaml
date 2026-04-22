@@ -2377,9 +2377,6 @@
                   <Grid>
                     <StackPanel Spacing="12"
                                 IsVisible="{Binding ShowSelectedModPlaceholder}">
-                      <TextBlock FontSize="11"
-                                 Opacity="0.68"
-                                 Text="Mod Details" />
                       <TextBlock FontSize="16"
                                  FontWeight="SemiBold"
                                  Text="No mod selected" />
@@ -2390,9 +2387,6 @@
 
                     <StackPanel Spacing="14"
                                 IsVisible="{Binding ShowSelectedModLoadingState}">
-                      <TextBlock FontSize="11"
-                                 Opacity="0.68"
-                                 Text="Mod Details" />
                       <TextBlock FontSize="16"
                                  FontWeight="SemiBold"
                                  TextWrapping="Wrap"
@@ -2505,17 +2499,16 @@
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                   IsVisible="{Binding ShowSelectedModContent}">
-                      <StackPanel Spacing="8">
-                        <TextBlock Classes="panel-kicker"
-                                   Text="Mod Details" />
+                      <StackPanel Spacing="10">
                         <TextBlock Classes="panel-title"
                                    TextWrapping="Wrap"
                                    Text="{Binding SelectedModTitle}" />
+                        <TextBlock Classes="panel-meta"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding SelectedModAuthors}" />
                         <TextBlock Classes="panel-body"
                                    TextWrapping="Wrap"
                                    Text="{Binding SelectedModBody}" />
-                        <TextBlock Classes="panel-meta"
-                                   Text="{Binding SelectedModAuthors}" />
 
                         <WrapPanel ItemHeight="22"
                                    IsVisible="{Binding HasSelectedMod}">
@@ -2641,137 +2634,147 @@
                         <StackPanel Spacing="6">
                           <Border Background="#20262D"
                                   Height="1" />
-                          <Grid ColumnDefinitions="84,*"
-                                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                            <TextBlock Classes="detail-label"
-                                       Text="Status" />
-                            <TextBlock Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,0,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModInstallState}" />
+                          <StackPanel Spacing="0">
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Status" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModInstallState}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="1"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Versions" />
-                            <TextBlock Grid.Row="1"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModVersions}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Versions" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModVersions}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="2"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Cached" />
-                            <TextBlock Grid.Row="2"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModCacheState}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Cached" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModCacheState}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="3"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Compatibility" />
-                            <TextBlock Grid.Row="3"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModCompatibility}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Compatibility" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModCompatibility}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="4"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Type" />
-                            <TextBlock Grid.Row="4"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModModuleKind}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Type" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModModuleKind}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="5"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="License" />
-                            <TextBlock Grid.Row="5"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModLicense}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="License" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModLicense}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="6"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Released" />
-                            <TextBlock Grid.Row="6"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModReleaseDate}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Released" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModReleaseDate}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="7"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Downloads" />
-                            <TextBlock Grid.Row="7"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModDownloadCount}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Downloads" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModDownloadCount}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="8"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Size" />
-                            <TextBlock Grid.Row="8"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModDownloadSize}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Size" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModDownloadSize}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="9"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Depends" />
-                            <TextBlock Grid.Row="9"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModDependencyCountLabel}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Depends" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModDependencyCountLabel}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="10"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Recommends" />
-                            <TextBlock Grid.Row="10"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModRecommendationCountLabel}" />
+                            <StackPanel Spacing="2"
+                                        Margin="0,0,0,8">
+                              <TextBlock Classes="detail-label"
+                                         Text="Recommends" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModRecommendationCountLabel}" />
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
 
-                            <TextBlock Grid.Row="11"
-                                       Classes="detail-label"
-                                       Margin="0,6,0,0"
-                                       Text="Suggests" />
-                            <TextBlock Grid.Row="11"
-                                       Grid.Column="1"
-                                       Classes="detail-value"
-                                       Margin="8,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding SelectedModSuggestionCountLabel}" />
-                          </Grid>
+                            <StackPanel Spacing="2">
+                              <TextBlock Classes="detail-label"
+                                         Text="Suggests" />
+                              <TextBlock Classes="detail-value"
+                                         TextWrapping="Wrap"
+                                         Text="{Binding SelectedModSuggestionCountLabel}" />
+                            </StackPanel>
+                          </StackPanel>
                         </StackPanel>
                       </StackPanel>
                     </ScrollViewer>

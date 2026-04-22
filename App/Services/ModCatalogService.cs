@@ -234,6 +234,9 @@ namespace CKAN.App.Services
                 Name              = displayMod.name?.Trim() ?? displayMod.identifier,
                 Author            = string.Join(", ", displayMod.author ?? new List<string>()),
                 Summary           = displayMod.@abstract?.Trim() ?? "",
+                Description       = string.IsNullOrWhiteSpace(displayMod.description)
+                    ? displayMod.@abstract?.Trim() ?? ""
+                    : displayMod.description.Trim(),
                 LatestVersion     = displayMod.version.ToString(),
                 InstalledVersion  = installedModule?.version.ToString() ?? "",
                 DownloadCount     = downloadCount,
@@ -276,7 +279,8 @@ namespace CKAN.App.Services
                 if (!Contains(item.Name, text)
                     && !Contains(item.Identifier, text)
                     && !Contains(item.Author, text)
-                    && !Contains(item.Summary, text))
+                    && !Contains(item.Summary, text)
+                    && !Contains(item.Description, text))
                 {
                     return false;
                 }

@@ -123,6 +123,7 @@ namespace CKAN.LinuxGUI
         private int     selectedModLoadRequestId;
         private int     modListScrollResetRequestId;
         private bool    pendingModListScrollReset;
+        private bool    preserveSelectedModDuringSortReorder;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
         private InstanceSummary? selectedInstance;
@@ -2084,6 +2085,11 @@ namespace CKAN.LinuxGUI
             get => selectedMod;
             set
             {
+                if (ShouldKeepCurrentSelectedMod(value))
+                {
+                    return;
+                }
+
                 this.RaiseAndSetIfChanged(ref selectedMod, value);
                 this.RaisePropertyChanged(nameof(HasSelectedMod));
                 this.RaisePropertyChanged(nameof(ShowDetailsSidebar));
@@ -2909,14 +2915,29 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            var preservedSelection = SelectedMod;
+            preserveSelectedModDuringSortReorder = preservedSelection != null;
+
             var sortedItems = SortItems(Mods).ToList();
-            for (int targetIndex = 0; targetIndex < sortedItems.Count; targetIndex++)
+            try
             {
-                int currentIndex = Mods.IndexOf(sortedItems[targetIndex]);
-                if (currentIndex >= 0 && currentIndex != targetIndex)
+                for (int targetIndex = 0; targetIndex < sortedItems.Count; targetIndex++)
                 {
-                    Mods.Move(currentIndex, targetIndex);
+                    int currentIndex = Mods.IndexOf(sortedItems[targetIndex]);
+                    if (currentIndex >= 0 && currentIndex != targetIndex)
+                    {
+                        Mods.Move(currentIndex, targetIndex);
+                    }
                 }
+            }
+            finally
+            {
+                preserveSelectedModDuringSortReorder = false;
+            }
+
+            if (preservedSelection != null && Mods.Contains(preservedSelection))
+            {
+                this.RaisePropertyChanged(nameof(SelectedMod));
             }
 
             ConsumePendingModListScrollReset();
@@ -3608,6 +3629,13 @@ namespace CKAN.LinuxGUI
             => sortOption == ModSortOption.Popularity
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
+
+        private bool ShouldKeepCurrentSelectedMod(ModListItem? candidate)
+            => preserveSelectedModDuringSortReorder
+               && selectedMod != null
+               && Mods.Contains(selectedMod)
+               && (candidate == null
+               || !string.Equals(candidate.Identifier, selectedMod.Identifier, StringComparison.OrdinalIgnoreCase));
 
         private IEnumerable<ModListItem> SortItems(IEnumerable<ModListItem> items)
         {
