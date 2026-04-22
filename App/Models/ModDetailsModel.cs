@@ -36,6 +36,8 @@ namespace CKAN.App.Models
 
         public bool IsInstalled { get; init; }
 
+        public bool IsAutodetected { get; init; }
+
         public bool HasUpdate { get; init; }
 
         public bool HasVersionUpdate { get; init; }

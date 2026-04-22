@@ -252,6 +252,50 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task ApplyingPreview_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(
+                changes,
+                new CKAN.App.Models.ApplyChangesResult
+                {
+                    Kind = CKAN.App.Models.ApplyResultKind.Success,
+                    Success = true,
+                    Title = "Apply Completed",
+                    Message = "Applied 1 queued action.",
+                    SummaryLines = new[]
+                    {
+                        "1 queued action",
+                        "1 direct removal",
+                    },
+                },
+                applyDelayMs: 1200);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+            viewModel.QueueRemoveCommand.Execute().Subscribe();
+            viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+            await Task.Delay(300);
+            viewModel.ApplyChangesCommand.Execute().Subscribe();
+            await Task.Delay(120);
+
+            VisualTestSupport.CaptureAndAssert(window, "preview-applying");
+
+            await Task.Delay(1300);
+        }
+
+        [AvaloniaTest]
         public async Task AppliedBrowser_Renders()
         {
             using var service = new FakeGameInstanceService(VisualScenario.Ready);

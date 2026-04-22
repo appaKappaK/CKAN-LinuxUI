@@ -26,6 +26,7 @@ namespace CKAN.LinuxGUI.VisualTests
             "browser-display-scale.png",
             "browser-queued.png",
             "browser-applied.png",
+            "preview-applying.png",
         };
 
         private static readonly string[] WorkCodeFiles =

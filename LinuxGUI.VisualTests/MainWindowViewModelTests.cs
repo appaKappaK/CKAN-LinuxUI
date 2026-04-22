@@ -148,6 +148,51 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task AcknowledgeExecutionResult_SuccessReturnsToBrowseAndClearsResult()
+        {
+            var applyResult = new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Apply Completed",
+                Message = "Applied 1 queued action.",
+            };
+            var (viewModel, service) = CreateViewModel(applyResult);
+
+            try
+            {
+                await Task.Delay(150);
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe(_ => { });
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(200);
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(300);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowExecutionResultOverlay, Is.True);
+                    Assert.That(viewModel.ShowPreviewSurface, Is.True);
+                    Assert.That(viewModel.HasApplyResult, Is.True);
+                });
+
+                viewModel.AcknowledgeExecutionResultCommand.Execute().Subscribe(_ => { });
+                await Task.Delay(50);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowExecutionResultOverlay, Is.False);
+                    Assert.That(viewModel.ShowBrowseSurface, Is.True);
+                    Assert.That(viewModel.HasApplyResult, Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task TrySwitchSelectedInstanceAsync_CancelsOrConfirmsQueueDiscard()
         {
             var (viewModel, service) = CreateViewModel();

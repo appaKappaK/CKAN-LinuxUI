@@ -90,6 +90,7 @@ namespace CKAN.App.Services
                     return null;
                 }
 
+                bool isAutodetected = registry.IsAutodetected(identifier);
                 bool hasUpdate = HasUpdate(registry, inst, identifier);
                 bool hasVersionUpdate = hasUpdate
                                         && installed != null
@@ -109,7 +110,8 @@ namespace CKAN.App.Services
                                        ?? latestAvailable?.version.ToString()
                                        ?? installed?.version.ToString()
                                        ?? "-",
-                    InstalledVersion = installed?.version.ToString() ?? "Not installed",
+                    InstalledVersion = installed?.version.ToString()
+                                       ?? (isAutodetected ? "Autodetected" : "Not installed"),
                     Compatibility    = FormatCompatibility(displayMod, inst),
                     ModuleKind       = FormatModuleKind(displayMod.kind),
                     License          = FormatLicense(displayMod),
@@ -121,7 +123,8 @@ namespace CKAN.App.Services
                     DependencyCount     = displayMod.depends?.Count ?? 0,
                     RecommendationCount = displayMod.recommends?.Count ?? 0,
                     SuggestionCount     = displayMod.suggests?.Count ?? 0,
-                    IsInstalled      = installed != null || registry.IsAutodetected(identifier),
+                    IsInstalled      = installed != null || isAutodetected,
+                    IsAutodetected   = isAutodetected,
                     HasUpdate        = hasUpdate,
                     HasVersionUpdate = hasVersionUpdate,
                     IsCached         = IsCached(context, displayMod),
@@ -201,7 +204,8 @@ namespace CKAN.App.Services
             int? downloadCount = gameInstanceService.RepositoryData.GetDownloadCount(
                 context.Registry.Repositories.Values,
                 displayMod.identifier);
-            bool isInstalled = installedModule != null || context.Registry.IsAutodetected(displayMod.identifier);
+            bool isAutodetected = context.Registry.IsAutodetected(displayMod.identifier);
+            bool isInstalled = installedModule != null || isAutodetected;
             bool isCached = IsCached(context, displayMod);
             bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
                                                                   context.Instance.StabilityToleranceConfig,
@@ -210,11 +214,13 @@ namespace CKAN.App.Services
                                     && installedModule != null
                                     && displayMod.version.CompareTo(installedModule.version) > 0;
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
+                                                               isAutodetected,
                                                                hasVersionUpdate,
                                                                incompatibleOverride,
                                                                isCached,
                                                                hasReplacement);
             string statusSummary = FormatStatusSummary(isInstalled,
+                                                       isAutodetected,
                                                        hasVersionUpdate,
                                                        incompatibleOverride,
                                                        isCached,
@@ -231,6 +237,7 @@ namespace CKAN.App.Services
                 DownloadCount     = downloadCount,
                 DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
+                IsAutodetected    = isAutodetected,
                 HasUpdate         = hasUpdate,
                 HasVersionUpdate  = hasVersionUpdate,
                 IsIncompatible    = incompatibleOverride,
@@ -239,6 +246,7 @@ namespace CKAN.App.Services
                 Compatibility     = FormatCompatibility(displayMod, context.Instance),
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
+                                                            isAutodetected,
                                                             hasVersionUpdate,
                                                             incompatibleOverride,
                                                             isCached,
@@ -485,13 +493,16 @@ namespace CKAN.App.Services
             => text?.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
 
         private static string FormatPrimaryStateLabel(bool isInstalled,
+                                                      bool isAutodetected,
                                                       bool hasUpdate,
                                                       bool isIncompatible,
                                                       bool isCached,
                                                       bool hasReplacement)
             => isIncompatible
                 ? "Incompatible"
-                : hasUpdate
+                : isAutodetected
+                    ? "Unmanaged"
+                    : hasUpdate
                     ? "Update Available"
                     : isInstalled
                         ? "Installed"
@@ -500,13 +511,16 @@ namespace CKAN.App.Services
                             : "Available";
 
         private static string FormatPrimaryStateColor(bool isInstalled,
+                                                      bool isAutodetected,
                                                       bool hasUpdate,
                                                       bool isIncompatible,
                                                       bool isCached,
                                                       bool hasReplacement)
             => isIncompatible
                 ? "#9A485C"
-                : hasUpdate
+                : isAutodetected
+                    ? "#5E6878"
+                    : hasUpdate
                     ? "#6A952B"
                     : isInstalled
                         ? "#2B6A98"
@@ -515,6 +529,7 @@ namespace CKAN.App.Services
                             : "#2F7C58";
 
         private static string FormatStatusSummary(bool isInstalled,
+                                                  bool isAutodetected,
                                                   bool hasUpdate,
                                                   bool isIncompatible,
                                                   bool isCached,
@@ -522,7 +537,11 @@ namespace CKAN.App.Services
         {
             var parts = new List<string>();
 
-            if (hasUpdate)
+            if (isAutodetected)
+            {
+                parts.Add("Detected outside CKAN");
+            }
+            else if (hasUpdate)
             {
                 parts.Add("Installed");
             }

@@ -436,6 +436,10 @@ namespace CKAN.App.Services
                         {
                             requestedRemovals.Add(removeMod);
                         }
+                        else if (registry.IsAutodetected(action.Identifier))
+                        {
+                            resolutionErrors.Add($"{action.Name} was detected outside CKAN and cannot be removed automatically. Remove its files manually from GameData if you want it gone.");
+                        }
                         else
                         {
                             resolutionErrors.Add($"Could not resolve an installed module to remove for {action.Name}.");

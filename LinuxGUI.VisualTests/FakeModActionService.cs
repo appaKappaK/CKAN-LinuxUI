@@ -11,9 +11,11 @@ namespace CKAN.LinuxGUI.VisualTests
     {
         private readonly IChangesetService changesetService;
         private readonly ApplyChangesResult applyResult;
+        private readonly int applyDelayMs;
 
         public FakeModActionService(IChangesetService changesetService,
-                                    ApplyChangesResult? applyResult = null)
+                                    ApplyChangesResult? applyResult = null,
+                                    int applyDelayMs = 0)
         {
             this.changesetService = changesetService;
             this.applyResult = applyResult ?? new ApplyChangesResult
@@ -23,6 +25,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Title = "Apply Failed",
                 Message = "Fake visual test apply result.",
             };
+            this.applyDelayMs = applyDelayMs;
         }
 
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
@@ -72,13 +75,20 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         public Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken)
+            => CompleteApplyAsync(cancellationToken);
+
+        private async Task<ApplyChangesResult> CompleteApplyAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (applyDelayMs > 0)
+            {
+                await Task.Delay(applyDelayMs, cancellationToken);
+            }
             if (applyResult.Success)
             {
                 changesetService.ClearApplyQueue();
             }
-            return Task.FromResult(applyResult);
+            return applyResult;
         }
 
         public Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
