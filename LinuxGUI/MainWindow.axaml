@@ -281,6 +281,29 @@
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Foreground" Value="#EDF2F7" />
     </Style>
+    <Style Selector="Border.detail-stat-card">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#2B323C" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10" />
+    </Style>
+    <Style Selector="Button.detail-disclosure">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ComboBox.detail-version-picker">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#2B323C" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="MinHeight" Value="38" />
+    </Style>
   </Window.Styles>
   <LayoutTransformControl HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch">
@@ -2667,7 +2690,100 @@
                               <TextBlock Classes="detail-value"
                                          TextWrapping="Wrap"
                                          Text="{Binding SelectedModVersions}" />
+                              <StackPanel Margin="0,6,0,0"
+                                          Spacing="4"
+                                          IsVisible="{Binding ShowSelectedModVersionPicker}">
+                                <TextBlock Classes="detail-label"
+                                           Text="Available versions" />
+                                <ComboBox Classes="detail-version-picker"
+                                          ItemsSource="{Binding SelectedModAvailableVersions}"
+                                          SelectedItem="{Binding SelectedModVersionChoice}"
+                                          MaxDropDownHeight="320">
+                                  <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ModVersionChoiceItem">
+                                      <StackPanel Spacing="4"
+                                                  Margin="0,2">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                          <TextBlock Classes="detail-value"
+                                                     Text="{Binding VersionText}" />
+                                          <Border Grid.Column="1"
+                                                  Background="{Binding BadgeBackground}"
+                                                  BorderBrush="{Binding BadgeBorderBrush}"
+                                                  BorderThickness="1"
+                                                  CornerRadius="999"
+                                                  Padding="6,1"
+                                                  IsVisible="{Binding HasBadge}">
+                                            <TextBlock FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#F7FAFD"
+                                                       Text="{Binding BadgeText}" />
+                                          </Border>
+                                        </Grid>
+                                        <TextBlock Classes="detail-label"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding MetaText}" />
+                                      </StackPanel>
+                                    </DataTemplate>
+                                  </ComboBox.ItemTemplate>
+                                </ComboBox>
+                              </StackPanel>
                             </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
+
+                            <Grid ColumnDefinitions="*,*"
+                                  RowDefinitions="Auto,Auto"
+                                  Margin="0,0,0,8">
+                              <Border Classes="detail-stat-card"
+                                      Grid.Row="0"
+                                      Grid.Column="0"
+                                      Margin="0,0,4,4">
+                                <StackPanel Spacing="2">
+                                  <TextBlock Classes="detail-label"
+                                             Text="Compatibility" />
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModCompatibility}" />
+                                </StackPanel>
+                              </Border>
+                              <Border Classes="detail-stat-card"
+                                      Grid.Row="0"
+                                      Grid.Column="1"
+                                      Margin="4,0,0,4">
+                                <StackPanel Spacing="2">
+                                  <TextBlock Classes="detail-label"
+                                             Text="Released" />
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModReleaseDate}" />
+                                </StackPanel>
+                              </Border>
+                              <Border Classes="detail-stat-card"
+                                      Grid.Row="1"
+                                      Grid.Column="0"
+                                      Margin="0,4,4,0">
+                                <StackPanel Spacing="2">
+                                  <TextBlock Classes="detail-label"
+                                             Text="Downloads" />
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModDownloadCount}" />
+                                </StackPanel>
+                              </Border>
+                              <Border Classes="detail-stat-card"
+                                      Grid.Row="1"
+                                      Grid.Column="1"
+                                      Margin="4,4,0,0">
+                                <StackPanel Spacing="2">
+                                  <TextBlock Classes="detail-label"
+                                             Text="Size" />
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModDownloadSize}" />
+                                </StackPanel>
+                              </Border>
+                            </Grid>
                             <Border Background="#24303B"
                                     Height="1"
                                     Margin="0,0,0,8" />
@@ -2679,18 +2795,6 @@
                               <TextBlock Classes="detail-value"
                                          TextWrapping="Wrap"
                                          Text="{Binding SelectedModCacheState}" />
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8" />
-
-                            <StackPanel Spacing="2"
-                                        Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Compatibility" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModCompatibility}" />
                             </StackPanel>
                             <Border Background="#24303B"
                                     Height="1"
@@ -2720,72 +2824,91 @@
                                     Height="1"
                                     Margin="0,0,0,8" />
 
-                            <StackPanel Spacing="2"
+                            <StackPanel Spacing="4"
                                         Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Released" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModReleaseDate}" />
+                              <Button Classes="detail-disclosure"
+                                      Command="{Binding ToggleSelectedModDependenciesCommand}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModDependencyCountLabel}" />
+                                  <TextBlock Grid.Column="1"
+                                             Classes="detail-label"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding SelectedModDependencyChevron}" />
+                                </Grid>
+                              </Button>
+                              <ItemsControl ItemsSource="{Binding SelectedModDependencies}"
+                                            IsVisible="{Binding ShowSelectedModDependenciesExpanded}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <TextBlock Classes="detail-label"
+                                               Margin="0,0,0,4"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding .}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
                             </StackPanel>
                             <Border Background="#24303B"
                                     Height="1"
                                     Margin="0,0,0,8" />
 
-                            <StackPanel Spacing="2"
+                            <StackPanel Spacing="4"
                                         Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Downloads" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModDownloadCount}" />
+                              <Button Classes="detail-disclosure"
+                                      Command="{Binding ToggleSelectedModRecommendationsCommand}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModRecommendationCountLabel}" />
+                                  <TextBlock Grid.Column="1"
+                                             Classes="detail-label"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding SelectedModRecommendationChevron}" />
+                                </Grid>
+                              </Button>
+                              <ItemsControl ItemsSource="{Binding SelectedModRecommendations}"
+                                            IsVisible="{Binding ShowSelectedModRecommendationsExpanded}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <TextBlock Classes="detail-label"
+                                               Margin="0,0,0,4"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding .}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
                             </StackPanel>
                             <Border Background="#24303B"
                                     Height="1"
                                     Margin="0,0,0,8" />
 
-                            <StackPanel Spacing="2"
+                            <StackPanel Spacing="4"
                                         Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Size" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModDownloadSize}" />
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8" />
-
-                            <StackPanel Spacing="2"
-                                        Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Depends" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModDependencyCountLabel}" />
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8" />
-
-                            <StackPanel Spacing="2"
-                                        Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Recommends" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModRecommendationCountLabel}" />
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8" />
-
-                            <StackPanel Spacing="2">
-                              <TextBlock Classes="detail-label"
-                                         Text="Suggests" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModSuggestionCountLabel}" />
+                              <Button Classes="detail-disclosure"
+                                      Command="{Binding ToggleSelectedModSuggestionsCommand}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock Classes="detail-value"
+                                             TextWrapping="Wrap"
+                                             Text="{Binding SelectedModSuggestionCountLabel}" />
+                                  <TextBlock Grid.Column="1"
+                                             Classes="detail-label"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding SelectedModSuggestionChevron}" />
+                                </Grid>
+                              </Button>
+                              <ItemsControl ItemsSource="{Binding SelectedModSuggestions}"
+                                            IsVisible="{Binding ShowSelectedModSuggestionsExpanded}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <TextBlock Classes="detail-label"
+                                               Margin="0,0,0,4"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding .}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
                             </StackPanel>
                           </StackPanel>
                         </StackPanel>

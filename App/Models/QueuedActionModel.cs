@@ -14,6 +14,8 @@ namespace CKAN.App.Models
 
         public string Name { get; init; } = "";
 
+        public string TargetVersion { get; init; } = "";
+
         public QueuedActionKind ActionKind { get; init; }
 
         public string ActionText { get; init; } = "";

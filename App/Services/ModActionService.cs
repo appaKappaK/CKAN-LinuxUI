@@ -51,7 +51,8 @@ namespace CKAN.App.Services
                                   cancellationToken);
 
         public async Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
-                                                              CancellationToken cancellationToken)
+                                                              CancellationToken cancellationToken,
+                                                              string? targetVersion = null)
         {
             if (mod == null)
             {
@@ -60,7 +61,7 @@ namespace CKAN.App.Services
 
             var result = await ExecuteQueuedAsync(new[]
             {
-                CreateInstallAction(mod),
+                CreateInstallAction(mod, targetVersion),
             },
             () => { },
             downloadOnlyRun: false,
@@ -398,7 +399,7 @@ namespace CKAN.App.Services
                 switch (action.ActionKind)
                 {
                     case QueuedActionKind.Download:
-                        if (TryLatestCompatible(registry, instance, action.Identifier) is CkanModule downloadMod)
+                        if (ResolveRequestedModule(registry, instance, action) is CkanModule downloadMod)
                         {
                             requestedDownloads.Add(downloadMod);
                         }
@@ -409,7 +410,7 @@ namespace CKAN.App.Services
                         break;
 
                     case QueuedActionKind.Install:
-                        if (TryLatestCompatible(registry, instance, action.Identifier) is CkanModule installMod)
+                        if (ResolveRequestedModule(registry, instance, action) is CkanModule installMod)
                         {
                             requestedInstalls.Add(installMod);
                         }
@@ -420,8 +421,8 @@ namespace CKAN.App.Services
                         break;
 
                     case QueuedActionKind.Update:
-                        if (registry.InstalledModule(action.Identifier) is InstalledModule installed
-                            && TryLatestCompatible(registry, instance, action.Identifier) is CkanModule updateMod)
+                        if (registry.InstalledModule(action.Identifier) is InstalledModule
+                            && ResolveRequestedModule(registry, instance, action) is CkanModule updateMod)
                         {
                             requestedUpdates.Add(updateMod);
                         }
@@ -806,16 +807,20 @@ namespace CKAN.App.Services
         private static string Pluralize(int count)
             => count == 1 ? "" : "s";
 
-        private static QueuedActionModel CreateInstallAction(ModListItem mod)
+        private static QueuedActionModel CreateInstallAction(ModListItem mod,
+                                                             string?     targetVersion = null)
             => new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = targetVersion ?? "",
                 ActionKind = QueuedActionKind.Install,
                 ActionText = "Install",
-                DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
-                    ? "Install latest available version"
-                    : $"Install {mod.LatestVersion}",
+                DetailText = string.IsNullOrWhiteSpace(targetVersion)
+                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
+                        ? "Install latest available version"
+                        : $"Install {mod.LatestVersion}"
+                    : $"Install {targetVersion}",
             };
 
         private static QueuedActionModel CreateRemoveAction(ModListItem mod)
@@ -823,12 +828,37 @@ namespace CKAN.App.Services
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = "",
                 ActionKind = QueuedActionKind.Remove,
                 ActionText = "Remove",
                 DetailText = string.IsNullOrWhiteSpace(mod.InstalledVersion)
                     ? "Remove installed module"
                     : $"Remove {mod.InstalledVersion}",
             };
+
+        private static CkanModule? ResolveRequestedModule(IRegistryQuerier  registry,
+                                                          GameInstance      instance,
+                                                          QueuedActionModel action)
+        {
+            if (!string.IsNullOrWhiteSpace(action.TargetVersion))
+            {
+                var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier, action.TargetVersion));
+                if (exact != null)
+                {
+                    return exact;
+                }
+
+                if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
+                    && string.Equals(installed.version.ToString(), action.TargetVersion, StringComparison.Ordinal))
+                {
+                    return installed;
+                }
+
+                return null;
+            }
+
+            return TryLatestCompatible(registry, instance, action.Identifier);
+        }
 
         private static ApplyChangesResult RewordInstallNowResult(ModListItem mod,
                                                                  ApplyChangesResult result)

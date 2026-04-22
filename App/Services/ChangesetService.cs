@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using CKAN.App.Models;
+using CKAN.Versioning;
 
 namespace CKAN.App.Services
 {
@@ -38,6 +39,7 @@ namespace CKAN.App.Services
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = "",
                 ActionKind = QueuedActionKind.Download,
                 ActionText = mod.IsInstalled
                     ? "Add to Cache"
@@ -51,28 +53,36 @@ namespace CKAN.App.Services
                         : $"Cache {mod.LatestVersion} for later install",
             });
 
-        public void QueueInstall(ModListItem mod)
+        public void QueueInstall(ModListItem mod, string? targetVersion = null)
             => Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = targetVersion ?? "",
                 ActionKind = QueuedActionKind.Install,
                 ActionText = "Install",
-                DetailText = string.IsNullOrWhiteSpace(mod.LatestVersion)
-                    ? "Install latest available version"
-                    : $"Install {mod.LatestVersion}",
+                DetailText = string.IsNullOrWhiteSpace(targetVersion)
+                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
+                        ? "Install latest available version"
+                        : $"Install {mod.LatestVersion}"
+                    : $"Install {targetVersion}",
             });
 
-        public void QueueUpdate(ModListItem mod)
+        public void QueueUpdate(ModListItem mod, string? targetVersion = null)
             => Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = targetVersion ?? "",
                 ActionKind = QueuedActionKind.Update,
-                ActionText = "Update",
-                DetailText = string.IsNullOrWhiteSpace(mod.InstalledVersion)
-                    ? $"Update to {mod.LatestVersion}"
-                    : $"{mod.InstalledVersion} -> {mod.LatestVersion}",
+                ActionText = UpdateActionText(mod.InstalledVersion, targetVersion),
+                DetailText = string.IsNullOrWhiteSpace(targetVersion)
+                    ? string.IsNullOrWhiteSpace(mod.InstalledVersion)
+                        ? $"Update to {mod.LatestVersion}"
+                        : $"{mod.InstalledVersion} -> {mod.LatestVersion}"
+                    : string.IsNullOrWhiteSpace(mod.InstalledVersion)
+                        ? $"Switch to {targetVersion}"
+                        : $"{mod.InstalledVersion} -> {targetVersion}",
             });
 
         public void QueueRemove(ModListItem mod)
@@ -80,6 +90,7 @@ namespace CKAN.App.Services
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
+                TargetVersion = "",
                 ActionKind = QueuedActionKind.Remove,
                 ActionText = "Remove",
                 DetailText = string.IsNullOrWhiteSpace(mod.InstalledVersion)
@@ -113,6 +124,31 @@ namespace CKAN.App.Services
 
         public void ClearDownloadQueue()
             => ClearWhere(item => item.ActionKind == QueuedActionKind.Download);
+
+        private static string UpdateActionText(string installedVersion,
+                                               string? targetVersion)
+        {
+            if (string.IsNullOrWhiteSpace(targetVersion)
+                || string.IsNullOrWhiteSpace(installedVersion))
+            {
+                return "Update";
+            }
+
+            try
+            {
+                var comparison = new ModuleVersion(targetVersion).CompareTo(new ModuleVersion(installedVersion));
+                return comparison switch
+                {
+                    < 0 => "Downgrade",
+                    > 0 => "Update",
+                    _ => "Switch Version",
+                };
+            }
+            catch
+            {
+                return "Switch Version";
+            }
+        }
 
         private void Upsert(QueuedActionModel action)
         {

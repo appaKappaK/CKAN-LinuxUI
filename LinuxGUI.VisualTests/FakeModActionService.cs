@@ -92,7 +92,8 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         public Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
-                                                        CancellationToken cancellationToken)
+                                                        CancellationToken cancellationToken,
+                                                        string? targetVersion = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(new ApplyChangesResult
@@ -100,7 +101,9 @@ namespace CKAN.LinuxGUI.VisualTests
                 Kind = ApplyResultKind.Success,
                 Success = true,
                 Title = "Installed",
-                Message = $"Installed {mod.Name}.",
+                Message = string.IsNullOrWhiteSpace(targetVersion)
+                    ? $"Installed {mod.Name}."
+                    : $"Installed {mod.Name} {targetVersion}.",
                 SummaryLines = new[]
                 {
                     "1 direct install",

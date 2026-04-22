@@ -11,7 +11,9 @@ namespace CKAN.App.Services
 
         Task<ApplyChangesResult> ApplyChangesAsync(CancellationToken cancellationToken);
 
-        Task<ApplyChangesResult> InstallNowAsync(ModListItem mod, CancellationToken cancellationToken);
+        Task<ApplyChangesResult> InstallNowAsync(ModListItem mod,
+                                                CancellationToken cancellationToken,
+                                                string? targetVersion = null);
 
         Task<ApplyChangesResult> RemoveNowAsync(ModListItem mod, CancellationToken cancellationToken);
 

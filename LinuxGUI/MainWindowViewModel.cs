@@ -74,6 +74,7 @@ namespace CKAN.LinuxGUI
         private string  selectedModDependencyCountLabel = "";
         private string  selectedModRecommendationCountLabel = "";
         private string  selectedModSuggestionCountLabel = "";
+        private ModVersionChoiceItem? selectedModVersionChoice;
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
         private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod for download-only.";
         private string  currentExecutionTitle = "Applying Changes";
@@ -116,6 +117,9 @@ namespace CKAN.LinuxGUI
         private bool    selectedModIsCached;
         private bool    selectedModIsIncompatible;
         private bool    selectedModHasReplacement;
+        private bool    selectedModDependenciesExpanded;
+        private bool    selectedModRecommendationsExpanded;
+        private bool    selectedModSuggestionsExpanded;
         private bool    hasFilterOptionCounts;
         private int     appliedUiScalePercent;
         private double  pendingUiScalePercent;
@@ -124,6 +128,7 @@ namespace CKAN.LinuxGUI
         private int     modListScrollResetRequestId;
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
+        private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
         private InstanceSummary? selectedInstance;
@@ -151,6 +156,10 @@ namespace CKAN.LinuxGUI
             Mods = new ObservableCollection<ModListItem>();
             QueuedActions = new ObservableCollection<QueuedActionModel>();
             CompatibleGameVersionOptions = new ObservableCollection<CompatibilityVersionOption>();
+            SelectedModAvailableVersions = new ObservableCollection<ModVersionChoiceItem>();
+            SelectedModDependencies = new ObservableCollection<string>();
+            SelectedModRecommendations = new ObservableCollection<string>();
+            SelectedModSuggestions = new ObservableCollection<string>();
             PreviewDownloadsRequired = new ObservableCollection<string>();
             PreviewDependencies = new ObservableCollection<string>();
             PreviewAutoRemovals = new ObservableCollection<string>();
@@ -274,6 +283,9 @@ namespace CKAN.LinuxGUI
             RemoveNowSelectedModCommand = ReactiveCommand.CreateFromTask(
                 RemoveNowSelectedModAsync,
                 this.WhenAnyValue(vm => vm.ShowRemoveNowAction));
+            ToggleSelectedModDependenciesCommand = ReactiveCommand.Create(ToggleSelectedModDependenciesExpanded);
+            ToggleSelectedModRecommendationsCommand = ReactiveCommand.Create(ToggleSelectedModRecommendationsExpanded);
+            ToggleSelectedModSuggestionsCommand = ReactiveCommand.Create(ToggleSelectedModSuggestionsExpanded);
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
             ShowRelationshipsDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Relationships));
@@ -370,6 +382,14 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<CompatibilityVersionOption> CompatibleGameVersionOptions { get; }
 
+        public ObservableCollection<ModVersionChoiceItem> SelectedModAvailableVersions { get; }
+
+        public ObservableCollection<string> SelectedModDependencies { get; }
+
+        public ObservableCollection<string> SelectedModRecommendations { get; }
+
+        public ObservableCollection<string> SelectedModSuggestions { get; }
+
         public ObservableCollection<string> PreviewDownloadsRequired { get; }
 
         public ObservableCollection<string> PreviewDependencies { get; }
@@ -455,6 +475,12 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> InstallNowSelectedModCommand { get; }
 
         public ReactiveCommand<Unit, Unit> RemoveNowSelectedModCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleSelectedModDependenciesCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleSelectedModRecommendationsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleSelectedModSuggestionsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ShowOverviewDetailsCommand { get; }
 
@@ -750,6 +776,70 @@ namespace CKAN.LinuxGUI
             get => selectedModSuggestionCountLabel;
             private set => this.RaiseAndSetIfChanged(ref selectedModSuggestionCountLabel, value);
         }
+
+        public ModVersionChoiceItem? SelectedModVersionChoice
+        {
+            get => selectedModVersionChoice;
+            set
+            {
+                if (!EqualityComparer<ModVersionChoiceItem?>.Default.Equals(selectedModVersionChoice, value))
+                {
+                    this.RaiseAndSetIfChanged(ref selectedModVersionChoice, value);
+                    ApplySelectedVersionDetails();
+                    this.RaisePropertyChanged(nameof(ShowSelectedModVersionPicker));
+                    this.RaisePropertyChanged(nameof(SelectedModSelectedVersionMatchesInstalled));
+                    this.RaisePropertyChanged(nameof(SelectedModSelectedVersionIsCompatible));
+                    PublishSelectedModActionState();
+                }
+            }
+        }
+
+        public bool ShowSelectedModVersionPicker => SelectedModAvailableVersions.Count > 0;
+
+        public bool SelectedModSelectedVersionMatchesInstalled
+            => SelectedModVersionChoice?.IsInstalledVersion == true;
+
+        public bool SelectedModSelectedVersionIsCompatible
+            => SelectedModVersionChoice?.IsCompatible ?? !SelectedModIsIncompatible;
+
+        public bool ShowSelectedModDependenciesExpanded
+        {
+            get => selectedModDependenciesExpanded && SelectedModDependencies.Count > 0;
+            private set => this.RaiseAndSetIfChanged(ref selectedModDependenciesExpanded, value);
+        }
+
+        public bool ShowSelectedModRecommendationsExpanded
+        {
+            get => selectedModRecommendationsExpanded && SelectedModRecommendations.Count > 0;
+            private set => this.RaiseAndSetIfChanged(ref selectedModRecommendationsExpanded, value);
+        }
+
+        public bool ShowSelectedModSuggestionsExpanded
+        {
+            get => selectedModSuggestionsExpanded && SelectedModSuggestions.Count > 0;
+            private set => this.RaiseAndSetIfChanged(ref selectedModSuggestionsExpanded, value);
+        }
+
+        public bool HasSelectedModDependencies => SelectedModDependencies.Count > 0;
+
+        public bool HasSelectedModRecommendations => SelectedModRecommendations.Count > 0;
+
+        public bool HasSelectedModSuggestions => SelectedModSuggestions.Count > 0;
+
+        public string SelectedModDependencyChevron
+            => HasSelectedModDependencies
+                ? ShowSelectedModDependenciesExpanded ? "▾" : "▸"
+                : "";
+
+        public string SelectedModRecommendationChevron
+            => HasSelectedModRecommendations
+                ? ShowSelectedModRecommendationsExpanded ? "▾" : "▸"
+                : "";
+
+        public string SelectedModSuggestionChevron
+            => HasSelectedModSuggestions
+                ? ShowSelectedModSuggestionsExpanded ? "▾" : "▸"
+                : "";
 
         public string SelectedModBody
         {
@@ -1371,16 +1461,22 @@ namespace CKAN.LinuxGUI
         public bool ShowInstallAction => SelectedMod != null
                                          && !IsSelectedModLoading
                                          && !SelectedMod.IsInstalled
-                                         && !SelectedMod.IsIncompatible;
+                                         && (SelectedModVersionChoice != null
+                                             ? SelectedModSelectedVersionIsCompatible
+                                             : !SelectedModIsIncompatible);
 
         public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
                                         && !IsSelectedModLoading
-                                        && SelectedMod.HasVersionUpdate;
+                                        && (SelectedModVersionChoice != null
+                                            ? !SelectedModSelectedVersionMatchesInstalled
+                                            : SelectedMod.HasVersionUpdate);
 
         public bool ShowRemoveAction => SelectedMod?.IsInstalled == true
                                         && SelectedMod?.IsAutodetected != true
                                         && !IsSelectedModLoading
-                                        && SelectedMod?.HasVersionUpdate != true;
+                                        && (SelectedModVersionChoice != null
+                                            ? SelectedModSelectedVersionMatchesInstalled
+                                            : SelectedMod?.HasVersionUpdate != true);
 
         public bool HasSelectedModQueuedAction
             => SelectedMod != null
@@ -1412,12 +1508,14 @@ namespace CKAN.LinuxGUI
                && !ShowInstallNowAction
                && !ShowPrimarySelectedModAction
                && (SelectedMod?.IsAutodetected == true
-               || (SelectedMod?.IsInstalled == false && SelectedModIsIncompatible));
+               || !SelectedModSelectedVersionIsCompatible);
 
         public string SelectedModActionUnavailableNote
             => SelectedMod?.IsAutodetected == true
                 ? "This mod is managed outside CKAN. CKAN can use it for dependency checks, but removal must be done manually from GameData."
-                : "This mod cannot be installed with the current compatibility settings. Adjust Compatible game versions in Settings if you want to allow it.";
+                : SelectedModVersionChoice == null
+                    ? "This mod cannot be installed with the current compatibility settings. Adjust Compatible game versions in Settings if you want to allow it."
+                    : $"{SelectedModVersionChoice.VersionText} cannot be installed with the current compatibility settings. Pick a different version or adjust Compatible game versions in Settings.";
 
         public string PrimarySelectedModActionLabel
         {
@@ -1437,7 +1535,17 @@ namespace CKAN.LinuxGUI
                 }
                 if (ShowUpdateAction)
                 {
-                    return "Queue Update";
+                    if (SelectedModVersionChoice == null)
+                    {
+                        return "Queue Update";
+                    }
+
+                    return SelectedModVersionChoice?.VersionComparisonToInstalled switch
+                    {
+                        > 0 => "Queue Update",
+                        < 0 => "Queue Downgrade",
+                        _ => "Queue Switch Version",
+                    };
                 }
                 if (ShowRemoveAction)
                 {
@@ -1466,7 +1574,16 @@ namespace CKAN.LinuxGUI
                 }
                 if (ShowUpdateAction)
                 {
-                    return "#6A952B";
+                    if (SelectedModVersionChoice == null)
+                    {
+                        return "#6A952B";
+                    }
+
+                    return SelectedModVersionChoice?.VersionComparisonToInstalled switch
+                    {
+                        < 0 => "#8C6432",
+                        _ => "#6A952B",
+                    };
                 }
                 if (ShowRemoveAction)
                 {
@@ -2546,6 +2663,7 @@ namespace CKAN.LinuxGUI
                     return;
                 }
 
+                selectedModDetails = details;
                 SelectedModTitle = details.Title;
                 SelectedModSubtitle = string.IsNullOrWhiteSpace(details.Summary)
                     ? details.Identifier
@@ -2555,26 +2673,16 @@ namespace CKAN.LinuxGUI
                     : $"By {details.Authors}";
                 SelectedModVersions = $"Latest {details.LatestVersion}\n{(details.IsAutodetected ? "Installed version unknown" : details.IsInstalled ? $"Installed {details.InstalledVersion}" : "Not installed")}";
                 SelectedModInstallState = BuildInstallState(details);
-                SelectedModCompatibility = details.Compatibility;
-                SelectedModCacheState = details.IsCached ? "Cached" : "Not cached";
-                SelectedModModuleKind = details.ModuleKind;
-                SelectedModLicense = details.License;
-                SelectedModReleaseDate = details.ReleaseDate;
-                SelectedModDownloadSize = details.DownloadSize;
                 SelectedModDownloadCount = details.DownloadCount?.ToString("N0") ?? "Unknown";
-                SelectedModRelationships = $"{details.DependencyCount} depends • {details.RecommendationCount} recommends • {details.SuggestionCount} suggests";
-                SelectedModDependencyCountLabel = CountLabel(details.DependencyCount, "Dependency", "Dependencies");
-                SelectedModRecommendationCountLabel = CountLabel(details.RecommendationCount, "Recommendation", "Recommendations");
-                SelectedModSuggestionCountLabel = CountLabel(details.SuggestionCount, "Suggestion", "Suggestions");
                 SelectedModIsInstalled = details.IsInstalled;
                 SelectedModIsAutodetected = details.IsAutodetected;
                 SelectedModHasUpdate = details.HasVersionUpdate;
-                SelectedModIsCached = details.IsCached;
-                SelectedModIsIncompatible = details.IsIncompatible;
                 SelectedModHasReplacement = details.HasReplacement;
                 SelectedModBody = string.IsNullOrWhiteSpace(details.Description)
                     ? "No extended description is available for this mod."
                     : details.Description;
+                PopulateSelectedModVersionChoices(details);
+                ApplySelectedVersionDetails();
                 SetSelectedModDetailsSection(ModDetailsSection.Overview);
             }
             catch (Exception ex)
@@ -2585,6 +2693,7 @@ namespace CKAN.LinuxGUI
                 }
 
                 Diagnostics = ex.Message;
+                selectedModDetails = null;
                 SelectedModTitle = "Could not load details";
                 SelectedModSubtitle = identifier;
                 SelectedModAuthors = "";
@@ -2608,6 +2717,14 @@ namespace CKAN.LinuxGUI
                 SelectedModIsIncompatible = false;
                 SelectedModHasReplacement = false;
                 SelectedModBody = "The selected mod failed to load its details.";
+                SelectedModVersionChoice = null;
+                SelectedModAvailableVersions.Clear();
+                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+                ShowSelectedModDependenciesExpanded = false;
+                ShowSelectedModRecommendationsExpanded = false;
+                ShowSelectedModSuggestionsExpanded = false;
                 SetSelectedModDetailsSection(ModDetailsSection.Overview);
             }
             finally
@@ -3099,8 +3216,10 @@ namespace CKAN.LinuxGUI
             }
 
             ClearApplyResult();
-            changesetService.QueueInstall(SelectedMod);
-            StatusMessage = $"Queued install for {SelectedMod.Name}.";
+            changesetService.QueueInstall(SelectedMod, SelectedModVersionChoice?.VersionKey);
+            StatusMessage = SelectedModVersionChoice == null
+                ? $"Queued install for {SelectedMod.Name}."
+                : $"Queued install of {SelectedMod.Name} {SelectedModVersionChoice.VersionText}.";
         }
 
         private void QueueUpdateSelected()
@@ -3111,8 +3230,10 @@ namespace CKAN.LinuxGUI
             }
 
             ClearApplyResult();
-            changesetService.QueueUpdate(SelectedMod);
-            StatusMessage = $"Queued update for {SelectedMod.Name}.";
+            changesetService.QueueUpdate(SelectedMod, SelectedModVersionChoice?.VersionKey);
+            StatusMessage = SelectedModVersionChoice == null
+                ? $"Queued update for {SelectedMod.Name}."
+                : $"Queued version change for {SelectedMod.Name} to {SelectedModVersionChoice.VersionText}.";
         }
 
         private void QueueRemoveSelected()
@@ -3352,7 +3473,9 @@ namespace CKAN.LinuxGUI
             ApplyChangesResult? result = null;
             try
             {
-                result = await modActionService.InstallNowAsync(targetMod, CancellationToken.None);
+                result = await modActionService.InstallNowAsync(targetMod,
+                                                               CancellationToken.None,
+                                                               SelectedModVersionChoice?.VersionKey);
                 SetApplyResult(result);
                 StatusMessage = result.Message;
 
@@ -3526,6 +3649,7 @@ namespace CKAN.LinuxGUI
 
         private void ResetSelectedModDetails()
         {
+            selectedModDetails = null;
             SelectedModTitle = "No mod selected";
             SelectedModSubtitle = "Choose a mod to inspect its details.";
             SelectedModAuthors = "";
@@ -3549,6 +3673,15 @@ namespace CKAN.LinuxGUI
             SelectedModIsIncompatible = false;
             SelectedModHasReplacement = false;
             SelectedModBody = "The details pane will show summary, description, compatibility, and install state.";
+            SelectedModVersionChoice = null;
+            SelectedModAvailableVersions.Clear();
+            ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
+            ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
+            ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+            ShowSelectedModDependenciesExpanded = false;
+            ShowSelectedModRecommendationsExpanded = false;
+            ShowSelectedModSuggestionsExpanded = false;
+            PublishSelectedModRelationshipState();
             SetSelectedModDetailsSection(ModDetailsSection.Overview);
         }
 
@@ -3937,6 +4070,212 @@ namespace CKAN.LinuxGUI
                 target.Add(value);
             }
         }
+
+        private void ReplaceSelectedModCollection(ObservableCollection<string> target,
+                                                  IEnumerable<string>         values)
+            => ReplacePreviewCollection(target, values);
+
+        private void PopulateSelectedModVersionChoices(ModDetailsModel details)
+        {
+            SelectedModAvailableVersions.Clear();
+            foreach (var choice in BuildSelectedModVersionChoices(details.Identifier))
+            {
+                SelectedModAvailableVersions.Add(choice);
+            }
+
+            var preferredChoice = SelectedModAvailableVersions.FirstOrDefault(choice =>
+                                      choice.VersionText == details.LatestVersion)
+                                  ?? SelectedModAvailableVersions.FirstOrDefault(choice =>
+                                      choice.IsInstalledVersion && !details.HasVersionUpdate)
+                                  ?? SelectedModAvailableVersions.FirstOrDefault();
+
+            SelectedModVersionChoice = preferredChoice;
+            this.RaisePropertyChanged(nameof(ShowSelectedModVersionPicker));
+        }
+
+        private IReadOnlyList<ModVersionChoiceItem> BuildSelectedModVersionChoices(string identifier)
+        {
+            if (CurrentRegistry == null || CurrentInstance == null)
+            {
+                return Array.Empty<ModVersionChoiceItem>();
+            }
+
+            var installedVersion = CurrentRegistry.InstalledModule(identifier)?.Module.version;
+            var modules = Enumerable.Repeat(CurrentRegistry.InstalledModule(identifier)?.Module, 1)
+                                    .Concat(Utilities.DefaultIfThrows(
+                                                () => CurrentRegistry.AvailableByIdentifier(identifier))
+                                            ?? Enumerable.Empty<CkanModule>())
+                                    .OfType<CkanModule>()
+                                    .Distinct()
+                                    .OrderByDescending(module => module.version)
+                                    .ToList();
+
+            return modules.Select(module =>
+                          {
+                              var isCompatible = module.IsCompatible(CurrentInstance.VersionCriteria());
+                              var comparison = installedVersion == null
+                                  ? 0
+                                  : module.version.CompareTo(installedVersion);
+                              var badgeText = installedVersion?.Equals(module.version) == true
+                                  ? "Installed"
+                                  : isCompatible ? "" : "Incompatible";
+                              var badgeBackground = installedVersion?.Equals(module.version) == true
+                                  ? "#2B6A98"
+                                  : "#6A3A46";
+                              var badgeBorderBrush = installedVersion?.Equals(module.version) == true
+                                  ? "#4A88B5"
+                                  : "#8F5161";
+
+                              return new ModVersionChoiceItem
+                              {
+                                  VersionText = module.version.ToString(),
+                                  CompatibilityText = BuildVersionCompatibilityLabel(module, CurrentInstance),
+                                  ReleaseDateText = module.release_date?.ToLocalTime().ToString("g") ?? "Unknown",
+                                  BadgeText = badgeText,
+                                  BadgeBackground = badgeBackground,
+                                  BadgeBorderBrush = badgeBorderBrush,
+                                  IsInstalledVersion = installedVersion?.Equals(module.version) == true,
+                                  IsCompatible = isCompatible,
+                                  VersionComparisonToInstalled = comparison,
+                                  Module = module,
+                              };
+                          })
+                          .ToList();
+        }
+
+        private void ApplySelectedVersionDetails()
+        {
+            if (selectedModDetails == null)
+            {
+                return;
+            }
+
+            if (SelectedModVersionChoice?.Module is not CkanModule module || CurrentInstance == null)
+            {
+                SelectedModCompatibility = selectedModDetails.Compatibility;
+                SelectedModCacheState = selectedModDetails.IsCached ? "Cached" : "Not cached";
+                SelectedModModuleKind = selectedModDetails.ModuleKind;
+                SelectedModLicense = selectedModDetails.License;
+                SelectedModReleaseDate = selectedModDetails.ReleaseDate;
+                SelectedModDownloadSize = selectedModDetails.DownloadSize;
+                SelectedModRelationships = $"{selectedModDetails.DependencyCount} depends • {selectedModDetails.RecommendationCount} recommends • {selectedModDetails.SuggestionCount} suggests";
+                SelectedModDependencyCountLabel = CountLabel(selectedModDetails.DependencyCount, "Dependency", "Dependencies");
+                SelectedModRecommendationCountLabel = CountLabel(selectedModDetails.RecommendationCount, "Recommendation", "Recommendations");
+                SelectedModSuggestionCountLabel = CountLabel(selectedModDetails.SuggestionCount, "Suggestion", "Suggestions");
+                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+                SelectedModIsCached = selectedModDetails.IsCached;
+                SelectedModIsIncompatible = selectedModDetails.IsIncompatible;
+                PublishSelectedModRelationshipState();
+                PublishSelectedModActionState();
+                return;
+            }
+
+            SelectedModCompatibility = BuildVersionCompatibilityLabel(module, CurrentInstance);
+            SelectedModCacheState = CurrentCache?.IsMaybeCachedZip(module) == true ? "Cached" : "Not cached";
+            SelectedModModuleKind = FormatModuleKind(module.kind);
+            SelectedModLicense = FormatLicense(module);
+            SelectedModReleaseDate = module.release_date?.ToString("yyyy-MM-dd") ?? "Unknown";
+            SelectedModDownloadSize = module.download_size > 0
+                ? CkanModule.FmtSize(module.download_size)
+                : "Unknown";
+
+            var dependencies = BuildRelationshipEntries(module.depends);
+            var recommendations = BuildRelationshipEntries(module.recommends);
+            var suggestions = BuildRelationshipEntries(module.suggests);
+
+            ReplaceSelectedModCollection(SelectedModDependencies, dependencies);
+            ReplaceSelectedModCollection(SelectedModRecommendations, recommendations);
+            ReplaceSelectedModCollection(SelectedModSuggestions, suggestions);
+
+            SelectedModRelationships = $"{dependencies.Count} depends • {recommendations.Count} recommends • {suggestions.Count} suggests";
+            SelectedModDependencyCountLabel = CountLabel(dependencies.Count, "Dependency", "Dependencies");
+            SelectedModRecommendationCountLabel = CountLabel(recommendations.Count, "Recommendation", "Recommendations");
+            SelectedModSuggestionCountLabel = CountLabel(suggestions.Count, "Suggestion", "Suggestions");
+            SelectedModIsCached = CurrentCache?.IsMaybeCachedZip(module) == true;
+            SelectedModIsIncompatible = !module.IsCompatible(CurrentInstance.VersionCriteria());
+            PublishSelectedModRelationshipState();
+            PublishSelectedModActionState();
+        }
+
+        private List<string> BuildRelationshipEntries(IEnumerable<RelationshipDescriptor>? relationships)
+            => (relationships ?? Enumerable.Empty<RelationshipDescriptor>())
+                .Select(relationship => CurrentRegistry != null && CurrentInstance != null
+                    ? relationship.ToStringWithCompat(CurrentRegistry, CurrentInstance.Game)
+                    : relationship.ToString() ?? "")
+                .Where(text => !string.IsNullOrWhiteSpace(text))
+                .Select(text => text!)
+                .ToList();
+
+        private void PublishSelectedModRelationshipState()
+        {
+            this.RaisePropertyChanged(nameof(ShowSelectedModVersionPicker));
+            this.RaisePropertyChanged(nameof(SelectedModSelectedVersionMatchesInstalled));
+            this.RaisePropertyChanged(nameof(SelectedModSelectedVersionIsCompatible));
+            this.RaisePropertyChanged(nameof(HasSelectedModDependencies));
+            this.RaisePropertyChanged(nameof(HasSelectedModRecommendations));
+            this.RaisePropertyChanged(nameof(HasSelectedModSuggestions));
+            this.RaisePropertyChanged(nameof(ShowSelectedModDependenciesExpanded));
+            this.RaisePropertyChanged(nameof(ShowSelectedModRecommendationsExpanded));
+            this.RaisePropertyChanged(nameof(ShowSelectedModSuggestionsExpanded));
+            this.RaisePropertyChanged(nameof(SelectedModDependencyChevron));
+            this.RaisePropertyChanged(nameof(SelectedModRecommendationChevron));
+            this.RaisePropertyChanged(nameof(SelectedModSuggestionChevron));
+        }
+
+        private void ToggleSelectedModDependenciesExpanded()
+        {
+            if (HasSelectedModDependencies)
+            {
+                ShowSelectedModDependenciesExpanded = !ShowSelectedModDependenciesExpanded;
+                this.RaisePropertyChanged(nameof(SelectedModDependencyChevron));
+            }
+        }
+
+        private void ToggleSelectedModRecommendationsExpanded()
+        {
+            if (HasSelectedModRecommendations)
+            {
+                ShowSelectedModRecommendationsExpanded = !ShowSelectedModRecommendationsExpanded;
+                this.RaisePropertyChanged(nameof(SelectedModRecommendationChevron));
+            }
+        }
+
+        private void ToggleSelectedModSuggestionsExpanded()
+        {
+            if (HasSelectedModSuggestions)
+            {
+                ShowSelectedModSuggestionsExpanded = !ShowSelectedModSuggestionsExpanded;
+                this.RaisePropertyChanged(nameof(SelectedModSuggestionChevron));
+            }
+        }
+
+        private static string BuildVersionCompatibilityLabel(CkanModule module,
+                                                             GameInstance instance)
+        {
+            CkanModule.GetMinMaxVersions(new[] { module },
+                                         out _,
+                                         out _,
+                                         out var minKsp,
+                                         out var maxKsp);
+            return GameVersionRange.VersionSpan(instance.Game,
+                                                minKsp ?? GameVersion.Any,
+                                                maxKsp ?? GameVersion.Any);
+        }
+
+        private static string FormatModuleKind(ModuleKind kind)
+            => kind switch
+            {
+                ModuleKind.metapackage => "Metapackage",
+                ModuleKind.dlc => "DLC",
+                _ => "Package",
+            };
+
+        private static string FormatLicense(CkanModule module)
+            => module.license?.Count > 0 == true
+                ? string.Join(", ", module.license)
+                : "Unknown";
 
         private static string BuildInstallState(ModDetailsModel details)
         {
