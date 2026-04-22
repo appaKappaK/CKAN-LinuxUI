@@ -4254,14 +4254,12 @@ namespace CKAN.LinuxGUI
         private static string BuildVersionCompatibilityLabel(CkanModule module,
                                                              GameInstance instance)
         {
-            CkanModule.GetMinMaxVersions(new[] { module },
-                                         out _,
-                                         out _,
-                                         out var minKsp,
-                                         out var maxKsp);
-            return GameVersionRange.VersionSpan(instance.Game,
-                                                minKsp ?? GameVersion.Any,
-                                                maxKsp ?? GameVersion.Any);
+            var latest = module.LatestCompatibleGameVersion();
+            if (latest.IsAny)
+            {
+                latest = module.LatestCompatibleRealGameVersion(instance.Game.KnownVersions);
+            }
+            return latest?.ToString() ?? "Unknown";
         }
 
         private static string FormatModuleKind(ModuleKind kind)
