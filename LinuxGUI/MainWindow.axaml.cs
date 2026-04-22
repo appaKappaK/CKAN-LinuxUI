@@ -371,6 +371,17 @@ namespace CKAN.LinuxGUI
             menu.Classes.Add("mod-row-menu");
             menu.Closed += ModRowMenu_OnClosed;
 
+            if (viewModel.ShowQueueContextAction(mod))
+            {
+                var queueItem = new MenuItem
+                {
+                    Header = viewModel.QueueContextLabel(mod),
+                };
+                queueItem.Click += (_, _) => viewModel.ToggleQueueActionFromBrowser(mod);
+                queueItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(queueItem);
+            }
+
             if (viewModel.ShowDownloadOnlyContextAction(mod))
             {
                 var downloadOnlyItem = new MenuItem
@@ -380,6 +391,17 @@ namespace CKAN.LinuxGUI
                 downloadOnlyItem.Click += (_, _) => viewModel.ToggleDownloadOnlyFromBrowser(mod);
                 downloadOnlyItem.Classes.Add("mod-row-menu-item");
                 menu.Items.Add(downloadOnlyItem);
+            }
+
+            if (viewModel.ShowPurgeCacheContextAction(mod))
+            {
+                var purgeCacheItem = new MenuItem
+                {
+                    Header = viewModel.PurgeCacheContextLabel(mod),
+                };
+                purgeCacheItem.Click += (_, _) => viewModel.PurgeCacheFromBrowser(mod);
+                purgeCacheItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(purgeCacheItem);
             }
 
             var toggleDetailsItem = new MenuItem

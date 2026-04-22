@@ -120,3 +120,11 @@ The main dev log files are:
 The session log captures launcher decisions, selected binary, XDG paths, and
 all stdout/stderr from the app process. The debug app log captures log4net
 output at `DEBUG` level.
+
+By default, `run-linuxgui-dev.sh` now keeps the app's stdout/stderr out of the
+terminal and writes it only to the session log. If you want the old mirrored
+behavior for a debugging session, launch with:
+
+```bash
+CKAN_LINUX_DEV_STREAM_STDIO=1 ./scripts/run-linuxgui-dev.sh
+```

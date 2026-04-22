@@ -63,6 +63,7 @@ namespace CKAN.LinuxGUI
         private string  selectedModAuthors   = "";
         private string  selectedModVersions  = "";
         private string  selectedModInstallState = "";
+        private string  selectedModCacheState = "";
         private string  selectedModCompatibility = "";
         private string  selectedModModuleKind = "";
         private string  selectedModLicense = "";
@@ -203,6 +204,9 @@ namespace CKAN.LinuxGUI
             var canClearFilters = this.WhenAnyValue(vm => vm.HasActiveFilters,
                                                     vm => vm.IsApplyingChanges,
                                                     (hasFilters, applying) => hasFilters && !applying);
+            var canClearAdvancedText = this.WhenAnyValue(vm => vm.HasAdvancedFilterText,
+                                                         vm => vm.IsApplyingChanges,
+                                                         (hasText, applying) => hasText && !applying);
             var canRestartForUiScale = this.WhenAnyValue(vm => vm.UiScaleNeedsRestart,
                                                          vm => vm.IsRefreshing,
                                                          vm => vm.IsApplyingChanges,
@@ -228,7 +232,7 @@ namespace CKAN.LinuxGUI
             ClearQueueCommand = ReactiveCommand.Create(ClearQueuedActions, canClearQueue);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
             ToggleSortOptionsCommand = ReactiveCommand.Create(ToggleSortOptions);
-            ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearFilters);
+            ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearAdvancedText);
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
             ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
             ToggleDetailsPaneCommand = ReactiveCommand.Create(ToggleDetailsPane);
@@ -672,6 +676,12 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedModInstallState, value);
         }
 
+        public string SelectedModCacheState
+        {
+            get => selectedModCacheState;
+            private set => this.RaiseAndSetIfChanged(ref selectedModCacheState, value);
+        }
+
         public string SelectedModCompatibility
         {
             get => selectedModCompatibility;
@@ -861,6 +871,7 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref isCatalogLoading, value);
+                this.RaisePropertyChanged(nameof(ModCountLabel));
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
                 this.RaisePropertyChanged(nameof(ShowModList));
                 this.RaisePropertyChanged(nameof(ShowEmptyModResults));
@@ -974,6 +985,10 @@ namespace CKAN.LinuxGUI
 
         public bool PreviewShowsBlockedCard
             => HasQueuedChangeActions && !IsPreviewLoading && !PreviewCanApply;
+
+        public bool ShowPreviewEmptyWorkspace => !HasQueuedActions && !HasApplyResult;
+
+        public bool ShowPreviewActiveWorkspace => HasQueuedActions || HasApplyResult;
 
         public bool ShowAdvancedFilters
         {
@@ -1177,6 +1192,14 @@ namespace CKAN.LinuxGUI
                || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter)
                || FilterHasReplacementOnly;
 
+        public bool HasAdvancedFilterText
+            => !string.IsNullOrWhiteSpace(AdvancedAuthorFilter)
+               || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter);
+
+        public double ClearFiltersButtonOpacity => HasActiveFilters ? 1.0 : 0.0;
+
+        public double ClearAdvancedTextButtonOpacity => HasAdvancedFilterText ? 1.0 : 0.0;
+
         public int ActiveFilterCount
             => (FilterInstalledOnly ? 1 : 0)
                + (FilterNotInstalledOnly ? 1 : 0)
@@ -1211,9 +1234,9 @@ namespace CKAN.LinuxGUI
 
         public string ReplaceableFilterLabel => FormatFilterOptionLabel("Replaceable", filterOptionCounts.Replaceable);
 
-        public string CachedFilterLabel => FormatFilterOptionLabel("Downloaded", filterOptionCounts.Cached);
+        public string CachedFilterLabel => FormatFilterOptionLabel("Cached", filterOptionCounts.Cached);
 
-        public string UncachedFilterLabel => FormatFilterOptionLabel("Not Downloaded", filterOptionCounts.Uncached);
+        public string UncachedFilterLabel => FormatFilterOptionLabel("Not Cached", filterOptionCounts.Uncached);
 
         public string NotInstalledFilterLabel => FormatFilterOptionLabel("Not Installed", filterOptionCounts.NotInstalled);
 
@@ -1300,7 +1323,7 @@ namespace CKAN.LinuxGUI
                 }
                 if (FilterUncachedOnly)
                 {
-                    parts.Add("Not downloaded only");
+                    parts.Add("Not cached only");
                 }
                 if (FilterInstalledOnly)
                 {
@@ -1316,7 +1339,7 @@ namespace CKAN.LinuxGUI
                 }
                 if (FilterCachedOnly)
                 {
-                    parts.Add("Downloaded only");
+                    parts.Add("Cached only");
                 }
                 if (FilterIncompatibleOnly)
                 {
@@ -1582,7 +1605,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions from the browser to see downloads, auto-installs, removals, and blockers before applying. Right-click a mod for download-only.";
+                    return "Queue install, update, or remove actions from Browse to build an apply preview. Right-click a mod for download-only.";
                 }
 
                 if (PreviewShowsLoadingCard)
@@ -1966,6 +1989,73 @@ namespace CKAN.LinuxGUI
             SelectedMod = mod;
         }
 
+        public bool ShowQueueContextAction(ModListItem mod)
+            => !IsApplyingChanges
+               && (changesetService.FindQueuedApplyAction(mod.Identifier) != null
+               || CanQueueInstall(mod)
+               || CanQueueUpdate(mod)
+               || CanQueueRemove(mod));
+
+        public string QueueContextLabel(ModListItem mod)
+        {
+            var queued = changesetService.FindQueuedApplyAction(mod.Identifier);
+            if (queued != null)
+            {
+                return $"Cancel {queued.ActionText}";
+            }
+
+            if (CanQueueInstall(mod))
+            {
+                return "Queue Install";
+            }
+            if (CanQueueUpdate(mod))
+            {
+                return "Queue Update";
+            }
+            if (CanQueueRemove(mod))
+            {
+                return "Queue Remove";
+            }
+
+            return "";
+        }
+
+        public void ToggleQueueActionFromBrowser(ModListItem mod)
+        {
+            if (IsApplyingChanges)
+            {
+                return;
+            }
+
+            var queued = changesetService.FindQueuedApplyAction(mod.Identifier);
+            ClearApplyResult();
+
+            if (queued != null)
+            {
+                if (changesetService.Remove(queued.Identifier))
+                {
+                    StatusMessage = $"Removed queued {queued.ActionText.ToLowerInvariant()} for {mod.Name}.";
+                }
+                return;
+            }
+
+            if (CanQueueInstall(mod))
+            {
+                changesetService.QueueInstall(mod);
+                StatusMessage = $"Queued install for {mod.Name}.";
+            }
+            else if (CanQueueUpdate(mod))
+            {
+                changesetService.QueueUpdate(mod);
+                StatusMessage = $"Queued update for {mod.Name}.";
+            }
+            else if (CanQueueRemove(mod))
+            {
+                changesetService.QueueRemove(mod);
+                StatusMessage = $"Queued removal for {mod.Name}.";
+            }
+        }
+
         public bool ShowDownloadOnlyContextAction(ModListItem mod)
         {
             if (changesetService.FindQueuedDownloadAction(mod.Identifier) != null)
@@ -1979,10 +2069,18 @@ namespace CKAN.LinuxGUI
                    && !mod.IsIncompatible;
         }
 
+        public bool ShowPurgeCacheContextAction(ModListItem mod)
+            => !IsApplyingChanges
+               && mod.IsCached
+               && CurrentCache != null;
+
         public string DownloadOnlyContextLabel(ModListItem mod)
             => changesetService.FindQueuedDownloadAction(mod.Identifier) != null
                 ? "Cancel Download Only"
                 : "Download Only";
+
+        public string PurgeCacheContextLabel(ModListItem mod)
+            => $"Purge Cached {mod.Name}";
 
         public void ToggleDownloadOnlyFromBrowser(ModListItem mod)
         {
@@ -2007,6 +2105,41 @@ namespace CKAN.LinuxGUI
 
             changesetService.QueueDownload(mod);
             StatusMessage = $"Queued download-only for {mod.Name}.";
+        }
+
+        public void PurgeCacheFromBrowser(ModListItem mod)
+        {
+            if (IsApplyingChanges
+                || CurrentCache == null
+                || CurrentRegistry == null)
+            {
+                return;
+            }
+
+            var modules = Enumerable.Repeat(CurrentRegistry.InstalledModule(mod.Identifier)?.Module, 1)
+                                    .Concat(Utilities.DefaultIfThrows(
+                                                () => CurrentRegistry.AvailableByIdentifier(mod.Identifier))
+                                            ?? Enumerable.Empty<CkanModule>())
+                                    .OfType<CkanModule>()
+                                    .Distinct()
+                                    .ToArray();
+
+            if (modules.Length == 0)
+            {
+                StatusMessage = $"No cached archive was found for {mod.Name}.";
+                return;
+            }
+
+            if (CurrentCache.Purge(modules))
+            {
+                ClearApplyResult();
+                StatusMessage = $"Purged cached archive for {mod.Name}.";
+                _ = LoadModCatalogAsync();
+            }
+            else
+            {
+                StatusMessage = $"No cached archive was removed for {mod.Name}.";
+            }
         }
 
         private async Task RefreshAsync()
@@ -2271,6 +2404,7 @@ namespace CKAN.LinuxGUI
                 SelectedModVersions = $"Latest {details.LatestVersion}\n{(details.IsInstalled ? $"Installed {details.InstalledVersion}" : "Not installed")}";
                 SelectedModInstallState = BuildInstallState(details);
                 SelectedModCompatibility = details.Compatibility;
+                SelectedModCacheState = details.IsCached ? "Cached" : "Not cached";
                 SelectedModModuleKind = details.ModuleKind;
                 SelectedModLicense = details.License;
                 SelectedModReleaseDate = details.ReleaseDate;
@@ -2304,6 +2438,7 @@ namespace CKAN.LinuxGUI
                 SelectedModVersions = "";
                 SelectedModInstallState = "";
                 SelectedModCompatibility = "";
+                SelectedModCacheState = "";
                 SelectedModModuleKind = "";
                 SelectedModLicense = "";
                 SelectedModReleaseDate = "";
@@ -2376,6 +2511,7 @@ namespace CKAN.LinuxGUI
             PublishFilterStateLabels();
             if (IsReady)
             {
+                pendingModListScrollReset = true;
                 _ = LoadModCatalogAsync();
             }
         }
@@ -2545,8 +2681,6 @@ namespace CKAN.LinuxGUI
         {
             AdvancedAuthorFilter = "";
             AdvancedCompatibilityFilter = "";
-            FilterHasReplacementOnly = false;
-            ShowAdvancedFilters = false;
         }
 
         private void ClearAllFilters()
@@ -3116,6 +3250,7 @@ namespace CKAN.LinuxGUI
             SelectedModVersions = "";
             SelectedModInstallState = "";
             SelectedModCompatibility = "";
+            SelectedModCacheState = "";
             SelectedModModuleKind = "";
             SelectedModLicense = "";
             SelectedModReleaseDate = "";
@@ -3167,6 +3302,7 @@ namespace CKAN.LinuxGUI
         private void PublishFilterStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasActiveAdvancedFilters));
+            this.RaisePropertyChanged(nameof(HasAdvancedFilterText));
             this.RaisePropertyChanged(nameof(ActiveFilterCount));
             this.RaisePropertyChanged(nameof(HasActiveFilters));
             this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
@@ -3175,6 +3311,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(MoreFiltersButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBackground));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(ClearFiltersButtonOpacity));
+            this.RaisePropertyChanged(nameof(ClearAdvancedTextButtonOpacity));
             this.RaisePropertyChanged(nameof(SortMenuLabel));
             this.RaisePropertyChanged(nameof(NameSortLabel));
             this.RaisePropertyChanged(nameof(AuthorSortLabel));
@@ -3320,6 +3458,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
             this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
             this.RaisePropertyChanged(nameof(PreviewShowsBlockedCard));
+            this.RaisePropertyChanged(nameof(ShowPreviewEmptyWorkspace));
+            this.RaisePropertyChanged(nameof(ShowPreviewActiveWorkspace));
             this.RaisePropertyChanged(nameof(PreviewOutcomeTitle));
             this.RaisePropertyChanged(nameof(PreviewImpactSummary));
             this.RaisePropertyChanged(nameof(PreviewPanelGuidance));
@@ -3373,6 +3513,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
             this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
             this.RaisePropertyChanged(nameof(PreviewShowsBlockedCard));
+            this.RaisePropertyChanged(nameof(ShowPreviewEmptyWorkspace));
+            this.RaisePropertyChanged(nameof(ShowPreviewActiveWorkspace));
             this.RaisePropertyChanged(nameof(PreviewOutcomeTitle));
             this.RaisePropertyChanged(nameof(PreviewImpactSummary));
             this.RaisePropertyChanged(nameof(PreviewPanelGuidance));
@@ -3500,6 +3642,15 @@ namespace CKAN.LinuxGUI
 
         private bool MessageContains(string value)
             => StatusMessage?.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+
+        private static bool CanQueueInstall(ModListItem mod)
+            => !mod.IsInstalled && !mod.IsIncompatible;
+
+        private static bool CanQueueUpdate(ModListItem mod)
+            => mod.IsInstalled && mod.HasUpdate;
+
+        private static bool CanQueueRemove(ModListItem mod)
+            => mod.IsInstalled && !mod.HasUpdate;
 
         private static string CountLabel(int count,
                                          string singular,

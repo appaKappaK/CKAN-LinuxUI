@@ -151,37 +151,49 @@ SESSION_STAMP=$(date +%Y%m%d-%H%M%S)
 SESSION_LOG="$RUN_DIR/ckan-linux-session-$SESSION_STAMP.log"
 LATEST_SESSION_LOG="$RUN_DIR/ckan-linux-session.log"
 LATEST_DEBUG_LOG="$RUN_DIR/ckan-linux-debug-latest.log"
+STREAM_STDIO_TO_TERMINAL="${CKAN_LINUX_DEV_STREAM_STDIO:-0}"
 ln -sfn "$(basename "$SESSION_LOG")" "$LATEST_SESSION_LOG"
 ln -sfn "ckan-linux-debug.log" "$LATEST_DEBUG_LOG"
 
 cd "$RUN_DIR"
-exec > >(tee -a "$SESSION_LOG") 2>&1
 
-echo "==== CKAN Linux Dev Session ===="
-echo "timestamp: $(date --iso-8601=seconds)"
-echo "repo_root: $REPO_ROOT"
-echo "cwd: $RUN_DIR"
-echo "app_cmd: ${APP_CMD[*]} $*"
-echo "build_bin: $BUILD_BIN"
-echo "publish_bin: $PUBLISH_BIN"
-echo "package_bin: $PACKAGE_BIN"
-echo "xdg_data_home: $XDG_DATA_HOME"
-echo "xdg_config_home: $XDG_CONFIG_HOME"
-echo "xdg_cache_home: $XDG_CACHE_HOME"
-echo "dev_repos_dir: $DEV_REPOS_DIR"
-echo "host_repos_dir: $HOST_REPOS_DIR"
-echo "dev_downloads_dir: $DEV_DOWNLOADS_DIR"
-echo "host_downloads_dir: $HOST_DOWNLOADS_DIR"
+log_session_line() {
+    local line="$1"
+    printf '%s\n' "$line" | tee -a "$SESSION_LOG"
+}
+
+log_session_line "==== CKAN Linux Dev Session ===="
+log_session_line "timestamp: $(date --iso-8601=seconds)"
+log_session_line "repo_root: $REPO_ROOT"
+log_session_line "cwd: $RUN_DIR"
+log_session_line "app_cmd: ${APP_CMD[*]} $*"
+log_session_line "build_bin: $BUILD_BIN"
+log_session_line "publish_bin: $PUBLISH_BIN"
+log_session_line "package_bin: $PACKAGE_BIN"
+log_session_line "xdg_data_home: $XDG_DATA_HOME"
+log_session_line "xdg_config_home: $XDG_CONFIG_HOME"
+log_session_line "xdg_cache_home: $XDG_CACHE_HOME"
+log_session_line "dev_repos_dir: $DEV_REPOS_DIR"
+log_session_line "host_repos_dir: $HOST_REPOS_DIR"
+log_session_line "dev_downloads_dir: $DEV_DOWNLOADS_DIR"
+log_session_line "host_downloads_dir: $HOST_DOWNLOADS_DIR"
 if [[ -L "$DEV_REPOS_DIR" ]]; then
-    echo "dev_repos_link_target: $(readlink -f "$DEV_REPOS_DIR")"
+    log_session_line "dev_repos_link_target: $(readlink -f "$DEV_REPOS_DIR")"
 fi
 if [[ -L "$DEV_DOWNLOADS_DIR" ]]; then
-    echo "dev_downloads_link_target: $(readlink -f "$DEV_DOWNLOADS_DIR")"
+    log_session_line "dev_downloads_link_target: $(readlink -f "$DEV_DOWNLOADS_DIR")"
 fi
-echo "session_log: $SESSION_LOG"
-echo "latest_session_log: $LATEST_SESSION_LOG"
-echo "debug_log: $RUN_DIR/ckan-linux-debug.log"
-echo "latest_debug_log: $LATEST_DEBUG_LOG"
-echo "==============================="
+log_session_line "session_log: $SESSION_LOG"
+log_session_line "latest_session_log: $LATEST_SESSION_LOG"
+log_session_line "debug_log: $RUN_DIR/ckan-linux-debug.log"
+log_session_line "latest_debug_log: $LATEST_DEBUG_LOG"
+log_session_line "stream_stdio_to_terminal: $STREAM_STDIO_TO_TERMINAL"
+log_session_line "==============================="
+
+if [[ "$STREAM_STDIO_TO_TERMINAL" == "1" ]]; then
+    exec > >(tee -a "$SESSION_LOG") 2>&1
+else
+    exec >>"$SESSION_LOG" 2>&1
+fi
 
 exec "${APP_CMD[@]}" "$@"
