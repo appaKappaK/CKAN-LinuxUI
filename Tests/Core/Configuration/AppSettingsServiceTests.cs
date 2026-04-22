@@ -51,7 +51,7 @@ namespace Tests.Core.Configuration
                 Assert.Multiple(() =>
                 {
                     Assert.That(second.LastInstanceName, Is.EqualTo("Career Save"));
-                    Assert.That(second.ShowAdvancedFilters, Is.True);
+                    Assert.That(second.ShowAdvancedFilters, Is.False);
                     Assert.That(second.FilterState.SearchText, Is.EqualTo("restock"));
                     Assert.That(second.FilterState.AuthorText, Is.EqualTo("Nertea"));
                     Assert.That(second.FilterState.CompatibilityText, Is.EqualTo("1.12"));

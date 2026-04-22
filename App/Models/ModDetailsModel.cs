@@ -38,6 +38,8 @@ namespace CKAN.App.Models
 
         public bool HasUpdate { get; init; }
 
+        public bool HasVersionUpdate { get; init; }
+
         public bool IsCached { get; init; }
 
         public bool IsIncompatible { get; init; }

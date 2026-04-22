@@ -392,7 +392,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.CompatibleFilterLabel, Is.EqualTo("Compatible (4)"));
                     Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (2)"));
                     Assert.That(viewModel.UpdatableFilterLabel, Is.EqualTo("Updatable (1)"));
-                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Downloaded (2)"));
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (2)"));
                     Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (3)"));
                     Assert.That(viewModel.IncompatibleFilterLabel, Is.EqualTo("Incompatible (1)"));
                 });
@@ -402,10 +402,10 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Downloaded (2)"));
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (2)"));
                     Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (1)"));
                     Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (2)"));
-                    Assert.That(viewModel.UncachedFilterLabel, Is.EqualTo("Not Downloaded (1)"));
+                    Assert.That(viewModel.UncachedFilterLabel, Is.EqualTo("Not Cached (1)"));
                 });
             }
             finally
@@ -454,13 +454,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 await WaitForAsync(() => viewModel.SelectedMod != null);
 
                 var initiallySelected = viewModel.SelectedMod!;
-                viewModel.ActivateModFromBrowser(initiallySelected);
-
-                Assert.Multiple(() =>
-                {
-                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
-                    Assert.That(viewModel.ShowDetailsPane, Is.False);
-                });
+                Assert.That(viewModel.ShowDetailsPane, Is.False);
 
                 viewModel.ActivateModFromBrowser(initiallySelected);
 
@@ -468,6 +462,14 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
                     Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+
+                viewModel.ActivateModFromBrowser(initiallySelected);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
                 });
 
                 var otherMod = viewModel.Mods.First(mod => mod.Identifier != initiallySelected.Identifier);
@@ -685,6 +687,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     DownloadCount    = item.DownloadCount,
                     IsInstalled      = item.IsInstalled,
                     HasUpdate        = item.HasUpdate,
+                    HasVersionUpdate = item.HasVersionUpdate,
                     IsCached         = item.IsCached,
                     IsIncompatible   = item.IsIncompatible,
                     HasReplacement   = item.HasReplacement,
@@ -708,6 +711,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     DownloadCountLabel = "452,318",
                     IsInstalled        = true,
                     HasUpdate          = true,
+                    HasVersionUpdate   = true,
                     IsCached           = true,
                     IsIncompatible     = false,
                     HasReplacement     = false,
@@ -783,6 +787,7 @@ namespace CKAN.LinuxGUI.VisualTests
                         SuggestionCount     = 0,
                         IsInstalled         = true,
                         HasUpdate           = true,
+                        HasVersionUpdate    = true,
                         IsCached            = true,
                         IsIncompatible      = false,
                         HasReplacement      = false,

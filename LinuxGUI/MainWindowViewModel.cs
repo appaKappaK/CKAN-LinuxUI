@@ -187,7 +187,7 @@ namespace CKAN.LinuxGUI
             var canQueueUpdate = this.WhenAnyValue(vm => vm.SelectedMod,
                                                    vm => vm.IsApplyingChanges,
                                                    (mod, applying) => mod?.IsInstalled == true
-                                                                      && mod.HasUpdate
+                                                                      && mod.HasVersionUpdate
                                                                       && !applying);
             var canQueueRemove = this.WhenAnyValue(vm => vm.SelectedMod,
                                                    vm => vm.IsApplyingChanges,
@@ -1359,11 +1359,11 @@ namespace CKAN.LinuxGUI
 
         public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
                                         && !IsSelectedModLoading
-                                        && SelectedMod.HasUpdate;
+                                        && SelectedMod.HasVersionUpdate;
 
         public bool ShowRemoveAction => SelectedMod?.IsInstalled == true
                                         && !IsSelectedModLoading
-                                        && !SelectedMod.HasUpdate;
+                                        && !SelectedMod.HasVersionUpdate;
 
         public bool HasSelectedModQueuedAction
             => SelectedMod != null
@@ -1438,23 +1438,23 @@ namespace CKAN.LinuxGUI
                     : changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
                 if (queued != null)
                 {
-                    return "#39424E";
+                    return "#4B5A69";
                 }
 
                 if (ShowInstallAction)
                 {
-                    return "#1B4D77";
+                    return "#2B6A98";
                 }
                 if (ShowUpdateAction)
                 {
-                    return "#4B6C23";
+                    return "#6A952B";
                 }
                 if (ShowRemoveAction)
                 {
-                    return "#1B4D77";
+                    return "#9A485C";
                 }
 
-                return "#39424E";
+                return "#4B5A69";
             }
         }
 
@@ -2415,7 +2415,7 @@ namespace CKAN.LinuxGUI
                 SelectedModRecommendationCountLabel = CountLabel(details.RecommendationCount, "Recommendation", "Recommendations");
                 SelectedModSuggestionCountLabel = CountLabel(details.SuggestionCount, "Suggestion", "Suggestions");
                 SelectedModIsInstalled = details.IsInstalled;
-                SelectedModHasUpdate = details.HasUpdate;
+                SelectedModHasUpdate = details.HasVersionUpdate;
                 SelectedModIsCached = details.IsCached;
                 SelectedModIsIncompatible = details.IsIncompatible;
                 SelectedModHasReplacement = details.HasReplacement;
@@ -3389,20 +3389,20 @@ namespace CKAN.LinuxGUI
                 ModSortOption.InstalledFirst
                     => descending
                         ? items.OrderByDescending(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderBy(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.UpdatesFirst
                     => descending
-                        ? items.OrderByDescending(item => item.HasUpdate)
+                        ? items.OrderByDescending(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
-                        : items.OrderBy(item => item.HasUpdate)
+                        : items.OrderBy(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
@@ -3619,7 +3619,7 @@ namespace CKAN.LinuxGUI
                 ? $"Installed {details.InstalledVersion}"
                 : "Not installed");
 
-            if (details.HasUpdate)
+            if (details.HasVersionUpdate)
             {
                 parts.Add($"Update available to {details.LatestVersion}");
             }
@@ -3647,10 +3647,10 @@ namespace CKAN.LinuxGUI
             => !mod.IsInstalled && !mod.IsIncompatible;
 
         private static bool CanQueueUpdate(ModListItem mod)
-            => mod.IsInstalled && mod.HasUpdate;
+            => mod.IsInstalled && mod.HasVersionUpdate;
 
         private static bool CanQueueRemove(ModListItem mod)
-            => mod.IsInstalled && !mod.HasUpdate;
+            => mod.IsInstalled && !mod.HasVersionUpdate;
 
         private static string CountLabel(int count,
                                          string singular,

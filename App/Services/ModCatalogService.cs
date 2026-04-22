@@ -90,6 +90,12 @@ namespace CKAN.App.Services
                     return null;
                 }
 
+                bool hasUpdate = HasUpdate(registry, inst, identifier);
+                bool hasVersionUpdate = hasUpdate
+                                        && installed != null
+                                        && (latestCompatible ?? latestAvailable) != null
+                                        && (latestCompatible ?? latestAvailable)!.version.CompareTo(installed.version) > 0;
+
                 return new ModDetailsModel
                 {
                     Identifier       = identifier,
@@ -116,7 +122,8 @@ namespace CKAN.App.Services
                     RecommendationCount = displayMod.recommends?.Count ?? 0,
                     SuggestionCount     = displayMod.suggests?.Count ?? 0,
                     IsInstalled      = installed != null || registry.IsAutodetected(identifier),
-                    HasUpdate        = HasUpdate(registry, inst, identifier),
+                    HasUpdate        = hasUpdate,
+                    HasVersionUpdate = hasVersionUpdate,
                     IsCached         = IsCached(context, displayMod),
                     IsIncompatible   = latestCompatible == null
                                        && (installed == null || !installed.IsCompatible(inst.VersionCriteria())),
@@ -199,13 +206,16 @@ namespace CKAN.App.Services
             bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
                                                                   context.Instance.StabilityToleranceConfig,
                                                                   context.Instance.VersionCriteria()) != null;
+            bool hasVersionUpdate = hasUpdate
+                                    && installedModule != null
+                                    && displayMod.version.CompareTo(installedModule.version) > 0;
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
-                                                               hasUpdate,
+                                                               hasVersionUpdate,
                                                                incompatibleOverride,
                                                                isCached,
                                                                hasReplacement);
             string statusSummary = FormatStatusSummary(isInstalled,
-                                                       hasUpdate,
+                                                       hasVersionUpdate,
                                                        incompatibleOverride,
                                                        isCached,
                                                        hasReplacement);
@@ -222,13 +232,14 @@ namespace CKAN.App.Services
                 DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
                 HasUpdate         = hasUpdate,
+                HasVersionUpdate  = hasVersionUpdate,
                 IsIncompatible    = incompatibleOverride,
                 IsCached          = isCached,
                 HasReplacement    = hasReplacement,
                 Compatibility     = FormatCompatibility(displayMod, context.Instance),
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
-                                                            hasUpdate,
+                                                            hasVersionUpdate,
                                                             incompatibleOverride,
                                                             isCached,
                                                             hasReplacement),
@@ -273,7 +284,7 @@ namespace CKAN.App.Services
             {
                 return false;
             }
-            if (filter.UpdatableOnly && !item.HasUpdate)
+            if (filter.UpdatableOnly && !item.HasVersionUpdate)
             {
                 return false;
             }
@@ -494,14 +505,14 @@ namespace CKAN.App.Services
                                                       bool isCached,
                                                       bool hasReplacement)
             => isIncompatible
-                ? "#7C3838"
+                ? "#9A485C"
                 : hasUpdate
-                    ? "#4B6C23"
+                    ? "#6A952B"
                     : isInstalled
-                        ? "#1B4D77"
+                        ? "#2B6A98"
                         : hasReplacement
-                            ? "#5C376D"
-                            : "#2A6B4A";
+                            ? "#734790"
+                            : "#2F7C58";
 
         private static string FormatStatusSummary(bool isInstalled,
                                                   bool hasUpdate,
@@ -563,20 +574,20 @@ namespace CKAN.App.Services
                 ModSortOption.InstalledFirst
                     => descending
                         ? items.OrderByDescending(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderBy(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.UpdatesFirst
                     => descending
-                        ? items.OrderByDescending(item => item.HasUpdate)
+                        ? items.OrderByDescending(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
-                        : items.OrderBy(item => item.HasUpdate)
+                        : items.OrderBy(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),

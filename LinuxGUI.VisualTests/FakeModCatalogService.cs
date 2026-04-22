@@ -25,6 +25,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 DownloadCountLabel = "452,318",
                 IsInstalled      = true,
                 HasUpdate        = true,
+                HasVersionUpdate = true,
                 IsCached         = true,
                 IsIncompatible   = false,
                 HasReplacement   = false,
@@ -123,6 +124,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     SuggestionCount     = 0,
                     IsInstalled      = true,
                     HasUpdate        = true,
+                    HasVersionUpdate = true,
                     IsCached         = true,
                     IsIncompatible   = false,
                     HasReplacement   = false,
@@ -298,7 +300,7 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 return false;
             }
-            if (filter.UpdatableOnly && !item.HasUpdate)
+            if (filter.UpdatableOnly && !item.HasVersionUpdate)
             {
                 return false;
             }
@@ -480,7 +482,7 @@ namespace CKAN.LinuxGUI.VisualTests
         {
             string primaryStateLabel = item.IsIncompatible
                 ? "Incompatible"
-                : item.HasUpdate
+                : item.HasVersionUpdate
                     ? "Update Available"
                     : item.IsInstalled
                         ? "Installed"
@@ -488,17 +490,17 @@ namespace CKAN.LinuxGUI.VisualTests
                             ? "Has Replacement"
                             : "Available";
             string primaryStateColor = item.IsIncompatible
-                ? "#7C3838"
-                : item.HasUpdate
-                    ? "#4B6C23"
+                ? "#9A485C"
+                : item.HasVersionUpdate
+                    ? "#6A952B"
                     : item.IsInstalled
-                        ? "#1B4D77"
+                        ? "#2B6A98"
                         : item.HasReplacement
-                            ? "#5C376D"
-                            : "#2A6B4A";
+                            ? "#734790"
+                            : "#2F7C58";
 
             var parts = new List<string>();
-            if (item.HasUpdate)
+            if (item.HasVersionUpdate)
             {
                 parts.Add("Installed");
             }
@@ -521,6 +523,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 DownloadCountLabel = item.DownloadCountLabel,
                 IsInstalled = item.IsInstalled,
                 HasUpdate = item.HasUpdate,
+                HasVersionUpdate = item.HasVersionUpdate,
                 IsIncompatible = item.IsIncompatible,
                 IsCached = item.IsCached,
                 HasReplacement = item.HasReplacement,
@@ -572,20 +575,20 @@ namespace CKAN.LinuxGUI.VisualTests
                 ModSortOption.InstalledFirst
                     => descending
                         ? items.OrderByDescending(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderBy(item => item.IsInstalled)
-                               .ThenByDescending(item => item.HasUpdate)
+                               .ThenByDescending(item => item.HasVersionUpdate)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.UpdatesFirst
                     => descending
-                        ? items.OrderByDescending(item => item.HasUpdate)
+                        ? items.OrderByDescending(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
-                        : items.OrderBy(item => item.HasUpdate)
+                        : items.OrderBy(item => item.HasVersionUpdate)
                                .ThenByDescending(item => item.IsInstalled)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),

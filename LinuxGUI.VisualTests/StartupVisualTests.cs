@@ -202,6 +202,56 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task EmptyPreview_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+            await Task.Delay(200);
+
+            VisualTestSupport.CaptureAndAssert(window, "preview-empty");
+        }
+
+        [AvaloniaTest]
+        public async Task QueuedPreview_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+            viewModel.QueueUpdateCommand.Execute().Subscribe();
+            viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+            await Task.Delay(400);
+
+            VisualTestSupport.CaptureAndAssert(window, "preview-queued");
+        }
+
+        [AvaloniaTest]
         public async Task AppliedBrowser_Renders()
         {
             using var service = new FakeGameInstanceService(VisualScenario.Ready);
@@ -244,6 +294,52 @@ namespace CKAN.LinuxGUI.VisualTests
             await Task.Delay(300);
 
             VisualTestSupport.CaptureAndAssert(window, "browser-applied");
+        }
+
+        [AvaloniaTest]
+        public async Task AppliedPreview_Renders()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(
+                changes,
+                new CKAN.App.Models.ApplyChangesResult
+                {
+                    Kind = CKAN.App.Models.ApplyResultKind.Warning,
+                    Success = true,
+                    Title = "Apply Completed with Follow-Up",
+                    Message = "Applied 1 queued action. Kept 1 config-only directory for manual review.",
+                    SummaryLines = new[]
+                    {
+                        "1 queued action",
+                        "1 direct update",
+                        "1 dependency install",
+                    },
+                    FollowUpLines = new[]
+                    {
+                        "Review leftover config-only directory: GameData/Restock/PluginData",
+                    },
+                });
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            await Task.Delay(150);
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+            viewModel.QueueUpdateCommand.Execute().Subscribe();
+            viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+            await Task.Delay(300);
+            viewModel.ApplyChangesCommand.Execute().Subscribe();
+            await Task.Delay(300);
+
+            VisualTestSupport.CaptureAndAssert(window, "preview-applied");
         }
 
         [AvaloniaTest]
