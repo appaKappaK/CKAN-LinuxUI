@@ -278,6 +278,30 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task UninstalledIncompatibleMod_StatusOmitsNotInstalled()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "kerbalism");
+                await Task.Delay(200);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedModIsInstalled, Is.False);
+                    Assert.That(viewModel.SelectedModIsIncompatible, Is.True);
+                    Assert.That(viewModel.SelectedModInstallState, Is.EqualTo("Currently incompatible"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task TrySwitchSelectedInstanceAsync_CancelsOrConfirmsQueueDiscard()
         {
             var (viewModel, service) = CreateViewModel();

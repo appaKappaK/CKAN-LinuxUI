@@ -218,6 +218,21 @@
       <Setter Property="MinWidth" Value="10" />
       <Setter Property="Margin" Value="4,2,2,2" />
     </Style>
+    <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,0,2,0" />
+    </Style>
+    <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,0,2,0" />
+    </Style>
+    <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical:expanded">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="4,0,2,0" />
+    </Style>
     <Style Selector="TextBlock.row-title">
       <Setter Property="FontSize" Value="13.5" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -2067,6 +2082,312 @@
                           <Border Background="#1B2128"
                                   CornerRadius="8"
                                   Padding="12"
+                                  Margin="0,0,0,2"
+                                  Opacity="0.8">
+                            <Grid ColumnDefinitions="5,*,216">
+                              <Border Background="#24588A"
+                                      CornerRadius="8,0,0,8" />
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,12,0"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="16"
+                                        Width="194"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="104"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="258"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                              <Grid Grid.Column="2"
+                                    ColumnDefinitions="72,48,*"
+                                    RowDefinitions="Auto,Auto,Auto">
+                                <Border Grid.Row="0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="64"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="1"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="68"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="2"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="58"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="1"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="36"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="34"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="38"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="2"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="56"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="54"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="50"
+                                        HorizontalAlignment="Left" />
+                              </Grid>
+                            </Grid>
+                          </Border>
+
+                          <Border Background="#1B2128"
+                                  CornerRadius="8"
+                                  Padding="12"
+                                  Margin="0,0,0,2"
+                                  Opacity="0.78">
+                            <Grid ColumnDefinitions="5,*,216">
+                              <Border Background="#2E7C59"
+                                      CornerRadius="8,0,0,8" />
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,12,0"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="16"
+                                        Width="182"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="94"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="234"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                              <Grid Grid.Column="2"
+                                    ColumnDefinitions="72,48,*"
+                                    RowDefinitions="Auto,Auto,Auto">
+                                <Border Grid.Row="0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="62"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="1"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="66"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="2"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="56"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="1"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="34"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="32"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="36"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="2"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="54"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="52"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="48"
+                                        HorizontalAlignment="Left" />
+                              </Grid>
+                            </Grid>
+                          </Border>
+
+                          <Border Background="#1B2128"
+                                  CornerRadius="8"
+                                  Padding="12"
+                                  Margin="0,0,0,2"
+                                  Opacity="0.76">
+                            <Grid ColumnDefinitions="5,*,216">
+                              <Border Background="#9B4559"
+                                      CornerRadius="8,0,0,8" />
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,12,0"
+                                          Spacing="8">
+                                <Border Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="16"
+                                        Width="176"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="88"
+                                        HorizontalAlignment="Left" />
+                                <Border Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="222"
+                                        HorizontalAlignment="Left" />
+                              </StackPanel>
+                              <Grid Grid.Column="2"
+                                    ColumnDefinitions="72,48,*"
+                                    RowDefinitions="Auto,Auto,Auto">
+                                <Border Grid.Row="0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="60"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="1"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="64"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Row="2"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="54"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="1"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="32"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="30"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="1"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="34"
+                                        HorizontalAlignment="Left" />
+
+                                <Border Grid.Column="2"
+                                        Grid.Row="0"
+                                        Margin="10,0,0,0"
+                                        Background="#2A323C"
+                                        CornerRadius="6"
+                                        Height="13"
+                                        Width="52"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="1"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="50"
+                                        HorizontalAlignment="Left" />
+                                <Border Grid.Column="2"
+                                        Grid.Row="2"
+                                        Margin="10,0,0,0"
+                                        Background="#242B34"
+                                        CornerRadius="6"
+                                        Height="11"
+                                        Width="46"
+                                        HorizontalAlignment="Left" />
+                              </Grid>
+                            </Grid>
+                          </Border>
+
+                          <Border Background="#1B2128"
+                                  CornerRadius="8"
+                                  Padding="12"
                                   Opacity="0.82">
                             <Grid ColumnDefinitions="5,*,216">
                               <Border Background="#9B4559"
@@ -2170,29 +2491,38 @@
                         <Grid RowDefinitions="Auto,*"
                               IsVisible="{Binding ShowModList}"
                               MinHeight="0">
-                          <Grid ColumnDefinitions="3,*,216"
+                          <Grid ColumnDefinitions="4,*,228"
                                 Margin="0,0,0,4">
                             <Button Grid.Column="1"
                                     Classes="column-sort-header"
                                     Command="{Binding SelectNameSortCommand}"
                                     Content="{Binding NameSortLabel}" />
-                            <Grid Grid.Column="2"
-                                  ColumnDefinitions="72,48,*"
-                                  Margin="8,0,4,0">
-                              <Button Classes="column-sort-header"
-                                      Command="{Binding SelectPopularitySortCommand}"
-                                      Content="{Binding PopularitySortLabel}" />
-                              <Button Grid.Column="1"
-                                      Classes="column-sort-header"
-                                      Margin="10,0,0,0"
-                                      Command="{Binding SelectCompatibilitySortCommand}"
-                                      Content="{Binding CompatibilitySortLabel}" />
-                              <Button Grid.Column="2"
-                                      Classes="column-sort-header"
-                                      Margin="10,0,0,0"
-                                      Command="{Binding SelectVersionSortCommand}"
-                                      Content="{Binding VersionSortLabel}" />
-                            </Grid>
+                            <Border Grid.Column="2"
+                                    BorderBrush="#2E3842"
+                                    BorderThickness="1,0,0,0"
+                                    Padding="10,0,0,0">
+                              <Grid ColumnDefinitions="86,66,*">
+                                <Button Classes="column-sort-header"
+                                        Command="{Binding SelectPopularitySortCommand}"
+                                        Content="{Binding PopularitySortLabel}" />
+                                <Border Grid.Column="1"
+                                        BorderBrush="#24303B"
+                                        BorderThickness="1,0,0,0"
+                                        Padding="10,0,0,0">
+                                  <Button Classes="column-sort-header"
+                                          Command="{Binding SelectCompatibilitySortCommand}"
+                                          Content="{Binding CompatibilitySortLabel}" />
+                                </Border>
+                                <Border Grid.Column="2"
+                                        BorderBrush="#24303B"
+                                        BorderThickness="1,0,0,0"
+                                        Padding="10,0,0,0">
+                                  <Button Classes="column-sort-header"
+                                          Command="{Binding SelectVersionSortCommand}"
+                                          Content="{Binding VersionSortLabel}" />
+                                </Border>
+                              </Grid>
+                            </Border>
                           </Grid>
 
                           <ListBox x:Name="ModsListBox"
@@ -2209,7 +2539,7 @@
                                         Padding="0"
                                         PointerPressed="ModRow_OnPointerPressed">
                                   <Grid>
-                                    <Grid ColumnDefinitions="4,*,220">
+                                    <Grid ColumnDefinitions="4,*,228">
                                       <Border Background="{Binding PrimaryStateColor}"
                                               CornerRadius="5,0,0,5" />
 
@@ -2306,35 +2636,40 @@
                                       <Border Grid.Column="2"
                                               BorderBrush="#2E3842"
                                               BorderThickness="1,0,0,0"
-                                              Padding="8,4">
-                                        <Grid ColumnDefinitions="78,52,*"
-                                            >
-                                        <TextBlock Classes="row-number"
-                                                   HorizontalAlignment="Left"
-                                                   VerticalAlignment="Top"
-                                                   Text="{Binding DownloadCountLabel}" />
-
-                                        <TextBlock Grid.Column="1"
-                                                   Margin="10,0,0,0"
-                                                   Classes="row-compat"
-                                                   VerticalAlignment="Top"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   TextWrapping="Wrap"
-                                                   MaxLines="2"
-                                                   Text="{Binding Compatibility}" />
-
-                                        <StackPanel Grid.Column="2"
-                                                    Margin="10,0,0,0"
-                                                    Spacing="1">
-                                          <TextBlock Classes="row-version-primary"
+                                              Padding="10,4,0,4">
+                                        <Grid ColumnDefinitions="86,66,*">
+                                          <TextBlock Classes="row-number"
                                                      HorizontalAlignment="Left"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     Text="{Binding LatestVersion}" />
-                                          <TextBlock Classes="row-version-secondary"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     IsVisible="{Binding IsInstalled}"
-                                                     Text="{Binding InstalledVersion}" />
-                                        </StackPanel>
+                                                     VerticalAlignment="Top"
+                                                     Text="{Binding DownloadCountLabel}" />
+
+                                          <Border Grid.Column="1"
+                                                  BorderBrush="#24303B"
+                                                  BorderThickness="1,0,0,0"
+                                                  Padding="10,0,0,0">
+                                            <TextBlock Classes="row-compat"
+                                                       VerticalAlignment="Top"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="Wrap"
+                                                       MaxLines="2"
+                                                       Text="{Binding Compatibility}" />
+                                          </Border>
+
+                                          <Border Grid.Column="2"
+                                                  BorderBrush="#24303B"
+                                                  BorderThickness="1,0,0,0"
+                                                  Padding="10,0,0,0">
+                                            <StackPanel Spacing="1">
+                                              <TextBlock Classes="row-version-primary"
+                                                         HorizontalAlignment="Left"
+                                                         TextTrimming="CharacterEllipsis"
+                                                         Text="{Binding LatestVersion}" />
+                                              <TextBlock Classes="row-version-secondary"
+                                                         TextTrimming="CharacterEllipsis"
+                                                         IsVisible="{Binding IsInstalled}"
+                                                         Text="{Binding InstalledVersion}" />
+                                            </StackPanel>
+                                          </Border>
                                         </Grid>
                                       </Border>
                                     </Grid>
@@ -2531,11 +2866,13 @@
                               HorizontalAlignment="Left" />
                     </StackPanel>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    <ScrollViewer x:Name="DetailsScrollViewer"
+                                  VerticalScrollBarVisibility="Auto"
                                   VerticalAlignment="Stretch"
                                   MinHeight="0"
                                   IsVisible="{Binding ShowSelectedModContent}">
-                      <StackPanel Spacing="10">
+                      <StackPanel Spacing="10"
+                                  Margin="0,0,8,0">
                         <TextBlock Classes="panel-title"
                                    TextWrapping="Wrap"
                                    Text="{Binding SelectedModTitle}" />
@@ -2557,6 +2894,9 @@
                                   IsVisible="{Binding SelectedModIsInstalled}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#F7FAFD"
                                        Text="Installed" />
                           </Border>
@@ -2569,6 +2909,9 @@
                                   IsVisible="{Binding SelectedModHasUpdate}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#F7FAFD"
                                        Text="Update available" />
                           </Border>
@@ -2581,6 +2924,9 @@
                                   IsVisible="{Binding SelectedModIsAutodetected}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#FFF7E8"
                                        Text="External" />
                           </Border>
@@ -2593,6 +2939,9 @@
                                   IsVisible="{Binding SelectedModShowsIncompatibleState}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#FFF6F8"
                                        Text="Incompatible" />
                           </Border>
@@ -2605,6 +2954,9 @@
                                   IsVisible="{Binding SelectedModShowsDependencyState}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#EAF4FF"
                                        Text="Dependency" />
                           </Border>
@@ -2617,10 +2969,27 @@
                                   IsVisible="{Binding SelectedModHasReplacement}">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
                                        Foreground="#FBF6FF"
                                        Text="Has replacement" />
                           </Border>
                         </WrapPanel>
+
+                        <Border Background="#1B222A"
+                                BorderBrush="#2A343F"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,8">
+                          <StackPanel Spacing="2">
+                            <TextBlock Classes="detail-label"
+                                       Text="Status" />
+                            <TextBlock Classes="detail-value"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding SelectedModInstallState}" />
+                          </StackPanel>
+                        </Border>
 
                         <WrapPanel ItemHeight="34">
                           <Button HorizontalAlignment="Left"
@@ -2671,18 +3040,6 @@
                           <Border Background="#20262D"
                                   Height="1" />
                           <StackPanel Spacing="0">
-                            <StackPanel Spacing="2"
-                                        Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Status" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModInstallState}" />
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8" />
-
                             <StackPanel Spacing="2"
                                         Margin="0,0,0,8">
                               <TextBlock Classes="detail-label"

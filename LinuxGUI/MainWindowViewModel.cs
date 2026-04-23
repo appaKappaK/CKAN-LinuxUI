@@ -4279,11 +4279,18 @@ namespace CKAN.LinuxGUI
         {
             var parts = new List<string>();
 
-            parts.Add(details.IsAutodetected
-                ? "Managed outside CKAN"
-                : details.IsInstalled
-                    ? $"Installed {details.InstalledVersion}"
-                    : "Not installed");
+            if (details.IsAutodetected)
+            {
+                parts.Add("Managed outside CKAN");
+            }
+            else if (details.IsInstalled)
+            {
+                parts.Add($"Installed {details.InstalledVersion}");
+            }
+            else if (!details.IsIncompatible)
+            {
+                parts.Add("Not installed");
+            }
 
             if (details.HasVersionUpdate)
             {
