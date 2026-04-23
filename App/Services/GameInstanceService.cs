@@ -11,6 +11,8 @@ namespace CKAN.App.Services
 {
     public sealed class GameInstanceService : IGameInstanceService
     {
+        private readonly bool preferReadOnlyRegistry = Environment.GetEnvironmentVariable("CKAN_LINUX_DEV_NO_REGISTRY_LOCK") == "1";
+
         public GameInstanceService(IConfiguration       configuration,
                                    RepositoryDataManager repositoryData,
                                    IAppSettingsService   appSettingsService)
@@ -33,6 +35,8 @@ namespace CKAN.App.Services
         public GameInstance? CurrentInstance => Manager.CurrentInstance;
 
         public RegistryManager? CurrentRegistryManager { get; private set; }
+
+        public Registry? CurrentRegistry { get; private set; }
 
         public IReadOnlyList<InstanceSummary> Instances
             => Manager.Instances.Values
@@ -77,6 +81,35 @@ namespace CKAN.App.Services
             Manager.Dispose();
         }
 
+        public RegistryManager? AcquireWriteRegistryManager()
+        {
+            if (CurrentInstance == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return CurrentRegistryManager ?? RegistryManager.Instance(CurrentInstance, RepositoryData);
+            }
+            catch (RegistryInUseKraken)
+            {
+                return null;
+            }
+        }
+
+        public void RefreshCurrentRegistry()
+        {
+            if (CurrentInstance == null)
+            {
+                CurrentRegistry = null;
+                return;
+            }
+
+            CurrentRegistry = CurrentRegistryManager?.registry
+                              ?? RegistryManager.ReadOnlyRegistry(CurrentInstance, RepositoryData);
+        }
+
         private void OnInstanceChanged(GameInstance? previous,
                                        GameInstance? current)
         {
@@ -84,10 +117,14 @@ namespace CKAN.App.Services
             if (current == null)
             {
                 CurrentRegistryManager = null;
+                CurrentRegistry = null;
             }
             else
             {
-                CurrentRegistryManager = RegistryManager.Instance(current, RepositoryData);
+                CurrentRegistryManager = preferReadOnlyRegistry
+                    ? null
+                    : RegistryManager.Instance(current, RepositoryData);
+                RefreshCurrentRegistry();
             }
             CurrentInstanceChanged?.Invoke(current);
         }

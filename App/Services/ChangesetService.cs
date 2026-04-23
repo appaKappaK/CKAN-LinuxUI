@@ -41,9 +41,7 @@ namespace CKAN.App.Services
                 Name       = mod.Name,
                 TargetVersion = "",
                 ActionKind = QueuedActionKind.Download,
-                ActionText = mod.IsInstalled
-                    ? "Add to Cache"
-                    : "Download Only",
+                ActionText = "Add to Cache",
                 DetailText = mod.IsInstalled
                     ? string.IsNullOrWhiteSpace(mod.LatestVersion)
                         ? "Cache the latest available version locally"
@@ -141,12 +139,12 @@ namespace CKAN.App.Services
                 {
                     < 0 => "Downgrade",
                     > 0 => "Update",
-                    _ => "Switch Version",
+                    _ => "Change Version",
                 };
             }
             catch
             {
-                return "Switch Version";
+                return "Change Version";
             }
         }
 

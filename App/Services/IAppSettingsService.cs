@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using CKAN.App.Models;
 
 namespace CKAN.App.Services
@@ -16,6 +18,8 @@ namespace CKAN.App.Services
 
         int UiScalePercent { get; }
 
+        IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; }
+
         void SaveLastInstanceName(string? instanceName);
 
         void SaveBrowserState(FilterState filterState,
@@ -24,5 +28,7 @@ namespace CKAN.App.Services
         void SaveWindowState(AppWindowState windowState);
 
         void SaveUiScalePercent(int uiScalePercent);
+
+        void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows);
     }
 }

@@ -90,9 +90,9 @@
     <Style Selector="ToggleButton.filter-menu-item">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="MinHeight" Value="38" />
-      <Setter Property="Padding" Value="14,8" />
-      <Setter Property="Margin" Value="0,0,0,6" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="Margin" Value="0" />
       <Setter Property="Background" Value="#5B6068" />
       <Setter Property="BorderBrush" Value="#6A7079" />
       <Setter Property="BorderThickness" Value="1" />
@@ -165,6 +165,14 @@
     <Style Selector="Menu.app-menu-bar > MenuItem:selected">
       <Setter Property="Background" Value="#2A323C" />
     </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="Padding" Value="8,4" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected">
+      <Setter Property="Background" Value="#2A323C" />
+    </Style>
     <Style Selector="MenuItem.app-menu-item">
       <Setter Property="Background" Value="#20262D" />
       <Setter Property="Foreground" Value="#F4F6F8" />
@@ -191,32 +199,43 @@
     </Style>
     <Style Selector="ListBox#ModsListBox > ListBoxItem">
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0,0,12,0" />
+      <Setter Property="Margin" Value="0,0,4,0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="ListBox#ModsListBox > ListBoxItem:selected">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#B61BD1" />
-      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#ModsListBox > ListBoxItem:pointerover">
+      <Setter Property="Background" Value="#261C2B" />
+      <Setter Property="BorderBrush" Value="#B06AC4" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#ModsListBox > ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="ListBox#ModsListBox ScrollBar:vertical">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,2,2,2" />
+      <Setter Property="Margin" Value="2,2,0,2" />
     </Style>
     <Style Selector="ListBox#ModsListBox ScrollBar:vertical:pointerover">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,2,2,2" />
+      <Setter Property="Margin" Value="2,2,0,2" />
     </Style>
     <Style Selector="ListBox#ModsListBox ScrollBar:vertical:expanded">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,2,2,2" />
+      <Setter Property="Margin" Value="2,2,0,2" />
     </Style>
     <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical">
       <Setter Property="Width" Value="10" />
@@ -319,6 +338,95 @@
       <Setter Property="Padding" Value="8,6" />
       <Setter Property="MinHeight" Value="38" />
     </Style>
+    <Style Selector="ComboBox.header-instance-picker">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker:pointerover">
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#47596B" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker:focus">
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#566B80" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker:dropdownopen">
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#566B80" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker ComboBoxItem">
+      <Setter Property="Background" Value="#161B21" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker ComboBoxItem:pointerover">
+      <Setter Property="Background" Value="#222B34" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker ComboBoxItem:selected">
+      <Setter Property="Background" Value="#243140" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker ComboBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="#2C3948" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker-segment">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0,9,9,0" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker-segment:pointerover">
+      <Setter Property="Background" Value="#24303B" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker-segment:focus">
+      <Setter Property="Background" Value="#24303B" />
+    </Style>
+    <Style Selector="ComboBox.header-instance-picker-segment:dropdownopen">
+      <Setter Property="Background" Value="#24303B" />
+    </Style>
+    <Style Selector="Button.header-instance-reload">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Foreground" Value="#DCE4EC" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.header-instance-reload:pointerover">
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#47596B" />
+    </Style>
+    <Style Selector="TextBox.browser-search">
+      <Setter Property="Background" Value="#161B21" />
+      <Setter Property="BorderBrush" Value="#4A5563" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="TextBox.browser-search:pointerover">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#556272" />
+    </Style>
+    <Style Selector="TextBox.browser-search:focus">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#647487" />
+    </Style>
   </Window.Styles>
   <LayoutTransformControl HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch">
@@ -333,7 +441,7 @@
     <Border Background="#20262D"
             Padding="16,10"
             IsVisible="{Binding ShowLegacyHeader}">
-      <Grid ColumnDefinitions="Auto,*,Auto"
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
             VerticalAlignment="Center">
         <Menu Classes="app-menu-bar"
               VerticalAlignment="Center">
@@ -482,16 +590,15 @@
       </Grid>
     </Border>
 
-    <Border Grid.Row="1"
+    <Border Grid.Row="0"
             Background="#1E252D"
             BorderBrush="#2F3741"
             BorderThickness="0,0,0,1"
-            Padding="24,8"
+            Padding="12,6"
             IsVisible="{Binding ShowReadyHeader}">
-      <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="Auto,*,Auto"
-              VerticalAlignment="Center">
-          <Menu Classes="app-menu-bar"
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+            VerticalAlignment="Center">
+          <Menu Classes="app-menu-bar ready-title-menu"
                 VerticalAlignment="Center">
             <MenuItem Header="File">
               <MenuItem Classes="app-menu-item"
@@ -573,80 +680,104 @@
             </MenuItem>
           </Menu>
 
-          <Border Grid.Column="1"
-                  Margin="18,0,14,0"
-                  Background="#161B21"
-                  BorderBrush="#313A44"
-                  BorderThickness="1"
-                  CornerRadius="12"
-                  Padding="14,10"
-                  HorizontalAlignment="Stretch"
-                  VerticalAlignment="Center">
-            <Grid ColumnDefinitions="Auto,*"
-                  RowDefinitions="Auto,Auto">
-              <TextBlock FontSize="12"
-                         FontWeight="Medium"
-                         Margin="0,0,10,0"
-                         Opacity="0.68"
-                         VerticalAlignment="Center"
-                         Text="Current Install" />
-              <TextBlock Grid.Column="1"
-                         FontSize="18"
-                         FontWeight="SemiBold"
-                         Margin="0,0,0,3"
-                         VerticalAlignment="Center"
-                         IsVisible="{Binding ShowPassiveHeaderInstanceLabel}"
-                         TextTrimming="CharacterEllipsis"
-                         Text="{Binding CurrentInstanceName}" />
-              <ComboBox Grid.Column="1"
-                        MinWidth="220"
-                        Margin="0,0,0,3"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding ShowHeaderInstanceSwitcher}"
-                        ItemsSource="{Binding Instances}"
-                        SelectedItem="{Binding SelectedInstance}"
-                        SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate DataType="models:InstanceSummary">
-                    <TextBlock Text="{Binding Name}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <TextBlock Grid.Row="1"
-                         Grid.ColumnSpan="2"
-                         FontSize="12"
-                         Opacity="0.72"
-                         VerticalAlignment="Center"
-                         MaxLines="1"
-                         TextTrimming="CharacterEllipsis"
-                         Text="{Binding CurrentInstanceContext}" />
-            </Grid>
-          </Border>
+          <StackPanel Grid.Column="2"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      Margin="14,0,38,0"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center">
+            <Button Classes="header-instance-reload"
+                    Command="{Binding RefreshCommand}"
+                    Content="Reload" />
 
-          <Border Grid.Column="2"
+            <Border Background="#1A2027"
+                    BorderBrush="#394654"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center">
+              <Grid ColumnDefinitions="Auto,Auto">
+                <Border Background="#26313C"
+                        BorderBrush="#394654"
+                        BorderThickness="0,0,1,0"
+                        CornerRadius="9,0,0,9"
+                        MinHeight="30"
+                        Padding="12,0">
+                  <TextBlock FontSize="11.5"
+                             FontWeight="SemiBold"
+                             Foreground="#AFBBC8"
+                             HorizontalAlignment="Center"
+                             TextAlignment="Center"
+                             VerticalAlignment="Center"
+                             Text="Instance:" />
+                </Border>
+
+                <Border Grid.Column="1"
+                        Background="#1D252E"
+                        CornerRadius="0,9,9,0"
+                        MinHeight="30"
+                        Padding="12,0"
+                        MinWidth="220"
+                        MaxWidth="320"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding ShowPassiveHeaderInstanceLabel}">
+                  <TextBlock FontSize="15"
+                             FontWeight="SemiBold"
+                             TextTrimming="CharacterEllipsis"
+                             Text="{Binding CurrentInstanceName}" />
+                </Border>
+
+                <ComboBox Grid.Column="1"
+                          Classes="header-instance-picker header-instance-picker-segment"
+                          MinWidth="220"
+                          MaxWidth="320"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding ShowHeaderInstanceSwitcher}"
+                          IsEnabled="{Binding ShowHeaderInstanceSwitcher}"
+                          ItemsSource="{Binding Instances}"
+                          SelectedItem="{Binding SelectedInstance}"
+                          SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="models:InstanceSummary">
+                      <TextBlock FontSize="15"
+                                 FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis"
+                                 Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <Border Grid.Column="3"
                   Background="{Binding StatusSurfaceBackground}"
                   BorderBrush="{Binding StatusSurfaceBorderBrush}"
                   BorderThickness="1"
-                  CornerRadius="10"
-                  Padding="10,7"
-                  Width="220"
+                  CornerRadius="8"
+                  Padding="10,6"
+                  Width="210"
+                  Margin="14,0,38,0"
                   IsVisible="{Binding ShowReadyStatusSurface}"
                   VerticalAlignment="Center">
-            <StackPanel Spacing="5">
-              <ProgressBar Height="4"
+            <Grid ColumnDefinitions="72,*"
+                  VerticalAlignment="Center">
+              <ProgressBar Width="56"
+                           Height="3"
+                           VerticalAlignment="Center"
                            Minimum="0"
                            Maximum="100"
                            Value="{Binding ProgressPercent}" />
-              <TextBlock FontSize="12"
+              <TextBlock Grid.Column="1"
+                         FontSize="11.5"
                          Opacity="0.74"
                          TextTrimming="CharacterEllipsis"
                          MaxLines="1"
                          Text="{Binding StatusMessage}" />
-            </StackPanel>
+            </Grid>
           </Border>
-
         </Grid>
-      </StackPanel>
     </Border>
 
     <Grid Grid.Row="2"
@@ -1000,30 +1131,55 @@
                 </Grid>
               </Border>
 
-              <Border Grid.Row="1"
-                      Background="#14191F"
-                      BorderBrush="#2B323C"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="6"
-                      Margin="0,0,0,14"
-                      HorizontalAlignment="Left">
-                <StackPanel Orientation="Horizontal"
-                            Spacing="6">
-                  <Button Classes="surface-view-tab"
-                          Background="{Binding BrowseSurfaceButtonBackground}"
-                          BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
-                          Foreground="#F4F6F8"
-                          Command="{Binding ShowBrowseSurfaceCommand}"
-                          Content="Browse" />
-                  <Button Classes="surface-view-tab"
-                          Background="{Binding PreviewSurfaceButtonBackground}"
-                          BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
-                          Foreground="#F4F6F8"
-                          Command="{Binding ShowPreviewSurfaceCommand}"
-                          Content="{Binding PreviewSurfaceButtonLabel}" />
-                </StackPanel>
-              </Border>
+              <Grid Grid.Row="1"
+                    ColumnDefinitions="Auto,*"
+                    Margin="0,0,0,14">
+                <Border Background="#14191F"
+                        BorderBrush="#2B323C"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="6"
+                        HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="6">
+                    <Button Classes="surface-view-tab"
+                            Background="{Binding BrowseSurfaceButtonBackground}"
+                            BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
+                            Foreground="#F4F6F8"
+                            Command="{Binding ShowBrowseSurfaceCommand}"
+                            Content="Browse" />
+                    <Button Classes="surface-view-tab"
+                            Background="{Binding PreviewSurfaceButtonBackground}"
+                            BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
+                            Foreground="#F4F6F8"
+                            Command="{Binding ShowPreviewSurfaceCommand}"
+                            Content="{Binding PreviewSurfaceButtonLabel}" />
+                  </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1"
+                        Background="Transparent"
+                        CornerRadius="8"
+                        Padding="10,8"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsCatalogLoading}">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <ProgressBar Width="120"
+                                 Height="14"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 IsIndeterminate="{Binding IsCatalogLoading}" />
+                    <TextBlock Grid.Column="1"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Opacity="0.78"
+                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding CatalogStatusMessage}" />
+                  </Grid>
+                </Border>
+              </Grid>
 
               <Grid Grid.Row="2"
                     ColumnDefinitions="*,Auto"
@@ -1034,22 +1190,28 @@
                         Padding="12"
                         Margin="0,0,6,0"
                         MinHeight="0">
-                  <Grid RowDefinitions="Auto,*,Auto"
+                  <Grid RowDefinitions="Auto,*"
                         MinHeight="0">
                     <Grid ColumnDefinitions="*,Auto,Auto"
                           Margin="0,0,0,8">
                       <TextBox x:Name="SearchTextBox"
+                               Classes="browser-search"
                                MinHeight="34"
                                Padding="12,6"
-                               Watermark="Search mods by name, author, or identifier"
+                               Watermark="Search mods, authors, summaries, or identifiers"
                                Text="{Binding ModSearchText}" />
                       <Border Grid.Column="1"
                               Classes="browser-chip"
                               Background="#20262D"
                               Margin="8,0,0,0"
+                              MinWidth="84"
+                              Padding="14,0"
                               VerticalAlignment="Center">
                         <TextBlock FontSize="12"
+                                   HorizontalAlignment="Center"
                                    Opacity="0.8"
+                                   TextAlignment="Center"
+                                   VerticalAlignment="Center"
                                    Text="{Binding ModCountLabel}" />
                       </Border>
                       <Button Grid.Column="2"
@@ -1078,10 +1240,10 @@
                                 BorderBrush="#39424E"
                                 BorderThickness="1"
                                 CornerRadius="12"
-                                Padding="16"
-                                Width="560"
+                                Padding="14"
+                                Width="516"
                                 BoxShadow="0 18 36 0 #66000000">
-                          <StackPanel Spacing="12">
+                          <StackPanel Spacing="10">
                             <Grid ColumnDefinitions="Auto"
                                   HorizontalAlignment="Right">
                               <Button Width="88"
@@ -1093,7 +1255,7 @@
                                       Command="{Binding ClearFiltersCommand}"
                                       Content="Clear All" />
                             </Grid>
-                            <Grid ColumnDefinitions="*,*">
+                            <Grid ColumnDefinitions="*,12,*">
                               <StackPanel Grid.Column="0"
                                           Spacing="6">
                                 <TextBlock FontSize="11"
@@ -1112,8 +1274,8 @@
                                               IsChecked="{Binding FilterHasReplacementOnly}"
                                               Content="{Binding ReplaceableFilterLabel}" />
                               </StackPanel>
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,0,0">
+                              <StackPanel Grid.Column="2"
+                                          Spacing="6">
                                 <TextBlock FontSize="11"
                                            Opacity="0.62"
                                            Text="Availability" />
@@ -1133,12 +1295,12 @@
                             </Grid>
                             <Border Background="#2B323C"
                                     Height="1" />
-                            <Grid ColumnDefinitions="*,*">
+                            <Grid ColumnDefinitions="*,12,*">
                               <TextBox x:Name="AdvancedAuthorFilterTextBox"
+                                       Grid.Column="0"
                                        Watermark="Author contains"
                                        Text="{Binding AdvancedAuthorFilter}" />
-                              <TextBox Grid.Column="1"
-                                       Margin="12,0,0,0"
+                              <TextBox Grid.Column="2"
                                        Watermark="Compatibility contains"
                                        Text="{Binding AdvancedCompatibilityFilter}" />
                             </Grid>
@@ -1159,1339 +1321,141 @@
                             Padding="8"
                             ClipToBounds="True">
                       <Grid ClipToBounds="True">
-                        <StackPanel Spacing="8"
-                                    VerticalAlignment="Top"
-                                    IsVisible="{Binding ShowCatalogSkeleton}">
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#24588A"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="168"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="108"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="292"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="74"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="68"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="40"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="42"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.94">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#39424E"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="190"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="96"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="252"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="70"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="40"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.92">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#2E7C59"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="214"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="118"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="274"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="66"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="72"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="38"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="40"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.9">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#9B4559"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="176"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="102"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="238"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="66"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="38"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="50"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.86">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#39424E"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="184"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="92"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="244"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="68"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="38"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="50"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.84">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#2E7C59"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="196"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="104"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="266"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="70"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="38"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.82">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#9B4559"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="188"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="98"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="232"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="66"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="48"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.88">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#24588A"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="202"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="110"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="286"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="68"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="74"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="40"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.84">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#2E7C59"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="178"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="92"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="246"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="68"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="48"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.8">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#24588A"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="194"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="104"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="258"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="68"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="58"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="38"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="50"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.78">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#2E7C59"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="182"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="94"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="234"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="62"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="66"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="56"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="36"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="48"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Margin="0,0,0,2"
-                                  Opacity="0.76">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#9B4559"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="176"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="88"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="222"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="32"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="30"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="50"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="46"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                          <Border Background="#1B2128"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  Opacity="0.82">
-                            <Grid ColumnDefinitions="5,*,216">
-                              <Border Background="#9B4559"
-                                      CornerRadius="8,0,0,8" />
-                              <StackPanel Grid.Column="1"
-                                          Margin="12,0,12,0"
-                                          Spacing="8">
-                                <Border Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="16"
-                                        Width="186"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="96"
-                                        HorizontalAlignment="Left" />
-                                <Border Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="228"
-                                        HorizontalAlignment="Left" />
-                              </StackPanel>
-                              <Grid Grid.Column="2"
-                                    ColumnDefinitions="72,48,*"
-                                    RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="60"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="1"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="64"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Row="2"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="54"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="1"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="30"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="1"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="34"
-                                        HorizontalAlignment="Left" />
-
-                                <Border Grid.Column="2"
-                                        Grid.Row="0"
-                                        Margin="10,0,0,0"
-                                        Background="#2A323C"
-                                        CornerRadius="6"
-                                        Height="13"
-                                        Width="52"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="1"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="50"
-                                        HorizontalAlignment="Left" />
-                                <Border Grid.Column="2"
-                                        Grid.Row="2"
-                                        Margin="10,0,0,0"
-                                        Background="#242B34"
-                                        CornerRadius="6"
-                                        Height="11"
-                                        Width="46"
-                                        HorizontalAlignment="Left" />
-                              </Grid>
-                            </Grid>
-                          </Border>
-
-                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding CatalogSkeletonRows}"
+                                      IsVisible="{Binding ShowCatalogSkeleton}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CatalogSkeletonRow">
+                              <Border Background="#1B2128"
+                                      CornerRadius="8"
+                                      Padding="12"
+                                      Margin="0,0,0,2"
+                                      Opacity="{Binding Opacity}">
+                                <Grid ColumnDefinitions="5,*,350">
+                                  <Border Background="{Binding AccentBrush}"
+                                          CornerRadius="8,0,0,8" />
+                                  <StackPanel Grid.Column="1"
+                                              Margin="12,0,12,0"
+                                              VerticalAlignment="Center"
+                                              Spacing="7">
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                      <Grid Grid.Column="0"
+                                            ColumnDefinitions="Auto,*">
+                                        <Border Background="#2A323C"
+                                                CornerRadius="6"
+                                                Height="15"
+                                                Width="{Binding TitleWidth}"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" />
+                                        <Border Grid.Column="1"
+                                                Background="#242B34"
+                                                CornerRadius="6"
+                                                Height="11"
+                                                Width="{Binding AuthorWidth}"
+                                                Margin="8,0,0,0"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                IsVisible="{Binding HasAuthor}" />
+                                      </Grid>
+                                      <StackPanel Grid.Column="1"
+                                                  Margin="8,0,0,0"
+                                                  Orientation="Horizontal"
+                                                  HorizontalAlignment="Right">
+                                        <Border Background="{Binding PrimaryBadgeBackground}"
+                                                CornerRadius="999"
+                                                Height="16"
+                                                Width="{Binding PrimaryBadgeWidth}"
+                                                Margin="0,0,6,0"
+                                                IsVisible="{Binding HasPrimaryBadge}" />
+                                        <Border Background="#39424E"
+                                                BorderBrush="#607286"
+                                                BorderThickness="1"
+                                                CornerRadius="999"
+                                                Height="16"
+                                                Width="52"
+                                                Margin="0,0,6,0"
+                                                IsVisible="{Binding HasCachedBadge}" />
+                                        <Border Background="{Binding SecondaryBadgeBackground}"
+                                                BorderBrush="{Binding SecondaryBadgeBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="999"
+                                                Height="16"
+                                                Width="{Binding SecondaryBadgeWidth}"
+                                                Margin="0,0,6,0"
+                                                IsVisible="{Binding HasSecondaryBadge}" />
+                                        <Border Background="{Binding TertiaryBadgeBackground}"
+                                                BorderBrush="{Binding TertiaryBadgeBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="999"
+                                                Height="16"
+                                                Width="{Binding TertiaryBadgeWidth}"
+                                                Margin="0,0,6,0"
+                                                IsVisible="{Binding HasTertiaryBadge}" />
+                                      </StackPanel>
+                                      <Border Grid.Column="2"
+                                              Margin="8,0,0,0"
+                                              Background="{Binding QueueBadgeBackground}"
+                                              BorderBrush="{Binding QueueBadgeBorderBrush}"
+                                              BorderThickness="1"
+                                              CornerRadius="999"
+                                              Height="16"
+                                              Width="{Binding QueueBadgeWidth}"
+                                              VerticalAlignment="Center"
+                                              IsVisible="{Binding HasQueueBadge}" />
+                                    </Grid>
+                                    <Border Background="#242B34"
+                                            CornerRadius="6"
+                                            Height="11"
+                                            Width="{Binding SummaryWidth}"
+                                            HorizontalAlignment="Left" />
+                                  </StackPanel>
+                                  <Grid Grid.Column="2"
+                                        ColumnDefinitions="85,60,90,*"
+                                        VerticalAlignment="Center">
+                                    <Border Background="#2A323C"
+                                            CornerRadius="6"
+                                            Height="13"
+                                            Width="{Binding DownloadsWidth}"
+                                            HorizontalAlignment="Left" />
+                                    <Border Grid.Column="1"
+                                            Margin="10,0,0,0"
+                                            Background="#2A323C"
+                                            CornerRadius="6"
+                                            Height="13"
+                                            Width="{Binding CompatibilityWidth}"
+                                            HorizontalAlignment="Left" />
+                                    <Border Grid.Column="2"
+                                            Margin="10,0,0,0"
+                                            Background="#2A323C"
+                                            CornerRadius="6"
+                                            Height="13"
+                                            Width="{Binding ReleaseWidth}"
+                                            HorizontalAlignment="Left" />
+                                    <StackPanel Grid.Column="3"
+                                                Margin="10,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Spacing="4">
+                                      <Border Background="#2A323C"
+                                              CornerRadius="6"
+                                              Height="13"
+                                              Width="{Binding VersionPrimaryWidth}"
+                                              HorizontalAlignment="Left" />
+                                      <Border Background="#242B34"
+                                              CornerRadius="6"
+                                              Height="11"
+                                              Width="{Binding VersionSecondaryWidth}"
+                                              HorizontalAlignment="Left" />
+                                    </StackPanel>
+                                  </Grid>
+                                </Grid>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <Grid RowDefinitions="Auto,*"
                               IsVisible="{Binding ShowModList}"
                               MinHeight="0">
-                          <Grid ColumnDefinitions="4,*,228"
+                          <Grid ColumnDefinitions="4,*,350"
                                 Margin="0,0,16,4">
                             <Button Grid.Column="1"
                                     Classes="column-sort-header"
@@ -2501,7 +1465,7 @@
                                     BorderBrush="#2E3842"
                                     BorderThickness="1,0,0,0"
                                     Padding="10,0,0,0">
-                              <Grid ColumnDefinitions="86,66,*">
+                              <Grid ColumnDefinitions="85,60,90,*">
                                 <Button Classes="column-sort-header"
                                         Command="{Binding SelectPopularitySortCommand}"
                                         Content="{Binding PopularitySortLabel}" />
@@ -2514,6 +1478,14 @@
                                           Content="{Binding CompatibilitySortLabel}" />
                                 </Border>
                                 <Border Grid.Column="2"
+                                        BorderBrush="#24303B"
+                                        BorderThickness="1,0,0,0"
+                                        Padding="10,0,0,0">
+                                  <Button Classes="column-sort-header"
+                                          Command="{Binding SelectReleaseDateSortCommand}"
+                                          Content="{Binding ReleaseDateSortLabel}" />
+                                </Border>
+                                <Border Grid.Column="3"
                                         BorderBrush="#24303B"
                                         BorderThickness="1,0,0,0"
                                         Padding="10,0,0,0">
@@ -2539,26 +1511,87 @@
                                         Padding="0"
                                         PointerPressed="ModRow_OnPointerPressed">
                                   <Grid>
-                                    <Grid ColumnDefinitions="4,*,228">
+                                    <Grid ColumnDefinitions="4,*,350">
                                       <Border Background="{Binding PrimaryStateColor}"
                                               CornerRadius="5,0,0,5" />
 
                                       <Border Grid.Column="1"
                                               Padding="8,4">
                                         <StackPanel Spacing="3">
-                                          <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Classes="row-title"
-                                                       VerticalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Text="{Binding Name}" />
-                                            <Border Grid.Column="1"
+                                          <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <Grid Grid.Column="0"
+                                                  ColumnDefinitions="Auto,*">
+                                              <TextBlock Classes="row-title"
+                                                         VerticalAlignment="Center"
+                                                         TextTrimming="CharacterEllipsis"
+                                                         Text="{Binding Name}" />
+                                              <TextBlock Grid.Column="1"
+                                                         Classes="row-meta"
+                                                         Margin="8,0,0,0"
+                                                         VerticalAlignment="Center"
+                                                         TextTrimming="CharacterEllipsis"
+                                                         Text="{Binding Author, StringFormat=By: {0}}" />
+                                            </Grid>
+
+                                            <StackPanel Grid.Column="1"
+                                                        Margin="8,0,0,0"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right">
+                                              <Border Background="{Binding PrimaryStateColor}"
+                                                      CornerRadius="999"
+                                                      Padding="6,1"
+                                                      Margin="0,0,6,0">
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#F7FAFD"
+                                                           Text="{Binding PrimaryStateLabel}" />
+                                              </Border>
+                                              <Border Background="#39424E"
+                                                      BorderBrush="#607286"
+                                                      BorderThickness="1"
+                                                      CornerRadius="999"
+                                                      Padding="6,1"
+                                                      Margin="0,0,6,0"
+                                                      IsVisible="{Binding IsCached}">
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#EFF4F9"
+                                                           Text="Cached" />
+                                              </Border>
+                                              <Border Background="{Binding SecondaryStateBackground}"
+                                                      BorderBrush="{Binding SecondaryStateBorderBrush}"
+                                                      BorderThickness="1"
+                                                      CornerRadius="999"
+                                                      Padding="6,1"
+                                                      Margin="0,0,6,0"
+                                                      IsVisible="{Binding HasSecondaryState}">
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FFF7E8"
+                                                           Text="{Binding SecondaryStateLabel}" />
+                                              </Border>
+                                              <Border Background="{Binding TertiaryStateBackground}"
+                                                      BorderBrush="{Binding TertiaryStateBorderBrush}"
+                                                      BorderThickness="1"
+                                                      CornerRadius="999"
+                                                      Padding="6,1"
+                                                      Margin="0,0,6,0"
+                                                      IsVisible="{Binding HasTertiaryState}">
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#EAF4FF"
+                                                           Text="{Binding TertiaryStateLabel}" />
+                                              </Border>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2"
+                                                    Margin="8,0,0,0"
                                                     Background="{Binding QueueStateBackground}"
                                                     BorderBrush="{Binding QueueStateBorderBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="999"
                                                     Padding="6,1"
-                                                    Margin="8,0,0,0"
-                                                    VerticalAlignment="Top"
+                                                    VerticalAlignment="Center"
                                                     IsVisible="{Binding HasQueueState}">
                                               <TextBlock FontSize="10"
                                                          FontWeight="SemiBold"
@@ -2567,65 +1600,11 @@
                                             </Border>
                                           </Grid>
 
-                                          <WrapPanel ItemHeight="20"
-                                                     Orientation="Horizontal">
-                                            <Border Background="{Binding PrimaryStateColor}"
-                                                    CornerRadius="999"
-                                                    Padding="6,1"
-                                                    Margin="0,0,6,2">
-                                              <TextBlock FontSize="10"
-                                                         FontWeight="SemiBold"
-                                                         Foreground="#F7FAFD"
-                                                         Text="{Binding PrimaryStateLabel}" />
-                                            </Border>
-                                            <Border Background="#39424E"
-                                                    BorderBrush="#607286"
-                                                    BorderThickness="1"
-                                                    CornerRadius="999"
-                                                    Padding="6,1"
-                                                    Margin="0,0,6,2"
-                                                    IsVisible="{Binding IsCached}">
-                                              <TextBlock FontSize="10"
-                                                         FontWeight="SemiBold"
-                                                         Foreground="#EFF4F9"
-                                                         Text="Cached" />
-                                            </Border>
-                                            <Border Background="{Binding SecondaryStateBackground}"
-                                                    BorderBrush="{Binding SecondaryStateBorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="999"
-                                                    Padding="6,1"
-                                                    Margin="0,0,6,2"
-                                                    IsVisible="{Binding HasSecondaryState}">
-                                              <TextBlock FontSize="10"
-                                                         FontWeight="SemiBold"
-                                                         Foreground="#FFF7E8"
-                                                         Text="{Binding SecondaryStateLabel}" />
-                                            </Border>
-                                            <Border Background="{Binding TertiaryStateBackground}"
-                                                    BorderBrush="{Binding TertiaryStateBorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="999"
-                                                    Padding="6,1"
-                                                    Margin="0,0,6,2"
-                                                    IsVisible="{Binding HasTertiaryState}">
-                                              <TextBlock FontSize="10"
-                                                         FontWeight="SemiBold"
-                                                         Foreground="#EAF4FF"
-                                                         Text="{Binding TertiaryStateLabel}" />
-                                            </Border>
-                                          </WrapPanel>
-
                                           <TextBlock Classes="row-summary"
                                                      TextWrapping="Wrap"
                                                      MaxLines="1"
                                                      TextTrimming="CharacterEllipsis"
                                                      Text="{Binding Summary}" />
-
-                                          <TextBlock Classes="row-meta"
-                                                     VerticalAlignment="Center"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     Text="{Binding Author}" />
                                         </StackPanel>
                                       </Border>
 
@@ -2633,7 +1612,7 @@
                                               BorderBrush="#2E3842"
                                               BorderThickness="1,0,0,0"
                                               Padding="10,4,0,4">
-                                        <Grid ColumnDefinitions="86,66,*">
+                                        <Grid ColumnDefinitions="85,60,90,*">
                                           <TextBlock Classes="row-number"
                                                      HorizontalAlignment="Left"
                                                      VerticalAlignment="Top"
@@ -2652,6 +1631,17 @@
                                           </Border>
 
                                           <Border Grid.Column="2"
+                                                  BorderBrush="#24303B"
+                                                  BorderThickness="1,0,0,0"
+                                                  Padding="10,0,0,0">
+                                            <TextBlock Classes="row-number"
+                                                       HorizontalAlignment="Left"
+                                                       VerticalAlignment="Top"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding ReleaseDate}" />
+                                          </Border>
+
+                                          <Border Grid.Column="3"
                                                   BorderBrush="#24303B"
                                                   BorderThickness="1,0,0,0"
                                                   Padding="10,0,0,0">
@@ -2703,27 +1693,6 @@
                       </Grid>
                     </Border>
 
-                    <Border Grid.Row="2"
-                            Background="#20262D"
-                            CornerRadius="8"
-                            Padding="10,8"
-                            Margin="0,10,0,0"
-                            IsVisible="{Binding IsCatalogLoading}">
-                      <Grid ColumnDefinitions="Auto,*">
-                        <ProgressBar Width="120"
-                                     Height="14"
-                                     Minimum="0"
-                                     Maximum="100"
-                                     IsIndeterminate="{Binding IsCatalogLoading}" />
-                        <TextBlock Grid.Column="1"
-                                   Margin="10,0,0,0"
-                                   VerticalAlignment="Center"
-                                   FontSize="12"
-                                   Opacity="0.78"
-                                   TextTrimming="CharacterEllipsis"
-                                   Text="{Binding CatalogStatusMessage}" />
-                      </Grid>
-                    </Border>
                   </Grid>
                 </Border>
 
@@ -2879,159 +1848,149 @@
                                    TextWrapping="Wrap"
                                    Text="{Binding SelectedModBody}" />
 
-                        <WrapPanel IsVisible="{Binding ShowSelectedModStateBadges}">
-                          <Border Background="#2B6A98"
-                                  BorderBrush="#4A88B5"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModIsInstalled}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#F7FAFD"
-                                       Text="Installed" />
-                          </Border>
-                          <Border Background="#6A952B"
-                                  BorderBrush="#82AF3D"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModHasUpdate}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#F7FAFD"
-                                       Text="Update available" />
-                          </Border>
-                          <Border Background="#5A4322"
-                                  BorderBrush="#9F7A40"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModIsAutodetected}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#FFF7E8"
-                                       Text="External" />
-                          </Border>
-                          <Border Background="#9A485C"
-                                  BorderBrush="#B35D73"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModShowsIncompatibleState}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#FFF6F8"
-                                       Text="Incompatible" />
-                          </Border>
-                          <Border Background="#31424F"
-                                  BorderBrush="#4C6A86"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModShowsDependencyState}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#EAF4FF"
-                                       Text="Dependency" />
-                          </Border>
-                          <Border Background="#734790"
-                                  BorderBrush="#8B5FA8"
-                                  BorderThickness="1"
-                                  CornerRadius="999"
-                                  Padding="7,2"
-                                  Margin="0,0,6,4"
-                                  IsVisible="{Binding SelectedModHasReplacement}">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Foreground="#FBF6FF"
-                                       Text="Has replacement" />
-                          </Border>
-                        </WrapPanel>
+                        <StackPanel Spacing="6">
+                          <WrapPanel IsVisible="{Binding ShowSelectedModStateBadges}">
+                            <Border Background="#2B6A98"
+                                    BorderBrush="#4A88B5"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModIsInstalled}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#F7FAFD"
+                                         Text="Installed" />
+                            </Border>
+                            <Border Background="#39424E"
+                                    BorderBrush="#607286"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModIsCached}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#EFF4F9"
+                                         Text="Cached" />
+                            </Border>
+                            <Border Background="#6A952B"
+                                    BorderBrush="#82AF3D"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModHasUpdate}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#F7FAFD"
+                                         Text="Update available" />
+                            </Border>
+                            <Border Background="#5A4322"
+                                    BorderBrush="#9F7A40"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModIsAutodetected}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#FFF7E8"
+                                         Text="External" />
+                            </Border>
+                            <Border Background="#9A485C"
+                                    BorderBrush="#B35D73"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModShowsIncompatibleState}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#FFF6F8"
+                                         Text="Incompatible" />
+                            </Border>
+                            <Border Background="#31424F"
+                                    BorderBrush="#4C6A86"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModShowsDependencyState}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#EAF4FF"
+                                         Text="Dependency" />
+                            </Border>
+                            <Border Background="#734790"
+                                    BorderBrush="#8B5FA8"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="7,2"
+                                    Margin="0,0,6,0"
+                                    IsVisible="{Binding SelectedModHasReplacement}">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         Foreground="#FBF6FF"
+                                         Text="Has replacement" />
+                            </Border>
+                          </WrapPanel>
 
-                        <WrapPanel ItemHeight="34"
-                                   IsVisible="{Binding ShowSelectedModActionRow}">
-                          <Button HorizontalAlignment="Left"
-                                  Margin="0,0,8,0"
-                                  Padding="12,7"
-                                  CornerRadius="8"
-                                  Background="#2F7C58"
-                                  BorderBrush="#43946E"
-                                  Foreground="#F7FAFD"
-                                  IsVisible="{Binding ShowInstallNowAction}"
-                                  Command="{Binding InstallNowSelectedModCommand}"
-                                  Content="Install Now" />
-                          <Button HorizontalAlignment="Left"
-                                  Margin="0,0,8,0"
-                                  Padding="12,7"
-                                  CornerRadius="8"
-                                  Background="#9A485C"
-                                  BorderBrush="#B35D73"
-                                  Foreground="#FFF7F8"
-                                  IsVisible="{Binding ShowRemoveNowAction}"
-                                  Command="{Binding RemoveNowSelectedModCommand}"
-                                  Content="Remove Now" />
-                          <Button HorizontalAlignment="Left"
-                                  Margin="0,0,8,0"
-                                  Padding="12,7"
-                                  CornerRadius="8"
-                                  Background="{Binding PrimarySelectedModActionBackground}"
-                                  BorderBrush="{Binding PrimarySelectedModActionBorderBrush}"
-                                  Foreground="#F7FAFD"
-                                  IsVisible="{Binding ShowPrimarySelectedModAction}"
-                                  Command="{Binding PrimarySelectedModActionCommand}"
-                                  Content="{Binding PrimarySelectedModActionLabel}" />
-                        </WrapPanel>
+                          <WrapPanel IsVisible="{Binding ShowSelectedModActionRow}">
+                            <Button HorizontalAlignment="Left"
+                                    MinHeight="32"
+                                    Margin="0,0,10,6"
+                                    Padding="10,6"
+                                    CornerRadius="7"
+                                    Background="{Binding PrimarySelectedModActionBackground}"
+                                    BorderBrush="{Binding PrimarySelectedModActionBorderBrush}"
+                                    Foreground="#F7FAFD"
+                                    IsVisible="{Binding ShowPrimarySelectedModAction}"
+                                    Command="{Binding PrimarySelectedModActionCommand}"
+                                    Content="{Binding PrimarySelectedModActionLabel}" />
+                          </WrapPanel>
 
-                        <Border Background="#3B2B1B"
-                                BorderBrush="#8C6432"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="10,8"
-                                IsVisible="{Binding ShowSelectedModActionUnavailableNote}">
-                          <TextBlock FontSize="12"
-                                     Foreground="#F2E5CF"
-                                     TextWrapping="Wrap"
-                                     Text="{Binding SelectedModActionUnavailableNote}" />
-                        </Border>
+                          <Border Background="#3B2B1B"
+                                  BorderBrush="#8C6432"
+                                  BorderThickness="1"
+                                  CornerRadius="8"
+                                  Padding="10,8"
+                                  IsVisible="{Binding ShowSelectedModActionUnavailableNote}">
+                            <TextBlock FontSize="12"
+                                       Foreground="#F2E5CF"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding SelectedModActionUnavailableNote}" />
+                          </Border>
+                        </StackPanel>
 
                         <StackPanel Spacing="6">
                           <Border Background="#20262D"
                                   Height="1" />
                           <StackPanel Spacing="0">
-                            <StackPanel Spacing="2"
-                                        Margin="0,0,0,8">
-                              <TextBlock Classes="detail-label"
-                                         Text="Versions" />
-                              <TextBlock Classes="detail-value"
-                                         TextWrapping="Wrap"
-                                         Text="{Binding SelectedModVersions}" />
-                              <StackPanel Margin="0,6,0,0"
-                                          Spacing="4"
-                                          IsVisible="{Binding ShowSelectedModVersionPicker}">
+                            <StackPanel Spacing="4"
+                                        Margin="0,0,0,8"
+                                        IsVisible="{Binding ShowSelectedModVersionPicker}">
                                 <TextBlock Classes="detail-label"
                                            Text="Available versions" />
                                 <ComboBox Classes="detail-version-picker"
@@ -3040,32 +1999,32 @@
                                           MaxDropDownHeight="320">
                                   <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModVersionChoiceItem">
-                                      <StackPanel Spacing="4"
-                                                  Margin="0,2">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                          <TextBlock Classes="detail-value"
-                                                     Text="{Binding VersionText}" />
-                                          <Border Grid.Column="1"
-                                                  Background="{Binding BadgeBackground}"
-                                                  BorderBrush="{Binding BadgeBorderBrush}"
-                                                  BorderThickness="1"
-                                                  CornerRadius="999"
-                                                  Padding="6,1"
-                                                  IsVisible="{Binding HasBadge}">
-                                            <TextBlock FontSize="10"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#F7FAFD"
-                                                       Text="{Binding BadgeText}" />
-                                          </Border>
-                                        </Grid>
-                                        <TextBlock Classes="detail-label"
-                                                   TextWrapping="Wrap"
-                                                   Text="{Binding MetaText}" />
-                                      </StackPanel>
+                                      <Grid ColumnDefinitions="*,Auto"
+                                            Margin="0,2">
+                                        <TextBlock Classes="detail-value"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding VersionText}" />
+                                        <StackPanel Grid.Column="1"
+                                                    Margin="10,0,0,0"
+                                                    Orientation="Horizontal"
+                                                    Spacing="8"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center">
+                                          <TextBlock Classes="detail-label"
+                                                     VerticalAlignment="Center"
+                                                     Foreground="{Binding BadgeForeground}"
+                                                     Text="{Binding BadgeText}"
+                                                     IsVisible="{Binding HasBadge}" />
+                                          <TextBlock Classes="detail-label"
+                                                     VerticalAlignment="Center"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     Text="{Binding MetaText}" />
+                                        </StackPanel>
+                                      </Grid>
                                     </DataTemplate>
                                   </ComboBox.ItemTemplate>
                                 </ComboBox>
-                              </StackPanel>
                             </StackPanel>
                             <Border Background="#24303B"
                                     Height="1"
@@ -3134,6 +2093,17 @@
                               <TextBlock Classes="detail-value"
                                          TextWrapping="Wrap"
                                          Text="{Binding SelectedModCacheState}" />
+                              <Button HorizontalAlignment="Left"
+                                      MinHeight="28"
+                                      Margin="0,6,0,0"
+                                      Padding="10,5"
+                                      CornerRadius="7"
+                                      Background="#24303B"
+                                      BorderBrush="#3D4D5D"
+                                      Foreground="#E8EEF5"
+                                      IsVisible="{Binding ShowOpenSelectedModCacheLocationAction}"
+                                      Command="{Binding OpenSelectedModCacheLocationCommand}"
+                                      Content="Open in file manager" />
                             </StackPanel>
                             <Border Background="#24303B"
                                     Height="1"
@@ -3173,6 +2143,9 @@
                                              Text="{Binding SelectedModDependencyCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
+                                             FontSize="16"
+                                             FontWeight="SemiBold"
+                                             Margin="8,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModDependencyChevron}" />
                                 </Grid>
@@ -3203,6 +2176,9 @@
                                              Text="{Binding SelectedModRecommendationCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
+                                             FontSize="16"
+                                             FontWeight="SemiBold"
+                                             Margin="8,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModRecommendationChevron}" />
                                 </Grid>
@@ -3233,6 +2209,9 @@
                                              Text="{Binding SelectedModSuggestionCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
+                                             FontSize="16"
+                                             FontWeight="SemiBold"
+                                             Margin="8,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModSuggestionChevron}" />
                                 </Grid>
@@ -3434,7 +2413,7 @@
                                          Text="Nothing Queued Yet" />
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.82"
-                                         Text="Queue install, update, or remove actions from a selected mod to build a preflight summary before applying anything. Right-click a mod for download-only." />
+                                         Text="Queue install, update, or remove actions from a selected mod to build a preflight summary before applying anything. Right-click a mod to add it to cache." />
                             </StackPanel>
                           </Border>
                         </Grid>

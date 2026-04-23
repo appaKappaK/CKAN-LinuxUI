@@ -16,7 +16,8 @@
       <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="CheckBox.compat-option">
-      <Setter Property="Margin" Value="0,0,0,6" />
+      <Setter Property="Margin" Value="0,0,12,10" />
+      <Setter Property="MinWidth" Value="72" />
     </Style>
   </Window.Styles>
 
@@ -66,9 +67,14 @@
               CornerRadius="8"
               Margin="0,12,0,0"
               Padding="12">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
+        <ScrollViewer VerticalScrollBarVisibility="Disabled"
                       HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding Options}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <CheckBox Classes="compat-option"

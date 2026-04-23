@@ -10,6 +10,8 @@ namespace CKAN.App.Services
 {
     public interface IGameInstanceService : IDisposable
     {
+        Registry? CurrentRegistry { get; }
+
         GameInstanceManager Manager { get; }
 
         RepositoryDataManager RepositoryData { get; }
@@ -27,5 +29,9 @@ namespace CKAN.App.Services
         Task InitializeAsync(CancellationToken cancellationToken);
 
         Task SetCurrentInstanceAsync(string name, CancellationToken cancellationToken);
+
+        RegistryManager? AcquireWriteRegistryManager();
+
+        void RefreshCurrentRegistry();
     }
 }

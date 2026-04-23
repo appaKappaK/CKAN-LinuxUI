@@ -141,9 +141,51 @@ namespace CKAN.App.Services
                     };
                 }
 
+                using var transientRegistryManager = gameInstanceService.CurrentRegistryManager == null
+                    ? gameInstanceService.AcquireWriteRegistryManager()
+                    : null;
+                var registryManager = transientRegistryManager ?? gameInstanceService.CurrentRegistryManager;
+                if (registryManager == null)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title = downloadOnlyRun ? "Downloads Unavailable" : "Apply Unavailable",
+                        Message = "Cannot access the writable registry for the current install.",
+                        FollowUpLines = new[]
+                        {
+                            "Reload the current install and try again.",
+                        },
+                    };
+                }
+
+                plan = BuildExecutionPlan(requestedActions, cancellationToken, registryManager);
+                if (!plan.CanApply)
+                {
+                    var followUps = plan.AttentionNotes.Concat(plan.Conflicts)
+                                                       .Distinct()
+                                                       .ToList();
+                    return new ApplyChangesResult
+                    {
+                        Kind = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title = plan.Conflicts.Count > 0
+                            ? downloadOnlyRun ? "Downloads Blocked" : "Apply Blocked"
+                            : downloadOnlyRun ? "Downloads Need Attention" : "Apply Needs Attention",
+                        Message = plan.Conflicts.Count > 0
+                            ? downloadOnlyRun
+                                ? $"Cannot download queued mods: {plan.Conflicts[0]}"
+                                : $"Cannot apply queued changes: {plan.Conflicts[0]}"
+                            : followUps.FirstOrDefault() ?? plan.SummaryText,
+                        SummaryLines = BuildSummaryLines(plan),
+                        FollowUpLines = followUps,
+                    };
+                }
+
                 try
                 {
-                    plan.RegistryManager.ScanUnmanagedFiles();
+                    registryManager.ScanUnmanagedFiles();
 
                     var queuedDownloads = plan.RequestedDownloads
                                               .Where(mod => !ContainsIdentifier(plan.RequestedInstalls, mod.identifier)
@@ -204,7 +246,7 @@ namespace CKAN.App.Services
                                 {
                                     installer.UninstallList(toUninstall,
                                                             ref possibleConfigOnlyDirs,
-                                                            plan.RegistryManager,
+                                                            registryManager,
                                                             false,
                                                             toInstall.Concat(toUpgrade).ToList());
                                     toUninstall.Clear();
@@ -214,7 +256,7 @@ namespace CKAN.App.Services
                                 {
                                     installer.InstallList(toInstall,
                                                           plan.InstallOptions!,
-                                                          plan.RegistryManager,
+                                                          registryManager,
                                                           ref possibleConfigOnlyDirs,
                                                           deduper,
                                                           null,
@@ -229,7 +271,7 @@ namespace CKAN.App.Services
                                     installer.Upgrade(toUpgrade,
                                                       downloader,
                                                       ref possibleConfigOnlyDirs,
-                                                      plan.RegistryManager,
+                                                      registryManager,
                                                       deduper,
                                                       autoInstalled,
                                                       true,
@@ -242,7 +284,7 @@ namespace CKAN.App.Services
                             }
                             catch (TooManyModsProvideKraken ex)
                             {
-                                if (PromptForProvidedModule(plan.RegistryManager.registry, cache, ex)
+                                if (PromptForProvidedModule(registryManager.registry, cache, ex)
                                     is not CkanModule chosen)
                                 {
                                     return new ApplyChangesResult
@@ -269,7 +311,7 @@ namespace CKAN.App.Services
                     }
 
                     var leftoverConfigDirs = FilterConfigOnlyDirs(possibleConfigOnlyDirs,
-                                                                  plan.RegistryManager.registry,
+                                                                  registryManager.registry,
                                                                   plan.Instance);
 
                     clearQueue();
@@ -340,15 +382,23 @@ namespace CKAN.App.Services
                         Message = $"{(downloadOnlyRun ? "Downloads" : "Apply")} failed: {ex.Message}",
                     };
                 }
+                finally
+                {
+                    if (transientRegistryManager != null)
+                    {
+                        gameInstanceService.RefreshCurrentRegistry();
+                    }
+                }
             }, cancellationToken);
 
         private ExecutionPlan BuildExecutionPlan(IReadOnlyList<QueuedActionModel> requestedActions,
-                                                 CancellationToken            cancellationToken)
+                                                 CancellationToken            cancellationToken,
+                                                 RegistryManager?             registryManager = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (gameInstanceService.CurrentInstance is not GameInstance instance
-                || gameInstanceService.CurrentRegistryManager is not RegistryManager registryManager)
+                || (registryManager?.registry ?? gameInstanceService.CurrentRegistry) is not Registry registry)
             {
                 return new ExecutionPlan
                 {
@@ -384,8 +434,6 @@ namespace CKAN.App.Services
                     },
                 };
             }
-
-            var registry = registryManager.registry;
             var requestedDownloads = new List<CkanModule>();
             var requestedInstalls = new List<CkanModule>();
             var requestedUpdates  = new List<CkanModule>();
@@ -1034,7 +1082,7 @@ namespace CKAN.App.Services
         {
             public GameInstance Instance { get; init; } = null!;
 
-            public RegistryManager RegistryManager { get; init; } = null!;
+            public RegistryManager? RegistryManager { get; init; }
 
             public IReadOnlyList<QueuedActionModel> RequestedActions { get; init; }
                 = Array.Empty<QueuedActionModel>();

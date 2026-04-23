@@ -140,9 +140,9 @@ namespace CKAN.App.Services
         private CatalogContext? CurrentContext()
         {
             var instance = gameInstanceService.CurrentInstance;
-            var regMgr = gameInstanceService.CurrentRegistryManager;
-            return instance != null && regMgr != null
-                ? new CatalogContext(instance, regMgr.registry)
+            var registry = gameInstanceService.CurrentRegistry;
+            return instance != null && registry != null
+                ? new CatalogContext(instance, registry)
                 : null;
         }
 
@@ -240,6 +240,8 @@ namespace CKAN.App.Services
                     : displayMod.description.Trim(),
                 LatestVersion     = displayMod.version.ToString(),
                 InstalledVersion  = installedModule?.version.ToString() ?? "",
+                ReleaseDate       = displayMod.release_date?.ToString("yyyy-MM-dd") ?? "Unknown",
+                ReleaseDateValue  = displayMod.release_date?.Date,
                 DownloadCount     = downloadCount,
                 DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
@@ -609,6 +611,16 @@ namespace CKAN.App.Services
                         : items.OrderBy(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.ReleaseDate
+                    => descending
+                        ? items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenByDescending(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenBy(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.Version
                     => descending
                         ? items.OrderByDescending(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
@@ -647,6 +659,7 @@ namespace CKAN.App.Services
 
         private static bool DefaultSortDescending(ModSortOption sortOption)
             => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.ReleaseDate
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
 

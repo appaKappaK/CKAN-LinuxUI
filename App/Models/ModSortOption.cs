@@ -6,6 +6,7 @@ namespace CKAN.App.Models
         Author,
         Popularity,
         Compatibility,
+        ReleaseDate,
         Version,
         InstalledFirst,
         UpdatesFirst,

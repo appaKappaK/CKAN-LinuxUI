@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Newtonsoft.Json;
 
@@ -79,6 +81,19 @@ namespace CKAN.App.Services
             }
         }
 
+        public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return (settings.CatalogSkeletonRows ?? new List<CatalogSkeletonSnapshotRow>())
+                        .Select(CloneCatalogSkeletonRow)
+                        .ToList();
+                }
+            }
+        }
+
         public void SaveLastInstanceName(string? instanceName)
         {
             lock (sync)
@@ -138,6 +153,24 @@ namespace CKAN.App.Services
             }
         }
 
+        public void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows)
+        {
+            lock (sync)
+            {
+                var normalized = (rows ?? Array.Empty<CatalogSkeletonSnapshotRow>())
+                    .Select(CloneCatalogSkeletonRow)
+                    .ToList();
+
+                if (CatalogSkeletonRowsEqual(settings.CatalogSkeletonRows, normalized))
+                {
+                    return;
+                }
+
+                settings.CatalogSkeletonRows = normalized;
+                SaveSettings();
+            }
+        }
+
         private StoredSettings LoadSettings()
         {
             try
@@ -189,6 +222,77 @@ namespace CKAN.App.Services
                && left?.PositionY == right?.PositionY
                && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false);
 
+        private static bool CatalogSkeletonRowsEqual(IReadOnlyList<CatalogSkeletonSnapshotRow>? left,
+                                                     IReadOnlyList<CatalogSkeletonSnapshotRow>? right)
+        {
+            var safeLeft = left ?? Array.Empty<CatalogSkeletonSnapshotRow>();
+            var safeRight = right ?? Array.Empty<CatalogSkeletonSnapshotRow>();
+            if (safeLeft.Count != safeRight.Count)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < safeLeft.Count; index++)
+            {
+                var a = safeLeft[index];
+                var b = safeRight[index];
+                if (a.AccentBrush != b.AccentBrush
+                    || a.TitleWidth != b.TitleWidth
+                    || a.AuthorWidth != b.AuthorWidth
+                    || a.SummaryWidth != b.SummaryWidth
+                    || a.DownloadsWidth != b.DownloadsWidth
+                    || a.CompatibilityWidth != b.CompatibilityWidth
+                    || a.ReleaseWidth != b.ReleaseWidth
+                    || a.VersionPrimaryWidth != b.VersionPrimaryWidth
+                    || a.VersionSecondaryWidth != b.VersionSecondaryWidth
+                    || a.Opacity != b.Opacity
+                    || a.PrimaryBadgeWidth != b.PrimaryBadgeWidth
+                    || a.PrimaryBadgeBackground != b.PrimaryBadgeBackground
+                    || a.HasCachedBadge != b.HasCachedBadge
+                    || a.SecondaryBadgeWidth != b.SecondaryBadgeWidth
+                    || a.SecondaryBadgeBackground != b.SecondaryBadgeBackground
+                    || a.SecondaryBadgeBorderBrush != b.SecondaryBadgeBorderBrush
+                    || a.TertiaryBadgeWidth != b.TertiaryBadgeWidth
+                    || a.TertiaryBadgeBackground != b.TertiaryBadgeBackground
+                    || a.TertiaryBadgeBorderBrush != b.TertiaryBadgeBorderBrush
+                    || a.QueueBadgeWidth != b.QueueBadgeWidth
+                    || a.QueueBadgeBackground != b.QueueBadgeBackground
+                    || a.QueueBadgeBorderBrush != b.QueueBadgeBorderBrush)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static CatalogSkeletonSnapshotRow CloneCatalogSkeletonRow(CatalogSkeletonSnapshotRow row)
+            => new CatalogSkeletonSnapshotRow
+            {
+                AccentBrush             = row.AccentBrush,
+                TitleWidth              = row.TitleWidth,
+                AuthorWidth             = row.AuthorWidth,
+                SummaryWidth            = row.SummaryWidth,
+                DownloadsWidth          = row.DownloadsWidth,
+                CompatibilityWidth      = row.CompatibilityWidth,
+                ReleaseWidth            = row.ReleaseWidth,
+                VersionPrimaryWidth     = row.VersionPrimaryWidth,
+                VersionSecondaryWidth   = row.VersionSecondaryWidth,
+                Opacity                 = row.Opacity,
+                PrimaryBadgeWidth       = row.PrimaryBadgeWidth,
+                PrimaryBadgeBackground  = row.PrimaryBadgeBackground,
+                HasCachedBadge          = row.HasCachedBadge,
+                SecondaryBadgeWidth     = row.SecondaryBadgeWidth,
+                SecondaryBadgeBackground = row.SecondaryBadgeBackground,
+                SecondaryBadgeBorderBrush = row.SecondaryBadgeBorderBrush,
+                TertiaryBadgeWidth      = row.TertiaryBadgeWidth,
+                TertiaryBadgeBackground = row.TertiaryBadgeBackground,
+                TertiaryBadgeBorderBrush = row.TertiaryBadgeBorderBrush,
+                QueueBadgeWidth         = row.QueueBadgeWidth,
+                QueueBadgeBackground    = row.QueueBadgeBackground,
+                QueueBadgeBorderBrush   = row.QueueBadgeBorderBrush,
+            };
+
         private sealed class StoredSettings
         {
             public string? LastInstanceName { get; set; }
@@ -198,6 +302,8 @@ namespace CKAN.App.Services
             public AppWindowState WindowState { get; set; } = new AppWindowState();
 
             public int UiScalePercent { get; set; } = UiScaleSettings.DefaultPercent;
+
+            public List<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; set; } = new List<CatalogSkeletonSnapshotRow>();
         }
     }
 }

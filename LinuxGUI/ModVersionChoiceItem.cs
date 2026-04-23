@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace CKAN.LinuxGUI
 {
     public sealed class ModVersionChoiceItem
@@ -10,9 +12,7 @@ namespace CKAN.LinuxGUI
 
         public string BadgeText { get; init; } = "";
 
-        public string BadgeBackground { get; init; } = "#31424F";
-
-        public string BadgeBorderBrush { get; init; } = "#4C6A86";
+        public string BadgeForeground { get; init; } = "#AEB8C6";
 
         public bool HasBadge => !string.IsNullOrWhiteSpace(BadgeText);
 
@@ -26,7 +26,10 @@ namespace CKAN.LinuxGUI
 
         public string VersionKey => Module.version.ToString();
 
-        public string MetaText => $"{CompatibilityText} • {ReleaseDateText}";
+        public string MetaText
+            => string.Join(" • ", new[] { CompatibilityText, ReleaseDateText }
+                .Where(value => !string.IsNullOrWhiteSpace(value)
+                                && !string.Equals(value, "Unknown", System.StringComparison.OrdinalIgnoreCase)));
 
         public override string ToString()
             => VersionText;

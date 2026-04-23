@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -22,6 +23,10 @@ namespace CKAN.App.Models
         public string LatestVersion { get; init; } = "";
 
         public string InstalledVersion { get; init; } = "";
+
+        public string ReleaseDate { get; init; } = "";
+
+        public DateTime? ReleaseDateValue { get; init; }
 
         public int? DownloadCount { get; init; }
 

@@ -74,9 +74,10 @@ namespace CKAN.LinuxGUI
         private string  selectedModDependencyCountLabel = "";
         private string  selectedModRecommendationCountLabel = "";
         private string  selectedModSuggestionCountLabel = "";
+        private string? selectedModCachedArchivePath;
         private ModVersionChoiceItem? selectedModVersionChoice;
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
-        private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod for download-only.";
+        private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod to add it to cache.";
         private string  currentExecutionTitle = "Applying Changes";
         private string  currentExecutionStatusLabel = "Applying changes…";
         private string  applyResultTitle = "";
@@ -128,6 +129,7 @@ namespace CKAN.LinuxGUI
         private int     modListScrollResetRequestId;
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
+        private IReadOnlyList<CatalogSkeletonRow> catalogSkeletonRows = Array.Empty<CatalogSkeletonRow>();
         private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
@@ -169,12 +171,14 @@ namespace CKAN.LinuxGUI
             PreviewConflicts = new ObservableCollection<string>();
             ApplyResultSummaryLines = new ObservableCollection<string>();
             ApplyResultFollowUpLines = new ObservableCollection<string>();
+            CatalogSkeletonRows = BuildCatalogSkeletonRows(appSettingsService.CatalogSkeletonRows);
             SortOptions = new[]
             {
                 new SortOptionItem { Value = ModSortOption.Name, Label = "Name" },
                 new SortOptionItem { Value = ModSortOption.Author, Label = "Author" },
                 new SortOptionItem { Value = ModSortOption.Popularity, Label = "Downloads" },
                 new SortOptionItem { Value = ModSortOption.Compatibility, Label = "Compatibility" },
+                new SortOptionItem { Value = ModSortOption.ReleaseDate, Label = "Released" },
                 new SortOptionItem { Value = ModSortOption.Version, Label = "Version" },
                 new SortOptionItem { Value = ModSortOption.InstalledFirst, Label = "Installed First" },
                 new SortOptionItem { Value = ModSortOption.UpdatesFirst, Label = "Updates First" },
@@ -265,6 +269,9 @@ namespace CKAN.LinuxGUI
             AcknowledgeExecutionResultCommand = ReactiveCommand.Create(AcknowledgeExecutionResult);
             OpenCurrentGameDirectoryCommand = ReactiveCommand.Create(OpenCurrentGameDirectory,
                                                                     this.WhenAnyValue(vm => vm.HasCurrentInstance));
+            OpenSelectedModCacheLocationCommand = ReactiveCommand.Create(
+                OpenSelectedModCacheLocation,
+                this.WhenAnyValue(vm => vm.ShowOpenSelectedModCacheLocationAction));
             OpenUserGuideCommand = ReactiveCommand.Create(OpenUserGuide);
             OpenDiscordCommand = ReactiveCommand.Create(OpenDiscord);
             OpenGameSupportCommand = ReactiveCommand.Create(OpenGameSupport,
@@ -294,6 +301,7 @@ namespace CKAN.LinuxGUI
             SelectAuthorSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Author));
             SelectPopularitySortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Popularity));
             SelectCompatibilitySortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Compatibility));
+            SelectReleaseDateSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.ReleaseDate));
             SelectVersionSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Version));
             SelectInstalledFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.InstalledFirst));
             SelectUpdatesFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.UpdatesFirst));
@@ -404,6 +412,12 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<string> PreviewConflicts { get; }
 
+        public IReadOnlyList<CatalogSkeletonRow> CatalogSkeletonRows
+        {
+            get => catalogSkeletonRows;
+            private set => this.RaiseAndSetIfChanged(ref catalogSkeletonRows, value);
+        }
+
         public ObservableCollection<string> ApplyResultSummaryLines { get; }
 
         public ObservableCollection<string> ApplyResultFollowUpLines { get; }
@@ -460,6 +474,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> OpenCurrentGameDirectoryCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> OpenSelectedModCacheLocationCommand { get; }
+
         public ReactiveCommand<Unit, Unit> OpenUserGuideCommand { get; }
 
         public ReactiveCommand<Unit, Unit> OpenDiscordCommand { get; }
@@ -497,6 +513,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> SelectPopularitySortCommand { get; }
 
         public ReactiveCommand<Unit, Unit> SelectCompatibilitySortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectReleaseDateSortCommand { get; }
 
         public ReactiveCommand<Unit, Unit> SelectVersionSortCommand { get; }
 
@@ -912,7 +930,7 @@ namespace CKAN.LinuxGUI
 
         public SteamLibrary CurrentSteamLibrary => gameInstanceService.Manager.SteamLibrary;
 
-        public Registry? CurrentRegistry => gameInstanceService.CurrentRegistryManager?.registry;
+        public Registry? CurrentRegistry => gameInstanceService.CurrentRegistry;
 
         public NetModuleCache? CurrentCache => gameInstanceService.Manager.Cache;
 
@@ -987,6 +1005,187 @@ namespace CKAN.LinuxGUI
         public bool HasMods => Mods.Count > 0;
 
         public bool ShowCatalogSkeleton => IsCatalogLoading;
+
+        private static IReadOnlyList<CatalogSkeletonRow> BuildCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow>? savedRows)
+            => savedRows is { Count: > 0 }
+                ? savedRows.Select(ToCatalogSkeletonRow).ToList()
+                : BuildDefaultCatalogSkeletonRows();
+
+        private static IReadOnlyList<CatalogSkeletonRow> BuildCatalogSkeletonRows(IEnumerable<ModListItem> items)
+        {
+            var opacityCycle = new[] { 1.00, 0.98, 0.96, 0.94, 0.97, 0.95, 0.93, 0.91 };
+            return items.Take(26)
+                        .Select((item, index) => new CatalogSkeletonRow
+                        {
+                            AccentBrush             = string.IsNullOrWhiteSpace(item.PrimaryStateColor) ? "#39424E" : item.PrimaryStateColor,
+                            TitleWidth              = SkeletonTextWidth(item.Name, 120, 320, 6.4),
+                            AuthorWidth             = SkeletonTextWidth(item.Author, 54, 180, 4.8),
+                            SummaryWidth            = SkeletonTextWidth(item.Summary, 180, 420, 5.4),
+                            DownloadsWidth          = SkeletonTextWidth(item.DownloadCountLabel, 42, 72, 5.8),
+                            CompatibilityWidth      = SkeletonTextWidth(item.Compatibility, 24, 40, 4.2),
+                            ReleaseWidth            = SkeletonTextWidth(item.ReleaseDate, 36, 68, 4.8),
+                            VersionPrimaryWidth     = SkeletonTextWidth(item.LatestVersion, 36, 132, 5.6),
+                            VersionSecondaryWidth   = item.IsInstalled
+                                ? SkeletonTextWidth(item.InstalledVersion, 28, 118, 5.2)
+                                : 0,
+                            Opacity                 = opacityCycle[index % opacityCycle.Length],
+                            PrimaryBadgeWidth       = PillWidth(item.PrimaryStateLabel),
+                            PrimaryBadgeBackground  = string.IsNullOrWhiteSpace(item.PrimaryStateColor) ? "#3B4653" : item.PrimaryStateColor,
+                            HasCachedBadge          = item.IsCached,
+                            SecondaryBadgeWidth     = item.HasSecondaryState ? PillWidth(item.SecondaryStateLabel) : 0,
+                            SecondaryBadgeBackground = item.SecondaryStateBackground,
+                            SecondaryBadgeBorderBrush = item.SecondaryStateBorderBrush,
+                            TertiaryBadgeWidth      = item.HasTertiaryState ? PillWidth(item.TertiaryStateLabel) : 0,
+                            TertiaryBadgeBackground = item.TertiaryStateBackground,
+                            TertiaryBadgeBorderBrush = item.TertiaryStateBorderBrush,
+                            QueueBadgeWidth         = item.HasQueueState ? PillWidth(item.QueueStateLabel) : 0,
+                            QueueBadgeBackground    = item.QueueStateBackground,
+                            QueueBadgeBorderBrush   = item.QueueStateBorderBrush,
+                        })
+                        .ToList();
+        }
+
+        private static IReadOnlyList<CatalogSkeletonRow> BuildDefaultCatalogSkeletonRows()
+        {
+            string[] accents =
+            {
+                "#24588A",
+                "#39424E",
+                "#2E7C59",
+                "#9B4559",
+            };
+
+            (double TitleWidth,
+             double AuthorWidth,
+             double SummaryWidth,
+             double DownloadsWidth,
+             double CompatibilityWidth,
+             double ReleaseWidth,
+             double VersionPrimaryWidth,
+             double VersionSecondaryWidth,
+             double PrimaryBadgeWidth,
+             bool   HasCachedBadge,
+             double SecondaryBadgeWidth,
+             double TertiaryBadgeWidth,
+             double QueueBadgeWidth,
+             double Opacity)[] patterns =
+            {
+                (182, 92, 286, 66, 42, 76, 98, 74, 54, true,  0,  0,  0, 1.00),
+                (208, 108, 254, 60, 36, 68, 90, 66, 48, false, 0,  0,  0, 0.98),
+                (196, 96, 308, 64, 40, 72, 94, 70, 58, false, 0,  0,  0, 0.96),
+                (176, 88, 244, 58, 34, 64, 86, 62, 74, false, 0,  0,  0, 0.94),
+                (214, 112, 322, 68, 44, 80, 102, 76, 54, true,  0,  0, 66, 0.97),
+                (188, 94, 266, 62, 38, 70, 92, 68, 58, false, 54, 0,  0, 0.95),
+                (202, 104, 296, 66, 40, 74, 96, 72, 48, false, 0,  60, 0, 0.93),
+                (172, 84, 236, 56, 32, 62, 84, 60, 74, false, 0,  0,  0, 0.91),
+            };
+
+            return Enumerable.Range(0, 26)
+                             .Select(index =>
+                             {
+                                 var pattern = patterns[index % patterns.Length];
+                                 var accent = accents[index % accents.Length];
+                                 return new CatalogSkeletonRow
+                                 {
+                                     AccentBrush              = accent,
+                                     TitleWidth               = pattern.TitleWidth,
+                                     AuthorWidth              = pattern.AuthorWidth,
+                                     SummaryWidth             = pattern.SummaryWidth,
+                                     DownloadsWidth           = pattern.DownloadsWidth,
+                                     CompatibilityWidth       = pattern.CompatibilityWidth,
+                                     ReleaseWidth             = pattern.ReleaseWidth,
+                                     VersionPrimaryWidth      = pattern.VersionPrimaryWidth,
+                                     VersionSecondaryWidth    = pattern.VersionSecondaryWidth,
+                                     PrimaryBadgeWidth        = pattern.PrimaryBadgeWidth,
+                                     PrimaryBadgeBackground   = accent,
+                                     HasCachedBadge           = pattern.HasCachedBadge,
+                                     SecondaryBadgeWidth      = pattern.SecondaryBadgeWidth,
+                                     SecondaryBadgeBackground = "#39424E",
+                                     SecondaryBadgeBorderBrush = "#607286",
+                                     TertiaryBadgeWidth       = pattern.TertiaryBadgeWidth,
+                                     TertiaryBadgeBackground  = "#31424F",
+                                     TertiaryBadgeBorderBrush = "#4C6A86",
+                                     QueueBadgeWidth          = pattern.QueueBadgeWidth,
+                                     QueueBadgeBackground     = "#4B5A69",
+                                     QueueBadgeBorderBrush    = "#4B5A69",
+                                     Opacity                  = pattern.Opacity,
+                                 };
+                             })
+                             .ToList();
+        }
+
+        private static CatalogSkeletonRow ToCatalogSkeletonRow(CatalogSkeletonSnapshotRow row)
+            => new CatalogSkeletonRow
+            {
+                AccentBrush              = row.AccentBrush,
+                TitleWidth               = row.TitleWidth,
+                AuthorWidth              = row.AuthorWidth,
+                SummaryWidth             = row.SummaryWidth,
+                DownloadsWidth           = row.DownloadsWidth,
+                CompatibilityWidth       = row.CompatibilityWidth,
+                ReleaseWidth             = row.ReleaseWidth,
+                VersionPrimaryWidth      = row.VersionPrimaryWidth,
+                VersionSecondaryWidth    = row.VersionSecondaryWidth,
+                Opacity                  = row.Opacity,
+                PrimaryBadgeWidth        = row.PrimaryBadgeWidth,
+                PrimaryBadgeBackground   = row.PrimaryBadgeBackground,
+                HasCachedBadge           = row.HasCachedBadge,
+                SecondaryBadgeWidth      = row.SecondaryBadgeWidth,
+                SecondaryBadgeBackground = row.SecondaryBadgeBackground,
+                SecondaryBadgeBorderBrush = row.SecondaryBadgeBorderBrush,
+                TertiaryBadgeWidth       = row.TertiaryBadgeWidth,
+                TertiaryBadgeBackground  = row.TertiaryBadgeBackground,
+                TertiaryBadgeBorderBrush = row.TertiaryBadgeBorderBrush,
+                QueueBadgeWidth          = row.QueueBadgeWidth,
+                QueueBadgeBackground     = row.QueueBadgeBackground,
+                QueueBadgeBorderBrush    = row.QueueBadgeBorderBrush,
+            };
+
+        private static CatalogSkeletonSnapshotRow ToCatalogSkeletonSnapshotRow(CatalogSkeletonRow row)
+            => new CatalogSkeletonSnapshotRow
+            {
+                AccentBrush              = row.AccentBrush,
+                TitleWidth               = row.TitleWidth,
+                AuthorWidth              = row.AuthorWidth,
+                SummaryWidth             = row.SummaryWidth,
+                DownloadsWidth           = row.DownloadsWidth,
+                CompatibilityWidth       = row.CompatibilityWidth,
+                ReleaseWidth             = row.ReleaseWidth,
+                VersionPrimaryWidth      = row.VersionPrimaryWidth,
+                VersionSecondaryWidth    = row.VersionSecondaryWidth,
+                Opacity                  = row.Opacity,
+                PrimaryBadgeWidth        = row.PrimaryBadgeWidth,
+                PrimaryBadgeBackground   = row.PrimaryBadgeBackground,
+                HasCachedBadge           = row.HasCachedBadge,
+                SecondaryBadgeWidth      = row.SecondaryBadgeWidth,
+                SecondaryBadgeBackground = row.SecondaryBadgeBackground,
+                SecondaryBadgeBorderBrush = row.SecondaryBadgeBorderBrush,
+                TertiaryBadgeWidth       = row.TertiaryBadgeWidth,
+                TertiaryBadgeBackground  = row.TertiaryBadgeBackground,
+                TertiaryBadgeBorderBrush = row.TertiaryBadgeBorderBrush,
+                QueueBadgeWidth          = row.QueueBadgeWidth,
+                QueueBadgeBackground     = row.QueueBadgeBackground,
+                QueueBadgeBorderBrush    = row.QueueBadgeBorderBrush,
+            };
+
+        private static double SkeletonTextWidth(string? text,
+                                                double  min,
+                                                double  max,
+                                                double  perCharacter)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return 0;
+            }
+
+            var width = min + (text.Trim().Length * perCharacter);
+            return Math.Max(min, Math.Min(max, width));
+        }
+
+        private static double PillWidth(string? text)
+            => string.IsNullOrWhiteSpace(text)
+                ? 0
+                : Math.Max(40, Math.Min(112, 18 + (text.Trim().Length * 5.4)));
 
         public bool ShowModList => !IsCatalogLoading && HasMods;
 
@@ -1363,6 +1562,9 @@ namespace CKAN.LinuxGUI
         public string CompatibilitySortLabel
             => SortOptionLabel(ModSortOption.Compatibility, "Compat");
 
+        public string ReleaseDateSortLabel
+            => SortOptionLabel(ModSortOption.ReleaseDate, "Released");
+
         public string VersionSortLabel
             => SortOptionLabel(ModSortOption.Version, "Version");
 
@@ -1379,6 +1581,8 @@ namespace CKAN.LinuxGUI
         public bool PopularitySortSelected => SelectedSortOption?.Value == ModSortOption.Popularity;
 
         public bool CompatibilitySortSelected => SelectedSortOption?.Value == ModSortOption.Compatibility;
+
+        public bool ReleaseDateSortSelected => SelectedSortOption?.Value == ModSortOption.ReleaseDate;
 
         public bool VersionSortSelected => SelectedSortOption?.Value == ModSortOption.Version;
 
@@ -1508,6 +1712,10 @@ namespace CKAN.LinuxGUI
                || ShowRemoveNowAction
                || ShowPrimarySelectedModAction;
 
+        public bool ShowOpenSelectedModCacheLocationAction
+            => !IsSelectedModLoading
+               && !string.IsNullOrWhiteSpace(selectedModCachedArchivePath);
+
         public bool ShowSelectedModActionUnavailableNote
             => !IsSelectedModLoading
                && !ShowInstallNowAction
@@ -1549,7 +1757,7 @@ namespace CKAN.LinuxGUI
                     {
                         > 0 => "Queue Update",
                         < 0 => "Queue Downgrade",
-                        _ => "Queue Switch Version",
+                        _ => "Queue Version Change",
                     };
                 }
                 if (ShowRemoveAction)
@@ -1636,7 +1844,11 @@ namespace CKAN.LinuxGUI
         public bool SelectedModIsCached
         {
             get => selectedModIsCached;
-            private set => this.RaiseAndSetIfChanged(ref selectedModIsCached, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref selectedModIsCached, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
+            }
         }
 
         public bool SelectedModIsIncompatible
@@ -1669,6 +1881,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowSelectedModStateBadges
             => SelectedModIsInstalled
+               || SelectedModIsCached
                || SelectedModHasUpdate
                || SelectedModIsAutodetected
                || SelectedModShowsIncompatibleState
@@ -1842,7 +2055,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions from Browse to build an apply preview. Right-click a mod for download-only.";
+                    return "Queue install, update, or remove actions from Browse to build an apply preview. Right-click a mod to add it to cache.";
                 }
 
                 if (!HasQueuedActions && ShowInlineApplyResult)
@@ -1894,7 +2107,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying. Right-click a mod for download-only.";
+                    return "Queue install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying. Right-click a mod to add it to cache.";
                 }
 
                 if (!HasQueuedActions && ShowInlineApplyResult)
@@ -2034,7 +2247,7 @@ namespace CKAN.LinuxGUI
                 ? $"{PreviewStatusLabel} • {PreviewImpactSummary}"
                 : ShowInlineApplyResult
                     ? ApplyResultMessage
-                    : "Queue install, update, or remove actions to preview changes. Right-click a mod for download-only.";
+                    : "Queue install, update, or remove actions to preview changes. Right-click a mod to add it to cache.";
 
         public string CollapsedQueueStubBackground
             => HasQueuedActions
@@ -2056,7 +2269,7 @@ namespace CKAN.LinuxGUI
             {
                 if (SelectedMod == null)
                 {
-                    return "Choose a mod to queue an install, update, or removal. Right-click a mod for download-only.";
+                    return "Choose a mod to queue an install, update, or removal. Right-click a mod to add it to cache.";
                 }
 
                 var queuedChange = changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
@@ -2073,7 +2286,7 @@ namespace CKAN.LinuxGUI
 
                 if (ShowInstallAction)
                 {
-                    return "No queued item for this mod yet. Install now, queue it for later, or right-click for download-only.";
+                    return "No queued item for this mod yet. Queue the install or right-click to add it to cache.";
                 }
 
                 if (ShowRemoveAction)
@@ -2367,15 +2580,11 @@ namespace CKAN.LinuxGUI
 
         public string DownloadOnlyContextLabel(ModListItem mod)
             => changesetService.FindQueuedDownloadAction(mod.Identifier) != null
-                ? mod.IsInstalled
-                    ? "Cancel Add to Cache"
-                    : "Cancel Download Only"
-                : mod.IsInstalled
-                    ? "Add to Cache"
-                    : "Download Only";
+                ? "Cancel Add to Cache"
+                : "Add to Cache";
 
         public string PurgeCacheContextLabel(ModListItem mod)
-            => $"Purge Cached {mod.Name}";
+            => "Purge from cache";
 
         public void ToggleDownloadOnlyFromBrowser(ModListItem mod)
         {
@@ -2386,9 +2595,7 @@ namespace CKAN.LinuxGUI
             {
                 if (changesetService.Remove(queuedDownload.Identifier))
                 {
-                    StatusMessage = mod.IsInstalled
-                        ? $"Removed queued add-to-cache action for {mod.Name}."
-                        : $"Removed queued download-only for {mod.Name}.";
+                    StatusMessage = $"Removed queued add-to-cache action for {mod.Name}.";
                 }
                 return;
             }
@@ -2404,14 +2611,12 @@ namespace CKAN.LinuxGUI
             {
                 StatusMessage = mod.IsInstalled
                     ? $"{queuedApply.ActionText} is already queued for {mod.Name}. Cancel it before adding it to the cache."
-                    : $"{queuedApply.ActionText} is already queued for {mod.Name}. Cancel it before staging download-only.";
+                    : $"{queuedApply.ActionText} is already queued for {mod.Name}. Cancel it before adding it to the cache.";
                 return;
             }
 
             changesetService.QueueDownload(mod);
-            StatusMessage = mod.IsInstalled
-                ? $"Queued add to cache for {mod.Name}."
-                : $"Queued download-only for {mod.Name}.";
+            StatusMessage = $"Queued add to cache for {mod.Name}.";
         }
 
         public void PurgeCacheFromBrowser(ModListItem mod)
@@ -3103,10 +3308,18 @@ namespace CKAN.LinuxGUI
 
         private void ReplaceVisibleMods(IEnumerable<ModListItem> items)
         {
+            var visibleItems = items.ToList();
             Mods.Clear();
-            foreach (var item in items)
+            foreach (var item in visibleItems)
             {
                 Mods.Add(item);
+            }
+
+            var skeletonRows = BuildCatalogSkeletonRows(visibleItems);
+            if (skeletonRows.Count > 0)
+            {
+                CatalogSkeletonRows = skeletonRows;
+                appSettingsService.SaveCatalogSkeletonRows(skeletonRows.Select(ToCatalogSkeletonSnapshotRow).ToList());
             }
         }
 
@@ -3161,6 +3374,18 @@ namespace CKAN.LinuxGUI
             LaunchExternal(CurrentInstance.GameDir,
                            $"Opened {CurrentInstance.Name} in your file manager.",
                            "Could not open the current game directory.");
+        }
+
+        private void OpenSelectedModCacheLocation()
+        {
+            if (ResolveSelectedModCachedArchivePath() is not string path)
+            {
+                StatusMessage = "No cached archive is available for this mod.";
+                return;
+            }
+
+            Utilities.OpenFileBrowser(path);
+            StatusMessage = "Opened cached archive location in your file manager.";
         }
 
         private void OpenUserGuide()
@@ -3235,6 +3460,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));
             this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
             this.RaisePropertyChanged(nameof(SelectedInstanceContextTitle));
+            UpdateSelectedModCachedArchivePath();
         }
 
         private void ClearCatalogState()
@@ -3691,6 +3917,7 @@ namespace CKAN.LinuxGUI
         private void ResetSelectedModDetails()
         {
             selectedModDetails = null;
+            selectedModCachedArchivePath = null;
             SelectedModTitle = "No mod selected";
             SelectedModSubtitle = "Choose a mod to inspect its details.";
             SelectedModAuthors = "";
@@ -3722,6 +3949,7 @@ namespace CKAN.LinuxGUI
             ShowSelectedModDependenciesExpanded = false;
             ShowSelectedModRecommendationsExpanded = false;
             ShowSelectedModSuggestionsExpanded = false;
+            this.RaisePropertyChanged(nameof(ShowOpenSelectedModCacheLocationAction));
             PublishSelectedModRelationshipState();
             SetSelectedModDetailsSection(ModDetailsSection.Overview);
         }
@@ -3775,6 +4003,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(AuthorSortLabel));
             this.RaisePropertyChanged(nameof(PopularitySortLabel));
             this.RaisePropertyChanged(nameof(CompatibilitySortLabel));
+            this.RaisePropertyChanged(nameof(ReleaseDateSortLabel));
             this.RaisePropertyChanged(nameof(VersionSortLabel));
             this.RaisePropertyChanged(nameof(InstalledFirstSortLabel));
             this.RaisePropertyChanged(nameof(UpdatesFirstSortLabel));
@@ -3782,6 +4011,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(AuthorSortSelected));
             this.RaisePropertyChanged(nameof(PopularitySortSelected));
             this.RaisePropertyChanged(nameof(CompatibilitySortSelected));
+            this.RaisePropertyChanged(nameof(ReleaseDateSortSelected));
             this.RaisePropertyChanged(nameof(VersionSortSelected));
             this.RaisePropertyChanged(nameof(InstalledFirstSortSelected));
             this.RaisePropertyChanged(nameof(UpdatesFirstSortSelected));
@@ -3801,6 +4031,7 @@ namespace CKAN.LinuxGUI
 
         private static bool DefaultSortDescending(ModSortOption sortOption)
             => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.ReleaseDate
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
 
@@ -3840,6 +4071,16 @@ namespace CKAN.LinuxGUI
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderBy(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.ReleaseDate
+                    => descending
+                        ? items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenByDescending(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenBy(item => item.ReleaseDateValue)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.Version
@@ -4175,21 +4416,17 @@ namespace CKAN.LinuxGUI
                               var badgeText = installedVersion?.Equals(module.version) == true
                                   ? "Installed"
                                   : isCompatible ? "" : "Incompatible";
-                              var badgeBackground = installedVersion?.Equals(module.version) == true
-                                  ? "#2B6A98"
-                                  : "#6A3A46";
-                              var badgeBorderBrush = installedVersion?.Equals(module.version) == true
-                                  ? "#4A88B5"
-                                  : "#8F5161";
+                              var badgeForeground = installedVersion?.Equals(module.version) == true
+                                  ? "#8EC7F3"
+                                  : "#E1A5B0";
 
                               return new ModVersionChoiceItem
                               {
                                   VersionText = module.version.ToString(),
                                   CompatibilityText = BuildVersionCompatibilityLabel(module, CurrentInstance),
-                                  ReleaseDateText = module.release_date?.ToLocalTime().ToString("g") ?? "Unknown",
+                                  ReleaseDateText = module.release_date?.ToLocalTime().ToString("M/d/yyyy") ?? "Unknown",
                                   BadgeText = badgeText,
-                                  BadgeBackground = badgeBackground,
-                                  BadgeBorderBrush = badgeBorderBrush,
+                                  BadgeForeground = badgeForeground,
                                   IsInstalledVersion = installedVersion?.Equals(module.version) == true,
                                   IsCompatible = isCompatible,
                                   VersionComparisonToInstalled = comparison,
@@ -4223,6 +4460,7 @@ namespace CKAN.LinuxGUI
                 ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
                 SelectedModIsCached = selectedModDetails.IsCached;
                 SelectedModIsIncompatible = selectedModDetails.IsIncompatible;
+                UpdateSelectedModCachedArchivePath();
                 PublishSelectedModRelationshipState();
                 PublishSelectedModActionState();
                 return;
@@ -4251,8 +4489,43 @@ namespace CKAN.LinuxGUI
             SelectedModSuggestionCountLabel = CountLabel(suggestions.Count, "Suggestion", "Suggestions");
             SelectedModIsCached = CurrentCache?.IsMaybeCachedZip(module) == true;
             SelectedModIsIncompatible = !module.IsCompatible(CurrentInstance.VersionCriteria());
+            UpdateSelectedModCachedArchivePath();
             PublishSelectedModRelationshipState();
             PublishSelectedModActionState();
+        }
+
+        private void UpdateSelectedModCachedArchivePath()
+        {
+            selectedModCachedArchivePath = ResolveSelectedModCachedArchivePath();
+            this.RaisePropertyChanged(nameof(ShowOpenSelectedModCacheLocationAction));
+        }
+
+        private string? ResolveSelectedModCachedArchivePath()
+        {
+            if (SelectedMod == null || CurrentCache == null)
+            {
+                return null;
+            }
+
+            if (SelectedModVersionChoice?.Module is CkanModule selectedModule
+                && CurrentCache.GetCachedFilename(selectedModule) is string selectedPath)
+            {
+                return selectedPath;
+            }
+
+            if (CurrentRegistry == null)
+            {
+                return null;
+            }
+
+            return Enumerable.Repeat(CurrentRegistry.InstalledModule(SelectedMod.Identifier)?.Module, 1)
+                             .Concat(Utilities.DefaultIfThrows(
+                                         () => CurrentRegistry.AvailableByIdentifier(SelectedMod.Identifier))
+                                     ?? Enumerable.Empty<CkanModule>())
+                             .OfType<CkanModule>()
+                             .Distinct()
+                             .Select(CurrentCache.GetCachedFilename)
+                             .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
         }
 
         private List<string> BuildRelationshipEntries(IEnumerable<RelationshipDescriptor>? relationships)

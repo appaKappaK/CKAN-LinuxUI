@@ -62,6 +62,7 @@ BUILD_STAMP_PATTERNS=(
 : "${CKAN_LINUX_DEV_STREAM_STDIO:=0}"         # Stream output to terminal if 1
 : "${CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS:=5}"  # Keep last N session logs (default: 5)
 : "${CKAN_LINUX_DEV_DEBUG_MODE:=0}"           # Enable verbose debug logging if 1
+: "${CKAN_LINUX_DEV_NO_REGISTRY_LOCK:=1}"     # Browse without holding the registry lock if 1
 
 # ============================================================================
 # Utility Functions
@@ -267,6 +268,7 @@ log_session_line "latest_session_log: $LATEST_SESSION_LOG"
 log_session_line "debug_log: $RUN_DIR/ckan-linux-debug.log"
 log_session_line "latest_debug_log: $LATEST_DEBUG_LOG"
 log_session_line "stream_stdio_to_terminal: $CKAN_LINUX_DEV_STREAM_STDIO"
+log_session_line "no_registry_lock: $CKAN_LINUX_DEV_NO_REGISTRY_LOCK"
 log_session_line "==============================="
 
 # Redirect output based on configuration
@@ -275,5 +277,7 @@ if [[ "$CKAN_LINUX_DEV_STREAM_STDIO" == "1" ]]; then
 else
     exec >>"$SESSION_LOG" 2>&1
 fi
+
+export CKAN_LINUX_DEV_NO_REGISTRY_LOCK
 
 exec "${APP_CMD[@]}" "$@"
