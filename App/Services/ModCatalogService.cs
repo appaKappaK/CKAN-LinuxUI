@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using CKAN.App.Models;
+using CKAN.Versioning;
 
 namespace CKAN.App.Services
 {
@@ -659,9 +660,25 @@ namespace CKAN.App.Services
             var latest = module.LatestCompatibleGameVersion();
             if (latest.IsAny)
             {
-                latest = module.LatestCompatibleRealGameVersion(instance.Game.KnownVersions);
+                return "Any";
             }
-            return latest?.ToString() ?? "Unknown";
+            return FormatDisplayedCompatibilityVersion(latest);
+        }
+
+        private static string FormatDisplayedCompatibilityVersion(GameVersion? version)
+        {
+            if (version == null || version.IsAny)
+            {
+                return "Unknown";
+            }
+
+            var normalized = version.WithoutBuild;
+            if (normalized.IsPatchDefined && normalized.Patch == 99)
+            {
+                normalized = new GameVersion(normalized.Major, normalized.Minor);
+            }
+
+            return normalized.ToString() ?? "Unknown";
         }
 
         private static string FormatModuleKind(ModuleKind kind)

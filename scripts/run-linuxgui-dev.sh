@@ -58,10 +58,10 @@ BUILD_STAMP_PATTERNS=(
 # ============================================================================
 # Configuration Options (set environment variables before sourcing this script)
 # ============================================================================
-: "${CKAN_LINUX_DEV_SKIP_BUILD:-0}"        # Skip build cache check if 1
-: "${CKAN_LINUX_DEV_STREAM_STDIO:-0}"      # Stream output to terminal if 1
-: "${CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS:-5}"  # Keep last N session logs (default: 5)
-: "${CKAN_LINUX_DEV_DEBUG_MODE:-0}"        # Enable verbose debug logging if 1
+: "${CKAN_LINUX_DEV_SKIP_BUILD:=0}"           # Skip build cache check if 1
+: "${CKAN_LINUX_DEV_STREAM_STDIO:=0}"         # Stream output to terminal if 1
+: "${CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS:=5}"  # Keep last N session logs (default: 5)
+: "${CKAN_LINUX_DEV_DEBUG_MODE:=0}"           # Enable verbose debug logging if 1
 
 # ============================================================================
 # Utility Functions
@@ -224,9 +224,7 @@ fi
 
 # Create symlinks for latest logs
 ln -sfn "$(basename "$SESSION_LOG")" "$LATEST_SESSION_LOG"
-if [[ ! -L "$RUN_DIR/ckan-linux-debug.log" ]]; then
-    ln -s "ckan-linux-debug.log" "$RUN_DIR/ckan-linux-debug-latest.log"
-fi
+ln -sfn "ckan-linux-debug.log" "$LATEST_DEBUG_LOG"
 
 # ============================================================================
 # Debug Mode (optional verbose output)
@@ -268,11 +266,11 @@ log_session_line "session_log: $SESSION_LOG"
 log_session_line "latest_session_log: $LATEST_SESSION_LOG"
 log_session_line "debug_log: $RUN_DIR/ckan-linux-debug.log"
 log_session_line "latest_debug_log: $LATEST_DEBUG_LOG"
-log_session_line "stream_stdio_to_terminal: $STREAM_STDIO_TO_TERMINAL"
+log_session_line "stream_stdio_to_terminal: $CKAN_LINUX_DEV_STREAM_STDIO"
 log_session_line "==============================="
 
 # Redirect output based on configuration
-if [[ "$STREAM_STDIO_TO_TERMINAL" == "1" ]]; then
+if [[ "$CKAN_LINUX_DEV_STREAM_STDIO" == "1" ]]; then
     exec > >(tee -a "$SESSION_LOG") 2>&1
 else
     exec >>"$SESSION_LOG" 2>&1

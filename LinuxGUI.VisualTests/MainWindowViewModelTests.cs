@@ -302,6 +302,30 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task UninstalledCompatibleMod_HidesEmptyBadgeStrip_AndVersionsStayVersionOnly()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+                await Task.Delay(200);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowSelectedModStateBadges, Is.False);
+                    Assert.That(viewModel.SelectedModInstallState, Is.EqualTo("Not installed"));
+                    Assert.That(viewModel.SelectedModVersions, Is.EqualTo("Latest 2.1.0"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task TrySwitchSelectedInstanceAsync_CancelsOrConfirmsQueueDiscard()
         {
             var (viewModel, service) = CreateViewModel();

@@ -1503,6 +1503,11 @@ namespace CKAN.LinuxGUI
                || ShowUpdateAction
                || ShowRemoveAction);
 
+        public bool ShowSelectedModActionRow
+            => ShowInstallNowAction
+               || ShowRemoveNowAction
+               || ShowPrimarySelectedModAction;
+
         public bool ShowSelectedModActionUnavailableNote
             => !IsSelectedModLoading
                && !ShowInstallNowAction
@@ -1599,13 +1604,21 @@ namespace CKAN.LinuxGUI
         public bool SelectedModIsInstalled
         {
             get => selectedModIsInstalled;
-            private set => this.RaiseAndSetIfChanged(ref selectedModIsInstalled, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref selectedModIsInstalled, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
+            }
         }
 
         public bool SelectedModHasUpdate
         {
             get => selectedModHasUpdate;
-            private set => this.RaiseAndSetIfChanged(ref selectedModHasUpdate, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref selectedModHasUpdate, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
+            }
         }
 
         public bool SelectedModIsAutodetected
@@ -1614,6 +1627,7 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref selectedModIsAutodetected, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
                 this.RaisePropertyChanged(nameof(SelectedModShowsDependencyState));
                 this.RaisePropertyChanged(nameof(SelectedModShowsIncompatibleState));
             }
@@ -1631,6 +1645,7 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref selectedModIsIncompatible, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
                 this.RaisePropertyChanged(nameof(SelectedModShowsDependencyState));
                 this.RaisePropertyChanged(nameof(SelectedModShowsIncompatibleState));
             }
@@ -1639,7 +1654,11 @@ namespace CKAN.LinuxGUI
         public bool SelectedModHasReplacement
         {
             get => selectedModHasReplacement;
-            private set => this.RaiseAndSetIfChanged(ref selectedModHasReplacement, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref selectedModHasReplacement, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
+            }
         }
 
         public bool SelectedModShowsDependencyState
@@ -1647,6 +1666,14 @@ namespace CKAN.LinuxGUI
 
         public bool SelectedModShowsIncompatibleState
             => SelectedModIsIncompatible && !SelectedModIsAutodetected;
+
+        public bool ShowSelectedModStateBadges
+            => SelectedModIsInstalled
+               || SelectedModHasUpdate
+               || SelectedModIsAutodetected
+               || SelectedModShowsIncompatibleState
+               || SelectedModShowsDependencyState
+               || SelectedModHasReplacement;
 
         public string QueueCountLabel
             => QueuedActions.Count switch
@@ -1910,16 +1937,24 @@ namespace CKAN.LinuxGUI
         public string PreviewQueuedCountLabel
             => CountLabel(QueuedChangeActionCount, "Direct Change", "Direct Changes");
 
+        public bool ShowPreviewQueuedMetric => QueuedChangeActionCount > 0;
+
         public string PreviewDownloadQueueCountLabel
             => CountLabel(QueuedDownloadActionCount, "Queued Download", "Queued Downloads");
 
         public string PreviewDownloadMetricTitle => "Queued Downloads";
 
+        public bool ShowPreviewQueuedDownloadMetric => QueuedDownloadActionCount > 0;
+
         public string PreviewDownloadCountLabel
             => CountLabel(PreviewDownloadsRequired.Count, "Required Download", "Required Downloads");
 
+        public bool ShowPreviewDownloadCountMetric => PreviewDownloadsRequired.Count > 0;
+
         public string PreviewDependencyCountLabel
             => CountLabel(PreviewDependencies.Count, "Auto Install", "Auto Installs");
+
+        public bool ShowPreviewDependencyMetric => PreviewDependencies.Count > 0;
 
         public bool ShowPreviewQueuedActions
             => HasQueuedActions;
@@ -1957,11 +1992,17 @@ namespace CKAN.LinuxGUI
         public string PreviewAutoRemovalCountLabel
             => CountLabel(PreviewAutoRemovals.Count, "Auto-Removal", "Auto-Removals");
 
+        public bool ShowPreviewAutoRemovalMetric => PreviewAutoRemovals.Count > 0;
+
         public string PreviewConflictCountLabel
             => CountLabel(PreviewConflicts.Count, "Conflict", "Conflicts");
 
+        public bool ShowPreviewConflictMetric => PreviewConflicts.Count > 0;
+
         public string PreviewAttentionCountLabel
             => CountLabel(PreviewAttentionNotes.Count, "Required Step", "Required Steps");
+
+        public bool ShowPreviewAttentionMetric => PreviewAttentionNotes.Count > 0;
 
         public string ApplyChangesButtonBackground
             => !HasQueuedChangeActions
@@ -2671,7 +2712,7 @@ namespace CKAN.LinuxGUI
                 SelectedModAuthors = string.IsNullOrWhiteSpace(details.Authors)
                     ? "Author information unavailable"
                     : $"By {details.Authors}";
-                SelectedModVersions = $"Latest {details.LatestVersion}\n{(details.IsAutodetected ? "Installed version unknown" : details.IsInstalled ? $"Installed {details.InstalledVersion}" : "Not installed")}";
+                SelectedModVersions = BuildSelectedModVersions(details);
                 SelectedModInstallState = BuildInstallState(details);
                 SelectedModDownloadCount = details.DownloadCount?.ToString("N0") ?? "Unknown";
                 SelectedModIsInstalled = details.IsInstalled;
@@ -3890,6 +3931,13 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewQueuedCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDownloadQueueCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDownloadMetricTitle));
+            this.RaisePropertyChanged(nameof(ShowPreviewQueuedMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewDependencyMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewAutoRemovalMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewConflictMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewAttentionMetric));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonBackground));
@@ -3907,6 +3955,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowInstallNowAction));
             this.RaisePropertyChanged(nameof(ShowRemoveNowAction));
             this.RaisePropertyChanged(nameof(ShowPrimarySelectedModAction));
+            this.RaisePropertyChanged(nameof(ShowSelectedModActionRow));
             this.RaisePropertyChanged(nameof(ShowSelectedModActionUnavailableNote));
             this.RaisePropertyChanged(nameof(SelectedModActionUnavailableNote));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionLabel));
@@ -3950,6 +3999,13 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewDownloadMetricTitle));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
+            this.RaisePropertyChanged(nameof(ShowPreviewQueuedMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewDependencyMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewAutoRemovalMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewConflictMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewAttentionMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedActions));
             this.RaisePropertyChanged(nameof(PreviewQueuedGuidance));
             this.RaisePropertyChanged(nameof(ShowPreviewDownloadQueueGuidance));
@@ -4257,9 +4313,32 @@ namespace CKAN.LinuxGUI
             var latest = module.LatestCompatibleGameVersion();
             if (latest.IsAny)
             {
-                latest = module.LatestCompatibleRealGameVersion(instance.Game.KnownVersions);
+                return "Any";
             }
-            return latest?.ToString() ?? "Unknown";
+            return FormatDisplayedCompatibilityVersion(latest);
+        }
+
+        private static string BuildSelectedModVersions(ModDetailsModel details)
+            => details.IsAutodetected
+                ? $"Latest {details.LatestVersion}\nInstalled version unknown"
+                : details.IsInstalled
+                    ? $"Latest {details.LatestVersion}\nInstalled {details.InstalledVersion}"
+                    : $"Latest {details.LatestVersion}";
+
+        private static string FormatDisplayedCompatibilityVersion(GameVersion? version)
+        {
+            if (version == null || version.IsAny)
+            {
+                return "Unknown";
+            }
+
+            var normalized = version.WithoutBuild;
+            if (normalized.IsPatchDefined && normalized.Patch == 99)
+            {
+                normalized = new GameVersion(normalized.Major, normalized.Minor);
+            }
+
+            return normalized.ToString() ?? "Unknown";
         }
 
         private static string FormatModuleKind(ModuleKind kind)
