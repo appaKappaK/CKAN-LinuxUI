@@ -53,7 +53,20 @@ namespace CKAN.LinuxGUI
         private string  selectedActionHint  = "Choose the KSP install you want to manage.";
         private string  readyInstanceHint   = "Switch installs here without leaving the mod browser.";
         private string  modSearchText       = "";
+        private string  advancedNameFilter = "";
+        private string  advancedIdentifierFilter = "";
         private string  advancedAuthorFilter = "";
+        private string  advancedSummaryFilter = "";
+        private string  advancedDescriptionFilter = "";
+        private string  advancedLicenseFilter = "";
+        private string  advancedLanguageFilter = "";
+        private string  advancedDependsFilter = "";
+        private string  advancedRecommendsFilter = "";
+        private string  advancedSuggestsFilter = "";
+        private string  advancedConflictsFilter = "";
+        private string  advancedSupportsFilter = "";
+        private string  advancedTagsFilter = "";
+        private string  advancedLabelsFilter = "";
         private string  advancedCompatibilityFilter = "";
         private SortOptionItem? selectedSortOption;
         private bool    sortDescending;
@@ -89,11 +102,13 @@ namespace CKAN.LinuxGUI
         private bool    filterInstalledOnly;
         private bool    filterNotInstalledOnly;
         private bool    filterUpdatableOnly;
+        private bool    filterNotUpdatableOnly;
         private bool    filterCompatibleOnly;
         private bool    filterCachedOnly;
         private bool    filterUncachedOnly;
         private bool    filterIncompatibleOnly;
         private bool    filterHasReplacementOnly;
+        private bool    filterNoReplacementOnly;
         private bool    isRefreshing;
         private bool    showExecutionResultOverlay;
         private bool    returnToBrowseAfterExecutionResult;
@@ -129,6 +144,7 @@ namespace CKAN.LinuxGUI
         private int     modListScrollResetRequestId;
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
+        private bool    suppressFilterAutoRefresh;
         private IReadOnlyList<CatalogSkeletonRow> catalogSkeletonRows = Array.Empty<CatalogSkeletonRow>();
         private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
@@ -341,7 +357,20 @@ namespace CKAN.LinuxGUI
 
             Observable.Merge(
                     this.WhenAnyValue(vm => vm.ModSearchText).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedNameFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedIdentifierFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedAuthorFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedSummaryFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedDescriptionFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedLicenseFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedLanguageFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedDependsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedRecommendsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedSuggestsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedConflictsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedSupportsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedTagsFilter).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.AdvancedLabelsFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedCompatibilityFilter).Select(_ => Unit.Default))
                 .Skip(1)
                 .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
@@ -354,11 +383,13 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterNotInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterNotUpdatableOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUncachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterIncompatibleOnly).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default))
+                    this.WhenAnyValue(vm => vm.FilterHasReplacementOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterNoReplacementOnly).Select(_ => Unit.Default))
                 .Skip(1)
                 .Subscribe(__ => RefreshCatalogForFilterChange());
 
@@ -644,12 +675,142 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public string AdvancedNameFilter
+        {
+            get => advancedNameFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedNameFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedIdentifierFilter
+        {
+            get => advancedIdentifierFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedIdentifierFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
         public string AdvancedAuthorFilter
         {
             get => advancedAuthorFilter;
             set
             {
                 this.RaiseAndSetIfChanged(ref advancedAuthorFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedSummaryFilter
+        {
+            get => advancedSummaryFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedSummaryFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedDescriptionFilter
+        {
+            get => advancedDescriptionFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedDescriptionFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedLicenseFilter
+        {
+            get => advancedLicenseFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedLicenseFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedLanguageFilter
+        {
+            get => advancedLanguageFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedLanguageFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedDependsFilter
+        {
+            get => advancedDependsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedDependsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedRecommendsFilter
+        {
+            get => advancedRecommendsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedRecommendsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedSuggestsFilter
+        {
+            get => advancedSuggestsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedSuggestsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedConflictsFilter
+        {
+            get => advancedConflictsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedConflictsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedSupportsFilter
+        {
+            get => advancedSupportsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedSupportsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedTagsFilter
+        {
+            get => advancedTagsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedTagsFilter, value);
+                PublishFilterStateLabels();
+            }
+        }
+
+        public string AdvancedLabelsFilter
+        {
+            get => advancedLabelsFilter;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref advancedLabelsFilter, value);
                 PublishFilterStateLabels();
             }
         }
@@ -1503,29 +1664,27 @@ namespace CKAN.LinuxGUI
             => $"Current scale {AppliedUiScalePercent}%. Next launch scale {PendingUiScaleLabel}.";
 
         public bool HasActiveAdvancedFilters
-            => !string.IsNullOrWhiteSpace(AdvancedAuthorFilter)
-               || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter)
-               || FilterHasReplacementOnly;
+            => HasAdvancedFilterText
+               || FilterInstalledState.HasValue
+               || FilterUpdatableState.HasValue
+               || FilterCompatibleState.HasValue
+               || FilterCachedState.HasValue
+               || FilterReplaceableState.HasValue;
 
         public bool HasAdvancedFilterText
-            => !string.IsNullOrWhiteSpace(AdvancedAuthorFilter)
-               || !string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter);
+            => EnumerateAdvancedTextFilters().Any(filter => !string.IsNullOrWhiteSpace(filter.Value));
 
         public double ClearFiltersButtonOpacity => HasActiveFilters ? 1.0 : 0.0;
 
         public double ClearAdvancedTextButtonOpacity => HasAdvancedFilterText ? 1.0 : 0.0;
 
         public int ActiveFilterCount
-            => (FilterInstalledOnly ? 1 : 0)
-               + (FilterNotInstalledOnly ? 1 : 0)
-               + (FilterUpdatableOnly ? 1 : 0)
-               + (FilterCompatibleOnly ? 1 : 0)
-               + (FilterCachedOnly ? 1 : 0)
-               + (FilterUncachedOnly ? 1 : 0)
-               + (FilterIncompatibleOnly ? 1 : 0)
-               + (FilterHasReplacementOnly ? 1 : 0)
-               + (string.IsNullOrWhiteSpace(AdvancedAuthorFilter) ? 0 : 1)
-               + (string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter) ? 0 : 1);
+            => EnumerateAdvancedTextFilters().Count(filter => !string.IsNullOrWhiteSpace(filter.Value))
+               + CountTriStateFilter(FilterInstalledState)
+               + CountTriStateFilter(FilterUpdatableState)
+               + CountTriStateFilter(FilterCompatibleState)
+               + CountTriStateFilter(FilterCachedState)
+               + CountTriStateFilter(FilterReplaceableState);
 
         public string MoreFiltersLabel
             => ActiveFilterCount > 0
@@ -1602,13 +1761,6 @@ namespace CKAN.LinuxGUI
 
         public bool HasActiveFilters
             => !string.IsNullOrWhiteSpace(ModSearchText)
-               || FilterInstalledOnly
-               || FilterNotInstalledOnly
-               || FilterUpdatableOnly
-               || FilterCompatibleOnly
-               || FilterCachedOnly
-               || FilterUncachedOnly
-               || FilterIncompatibleOnly
                || HasActiveAdvancedFilters;
 
         public string AdvancedFilterSummary
@@ -1625,45 +1777,23 @@ namespace CKAN.LinuxGUI
                 {
                     parts.Add($"Search: {ModSearchText.Trim()}");
                 }
-                if (!string.IsNullOrWhiteSpace(AdvancedAuthorFilter))
+                foreach ((string label, string value) in EnumerateAdvancedTextFilters())
                 {
-                    parts.Add($"Author: {AdvancedAuthorFilter.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        parts.Add($"{label}: {value.Trim()}");
+                    }
                 }
-                if (!string.IsNullOrWhiteSpace(AdvancedCompatibilityFilter))
+
+                AddTriStateSummary(parts, "Installed", FilterInstalledState);
+                AddTriStateSummary(parts, "Updatable", FilterUpdatableState);
+                AddTriStateSummary(parts, "Compatible", FilterCompatibleState);
+                AddTriStateSummary(parts, "Cached", FilterCachedState);
+                AddTriStateSummary(parts, "Replaceable", FilterReplaceableState);
+
+                if (parts.Count == 0)
                 {
-                    parts.Add($"Compatibility: {AdvancedCompatibilityFilter.Trim()}");
-                }
-                if (FilterHasReplacementOnly)
-                {
-                    parts.Add("Replacement only");
-                }
-                if (FilterCompatibleOnly)
-                {
-                    parts.Add("Compatible only");
-                }
-                if (FilterUncachedOnly)
-                {
-                    parts.Add("Not cached only");
-                }
-                if (FilterInstalledOnly)
-                {
-                    parts.Add("Installed only");
-                }
-                if (FilterNotInstalledOnly)
-                {
-                    parts.Add("Not installed only");
-                }
-                if (FilterUpdatableOnly)
-                {
-                    parts.Add("Updatable only");
-                }
-                if (FilterCachedOnly)
-                {
-                    parts.Add("Cached only");
-                }
-                if (FilterIncompatibleOnly)
-                {
-                    parts.Add("Incompatible only");
+                    return "All mods are shown.";
                 }
 
                 return parts.Count > 0
@@ -2345,6 +2475,20 @@ namespace CKAN.LinuxGUI
                 if (this.RaiseAndSetIfChanged(ref filterUpdatableOnly, value) && value)
                 {
                     ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
+                    ClearFilter(ref filterNotUpdatableOnly, nameof(FilterNotUpdatableOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterNotUpdatableOnly
+        {
+            get => filterNotUpdatableOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterNotUpdatableOnly, value) && value)
+                {
+                    ClearFilter(ref filterUpdatableOnly, nameof(FilterUpdatableOnly));
                 }
                 PublishFilterStateLabels();
             }
@@ -2407,9 +2551,100 @@ namespace CKAN.LinuxGUI
             get => filterHasReplacementOnly;
             set
             {
-                this.RaiseAndSetIfChanged(ref filterHasReplacementOnly, value);
+                if (this.RaiseAndSetIfChanged(ref filterHasReplacementOnly, value) && value)
+                {
+                    ClearFilter(ref filterNoReplacementOnly, nameof(FilterNoReplacementOnly));
+                }
                 PublishFilterStateLabels();
             }
+        }
+
+        public bool FilterNoReplacementOnly
+        {
+            get => filterNoReplacementOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterNoReplacementOnly, value) && value)
+                {
+                    ClearFilter(ref filterHasReplacementOnly, nameof(FilterHasReplacementOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool? FilterInstalledState
+        {
+            get => GetTriStateFilterValue(filterInstalledOnly, filterNotInstalledOnly);
+            set => SetInstalledFilterState(value);
+        }
+
+        public bool? FilterUpdatableState
+        {
+            get => GetTriStateFilterValue(filterUpdatableOnly, filterNotUpdatableOnly);
+            set => SetUpdatableFilterState(value);
+        }
+
+        public bool? FilterCompatibleState
+        {
+            get => GetTriStateFilterValue(filterCompatibleOnly, filterIncompatibleOnly);
+            set => SetExclusiveTriStateFilter(value,
+                                              ref filterCompatibleOnly,
+                                              nameof(FilterCompatibleOnly),
+                                              ref filterIncompatibleOnly,
+                                              nameof(FilterIncompatibleOnly),
+                                              nameof(FilterCompatibleState));
+        }
+
+        public bool? FilterCachedState
+        {
+            get => GetTriStateFilterValue(filterCachedOnly, filterUncachedOnly);
+            set => SetExclusiveTriStateFilter(value,
+                                              ref filterCachedOnly,
+                                              nameof(FilterCachedOnly),
+                                              ref filterUncachedOnly,
+                                              nameof(FilterUncachedOnly),
+                                              nameof(FilterCachedState));
+        }
+
+        public bool? FilterReplaceableState
+        {
+            get => GetTriStateFilterValue(filterHasReplacementOnly, filterNoReplacementOnly);
+            set => SetExclusiveTriStateFilter(value,
+                                              ref filterHasReplacementOnly,
+                                              nameof(FilterHasReplacementOnly),
+                                              ref filterNoReplacementOnly,
+                                              nameof(FilterNoReplacementOnly),
+                                              nameof(FilterReplaceableState));
+        }
+
+        public int FilterInstalledTriStateIndex
+        {
+            get => TriStateFilterToIndex(FilterInstalledState);
+            set => FilterInstalledState = TriStateIndexToFilter(value);
+        }
+
+        public int FilterUpdatableTriStateIndex
+        {
+            get => TriStateFilterToIndex(FilterUpdatableState);
+            set => FilterUpdatableState = TriStateIndexToFilter(value);
+        }
+
+        public int FilterCompatibleTriStateIndex
+        {
+            get => TriStateFilterToIndex(FilterCompatibleState);
+            set => FilterCompatibleState = TriStateIndexToFilter(value);
+        }
+
+        public int FilterCachedTriStateIndex
+        {
+            get => TriStateFilterToIndex(FilterCachedState);
+            set => FilterCachedState = TriStateIndexToFilter(value);
+        }
+
+        public int FilterReplaceableTriStateIndex
+        {
+            get => TriStateFilterToIndex(FilterReplaceableState);
+            set => FilterReplaceableState = TriStateIndexToFilter(value);
         }
 
         public string InstanceCountLabel
@@ -2426,6 +2661,191 @@ namespace CKAN.LinuxGUI
             {
                 field = false;
                 this.RaisePropertyChanged(propertyName);
+            }
+        }
+
+        private static int CountTriStateFilter(bool? value)
+            => value.HasValue ? 1 : 0;
+
+        private static int TriStateFilterToIndex(bool? value)
+            => value switch
+            {
+                true  => 1,
+                false => 2,
+                _     => 0,
+            };
+
+        private static bool? TriStateIndexToFilter(int value)
+            => value switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            };
+
+        private static bool? GetTriStateFilterValue(bool includeOnly, bool excludeOnly)
+            => includeOnly == excludeOnly ? (bool?)null : includeOnly;
+
+        private static void AddTriStateSummary(ICollection<string> parts, string label, bool? value)
+        {
+            if (!value.HasValue)
+            {
+                return;
+            }
+
+            parts.Add($"{label}: {(value.Value ? "Yes" : "No")}");
+        }
+
+        private IEnumerable<(string Label, string Value)> EnumerateAdvancedTextFilters()
+        {
+            yield return ("Name", AdvancedNameFilter);
+            yield return ("Identifier", AdvancedIdentifierFilter);
+            yield return ("Author", AdvancedAuthorFilter);
+            yield return ("Summary", AdvancedSummaryFilter);
+            yield return ("Description", AdvancedDescriptionFilter);
+            yield return ("License", AdvancedLicenseFilter);
+            yield return ("Language", AdvancedLanguageFilter);
+            yield return ("Depends", AdvancedDependsFilter);
+            yield return ("Recommends", AdvancedRecommendsFilter);
+            yield return ("Suggests", AdvancedSuggestsFilter);
+            yield return ("Conflicts", AdvancedConflictsFilter);
+            yield return ("Supports", AdvancedSupportsFilter);
+            yield return ("Tags", AdvancedTagsFilter);
+            yield return ("Labels", AdvancedLabelsFilter);
+            yield return ("Compatibility", AdvancedCompatibilityFilter);
+        }
+
+        private bool SetFilterBackingField(ref bool field, bool value, string propertyName)
+        {
+            if (field == value)
+            {
+                return false;
+            }
+
+            field = value;
+            this.RaisePropertyChanged(propertyName);
+            return true;
+        }
+
+        private void SetExclusiveTriStateFilter(bool?  value,
+                                                ref bool includeOnlyField,
+                                                string includeOnlyPropertyName,
+                                                ref bool excludeOnlyField,
+                                                string excludeOnlyPropertyName,
+                                                string triStatePropertyName)
+        {
+            bool includeOnly = value == true;
+            bool excludeOnly = value == false;
+            bool changed = false;
+
+            suppressFilterAutoRefresh = true;
+            try
+            {
+                changed |= SetFilterBackingField(ref includeOnlyField, includeOnly, includeOnlyPropertyName);
+                changed |= SetFilterBackingField(ref excludeOnlyField, excludeOnly, excludeOnlyPropertyName);
+            }
+            finally
+            {
+                suppressFilterAutoRefresh = false;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            this.RaisePropertyChanged(triStatePropertyName);
+            PublishFilterStateLabels();
+            RefreshCatalogForFilterChange();
+        }
+
+        private void SetInstalledFilterState(bool? value)
+        {
+            bool installedOnly = value == true;
+            bool notInstalledOnly = value == false;
+            bool changed = false;
+
+            suppressFilterAutoRefresh = true;
+            try
+            {
+                changed |= SetFilterBackingField(ref filterInstalledOnly, installedOnly, nameof(FilterInstalledOnly));
+                changed |= SetFilterBackingField(ref filterNotInstalledOnly, notInstalledOnly, nameof(FilterNotInstalledOnly));
+                if (notInstalledOnly)
+                {
+                    changed |= SetFilterBackingField(ref filterUpdatableOnly, false, nameof(FilterUpdatableOnly));
+                }
+            }
+            finally
+            {
+                suppressFilterAutoRefresh = false;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            this.RaisePropertyChanged(nameof(FilterInstalledState));
+            PublishFilterStateLabels();
+            RefreshCatalogForFilterChange();
+        }
+
+        private void SetUpdatableFilterState(bool? value)
+        {
+            bool updatableOnly = value == true;
+            bool notUpdatableOnly = value == false;
+            bool changed = false;
+
+            suppressFilterAutoRefresh = true;
+            try
+            {
+                changed |= SetFilterBackingField(ref filterUpdatableOnly, updatableOnly, nameof(FilterUpdatableOnly));
+                changed |= SetFilterBackingField(ref filterNotUpdatableOnly, notUpdatableOnly, nameof(FilterNotUpdatableOnly));
+                if (updatableOnly)
+                {
+                    changed |= SetFilterBackingField(ref filterNotInstalledOnly, false, nameof(FilterNotInstalledOnly));
+                }
+            }
+            finally
+            {
+                suppressFilterAutoRefresh = false;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            this.RaisePropertyChanged(nameof(FilterUpdatableState));
+            PublishFilterStateLabels();
+            RefreshCatalogForFilterChange();
+        }
+
+        private void NormalizeStoredFilterFlags()
+        {
+            if (filterInstalledOnly && filterNotInstalledOnly)
+            {
+                filterNotInstalledOnly = false;
+            }
+            if (filterNotInstalledOnly && filterUpdatableOnly)
+            {
+                filterUpdatableOnly = false;
+            }
+            if (filterUpdatableOnly && filterNotUpdatableOnly)
+            {
+                filterNotUpdatableOnly = false;
+            }
+            if (filterCompatibleOnly && filterIncompatibleOnly)
+            {
+                filterIncompatibleOnly = false;
+            }
+            if (filterCachedOnly && filterUncachedOnly)
+            {
+                filterUncachedOnly = false;
+            }
+            if (filterHasReplacementOnly && filterNoReplacementOnly)
+            {
+                filterNoReplacementOnly = false;
             }
         }
 
@@ -3019,22 +3439,42 @@ namespace CKAN.LinuxGUI
             => new FilterState
             {
                 SearchText          = ModSearchText,
+                NameText            = AdvancedNameFilter,
+                IdentifierText      = AdvancedIdentifierFilter,
                 AuthorText          = AdvancedAuthorFilter,
+                SummaryText         = AdvancedSummaryFilter,
+                DescriptionText     = AdvancedDescriptionFilter,
+                LicenseText         = AdvancedLicenseFilter,
+                LanguageText        = AdvancedLanguageFilter,
+                DependsText         = AdvancedDependsFilter,
+                RecommendsText      = AdvancedRecommendsFilter,
+                SuggestsText        = AdvancedSuggestsFilter,
+                ConflictsText       = AdvancedConflictsFilter,
+                SupportsText        = AdvancedSupportsFilter,
+                TagText             = AdvancedTagsFilter,
+                LabelText           = AdvancedLabelsFilter,
                 CompatibilityText   = AdvancedCompatibilityFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
                 SortDescending      = SortDescending,
                 InstalledOnly       = FilterInstalledOnly,
                 NotInstalledOnly    = FilterNotInstalledOnly,
                 UpdatableOnly       = FilterUpdatableOnly,
+                NotUpdatableOnly    = FilterNotUpdatableOnly,
                 CompatibleOnly      = FilterCompatibleOnly,
                 CachedOnly          = FilterCachedOnly,
                 UncachedOnly        = FilterUncachedOnly,
                 IncompatibleOnly    = FilterIncompatibleOnly,
                 HasReplacementOnly  = FilterHasReplacementOnly,
+                NoReplacementOnly   = FilterNoReplacementOnly,
             };
 
         private void RefreshCatalogForFilterChange()
         {
+            if (suppressFilterAutoRefresh)
+            {
+                return;
+            }
+
             modSearchService.SetCurrent(CurrentFilter());
             PublishFilterStateLabels();
             if (IsReady)
@@ -3047,16 +3487,32 @@ namespace CKAN.LinuxGUI
         private void ApplyStoredFilterState(FilterState filter)
         {
             modSearchText = filter.SearchText ?? "";
+            advancedNameFilter = filter.NameText ?? "";
+            advancedIdentifierFilter = filter.IdentifierText ?? "";
             advancedAuthorFilter = filter.AuthorText ?? "";
+            advancedSummaryFilter = filter.SummaryText ?? "";
+            advancedDescriptionFilter = filter.DescriptionText ?? "";
+            advancedLicenseFilter = filter.LicenseText ?? "";
+            advancedLanguageFilter = filter.LanguageText ?? "";
+            advancedDependsFilter = filter.DependsText ?? "";
+            advancedRecommendsFilter = filter.RecommendsText ?? "";
+            advancedSuggestsFilter = filter.SuggestsText ?? "";
+            advancedConflictsFilter = filter.ConflictsText ?? "";
+            advancedSupportsFilter = filter.SupportsText ?? "";
+            advancedTagsFilter = filter.TagText ?? "";
+            advancedLabelsFilter = filter.LabelText ?? "";
             advancedCompatibilityFilter = filter.CompatibilityText ?? "";
             filterInstalledOnly = filter.InstalledOnly;
             filterNotInstalledOnly = filter.NotInstalledOnly;
             filterUpdatableOnly = filter.UpdatableOnly;
+            filterNotUpdatableOnly = filter.NotUpdatableOnly;
             filterCompatibleOnly = filter.CompatibleOnly;
             filterCachedOnly = filter.CachedOnly;
             filterUncachedOnly = filter.UncachedOnly;
             filterIncompatibleOnly = filter.IncompatibleOnly;
             filterHasReplacementOnly = filter.HasReplacementOnly;
+            filterNoReplacementOnly = filter.NoReplacementOnly;
+            NormalizeStoredFilterFlags();
             selectedSortOption = SortOptions.FirstOrDefault(opt => opt.Value == filter.SortOption) ?? SortOptions[0];
             sortDescending = filter.SortDescending ?? DefaultSortDescending(filter.SortOption);
             showAdvancedFilters = false;
@@ -3207,7 +3663,20 @@ namespace CKAN.LinuxGUI
 
         private void ClearAdvancedFilters()
         {
+            AdvancedNameFilter = "";
+            AdvancedIdentifierFilter = "";
             AdvancedAuthorFilter = "";
+            AdvancedSummaryFilter = "";
+            AdvancedDescriptionFilter = "";
+            AdvancedLicenseFilter = "";
+            AdvancedLanguageFilter = "";
+            AdvancedDependsFilter = "";
+            AdvancedRecommendsFilter = "";
+            AdvancedSuggestsFilter = "";
+            AdvancedConflictsFilter = "";
+            AdvancedSupportsFilter = "";
+            AdvancedTagsFilter = "";
+            AdvancedLabelsFilter = "";
             AdvancedCompatibilityFilter = "";
         }
 
@@ -3218,10 +3687,13 @@ namespace CKAN.LinuxGUI
             FilterInstalledOnly = false;
             FilterNotInstalledOnly = false;
             FilterUpdatableOnly = false;
+            FilterNotUpdatableOnly = false;
             FilterCompatibleOnly = false;
             FilterCachedOnly = false;
             FilterUncachedOnly = false;
             FilterIncompatibleOnly = false;
+            FilterHasReplacementOnly = false;
+            FilterNoReplacementOnly = false;
             ClearAdvancedFilters();
         }
 
@@ -4027,6 +4499,16 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonOpacity));
             this.RaisePropertyChanged(nameof(ClearAdvancedTextButtonOpacity));
+            this.RaisePropertyChanged(nameof(FilterInstalledState));
+            this.RaisePropertyChanged(nameof(FilterUpdatableState));
+            this.RaisePropertyChanged(nameof(FilterCompatibleState));
+            this.RaisePropertyChanged(nameof(FilterCachedState));
+            this.RaisePropertyChanged(nameof(FilterReplaceableState));
+            this.RaisePropertyChanged(nameof(FilterInstalledTriStateIndex));
+            this.RaisePropertyChanged(nameof(FilterUpdatableTriStateIndex));
+            this.RaisePropertyChanged(nameof(FilterCompatibleTriStateIndex));
+            this.RaisePropertyChanged(nameof(FilterCachedTriStateIndex));
+            this.RaisePropertyChanged(nameof(FilterReplaceableTriStateIndex));
             this.RaisePropertyChanged(nameof(SortMenuLabel));
             this.RaisePropertyChanged(nameof(NameSortLabel));
             this.RaisePropertyChanged(nameof(AuthorSortLabel));
@@ -4422,17 +4904,17 @@ namespace CKAN.LinuxGUI
             var links = new List<ModResourceLinkItem>();
 
             AddResourceLink(links, "Home page", resources.homepage);
-            AddResourceLink(links, "SpaceDock", resources.spacedock);
-            AddResourceLink(links, "Curse", resources.curse);
             AddResourceLink(links, "Repository", resources.repository);
             AddResourceLink(links, "Bug tracker", resources.bugtracker);
+            AddResourceLink(links, "SpaceDock", resources.spacedock);
             AddResourceLink(links, "Discussions", resources.discussions);
-            AddResourceLink(links, "CI", resources.ci);
-            AddResourceLink(links, "License", resources.license);
             AddResourceLink(links, "Manual", resources.manual);
+            AddResourceLink(links, "License", resources.license);
+            AddResourceLink(links, "Curse", resources.curse);
+            AddResourceLink(links, "CI", resources.ci);
             AddResourceLink(links, "Metanetkan", resources.metanetkan);
-            AddResourceLink(links, "Remote version file", resources.remoteAvc);
             AddResourceLink(links, "Remote version info", resources.remoteSWInfo);
+            AddResourceLink(links, "Remote version file", resources.remoteAvc);
             AddResourceLink(links, "Store", resources.store);
             AddResourceLink(links, "Steam", resources.steamstore);
             AddResourceLink(links, "GOG", resources.gogstore);

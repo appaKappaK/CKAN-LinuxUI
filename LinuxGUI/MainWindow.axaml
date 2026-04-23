@@ -5,6 +5,7 @@
         xmlns:vm="using:CKAN.LinuxGUI"
         xmlns:models="using:CKAN.App.Models"
         xmlns:media="using:Avalonia.Media"
+        xmlns:shapes="using:Avalonia.Controls.Shapes"
         mc:Ignorable="d"
         x:Class="CKAN.LinuxGUI.MainWindow"
         x:Name="MainWindowRoot"
@@ -106,6 +107,72 @@
       <Setter Property="Background" Value="#8A1BB6" />
       <Setter Property="BorderBrush" Value="#B61BD1" />
     </Style>
+    <Style Selector="Border.filter-drawer-section">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#333D49" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="TextBlock.filter-drawer-title">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#E5EDF6" />
+    </Style>
+    <Style Selector="TextBlock.filter-drawer-note">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Opacity" Value="0.72" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.filter-drawer-label">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Opacity" Value="0.72" />
+      <Setter Property="Foreground" Value="#CDD7E2" />
+    </Style>
+    <Style Selector="TextBox.filter-drawer-input">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Background" Value="#14191F" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="TextBox.filter-drawer-input:pointerover">
+      <Setter Property="Background" Value="#171D24" />
+      <Setter Property="BorderBrush" Value="#4B5A6B" />
+    </Style>
+    <Style Selector="TextBox.filter-drawer-input:focus">
+      <Setter Property="Background" Value="#171D24" />
+      <Setter Property="BorderBrush" Value="#637489" />
+    </Style>
+    <Style Selector="ComboBox.filter-state-picker">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="146" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Background" Value="#14191F" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <Style Selector="ComboBox.filter-state-picker:pointerover">
+      <Setter Property="Background" Value="#171D24" />
+      <Setter Property="BorderBrush" Value="#4B5A6B" />
+    </Style>
+    <Style Selector="ComboBox.filter-state-picker:focus">
+      <Setter Property="Background" Value="#171D24" />
+      <Setter Property="BorderBrush" Value="#637489" />
+    </Style>
+    <Style Selector="Border.filter-token-chip">
+      <Setter Property="Background" Value="#27303A" />
+      <Setter Property="BorderBrush" Value="#435465" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="8,4" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+    </Style>
     <Style Selector="ToggleButton.sort-menu-item">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -166,23 +233,152 @@
       <Setter Property="Background" Value="#2A323C" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem">
-      <Setter Property="MinHeight" Value="30" />
-      <Setter Property="Background" Value="#1B232B" />
-      <Setter Property="BorderBrush" Value="#394654" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="ClipToBounds" Value="False" />
       <Setter Property="Foreground" Value="#F4F6F8" />
-      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0,0,8,0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover">
-      <Setter Property="Background" Value="#24303B" />
-      <Setter Property="BorderBrush" Value="#4F6377" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected">
-      <Setter Property="Background" Value="#24303B" />
-      <Setter Property="BorderBrush" Value="#5F7488" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Grid.ready-menu-key">
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.ready-menu-key-shell">
+      <Setter Property="Background" Value="#2E2E40" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Border.ready-menu-key-top-edge">
+      <Setter Property="Height" Value="2" />
+      <Setter Property="Margin" Value="7,0,7,0" />
+      <Setter Property="Background" Value="#3E3E55" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.ready-menu-key-bottom-edge">
+      <Setter Property="Height" Value="2" />
+      <Setter Property="Margin" Value="7,0,7,0" />
+      <Setter Property="Background" Value="#1A1A28" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.ready-menu-key-left-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="0,7,0,7" />
+      <Setter Property="Background" Value="#353548" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.ready-menu-key-right-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="0,7,0,7" />
+      <Setter Property="Background" Value="#222230" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="StackPanel.ready-menu-key-content">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="8" />
+      <Setter Property="Margin" Value="10,7,14,7" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBlock.ready-menu-key-label">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#888888" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Viewbox.ready-menu-globe">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Ellipse.ready-menu-icon-planet">
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="StrokeThickness" Value="1.2" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Ellipse.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="StrokeThickness" Value="0.9" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Line.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="StrokeThickness" Value="0.9" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Ellipse.ready-menu-icon-ring">
+      <Setter Property="Stroke" Value="#2A2A45" />
+      <Setter Property="StrokeThickness" Value="1" />
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
+      <Setter Property="Background" Value="#333348" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
+      <Setter Property="Foreground" Value="#CCCCCC" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Ellipse.ready-menu-icon-planet">
+      <Setter Property="Fill" Value="#0D1F3A" />
+      <Setter Property="Stroke" Value="#5A9FF5" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Ellipse.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A7ACC" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Line.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A7ACC" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Ellipse.ready-menu-icon-ring">
+      <Setter Property="Stroke" Value="#4CAF7D" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-shell">
+      <Setter Property="Background" Value="#1E1E30" />
+      <Setter Property="Margin" Value="0,1,0,0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-top-edge">
+      <Setter Property="Background" Value="#181828" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-bottom-edge">
+      <Setter Property="Background" Value="#3A3A58" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected TextBlock.ready-menu-key-label">
+      <Setter Property="Foreground" Value="#AAAAAA" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-planet">
+      <Setter Property="Fill" Value="#0D1F3A" />
+      <Setter Property="Stroke" Value="#5A9FF5" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A7ACC" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Line.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#3A7ACC" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-ring">
+      <Setter Property="Stroke" Value="#4CAF7D" />
     </Style>
     <Style Selector="MenuItem.app-menu-item">
       <Setter Property="Background" Value="#20262D" />
@@ -192,14 +388,115 @@
     <Style Selector="MenuItem.app-menu-item:pointerover">
       <Setter Property="Background" Value="#2A323C" />
     </Style>
+    <Style Selector="Border.surface-view-toggle">
+      <Setter Property="Background" Value="#18181E" />
+      <Setter Property="BorderBrush" Value="#0D0D12" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.surface-view-toggle-rim">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Margin" Value="18,1,18,0" />
+      <Setter Property="Background" Value="#2A2A38" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Opacity" Value="0.8" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
     <Style Selector="Button.surface-view-tab">
-      <Setter Property="MinHeight" Value="30" />
-      <Setter Property="MinWidth" Value="90" />
-      <Setter Property="Padding" Value="14,6" />
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="MinWidth" Value="104" />
+      <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Foreground" Value="#777777" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Border.surface-view-tab-shell">
+      <Setter Property="Background" Value="#2E2E40" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Border.surface-view-tab-top-edge">
+      <Setter Property="Height" Value="2" />
+      <Setter Property="Margin" Value="14,0,14,0" />
+      <Setter Property="Background" Value="#3E3E55" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.surface-view-tab-bottom-edge">
+      <Setter Property="Height" Value="2" />
+      <Setter Property="Margin" Value="14,0,14,0" />
+      <Setter Property="Background" Value="#1A1A28" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="StackPanel.surface-view-tab-content">
+      <Setter Property="Margin" Value="22,8,22,6" />
+      <Setter Property="Spacing" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBlock.surface-view-label">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#777777" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.surface-view-tab:pointerover Border.surface-view-tab-shell">
+      <Setter Property="Background" Value="#31313F" />
+    </Style>
+    <Style Selector="Button.surface-view-tab:pointerover TextBlock.surface-view-label">
+      <Setter Property="Foreground" Value="#C7CDD5" />
+    </Style>
+    <Style Selector="Button.surface-view-tab:pointerover Border.surface-view-tab-top-edge">
+      <Setter Property="Background" Value="#44445A" />
+    </Style>
+    <Style Selector="Button.surface-view-tab:pointerover Border.surface-view-tab-bottom-edge">
+      <Setter Property="Background" Value="#1B1B29" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-shell">
+      <Setter Property="Background" Value="#223355" />
+      <Setter Property="Margin" Value="0,1,0,0" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-top-edge">
+      <Setter Property="Background" Value="#1A2840" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-bottom-edge">
+      <Setter Property="Background" Value="#2A4A80" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active TextBlock.surface-view-label">
+      <Setter Property="Foreground" Value="#8EC5F7" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active:pointerover Border.surface-view-tab-shell">
+      <Setter Property="Background" Value="#223355" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active:pointerover TextBlock.surface-view-label">
+      <Setter Property="Foreground" Value="#8EC5F7" />
+    </Style>
+    <Style Selector="Border.surface-view-indicator">
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="2.5" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Margin" Value="0,3,0,0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-indicator">
+      <Setter Property="Background" Value="#4CAF7D" />
     </Style>
     <Style Selector="ListBox#ModsListBox">
       <Setter Property="Background" Value="Transparent" />
@@ -350,6 +647,7 @@
       <Setter Property="CornerRadius" Value="7" />
       <Setter Property="Padding" Value="6,4" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.detail-link-button:pointerover">
       <Setter Property="Background" Value="#1A2027" />
@@ -505,6 +803,10 @@
           </MenuItem>
           <MenuItem Header="Settings">
             <MenuItem Classes="app-menu-item"
+                      Header="CKAN settings"
+                      Click="SettingsMenuItem_OnClick" />
+            <Separator />
+            <MenuItem Classes="app-menu-item"
                       Header="Display scale"
                       Click="DisplayScaleMenuItem_OnClick" />
             <Separator />
@@ -621,11 +923,63 @@
             BorderThickness="0,0,0,1"
             Padding="10,5"
             IsVisible="{Binding ShowReadyHeader}">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
             VerticalAlignment="Center">
           <Menu Classes="app-menu-bar ready-title-menu"
                 VerticalAlignment="Center">
-            <MenuItem Header="File">
+            <MenuItem>
+              <MenuItem.Header>
+                <Grid Classes="ready-menu-key"
+                      RowDefinitions="Auto,*,Auto"
+                      ColumnDefinitions="Auto,*,Auto">
+                  <Border Grid.RowSpan="3"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-shell" />
+                  <Border Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-top-edge" />
+                  <Border Grid.Row="2"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-bottom-edge" />
+                  <Border Grid.RowSpan="3"
+                          Classes="ready-menu-key-left-edge" />
+                  <Border Grid.RowSpan="3"
+                          Grid.Column="2"
+                          Classes="ready-menu-key-right-edge" />
+                  <StackPanel Grid.Row="1"
+                              Grid.ColumnSpan="3"
+                              Classes="ready-menu-key-content">
+                    <Viewbox Classes="ready-menu-globe"
+                             Stretch="Uniform">
+                      <Canvas Width="16"
+                              Height="16">
+                        <shapes:Ellipse Classes="ready-menu-icon-ring"
+                                        Width="15"
+                                        Height="6"
+                                        Canvas.Left="0.5"
+                                        Canvas.Top="5" />
+                        <shapes:Ellipse Classes="ready-menu-icon-planet"
+                                        Width="10"
+                                        Height="10"
+                                        Canvas.Left="3"
+                                        Canvas.Top="3" />
+                        <shapes:Ellipse Classes="ready-menu-icon-inner"
+                                        Width="5"
+                                        Height="10"
+                                        Canvas.Left="5.5"
+                                        Canvas.Top="3" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,6"
+                                     EndPoint="13,6" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,10"
+                                     EndPoint="13,10" />
+                      </Canvas>
+                    </Viewbox>
+                    <TextBlock Classes="ready-menu-key-label"
+                               Text="File" />
+                  </StackPanel>
+                </Grid>
+              </MenuItem.Header>
               <MenuItem Classes="app-menu-item"
                         Header="Manage game instances"
                         Click="ManageGameInstancesMenuItem_OnClick" />
@@ -658,7 +1012,63 @@
                         Header="Exit"
                         Click="ExitMenuItem_OnClick" />
             </MenuItem>
-            <MenuItem Header="Settings">
+            <MenuItem>
+              <MenuItem.Header>
+                <Grid Classes="ready-menu-key"
+                      RowDefinitions="Auto,*,Auto"
+                      ColumnDefinitions="Auto,*,Auto">
+                  <Border Grid.RowSpan="3"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-shell" />
+                  <Border Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-top-edge" />
+                  <Border Grid.Row="2"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-bottom-edge" />
+                  <Border Grid.RowSpan="3"
+                          Classes="ready-menu-key-left-edge" />
+                  <Border Grid.RowSpan="3"
+                          Grid.Column="2"
+                          Classes="ready-menu-key-right-edge" />
+                  <StackPanel Grid.Row="1"
+                              Grid.ColumnSpan="3"
+                              Classes="ready-menu-key-content">
+                    <Viewbox Classes="ready-menu-globe"
+                             Stretch="Uniform">
+                      <Canvas Width="16"
+                              Height="16">
+                        <shapes:Ellipse Classes="ready-menu-icon-ring"
+                                        Width="15"
+                                        Height="6"
+                                        Canvas.Left="0.5"
+                                        Canvas.Top="5" />
+                        <shapes:Ellipse Classes="ready-menu-icon-planet"
+                                        Width="10"
+                                        Height="10"
+                                        Canvas.Left="3"
+                                        Canvas.Top="3" />
+                        <shapes:Ellipse Classes="ready-menu-icon-inner"
+                                        Width="5"
+                                        Height="10"
+                                        Canvas.Left="5.5"
+                                        Canvas.Top="3" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,6"
+                                     EndPoint="13,6" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,10"
+                                     EndPoint="13,10" />
+                      </Canvas>
+                    </Viewbox>
+                    <TextBlock Classes="ready-menu-key-label"
+                               Text="Settings" />
+                  </StackPanel>
+                </Grid>
+              </MenuItem.Header>
+              <MenuItem Classes="app-menu-item"
+                        Header="CKAN settings"
+                        Click="SettingsMenuItem_OnClick" />
+              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Display scale"
                         Click="DisplayScaleMenuItem_OnClick" />
@@ -684,7 +1094,59 @@
                         IsEnabled="{Binding HasCurrentInstance}"
                         Click="InstallationFiltersMenuItem_OnClick" />
             </MenuItem>
-            <MenuItem Header="Help">
+            <MenuItem>
+              <MenuItem.Header>
+                <Grid Classes="ready-menu-key"
+                      RowDefinitions="Auto,*,Auto"
+                      ColumnDefinitions="Auto,*,Auto">
+                  <Border Grid.RowSpan="3"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-shell" />
+                  <Border Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-top-edge" />
+                  <Border Grid.Row="2"
+                          Grid.ColumnSpan="3"
+                          Classes="ready-menu-key-bottom-edge" />
+                  <Border Grid.RowSpan="3"
+                          Classes="ready-menu-key-left-edge" />
+                  <Border Grid.RowSpan="3"
+                          Grid.Column="2"
+                          Classes="ready-menu-key-right-edge" />
+                  <StackPanel Grid.Row="1"
+                              Grid.ColumnSpan="3"
+                              Classes="ready-menu-key-content">
+                    <Viewbox Classes="ready-menu-globe"
+                             Stretch="Uniform">
+                      <Canvas Width="16"
+                              Height="16">
+                        <shapes:Ellipse Classes="ready-menu-icon-ring"
+                                        Width="15"
+                                        Height="6"
+                                        Canvas.Left="0.5"
+                                        Canvas.Top="5" />
+                        <shapes:Ellipse Classes="ready-menu-icon-planet"
+                                        Width="10"
+                                        Height="10"
+                                        Canvas.Left="3"
+                                        Canvas.Top="3" />
+                        <shapes:Ellipse Classes="ready-menu-icon-inner"
+                                        Width="5"
+                                        Height="10"
+                                        Canvas.Left="5.5"
+                                        Canvas.Top="3" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,6"
+                                     EndPoint="13,6" />
+                        <shapes:Line Classes="ready-menu-icon-inner"
+                                     StartPoint="3,10"
+                                     EndPoint="13,10" />
+                      </Canvas>
+                    </Viewbox>
+                    <TextBlock Classes="ready-menu-key-label"
+                               Text="Help" />
+                  </StackPanel>
+                </Grid>
+              </MenuItem.Header>
               <MenuItem Classes="app-menu-item"
                         Header="CKAN user guide"
                         Command="{Binding OpenUserGuideCommand}" />
@@ -705,61 +1167,58 @@
             </MenuItem>
           </Menu>
 
-          <Border Grid.Column="1"
-                  Background="#14191F"
-                  BorderBrush="#2B323C"
-                  BorderThickness="1"
-                  CornerRadius="10"
-                  Padding="4"
-                  Margin="4,0,0,0"
+          <Border Grid.ColumnSpan="4"
+                  Classes="surface-view-toggle"
+                  HorizontalAlignment="Center"
                   VerticalAlignment="Center">
-            <StackPanel Orientation="Horizontal"
-                        Spacing="4">
-              <Button Classes="surface-view-tab"
-                      Background="{Binding BrowseSurfaceButtonBackground}"
-                      BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
-                      Foreground="#F4F6F8"
-                      Command="{Binding ShowBrowseSurfaceCommand}"
-                      Content="Browse" />
-              <Button Classes="surface-view-tab"
-                      Background="{Binding PreviewSurfaceButtonBackground}"
-                      BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
-                      Foreground="#F4F6F8"
-                      Command="{Binding ShowPreviewSurfaceCommand}"
-                      Content="{Binding PreviewSurfaceButtonLabel}" />
-            </StackPanel>
-          </Border>
-
-          <Border Grid.Column="2"
-                  Background="#14191F"
-                  BorderBrush="#2B323C"
-                  BorderThickness="1"
-                  CornerRadius="10"
-                  Padding="12,6"
-                  Margin="12,0,0,0"
-                  VerticalAlignment="Center"
-                  IsVisible="{Binding IsCatalogLoading}">
-            <Grid ColumnDefinitions="Auto,*">
-              <ProgressBar Width="112"
-                           Height="12"
-                           Minimum="0"
-                           Maximum="100"
-                           IsIndeterminate="{Binding IsCatalogLoading}" />
-              <TextBlock Grid.Column="1"
-                         Margin="10,0,0,0"
-                         VerticalAlignment="Center"
-                         FontSize="12"
-                         Opacity="0.78"
-                         TextTrimming="CharacterEllipsis"
-                         MaxLines="1"
-                         Text="{Binding CatalogStatusMessage}" />
+            <Grid>
+              <Border Classes="surface-view-toggle-rim" />
+              <StackPanel Orientation="Horizontal"
+                          Spacing="0">
+                <Button Classes="surface-view-tab"
+                        Classes.active="{Binding ShowBrowseSurface}"
+                        Command="{Binding ShowBrowseSurfaceCommand}"
+                        HorizontalAlignment="Stretch">
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <Border Grid.RowSpan="3"
+                            Classes="surface-view-tab-shell" />
+                    <Border Classes="surface-view-tab-top-edge" />
+                    <StackPanel Grid.Row="1"
+                                Classes="surface-view-tab-content">
+                      <TextBlock Classes="surface-view-label"
+                                 Text="Browse" />
+                      <Border Classes="surface-view-indicator" />
+                    </StackPanel>
+                    <Border Grid.Row="2"
+                            Classes="surface-view-tab-bottom-edge" />
+                  </Grid>
+                </Button>
+                <Button Classes="surface-view-tab"
+                        Classes.active="{Binding ShowPreviewSurface}"
+                        Command="{Binding ShowPreviewSurfaceCommand}"
+                        HorizontalAlignment="Stretch">
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <Border Grid.RowSpan="3"
+                            Classes="surface-view-tab-shell" />
+                    <Border Classes="surface-view-tab-top-edge" />
+                    <StackPanel Grid.Row="1"
+                                Classes="surface-view-tab-content">
+                      <TextBlock Classes="surface-view-label"
+                                 Text="{Binding PreviewSurfaceButtonLabel}" />
+                      <Border Classes="surface-view-indicator" />
+                    </StackPanel>
+                    <Border Grid.Row="2"
+                            Classes="surface-view-tab-bottom-edge" />
+                  </Grid>
+                </Button>
+              </StackPanel>
             </Grid>
           </Border>
 
-          <StackPanel Grid.Column="3"
+          <StackPanel Grid.Column="2"
                       Orientation="Horizontal"
                       Spacing="8"
-                      Margin="12,0,38,0"
+                      Margin="16,0,38,0"
                       HorizontalAlignment="Left"
                       VerticalAlignment="Center">
             <Button Classes="header-instance-reload"
@@ -847,7 +1306,7 @@
             </Border>
           </StackPanel>
 
-          <Border Grid.Column="4"
+          <Border Grid.Column="3"
                   Background="{Binding StatusSurfaceBackground}"
                   BorderBrush="{Binding StatusSurfaceBorderBrush}"
                   BorderThickness="1"
@@ -1244,7 +1703,7 @@
                                Classes="browser-search"
                                MinHeight="34"
                                Padding="12,6"
-                               Watermark="Search mods, authors, summaries, or identifiers"
+                               Watermark="Search mods or use tokens like is:installed author:nertea"
                                Text="{Binding ModSearchText}" />
                       <Border Grid.Column="1"
                               Classes="browser-chip"
@@ -1276,7 +1735,7 @@
                              IsOpen="{Binding ShowAdvancedFilters, Mode=TwoWay}"
                              Placement="Bottom"
                              PlacementTarget="{Binding #MoreFiltersButton}"
-                             HorizontalOffset="-206"
+                             HorizontalOffset="-596"
                              VerticalOffset="8"
                              IsLightDismissEnabled="True"
                              OverlayDismissEventPassThrough="True"
@@ -1287,12 +1746,23 @@
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="14"
-                                Width="516"
+                                Width="708"
+                                MaxHeight="620"
+                                x:CompileBindings="False"
                                 BoxShadow="0 18 36 0 #66000000">
-                          <StackPanel Spacing="10">
-                            <Grid ColumnDefinitions="Auto"
-                                  HorizontalAlignment="Right">
-                              <Button Width="88"
+                          <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid ColumnDefinitions="*,Auto"
+                                  Margin="0,0,0,12">
+                              <StackPanel Spacing="2">
+                                <TextBlock FontSize="13.5"
+                                           FontWeight="SemiBold"
+                                           Text="Advanced Filters" />
+                                <TextBlock Classes="filter-drawer-note"
+                                           Text="Combine token search, tri-state status filters, and field-specific matching without leaving the browser." />
+                              </StackPanel>
+                              <Button Grid.Column="1"
+                                      Width="88"
+                                      VerticalAlignment="Top"
                                       Opacity="{Binding ClearFiltersButtonOpacity}"
                                       IsEnabled="{Binding HasActiveFilters}"
                                       Background="{Binding ClearFiltersButtonBackground}"
@@ -1301,60 +1771,308 @@
                                       Command="{Binding ClearFiltersCommand}"
                                       Content="Clear All" />
                             </Grid>
-                            <Grid ColumnDefinitions="*,12,*">
-                              <StackPanel Grid.Column="0"
-                                          Spacing="6">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.62"
-                                           Text="State" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterCompatibleOnly}"
-                                              Content="{Binding CompatibleFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterInstalledOnly}"
-                                              Content="{Binding InstalledFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterUpdatableOnly}"
-                                              Content="{Binding UpdatableFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterHasReplacementOnly}"
-                                              Content="{Binding ReplaceableFilterLabel}" />
+
+                            <Border Grid.Row="1"
+                                    Classes="filter-drawer-section"
+                                    Padding="12,10"
+                                    Margin="0,0,0,12">
+                              <StackPanel Spacing="8">
+                                <TextBlock Classes="filter-drawer-title"
+                                           Text="Quick Tokens" />
+                                <WrapPanel>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="is:installed" />
+                                  </Border>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="is:cached" />
+                                  </Border>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="is:incompatible" />
+                                  </Border>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="author:nertea" />
+                                  </Border>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="license:gpl" />
+                                  </Border>
+                                  <Border Classes="filter-token-chip">
+                                    <TextBlock FontSize="11.5"
+                                               Foreground="#DCE5EF"
+                                               Text="tag:graphics" />
+                                  </Border>
+                                </WrapPanel>
                               </StackPanel>
-                              <StackPanel Grid.Column="2"
-                                          Spacing="6">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.62"
-                                           Text="Availability" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterCachedOnly}"
-                                              Content="{Binding CachedFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterUncachedOnly}"
-                                              Content="{Binding UncachedFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterNotInstalledOnly}"
-                                              Content="{Binding NotInstalledFilterLabel}" />
-                                <ToggleButton Classes="filter-menu-item"
-                                              IsChecked="{Binding FilterIncompatibleOnly}"
-                                              Content="{Binding IncompatibleFilterLabel}" />
+                            </Border>
+
+                            <ScrollViewer Grid.Row="2"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                              <StackPanel Spacing="12">
+                                <Border Classes="filter-drawer-section"
+                                        Margin="0,0,0,12">
+                                  <StackPanel Spacing="10">
+                                    <TextBlock Classes="filter-drawer-title"
+                                               Text="Status Filters" />
+                                    <TextBlock Classes="filter-drawer-note"
+                                               Text="Use Any to ignore a state, Yes to require it, or No to exclude it." />
+                                    <Grid ColumnDefinitions="*,Auto"
+                                          RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                      <TextBlock Classes="filter-drawer-label"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,0,10"
+                                                 Text="Compatible" />
+                                      <ComboBox Grid.Column="1"
+                                                Classes="filter-state-picker"
+                                                Margin="16,0,0,10"
+                                                SelectedIndex="{Binding FilterCompatibleTriStateIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any" />
+                                        <ComboBoxItem Content="Yes" />
+                                        <ComboBoxItem Content="No" />
+                                      </ComboBox>
+
+                                      <TextBlock Grid.Row="1"
+                                                 Classes="filter-drawer-label"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,0,10"
+                                                 Text="Installed" />
+                                      <ComboBox Grid.Row="1"
+                                                Grid.Column="1"
+                                                Classes="filter-state-picker"
+                                                Margin="16,0,0,10"
+                                                SelectedIndex="{Binding FilterInstalledTriStateIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any" />
+                                        <ComboBoxItem Content="Yes" />
+                                        <ComboBoxItem Content="No" />
+                                      </ComboBox>
+
+                                      <TextBlock Grid.Row="2"
+                                                 Classes="filter-drawer-label"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,0,10"
+                                                 Text="Cached" />
+                                      <ComboBox Grid.Row="2"
+                                                Grid.Column="1"
+                                                Classes="filter-state-picker"
+                                                Margin="16,0,0,10"
+                                                SelectedIndex="{Binding FilterCachedTriStateIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any" />
+                                        <ComboBoxItem Content="Yes" />
+                                        <ComboBoxItem Content="No" />
+                                      </ComboBox>
+
+                                      <TextBlock Grid.Row="3"
+                                                 Classes="filter-drawer-label"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,0,10"
+                                                 Text="Updatable" />
+                                      <ComboBox Grid.Row="3"
+                                                Grid.Column="1"
+                                                Classes="filter-state-picker"
+                                                Margin="16,0,0,10"
+                                                SelectedIndex="{Binding FilterUpdatableTriStateIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any" />
+                                        <ComboBoxItem Content="Yes" />
+                                        <ComboBoxItem Content="No" />
+                                      </ComboBox>
+
+                                      <TextBlock Grid.Row="4"
+                                                 Classes="filter-drawer-label"
+                                                 VerticalAlignment="Center"
+                                                 Text="Replaceable" />
+                                      <ComboBox Grid.Row="4"
+                                                Grid.Column="1"
+                                                Classes="filter-state-picker"
+                                                SelectedIndex="{Binding FilterReplaceableTriStateIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any" />
+                                        <ComboBoxItem Content="Yes" />
+                                        <ComboBoxItem Content="No" />
+                                      </ComboBox>
+                                    </Grid>
+                                  </StackPanel>
+                                </Border>
+
+                                <Border Classes="filter-drawer-section">
+                                  <StackPanel Spacing="12">
+                                    <StackPanel Spacing="2">
+                                      <TextBlock Classes="filter-drawer-title"
+                                                 Text="Field Filters" />
+                                      <TextBlock Classes="filter-drawer-note"
+                                                 Text="Blank fields are ignored. Use these for precise matching when the main search is too broad." />
+                                    </StackPanel>
+
+                                    <Grid ColumnDefinitions="*,12,*,12,*"
+                                          RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                      <StackPanel Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Name" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Mod name"
+                                                 Text="{Binding AdvancedNameFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="2"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Identifier" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="CKAN identifier"
+                                                 Text="{Binding AdvancedIdentifierFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="4"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Author" />
+                                        <TextBox x:Name="AdvancedAuthorFilterTextBox"
+                                                 Classes="filter-drawer-input"
+                                                 Watermark="Author"
+                                                 Text="{Binding AdvancedAuthorFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Row="1"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Summary" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Short summary"
+                                                 Text="{Binding AdvancedSummaryFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="1"
+                                                  Grid.Column="2"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Description" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Detailed description"
+                                                 Text="{Binding AdvancedDescriptionFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="1"
+                                                  Grid.Column="4"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="License" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="GPL, MIT, CC-BY..."
+                                                 Text="{Binding AdvancedLicenseFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Row="2"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Language" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="en-US, fr, de..."
+                                                 Text="{Binding AdvancedLanguageFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="2"
+                                                  Grid.Column="2"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Depends" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Required dependency"
+                                                 Text="{Binding AdvancedDependsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="2"
+                                                  Grid.Column="4"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Recommends" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Recommended mod"
+                                                 Text="{Binding AdvancedRecommendsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Row="3"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Suggests" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Suggested mod"
+                                                 Text="{Binding AdvancedSuggestsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="3"
+                                                  Grid.Column="2"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Conflicts" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Conflicting mod"
+                                                 Text="{Binding AdvancedConflictsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="3"
+                                                  Grid.Column="4"
+                                                  Spacing="4"
+                                                  Margin="0,0,0,12">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Supports" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Supported mod or feature"
+                                                 Text="{Binding AdvancedSupportsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Row="4"
+                                                  Spacing="4">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Tags" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Graphics, science..."
+                                                 Text="{Binding AdvancedTagsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="4"
+                                                  Grid.Column="2"
+                                                  Spacing="4">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Labels" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="Custom labels"
+                                                 Text="{Binding AdvancedLabelsFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Row="4"
+                                                  Grid.Column="4"
+                                                  Spacing="4">
+                                        <TextBlock Classes="filter-drawer-label"
+                                                   Text="Compatibility" />
+                                        <TextBox Classes="filter-drawer-input"
+                                                 Watermark="KSP version"
+                                                 Text="{Binding AdvancedCompatibilityFilter, Mode=TwoWay}" />
+                                      </StackPanel>
+                                    </Grid>
+                                  </StackPanel>
+                                </Border>
                               </StackPanel>
-                            </Grid>
-                            <Border Background="#2B323C"
-                                    Height="1" />
-                            <Grid ColumnDefinitions="*,12,*">
-                              <TextBox x:Name="AdvancedAuthorFilterTextBox"
-                                       Grid.Column="0"
-                                       Watermark="Author contains"
-                                       Text="{Binding AdvancedAuthorFilter}" />
-                              <TextBox Grid.Column="2"
-                                       Watermark="Compatibility contains"
-                                       Text="{Binding AdvancedCompatibilityFilter}" />
-                            </Grid>
-                            <TextBlock FontSize="12"
-                                       Opacity="0.72"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding AdvancedFilterSummary}" />
-                          </StackPanel>
+                            </ScrollViewer>
+
+                            <Border Grid.Row="3"
+                                    Classes="filter-drawer-section"
+                                    Padding="12,10">
+                              <StackPanel Spacing="4">
+                                <TextBlock Classes="filter-drawer-title"
+                                           Text="Active Search Summary" />
+                                <TextBlock Classes="filter-drawer-note"
+                                           Text="{Binding AdvancedFilterSummary}" />
+                              </StackPanel>
+                            </Border>
+                          </Grid>
                         </Border>
                       </Popup>
                     </Grid>
@@ -1488,8 +2206,38 @@
                                 </Grid>
                               </Border>
                             </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+
+                        <Border Background="#1B2430F2"
+                                BorderBrush="#4D6177"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="14,12"
+                                Width="360"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsCatalogLoading}"
+                                BoxShadow="0 18 36 0 #66000000">
+                          <StackPanel Spacing="8">
+                            <TextBlock FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Opacity="0.86"
+                                       HorizontalAlignment="Center"
+                                       Text="Loading Catalog" />
+                            <ProgressBar Height="12"
+                                         Minimum="0"
+                                         Maximum="100"
+                                         IsIndeterminate="{Binding IsCatalogLoading}" />
+                            <TextBlock FontSize="12"
+                                       Opacity="0.78"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       MaxLines="2"
+                                       Text="{Binding CatalogStatusMessage}" />
+                          </StackPanel>
+                        </Border>
 
                         <Grid RowDefinitions="Auto,*"
                               IsVisible="{Binding ShowModList}"
@@ -1727,7 +2475,8 @@
                         MinHeight="0"
                         ClipToBounds="True"
                         IsVisible="{Binding ShowDetailsSidebar}">
-                  <Grid MinHeight="0">
+                  <Grid MinHeight="0"
+                        RowDefinitions="*">
                     <StackPanel Spacing="12"
                                 IsVisible="{Binding ShowSelectedModPlaceholder}">
                       <TextBlock FontSize="16"
@@ -1850,7 +2599,8 @@
                               HorizontalAlignment="Left" />
                     </StackPanel>
 
-                    <ScrollViewer x:Name="DetailsScrollViewer"
+                    <ScrollViewer Grid.Row="0"
+                                  x:Name="DetailsScrollViewer"
                                   VerticalScrollBarVisibility="Auto"
                                   VerticalAlignment="Stretch"
                                   MinHeight="0"
@@ -2188,40 +2938,6 @@
                                     Height="1"
                                     Margin="0,0,0,8" />
 
-                            <StackPanel Spacing="6"
-                                        Margin="0,0,0,8"
-                                        IsVisible="{Binding ShowSelectedModResourceLinks}">
-                              <TextBlock Classes="detail-label"
-                                         Text="Links" />
-                              <ItemsControl ItemsSource="{Binding SelectedModResourceLinks}">
-                                <ItemsControl.ItemTemplate>
-                                  <DataTemplate x:DataType="vm:ModResourceLinkItem">
-                                    <Grid ColumnDefinitions="92,*"
-                                          Margin="0,0,0,4">
-                                      <TextBlock Classes="detail-label"
-                                                 Margin="0,6,10,0"
-                                                 VerticalAlignment="Top"
-                                                 Text="{Binding Label}" />
-                                      <Button Grid.Column="1"
-                                              Classes="detail-link-button"
-                                              Click="SelectedModResourceLinkButton_OnClick">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#7FAFDF"
-                                                   TextWrapping="Wrap"
-                                                   MaxLines="2"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding Url}" />
-                                      </Button>
-                                    </Grid>
-                                  </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                              </ItemsControl>
-                            </StackPanel>
-                            <Border Background="#24303B"
-                                    Height="1"
-                                    Margin="0,0,0,8"
-                                    IsVisible="{Binding ShowSelectedModResourceLinks}" />
-
                             <StackPanel Spacing="4"
                                         Margin="0,0,0,8">
                               <Button Classes="detail-disclosure"
@@ -2313,6 +3029,38 @@
                                                Margin="0,0,0,4"
                                                TextWrapping="Wrap"
                                                Text="{Binding .}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8"
+                                        Margin="0,0,0,8"
+                                        IsVisible="{Binding ShowSelectedModResourceLinks}">
+                              <Border Background="#24303B"
+                                      Height="1" />
+                              <TextBlock Classes="detail-label"
+                                         Text="Links" />
+                              <ItemsControl ItemsSource="{Binding SelectedModResourceLinks}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="vm:ModResourceLinkItem">
+                                    <Grid ColumnDefinitions="92,*"
+                                          Margin="0,0,0,4">
+                                      <TextBlock Classes="detail-label"
+                                                 Margin="0,6,10,0"
+                                                 VerticalAlignment="Top"
+                                                 Text="{Binding Label}" />
+                                      <Button Grid.Column="1"
+                                              Classes="detail-link-button"
+                                              Click="SelectedModResourceLinkButton_OnClick">
+                                        <TextBlock FontSize="11.5"
+                                                   Foreground="#7FAFDF"
+                                                   TextWrapping="Wrap"
+                                                   MaxLines="2"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Url}" />
+                                      </Button>
+                                    </Grid>
                                   </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                               </ItemsControl>

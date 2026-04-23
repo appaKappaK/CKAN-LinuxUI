@@ -55,7 +55,10 @@ namespace CKAN.App.Services
         {
             get
             {
-                return false;
+                lock (sync)
+                {
+                    return settings.ShowAdvancedFilters;
+                }
             }
         }
 
@@ -113,12 +116,14 @@ namespace CKAN.App.Services
         {
             lock (sync)
             {
-                if (FilterStatesEqual(settings.FilterState, filterState))
+                if (FilterStatesEqual(settings.FilterState, filterState)
+                    && settings.ShowAdvancedFilters == showAdvancedFilters)
                 {
                     return;
                 }
 
                 settings.FilterState = filterState ?? new FilterState();
+                settings.ShowAdvancedFilters = showAdvancedFilters;
                 SaveSettings();
             }
         }
@@ -200,19 +205,34 @@ namespace CKAN.App.Services
         private static bool FilterStatesEqual(FilterState? left,
                                               FilterState? right)
             => string.Equals(left?.SearchText ?? "", right?.SearchText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.NameText ?? "", right?.NameText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.IdentifierText ?? "", right?.IdentifierText ?? "", StringComparison.Ordinal)
                && string.Equals(left?.AuthorText ?? "", right?.AuthorText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.SummaryText ?? "", right?.SummaryText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.DescriptionText ?? "", right?.DescriptionText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.LicenseText ?? "", right?.LicenseText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.LanguageText ?? "", right?.LanguageText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.DependsText ?? "", right?.DependsText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.RecommendsText ?? "", right?.RecommendsText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.SuggestsText ?? "", right?.SuggestsText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.ConflictsText ?? "", right?.ConflictsText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.SupportsText ?? "", right?.SupportsText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.TagText ?? "", right?.TagText ?? "", StringComparison.Ordinal)
+               && string.Equals(left?.LabelText ?? "", right?.LabelText ?? "", StringComparison.Ordinal)
                && string.Equals(left?.CompatibilityText ?? "", right?.CompatibilityText ?? "", StringComparison.Ordinal)
                && (left?.SortOption ?? ModSortOption.Name) == (right?.SortOption ?? ModSortOption.Name)
                && (left?.SortDescending ?? false) == (right?.SortDescending ?? false)
                && (left?.InstalledOnly ?? false) == (right?.InstalledOnly ?? false)
                && (left?.NotInstalledOnly ?? false) == (right?.NotInstalledOnly ?? false)
                && (left?.UpdatableOnly ?? false) == (right?.UpdatableOnly ?? false)
+               && (left?.NotUpdatableOnly ?? false) == (right?.NotUpdatableOnly ?? false)
                && (left?.NewOnly ?? false) == (right?.NewOnly ?? false)
                && (left?.CompatibleOnly ?? false) == (right?.CompatibleOnly ?? false)
                && (left?.CachedOnly ?? false) == (right?.CachedOnly ?? false)
                && (left?.UncachedOnly ?? false) == (right?.UncachedOnly ?? false)
                && (left?.IncompatibleOnly ?? false) == (right?.IncompatibleOnly ?? false)
-               && (left?.HasReplacementOnly ?? false) == (right?.HasReplacementOnly ?? false);
+               && (left?.HasReplacementOnly ?? false) == (right?.HasReplacementOnly ?? false)
+               && (left?.NoReplacementOnly ?? false) == (right?.NoReplacementOnly ?? false);
 
         private static bool WindowStatesEqual(AppWindowState? left,
                                               AppWindowState? right)
@@ -298,6 +318,8 @@ namespace CKAN.App.Services
             public string? LastInstanceName { get; set; }
 
             public FilterState FilterState { get; set; } = new FilterState();
+
+            public bool ShowAdvancedFilters { get; set; }
 
             public AppWindowState WindowState { get; set; } = new AppWindowState();
 

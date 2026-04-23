@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -239,6 +240,21 @@ namespace CKAN.App.Services
                 Description       = string.IsNullOrWhiteSpace(displayMod.description)
                     ? displayMod.@abstract?.Trim() ?? ""
                     : displayMod.description.Trim(),
+                License           = FormatLicense(displayMod),
+                Languages         = string.Join(", ", displayMod.localizations ?? Array.Empty<string>()),
+                Depends           = FormatRelationshipList(displayMod.depends),
+                Recommends        = FormatRelationshipList(displayMod.recommends),
+                Suggests          = FormatRelationshipList(displayMod.suggests),
+                Conflicts         = FormatRelationshipList(displayMod.conflicts),
+                Supports          = FormatRelationshipList(displayMod.supports),
+                Tags              = string.Join(", ", displayMod.Tags?.OrderBy(tag => tag, StringComparer.CurrentCultureIgnoreCase)
+                                                               ?? Enumerable.Empty<string>()),
+                Labels            = string.Join(", ", ModuleLabelList.ModuleLabels.LabelsFor(context.Instance.Name)
+                                                                          .Where(label => label.ContainsModule(context.Instance.Game,
+                                                                                                               displayMod.identifier))
+                                                                          .Select(label => label.Name)
+                                                                          .OrderBy(name => name,
+                                                                                   StringComparer.CurrentCultureIgnoreCase)),
                 LatestVersion     = displayMod.version.ToString(),
                 InstalledVersion  = installedModule?.version.ToString() ?? "",
                 ReleaseDate       = displayMod.release_date?.ToString("yyyy-MM-dd") ?? "Unknown",
@@ -277,77 +293,39 @@ namespace CKAN.App.Services
         {
             bool availabilityScopedToNotInstalled = !filter.InstalledOnly && !filter.UpdatableOnly;
 
-            if (!string.IsNullOrWhiteSpace(filter.SearchText))
-            {
-                var text = filter.SearchText.Trim();
-                if (!Contains(item.Name, text)
-                    && !Contains(item.Identifier, text)
-                    && !Contains(item.Author, text)
-                    && !Contains(item.Summary, text)
-                    && !Contains(item.Description, text))
-                {
-                    return false;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(filter.AuthorText)
-                && !Contains(item.Author, filter.AuthorText.Trim()))
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(filter.CompatibilityText)
-                && !Contains(item.Compatibility, filter.CompatibilityText.Trim()))
-            {
-                return false;
-            }
-
-            if (filter.InstalledOnly && !item.IsInstalled)
-            {
-                return false;
-            }
-            if (filter.NotInstalledOnly && item.IsInstalled)
-            {
-                return false;
-            }
-            if (filter.UpdatableOnly && !item.HasVersionUpdate)
-            {
-                return false;
-            }
-            if (filter.CompatibleOnly && item.IsIncompatible)
-            {
-                return false;
-            }
-            if (filter.CachedOnly && !item.IsCached)
-            {
-                return false;
-            }
-            if (filter.CachedOnly && availabilityScopedToNotInstalled && item.IsInstalled)
-            {
-                return false;
-            }
-            if (filter.UncachedOnly && item.IsCached)
-            {
-                return false;
-            }
-            if (filter.UncachedOnly && availabilityScopedToNotInstalled && item.IsInstalled)
-            {
-                return false;
-            }
-            if (filter.IncompatibleOnly && !item.IsIncompatible)
-            {
-                return false;
-            }
-            if (filter.HasReplacementOnly && !item.HasReplacement)
-            {
-                return false;
-            }
-            if (filter.NewOnly && item.IsInstalled)
-            {
-                return false;
-            }
-
-            return true;
+            return MatchesSearchText(item, filter.SearchText)
+                   && MatchesTextFilter(item.Name, filter.NameText)
+                   && MatchesTextFilter(item.Identifier, filter.IdentifierText)
+                   && MatchesTextFilter(item.Author, filter.AuthorText)
+                   && MatchesTextFilter(item.Summary, filter.SummaryText)
+                   && MatchesTextFilter(item.Description, filter.DescriptionText)
+                   && MatchesTextFilter(item.License, filter.LicenseText)
+                   && MatchesTextFilter(item.Languages, filter.LanguageText)
+                   && MatchesTextFilter(item.Depends, filter.DependsText)
+                   && MatchesTextFilter(item.Recommends, filter.RecommendsText)
+                   && MatchesTextFilter(item.Suggests, filter.SuggestsText)
+                   && MatchesTextFilter(item.Conflicts, filter.ConflictsText)
+                   && MatchesTextFilter(item.Supports, filter.SupportsText)
+                   && MatchesTextFilter(item.Tags, filter.TagText)
+                   && MatchesTextFilter(item.Labels, filter.LabelText)
+                   && MatchesTextFilter(item.Compatibility, filter.CompatibilityText)
+                   && MatchesBooleanFilter(item.IsInstalled,
+                                           filter.InstalledOnly,
+                                           filter.NotInstalledOnly)
+                   && MatchesBooleanFilter(item.HasVersionUpdate,
+                                           filter.UpdatableOnly,
+                                           filter.NotUpdatableOnly)
+                   && MatchesBooleanFilter(!item.IsIncompatible,
+                                           filter.CompatibleOnly,
+                                           filter.IncompatibleOnly)
+                   && MatchesBooleanFilter(item.HasReplacement,
+                                           filter.HasReplacementOnly,
+                                           filter.NoReplacementOnly)
+                   && MatchesCacheFilter(item,
+                                         availabilityScopedToNotInstalled,
+                                         filter.CachedOnly,
+                                         filter.UncachedOnly)
+                   && (!filter.NewOnly || !item.IsInstalled);
         }
 
         private static int CountForPreview(IReadOnlyCollection<ModListItem> items,
@@ -356,159 +334,292 @@ namespace CKAN.App.Services
             => items.Count(item => Matches(item, applyPreviewFilter(filter)));
 
         private static FilterState WithInstalledOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = true,
-                NotInstalledOnly    = false,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                InstalledOnly    = true,
+                NotInstalledOnly = false,
             };
 
         private static FilterState WithNotInstalledOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = false,
-                NotInstalledOnly    = true,
-                UpdatableOnly       = false,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                InstalledOnly    = false,
+                NotInstalledOnly = true,
+                UpdatableOnly    = false,
             };
 
         private static FilterState WithUpdatableOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = false,
-                UpdatableOnly       = true,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                NotInstalledOnly   = false,
+                UpdatableOnly      = true,
+                NotUpdatableOnly   = false,
             };
 
         private static FilterState WithCompatibleOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = filter.NotInstalledOnly,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = true,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = false,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                CompatibleOnly   = true,
+                IncompatibleOnly = false,
             };
 
         private static FilterState WithCachedOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = filter.NotInstalledOnly,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = true,
-                UncachedOnly        = false,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                CachedOnly   = true,
+                UncachedOnly = false,
             };
 
         private static FilterState WithUncachedOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = filter.NotInstalledOnly,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = false,
-                UncachedOnly        = true,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                CachedOnly   = false,
+                UncachedOnly = true,
             };
 
         private static FilterState WithIncompatibleOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = filter.NotInstalledOnly,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = false,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = true,
-                HasReplacementOnly  = filter.HasReplacementOnly,
+                CompatibleOnly   = false,
+                IncompatibleOnly = true,
             };
 
         private static FilterState WithReplacementOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText          = filter.SearchText,
-                AuthorText          = filter.AuthorText,
-                CompatibilityText   = filter.CompatibilityText,
-                SortOption          = filter.SortOption,
-                SortDescending      = filter.SortDescending,
-                InstalledOnly       = filter.InstalledOnly,
-                NotInstalledOnly    = filter.NotInstalledOnly,
-                UpdatableOnly       = filter.UpdatableOnly,
-                NewOnly             = filter.NewOnly,
-                CompatibleOnly      = filter.CompatibleOnly,
-                CachedOnly          = filter.CachedOnly,
-                UncachedOnly        = filter.UncachedOnly,
-                IncompatibleOnly    = filter.IncompatibleOnly,
-                HasReplacementOnly  = true,
+                HasReplacementOnly = true,
+                NoReplacementOnly  = false,
             };
 
         private static bool Contains(string text, string search)
             => text?.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+
+        private static bool MatchesTextFilter(string text, string search)
+            => string.IsNullOrWhiteSpace(search)
+               || Contains(text, search.Trim());
+
+        private static bool MatchesBooleanFilter(bool value,
+                                                 bool mustBeTrue,
+                                                 bool mustBeFalse)
+            => (!mustBeTrue || value)
+               && (!mustBeFalse || !value);
+
+        private static bool MatchesCacheFilter(ModListItem item,
+                                               bool        availabilityScopedToNotInstalled,
+                                               bool        mustBeCached,
+                                               bool        mustBeUncached)
+        {
+            if (!MatchesBooleanFilter(item.IsCached, mustBeCached, mustBeUncached))
+            {
+                return false;
+            }
+
+            if ((mustBeCached || mustBeUncached)
+                && availabilityScopedToNotInstalled
+                && item.IsInstalled)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string FormatRelationshipList(IEnumerable<RelationshipDescriptor>? relationships)
+            => string.Join(", ",
+                           (relationships ?? Enumerable.Empty<RelationshipDescriptor>())
+                               .Select(relationship => relationship.ToString())
+                               .Where(text => !string.IsNullOrWhiteSpace(text)));
+
+        private static bool MatchesSearchText(ModListItem item, string searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return true;
+            }
+
+            var query = ParseSearchText(searchText);
+            return query.FreeTerms.All(term => MatchesAnySearchField(item, term))
+                   && query.FieldTerms.All(term => MatchesFieldSearch(item, term.Field, term.Value));
+        }
+
+        private static bool MatchesAnySearchField(ModListItem item, string search)
+            => Contains(item.Name, search)
+               || Contains(item.Identifier, search)
+               || Contains(item.Author, search)
+               || Contains(item.Summary, search)
+               || Contains(item.Description, search)
+               || Contains(item.License, search)
+               || Contains(item.Languages, search)
+               || Contains(item.Depends, search)
+               || Contains(item.Recommends, search)
+               || Contains(item.Suggests, search)
+               || Contains(item.Conflicts, search)
+               || Contains(item.Supports, search)
+               || Contains(item.Tags, search)
+               || Contains(item.Labels, search)
+               || Contains(item.Compatibility, search)
+               || Contains(item.LatestVersion, search)
+               || Contains(item.ReleaseDate, search);
+
+        private static bool MatchesFieldSearch(ModListItem item, string field, string value)
+            => field switch
+            {
+                "name" or "mod"                 => Contains(item.Name, value),
+                "id" or "ident" or "identifier" => Contains(item.Identifier, value),
+                "author" or "authors"           => Contains(item.Author, value),
+                "summary" or "abstract"         => Contains(item.Summary, value),
+                "description" or "desc"         => Contains(item.Description, value),
+                "license"                       => Contains(item.License, value),
+                "language" or "lang"           => Contains(item.Languages, value),
+                "depends" or "dependency"      => Contains(item.Depends, value),
+                "recommends" or "recommend"    => Contains(item.Recommends, value),
+                "suggests" or "suggest"        => Contains(item.Suggests, value),
+                "conflicts" or "conflict"      => Contains(item.Conflicts, value),
+                "supports" or "support"        => Contains(item.Supports, value),
+                "tag" or "tags"                => Contains(item.Tags, value),
+                "label" or "labels"            => Contains(item.Labels, value),
+                "compat" or "compatibility" or "ksp"
+                                                => Contains(item.Compatibility, value),
+                "version"                       => Contains(item.LatestVersion, value),
+                "release" or "released" or "date"
+                                                => Contains(item.ReleaseDate, value),
+                "is"                            => MatchesIsSearch(item, value),
+                _                               => MatchesAnySearchField(item, $"{field}:{value}"),
+            };
+
+        private static bool MatchesIsSearch(ModListItem item, string value)
+            => value.Trim().ToLowerInvariant() switch
+            {
+                "installed"                  => item.IsInstalled,
+                "not-installed" or "notinstalled" or "uninstalled"
+                                              => !item.IsInstalled,
+                "updatable" or "update" or "update-available"
+                                              => item.HasVersionUpdate,
+                "not-updatable" or "noupdate" or "notupdate"
+                                              => !item.HasVersionUpdate,
+                "compatible"                 => !item.IsIncompatible,
+                "incompatible"               => item.IsIncompatible,
+                "cached"                     => item.IsCached,
+                "uncached" or "not-cached" or "notcached"
+                                              => !item.IsCached,
+                "replaceable" or "replacement" or "has-replacement"
+                                              => item.HasReplacement,
+                "not-replaceable" or "noreplacement" or "no-replacement"
+                                              => !item.HasReplacement,
+                "external" or "autodetected" => item.IsAutodetected,
+                _                            => MatchesAnySearchField(item, value),
+            };
+
+        private static ParsedSearchQuery ParseSearchText(string searchText)
+        {
+            var freeTerms = new List<string>();
+            var fieldTerms = new List<SearchFieldTerm>();
+
+            foreach (var token in TokenizeSearchText(searchText))
+            {
+                var separatorIndex = token.IndexOf(':');
+                if (separatorIndex <= 0 || separatorIndex >= token.Length - 1)
+                {
+                    freeTerms.Add(token);
+                    continue;
+                }
+
+                var field = token[..separatorIndex].Trim().ToLowerInvariant();
+                var value = token[(separatorIndex + 1)..].Trim();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    freeTerms.Add(token);
+                    continue;
+                }
+
+                if (IsRecognizedSearchField(field))
+                {
+                    fieldTerms.Add(new SearchFieldTerm(field, value));
+                }
+                else
+                {
+                    freeTerms.Add(token);
+                }
+            }
+
+            return new ParsedSearchQuery(freeTerms, fieldTerms);
+        }
+
+        private static IEnumerable<string> TokenizeSearchText(string text)
+        {
+            var builder = new StringBuilder();
+            bool inQuotes = false;
+
+            foreach (char ch in text)
+            {
+                if (ch == '"')
+                {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (char.IsWhiteSpace(ch) && !inQuotes)
+                {
+                    if (builder.Length > 0)
+                    {
+                        yield return builder.ToString();
+                        builder.Clear();
+                    }
+                    continue;
+                }
+
+                builder.Append(ch);
+            }
+
+            if (builder.Length > 0)
+            {
+                yield return builder.ToString();
+            }
+        }
+
+        private static bool IsRecognizedSearchField(string field)
+            => field is "name"
+               or "mod"
+               or "id"
+               or "ident"
+               or "identifier"
+               or "author"
+               or "authors"
+               or "summary"
+               or "abstract"
+               or "description"
+               or "desc"
+               or "license"
+               or "language"
+               or "lang"
+               or "depends"
+               or "dependency"
+               or "recommends"
+               or "recommend"
+               or "suggests"
+               or "suggest"
+               or "conflicts"
+               or "conflict"
+               or "supports"
+               or "support"
+               or "tag"
+               or "tags"
+               or "label"
+               or "labels"
+               or "compat"
+               or "compatibility"
+               or "ksp"
+               or "version"
+               or "release"
+               or "released"
+               or "date"
+               or "is";
+
+        private sealed record SearchFieldTerm(string Field,
+                                              string Value);
+
+        private sealed record ParsedSearchQuery(IReadOnlyList<string>        FreeTerms,
+                                                IReadOnlyList<SearchFieldTerm> FieldTerms);
 
         private static string FormatPrimaryStateLabel(bool isInstalled,
                                                       bool isAutodetected,

@@ -21,6 +21,24 @@ namespace CKAN.App.Models
 
         public string Description { get; init; } = "";
 
+        public string License { get; init; } = "";
+
+        public string Languages { get; init; } = "";
+
+        public string Depends { get; init; } = "";
+
+        public string Recommends { get; init; } = "";
+
+        public string Suggests { get; init; } = "";
+
+        public string Conflicts { get; init; } = "";
+
+        public string Supports { get; init; } = "";
+
+        public string Tags { get; init; } = "";
+
+        public string Labels { get; init; } = "";
+
         public string LatestVersion { get; init; } = "";
 
         public string InstalledVersion { get; init; } = "";

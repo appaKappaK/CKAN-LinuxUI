@@ -1,0 +1,228 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.SettingsWindow"
+        x:CompileBindings="False"
+        Width="920"
+        Height="640"
+        MinWidth="820"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Title="CKAN Settings"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Border.settings-card">
+      <Setter Property="Background" Value="#161B21" />
+      <Setter Property="BorderBrush" Value="#2B323C" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="Button.settings-open">
+      <Setter Property="Background" Value="#355779" />
+      <Setter Property="BorderBrush" Value="#5A86B4" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="MinWidth" Value="110" />
+    </Style>
+    <Style Selector="TextBlock.card-error">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="#F06C6C" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="CKAN Settings" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="Use this hub to open the dedicated editors for display, compatibility, launch, host, filter, and plugin settings. Each section stays focused, so the main window does not need to carry the full settings surface." />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1"
+                  Margin="0,18,0,0"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <Grid ColumnDefinitions="*,*"
+            RowDefinitions="Auto,Auto,Auto">
+        <Border Classes="settings-card"
+                Margin="0,0,7,14">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Display Scale" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Adjust LinuxGUI scale for the current display so dense views and dialogs stay readable." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding DisplayScaleCard.ShowError}"
+                       Text="{Binding DisplayScaleCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="DisplayScaleButton_OnClick"
+                      IsEnabled="{Binding DisplayScaleCard.CanInvoke}"
+                      Content="{Binding DisplayScaleCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1"
+                Classes="settings-card"
+                Margin="7,0,0,14">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Compatible Game Versions" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Review extra KSP versions that should be treated as compatible for this installation." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding CompatibleGameVersionsCard.ShowError}"
+                       Text="{Binding CompatibleGameVersionsCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="CompatibleGameVersionsButton_OnClick"
+                      IsEnabled="{Binding CompatibleGameVersionsCard.CanInvoke}"
+                      Content="{Binding CompatibleGameVersionsCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Classes="settings-card"
+                Margin="0,0,7,14">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Game Command Lines" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Manage default and alternate launch commands for starting the game from LinuxGUI." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding GameCommandLinesCard.ShowError}"
+                       Text="{Binding GameCommandLinesCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="GameCommandLinesButton_OnClick"
+                      IsEnabled="{Binding GameCommandLinesCard.CanInvoke}"
+                      Content="{Binding GameCommandLinesCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Grid.Column="1"
+                Classes="settings-card"
+                Margin="7,0,0,14">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Preferred Hosts" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Choose which download mirrors CKAN should prefer when multiple hosts provide the same package." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding PreferredHostsCard.ShowError}"
+                       Text="{Binding PreferredHostsCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="PreferredHostsButton_OnClick"
+                      IsEnabled="{Binding PreferredHostsCard.CanInvoke}"
+                      Content="{Binding PreferredHostsCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2"
+                Classes="settings-card"
+                Margin="0,0,7,0">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Installation Filters" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Edit global and instance-specific install filters that exclude unwanted files from deployment." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding InstallationFiltersCard.ShowError}"
+                       Text="{Binding InstallationFiltersCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="InstallationFiltersButton_OnClick"
+                      IsEnabled="{Binding InstallationFiltersCard.CanInvoke}"
+                      Content="{Binding InstallationFiltersCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2"
+                Grid.Column="1"
+                Classes="settings-card"
+                Margin="7,0,0,0">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="15"
+                         FontWeight="SemiBold"
+                         Text="Plugins" />
+              <TextBlock FontSize="12"
+                         Opacity="0.74"
+                         TextWrapping="Wrap"
+                         Text="Manage active and dormant LinuxGUI plugins, reload assemblies, and inspect load failures." />
+            </StackPanel>
+            <TextBlock Classes="card-error"
+                       IsVisible="{Binding PluginsCard.ShowError}"
+                       Text="{Binding PluginsCard.ErrorMessage}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+              <Button Classes="dialog-action settings-open"
+                      Click="PluginsButton_OnClick"
+                      IsEnabled="{Binding PluginsCard.CanInvoke}"
+                      Content="{Binding PluginsCard.ButtonText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CloseButton_OnClick"
+              Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>

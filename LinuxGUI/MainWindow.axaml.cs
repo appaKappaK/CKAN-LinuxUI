@@ -170,6 +170,9 @@ namespace CKAN.LinuxGUI
 
         private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
                                                                   Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenCompatibleGameVersionsAsync();
+
+        private async Task OpenCompatibleGameVersionsAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentInstance is not GameInstance instance)
@@ -186,6 +189,13 @@ namespace CKAN.LinuxGUI
 
         private async void DisplayScaleMenuItem_OnClick(object? sender,
                                                         Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenDisplayScaleAsync();
+
+        private async void SettingsMenuItem_OnClick(object? sender,
+                                                    Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenSettingsAsync();
+
+        private async Task OpenDisplayScaleAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel)
             {
@@ -196,8 +206,41 @@ namespace CKAN.LinuxGUI
             await dialog.ShowDialog(this);
         }
 
+        private async Task OpenSettingsAsync()
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var dialog = new SettingsWindow
+            {
+                OpenDisplayScaleAsync = OpenDisplayScaleAsync,
+                OpenCompatibleGameVersionsAsync = viewModel.HasCurrentInstance
+                    ? OpenCompatibleGameVersionsAsync
+                    : null,
+                OpenGameCommandLinesAsync = viewModel.HasCurrentInstance
+                    ? OpenGameCommandLinesAsync
+                    : null,
+                OpenPreferredHostsAsync = viewModel.CurrentRegistry != null
+                    ? OpenPreferredHostsAsync
+                    : null,
+                OpenInstallationFiltersAsync = viewModel.HasCurrentInstance
+                    ? OpenInstallationFiltersAsync
+                    : null,
+                OpenPluginsAsync = viewModel.HasCurrentInstance
+                    ? OpenPluginsAsync
+                    : null,
+            };
+
+            await dialog.ShowDialog(this);
+        }
+
         private async void GameCommandLinesMenuItem_OnClick(object? sender,
                                                             Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenGameCommandLinesAsync();
+
+        private async Task OpenGameCommandLinesAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentInstance is not GameInstance instance)
@@ -212,6 +255,9 @@ namespace CKAN.LinuxGUI
 
         private async void PluginsMenuItem_OnClick(object? sender,
                                                    Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenPluginsAsync();
+
+        private async Task OpenPluginsAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentInstance == null)
@@ -231,6 +277,9 @@ namespace CKAN.LinuxGUI
 
         private async void PreferredHostsMenuItem_OnClick(object? sender,
                                                           Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenPreferredHostsAsync();
+
+        private async Task OpenPreferredHostsAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentRegistry == null)
@@ -245,6 +294,9 @@ namespace CKAN.LinuxGUI
 
         private async void InstallationFiltersMenuItem_OnClick(object? sender,
                                                                Avalonia.Interactivity.RoutedEventArgs e)
+            => await OpenInstallationFiltersAsync();
+
+        private async Task OpenInstallationFiltersAsync()
         {
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentInstance is not GameInstance instance)
