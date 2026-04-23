@@ -120,6 +120,9 @@ namespace CKAN.LinuxGUI
         private bool    isUserBusy;
         private bool    showSortOptions;
         private bool    showAdvancedFilters;
+        private bool    showAdvancedFilterEditor;
+        private bool    showTagFilterPicker;
+        private bool    showLabelFilterPicker;
         private bool    showDisplaySettings;
         private bool    showDetailsPane = true;
         private bool    showPreviewSurface;
@@ -172,6 +175,8 @@ namespace CKAN.LinuxGUI
 
             Instances = new ObservableCollection<InstanceSummary>();
             Mods = new ObservableCollection<ModListItem>();
+            AvailableTagOptions = new ObservableCollection<FilterTagOptionItem>();
+            AvailableLabelOptions = new ObservableCollection<FilterTagOptionItem>();
             QueuedActions = new ObservableCollection<QueuedActionModel>();
             CompatibleGameVersionOptions = new ObservableCollection<CompatibilityVersionOption>();
             SelectedModAvailableVersions = new ObservableCollection<ModVersionChoiceItem>();
@@ -266,9 +271,17 @@ namespace CKAN.LinuxGUI
             RemoveQueuedActionCommand = ReactiveCommand.Create(RemoveSelectedQueuedAction, canRemoveQueuedAction);
             ClearQueueCommand = ReactiveCommand.Create(ClearQueuedActions, canClearQueue);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
+            ToggleAdvancedFilterEditorCommand = ReactiveCommand.Create(ToggleAdvancedFilterEditor);
+            ToggleTagFilterPickerCommand = ReactiveCommand.Create(ToggleTagFilterPicker);
+            ToggleLabelFilterPickerCommand = ReactiveCommand.Create(ToggleLabelFilterPicker);
             ToggleSortOptionsCommand = ReactiveCommand.Create(ToggleSortOptions);
             ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearAdvancedText);
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
+            ClearPopupFiltersCommand = ReactiveCommand.Create(ClearPopupFilters);
+            ClearTagFilterCommand = ReactiveCommand.Create(ClearTagFilter);
+            SelectTagFilterCommand = ReactiveCommand.Create<FilterTagOptionItem?>(SelectTagFilter);
+            ClearLabelFilterCommand = ReactiveCommand.Create(ClearLabelFilter);
+            SelectLabelFilterCommand = ReactiveCommand.Create<FilterTagOptionItem?>(SelectLabelFilter);
             ToggleDisplaySettingsCommand = ReactiveCommand.Create(ToggleDisplaySettings);
             ToggleDetailsPaneCommand = ReactiveCommand.Create(ToggleDetailsPane);
             ShowBrowseSurfaceCommand = ReactiveCommand.Create(ShowBrowseSurfaceTab);
@@ -418,6 +431,10 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<ModListItem> Mods { get; }
 
+        public ObservableCollection<FilterTagOptionItem> AvailableTagOptions { get; }
+
+        public ObservableCollection<FilterTagOptionItem> AvailableLabelOptions { get; }
+
         public ObservableCollection<QueuedActionModel> QueuedActions { get; }
 
         public ObservableCollection<CompatibilityVersionOption> CompatibleGameVersionOptions { get; }
@@ -474,11 +491,27 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ToggleAdvancedFiltersCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ToggleAdvancedFilterEditorCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleTagFilterPickerCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ToggleLabelFilterPickerCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ToggleSortOptionsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearAdvancedFiltersCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearPopupFiltersCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearTagFilterCommand { get; }
+
+        public ReactiveCommand<FilterTagOptionItem?, Unit> SelectTagFilterCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearLabelFilterCommand { get; }
+
+        public ReactiveCommand<FilterTagOptionItem?, Unit> SelectLabelFilterCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ToggleDisplaySettingsCommand { get; }
 
@@ -801,6 +834,7 @@ namespace CKAN.LinuxGUI
             set
             {
                 this.RaiseAndSetIfChanged(ref advancedTagsFilter, value);
+                UpdateAvailableTagOptionSelection();
                 PublishFilterStateLabels();
             }
         }
@@ -811,6 +845,7 @@ namespace CKAN.LinuxGUI
             set
             {
                 this.RaiseAndSetIfChanged(ref advancedLabelsFilter, value);
+                UpdateAvailableLabelOptionSelection();
                 PublishFilterStateLabels();
             }
         }
@@ -1472,8 +1507,47 @@ namespace CKAN.LinuxGUI
             set
             {
                 this.RaiseAndSetIfChanged(ref showAdvancedFilters, value);
+                if (!value)
+                {
+                    ShowAdvancedFilterEditor = false;
+                    ShowTagFilterPicker = false;
+                    ShowLabelFilterPicker = false;
+                }
                 modSearchService.SetShowAdvancedFilters(value);
             }
+        }
+
+        public bool ShowAdvancedFilterEditor
+        {
+            get => showAdvancedFilterEditor;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref showAdvancedFilterEditor, value);
+                if (!value)
+                {
+                    ShowTagFilterPicker = false;
+                    ShowLabelFilterPicker = false;
+                }
+                this.RaisePropertyChanged(nameof(ShowSimpleFilterMenu));
+                this.RaisePropertyChanged(nameof(FiltersPopupTitle));
+                this.RaisePropertyChanged(nameof(AdvancedFilterToggleLabel));
+                this.RaisePropertyChanged(nameof(FiltersPopupWidth));
+                this.RaisePropertyChanged(nameof(FiltersPopupHorizontalOffset));
+            }
+        }
+
+        public bool ShowSimpleFilterMenu => !ShowAdvancedFilterEditor;
+
+        public bool ShowTagFilterPicker
+        {
+            get => showTagFilterPicker;
+            set => this.RaiseAndSetIfChanged(ref showTagFilterPicker, value);
+        }
+
+        public bool ShowLabelFilterPicker
+        {
+            get => showLabelFilterPicker;
+            set => this.RaiseAndSetIfChanged(ref showLabelFilterPicker, value);
         }
 
         public bool ShowDisplaySettings
@@ -1674,6 +1748,24 @@ namespace CKAN.LinuxGUI
         public bool HasAdvancedFilterText
             => EnumerateAdvancedTextFilters().Any(filter => !string.IsNullOrWhiteSpace(filter.Value));
 
+        public bool HasAvailableTagOptions => AvailableTagOptions.Count > 0;
+
+        public bool HasSelectedTagFilter => !string.IsNullOrWhiteSpace(AdvancedTagsFilter);
+
+        public string TagFilterPickerSummary
+            => HasAvailableTagOptions
+                ? $"{AvailableTagOptions.Count} tag{(AvailableTagOptions.Count == 1 ? "" : "s")} in the loaded catalog"
+                : "No tags were found in the loaded catalog.";
+
+        public bool HasAvailableLabelOptions => AvailableLabelOptions.Count > 0;
+
+        public bool HasSelectedLabelFilter => !string.IsNullOrWhiteSpace(AdvancedLabelsFilter);
+
+        public string LabelFilterPickerSummary
+            => HasAvailableLabelOptions
+                ? $"{AvailableLabelOptions.Count} label{(AvailableLabelOptions.Count == 1 ? "" : "s")} in the loaded catalog"
+                : "No labels were found in the loaded catalog.";
+
         public double ClearFiltersButtonOpacity => HasActiveFilters ? 1.0 : 0.0;
 
         public double ClearAdvancedTextButtonOpacity => HasAdvancedFilterText ? 1.0 : 0.0;
@@ -1696,9 +1788,28 @@ namespace CKAN.LinuxGUI
 
         public string MoreFiltersButtonBorderBrush => MoreFiltersButtonBackground;
 
+        public string FiltersPopupTitle => ShowAdvancedFilterEditor ? "Advanced Filters" : "Filters";
+
+        public string AdvancedFilterToggleLabel => ShowAdvancedFilterEditor ? "Simple Filters" : "Advanced Filters";
+
+        public double FiltersPopupWidth => ShowAdvancedFilterEditor ? 708 : 360;
+
+        public double FiltersPopupHorizontalOffset => ShowAdvancedFilterEditor ? -596 : -248;
+
         public string ClearFiltersButtonBackground => "#6B2B2B";
 
         public string ClearFiltersButtonBorderBrush => ClearFiltersButtonBackground;
+
+        public bool PopupFiltersAreClear => !HasActiveAdvancedFilters;
+
+        public double ClearPopupFiltersButtonOpacity => HasActiveAdvancedFilters ? 1.0 : 0.0;
+
+        public string AllFilterLabel
+            => FormatFilterOptionLabel("All", filterOptionCounts.Installed + filterOptionCounts.NotInstalled);
+
+        public string AllFilterButtonBackground => PopupFiltersAreClear ? "#8A1BB6" : "#5B6068";
+
+        public string AllFilterButtonBorderBrush => PopupFiltersAreClear ? "#B61BD1" : "#6A7079";
 
         public string CompatibleFilterLabel => FormatFilterOptionLabel("Compatible", filterOptionCounts.Compatible);
 
@@ -2696,6 +2807,47 @@ namespace CKAN.LinuxGUI
             parts.Add($"{label}: {(value.Value ? "Yes" : "No")}");
         }
 
+        private static IReadOnlyList<FilterTagOptionItem> BuildAvailableTagOptions(IEnumerable<ModListItem> items,
+                                                                                   string                  selectedTag)
+            => BuildAvailableFilterOptions(items, selectedTag, item => item.Tags);
+
+        private static IReadOnlyList<FilterTagOptionItem> BuildAvailableLabelOptions(IEnumerable<ModListItem> items,
+                                                                                     string                  selectedLabel)
+            => BuildAvailableFilterOptions(items, selectedLabel, item => item.Labels);
+
+        private static IReadOnlyList<FilterTagOptionItem> BuildAvailableFilterOptions(IEnumerable<ModListItem> items,
+                                                                                      string                  selectedValue,
+                                                                                      Func<ModListItem, string> selector)
+        {
+            var counts = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
+
+            foreach (var item in items)
+            {
+                var seen = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
+                foreach (string value in selector(item).Split(',',
+                                                             StringSplitOptions.RemoveEmptyEntries
+                                                             | StringSplitOptions.TrimEntries))
+                {
+                    if (!seen.Add(value))
+                    {
+                        continue;
+                    }
+
+                    counts[value] = counts.TryGetValue(value, out int current)
+                        ? current + 1
+                        : 1;
+                }
+            }
+
+            return counts.OrderBy(kvp => kvp.Key, StringComparer.CurrentCultureIgnoreCase)
+                         .Select(kvp => new FilterTagOptionItem(kvp.Key,
+                                                                kvp.Value,
+                                                                string.Equals(kvp.Key,
+                                                                              selectedValue,
+                                                                              StringComparison.CurrentCultureIgnoreCase)))
+                         .ToList();
+        }
+
         private IEnumerable<(string Label, string Value)> EnumerateAdvancedTextFilters()
         {
             yield return ("Name", AdvancedNameFilter);
@@ -3250,7 +3402,28 @@ namespace CKAN.LinuxGUI
                         var currentFilter = CurrentFilter();
                         var itemsTask = modCatalogService.GetModListAsync(currentFilter, CancellationToken.None);
                         var countsTask = modCatalogService.GetFilterOptionCountsAsync(currentFilter, CancellationToken.None);
-                        await Task.WhenAll(itemsTask, countsTask);
+                        Task<IReadOnlyList<ModListItem>>? tagOptionsTask = null;
+                        Task<IReadOnlyList<ModListItem>>? labelOptionsTask = null;
+                        if (!string.IsNullOrWhiteSpace(currentFilter.TagText))
+                        {
+                            tagOptionsTask = modCatalogService.GetModListAsync(currentFilter with { TagText = "" },
+                                                                              CancellationToken.None);
+                        }
+                        if (!string.IsNullOrWhiteSpace(currentFilter.LabelText))
+                        {
+                            labelOptionsTask = modCatalogService.GetModListAsync(currentFilter with { LabelText = "" },
+                                                                                CancellationToken.None);
+                        }
+                        var pendingTasks = new List<Task> { itemsTask, countsTask };
+                        if (tagOptionsTask != null)
+                        {
+                            pendingTasks.Add(tagOptionsTask);
+                        }
+                        if (labelOptionsTask != null)
+                        {
+                            pendingTasks.Add(labelOptionsTask);
+                        }
+                        await Task.WhenAll(pendingTasks);
                         var items = SortItems(itemsTask.Result).ToList();
                         if (activeRequestId != catalogLoadRequestId)
                         {
@@ -3261,6 +3434,10 @@ namespace CKAN.LinuxGUI
                         hasFilterOptionCounts = true;
 
                         ReplaceVisibleMods(items);
+                        ReplaceAvailableTagOptions(BuildAvailableTagOptions(tagOptionsTask?.Result ?? itemsTask.Result,
+                                                                            currentFilter.TagText));
+                        ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(labelOptionsTask?.Result ?? itemsTask.Result,
+                                                                                currentFilter.LabelText));
                         PublishVisibleModQueueState();
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
@@ -3552,7 +3729,39 @@ namespace CKAN.LinuxGUI
         }
 
         private void ToggleAdvancedFilters()
-            => ShowAdvancedFilters = !ShowAdvancedFilters;
+        {
+            if (!ShowAdvancedFilters)
+            {
+                ShowAdvancedFilterEditor = false;
+            }
+
+            ShowAdvancedFilters = !ShowAdvancedFilters;
+        }
+
+        private void ToggleAdvancedFilterEditor()
+            => ShowAdvancedFilterEditor = !ShowAdvancedFilterEditor;
+
+        private void ToggleTagFilterPicker()
+        {
+            if (!HasAvailableTagOptions)
+            {
+                return;
+            }
+
+            ShowLabelFilterPicker = false;
+            ShowTagFilterPicker = !ShowTagFilterPicker;
+        }
+
+        private void ToggleLabelFilterPicker()
+        {
+            if (!HasAvailableLabelOptions)
+            {
+                return;
+            }
+
+            ShowTagFilterPicker = false;
+            ShowLabelFilterPicker = !ShowLabelFilterPicker;
+        }
 
         private void SetSelectedModDetailsSection(ModDetailsSection section)
         {
@@ -3678,12 +3887,20 @@ namespace CKAN.LinuxGUI
             AdvancedTagsFilter = "";
             AdvancedLabelsFilter = "";
             AdvancedCompatibilityFilter = "";
+            ShowTagFilterPicker = false;
+            ShowLabelFilterPicker = false;
         }
 
         private void ClearAllFilters()
         {
             pendingModListScrollReset = true;
             ModSearchText = "";
+            ClearPopupFilters();
+        }
+
+        private void ClearPopupFilters()
+        {
+            pendingModListScrollReset = true;
             FilterInstalledOnly = false;
             FilterNotInstalledOnly = false;
             FilterUpdatableOnly = false;
@@ -3695,6 +3912,40 @@ namespace CKAN.LinuxGUI
             FilterHasReplacementOnly = false;
             FilterNoReplacementOnly = false;
             ClearAdvancedFilters();
+        }
+
+        private void ClearTagFilter()
+        {
+            AdvancedTagsFilter = "";
+            ShowTagFilterPicker = false;
+        }
+
+        private void SelectTagFilter(FilterTagOptionItem? option)
+        {
+            if (option == null)
+            {
+                return;
+            }
+
+            AdvancedTagsFilter = option.Name;
+            ShowTagFilterPicker = false;
+        }
+
+        private void ClearLabelFilter()
+        {
+            AdvancedLabelsFilter = "";
+            ShowLabelFilterPicker = false;
+        }
+
+        private void SelectLabelFilter(FilterTagOptionItem? option)
+        {
+            if (option == null)
+            {
+                return;
+            }
+
+            AdvancedLabelsFilter = option.Name;
+            ShowLabelFilterPicker = false;
         }
 
         public async Task ApplyCompatibleGameVersionsAsync(IReadOnlyCollection<GameVersion> compatibleVersions)
@@ -3804,6 +4055,58 @@ namespace CKAN.LinuxGUI
                 CatalogSkeletonRows = skeletonRows;
                 appSettingsService.SaveCatalogSkeletonRows(skeletonRows.Select(ToCatalogSkeletonSnapshotRow).ToList());
             }
+        }
+
+        private void ReplaceAvailableTagOptions(IEnumerable<FilterTagOptionItem> items)
+        {
+            AvailableTagOptions.Clear();
+            foreach (var item in items)
+            {
+                AvailableTagOptions.Add(item);
+            }
+
+            this.RaisePropertyChanged(nameof(HasAvailableTagOptions));
+            this.RaisePropertyChanged(nameof(TagFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
+        }
+
+        private void ReplaceAvailableLabelOptions(IEnumerable<FilterTagOptionItem> items)
+        {
+            AvailableLabelOptions.Clear();
+            foreach (var item in items)
+            {
+                AvailableLabelOptions.Add(item);
+            }
+
+            this.RaisePropertyChanged(nameof(HasAvailableLabelOptions));
+            this.RaisePropertyChanged(nameof(LabelFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(HasSelectedLabelFilter));
+        }
+
+        private void UpdateAvailableTagOptionSelection()
+        {
+            string selectedTag = AdvancedTagsFilter.Trim();
+            foreach (var item in AvailableTagOptions)
+            {
+                item.IsSelected = string.Equals(item.Name,
+                                                selectedTag,
+                                                StringComparison.CurrentCultureIgnoreCase);
+            }
+
+            this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
+        }
+
+        private void UpdateAvailableLabelOptionSelection()
+        {
+            string selectedLabel = AdvancedLabelsFilter.Trim();
+            foreach (var item in AvailableLabelOptions)
+            {
+                item.IsSelected = string.Equals(item.Name,
+                                                selectedLabel,
+                                                StringComparison.CurrentCultureIgnoreCase);
+            }
+
+            this.RaisePropertyChanged(nameof(HasSelectedLabelFilter));
         }
 
         private Task RestartToApplyUiScaleAsync()
@@ -3965,6 +4268,10 @@ namespace CKAN.LinuxGUI
         private void ClearCatalogState()
         {
             Mods.Clear();
+            AvailableTagOptions.Clear();
+            AvailableLabelOptions.Clear();
+            ShowTagFilterPicker = false;
+            ShowLabelFilterPicker = false;
             filterOptionCounts = new FilterOptionCounts();
             hasFilterOptionCounts = false;
             ResetSelectedModDetails();
@@ -3972,6 +4279,12 @@ namespace CKAN.LinuxGUI
             CatalogStatusMessage = "Select an active instance to view its mod catalog.";
             PublishCatalogStateLabels();
             PublishFilterOptionCountLabels();
+            this.RaisePropertyChanged(nameof(HasAvailableTagOptions));
+            this.RaisePropertyChanged(nameof(TagFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
+            this.RaisePropertyChanged(nameof(HasAvailableLabelOptions));
+            this.RaisePropertyChanged(nameof(LabelFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(HasSelectedLabelFilter));
         }
 
         private void QueueInstallSelected()
@@ -4495,10 +4808,19 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(MoreFiltersLabel));
             this.RaisePropertyChanged(nameof(MoreFiltersButtonBackground));
             this.RaisePropertyChanged(nameof(MoreFiltersButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(FiltersPopupTitle));
+            this.RaisePropertyChanged(nameof(AdvancedFilterToggleLabel));
+            this.RaisePropertyChanged(nameof(FiltersPopupWidth));
+            this.RaisePropertyChanged(nameof(FiltersPopupHorizontalOffset));
+            this.RaisePropertyChanged(nameof(ShowSimpleFilterMenu));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBackground));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonOpacity));
+            this.RaisePropertyChanged(nameof(ClearPopupFiltersButtonOpacity));
             this.RaisePropertyChanged(nameof(ClearAdvancedTextButtonOpacity));
+            this.RaisePropertyChanged(nameof(PopupFiltersAreClear));
+            this.RaisePropertyChanged(nameof(AllFilterButtonBackground));
+            this.RaisePropertyChanged(nameof(AllFilterButtonBorderBrush));
             this.RaisePropertyChanged(nameof(FilterInstalledState));
             this.RaisePropertyChanged(nameof(FilterUpdatableState));
             this.RaisePropertyChanged(nameof(FilterCompatibleState));
@@ -4530,6 +4852,7 @@ namespace CKAN.LinuxGUI
 
         private void PublishFilterOptionCountLabels()
         {
+            this.RaisePropertyChanged(nameof(AllFilterLabel));
             this.RaisePropertyChanged(nameof(CompatibleFilterLabel));
             this.RaisePropertyChanged(nameof(InstalledFilterLabel));
             this.RaisePropertyChanged(nameof(UpdatableFilterLabel));

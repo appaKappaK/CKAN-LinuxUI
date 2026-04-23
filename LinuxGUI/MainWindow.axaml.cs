@@ -164,6 +164,11 @@ namespace CKAN.LinuxGUI
         private void AdvancedFiltersPopup_OnOpened(object? sender,
                                                    EventArgs e)
         {
+            if (DataContext is not MainWindowViewModel viewModel || !viewModel.ShowAdvancedFilterEditor)
+            {
+                return;
+            }
+
             AdvancedAuthorFilterTextBox.Focus();
             AdvancedAuthorFilterTextBox.SelectAll();
         }
