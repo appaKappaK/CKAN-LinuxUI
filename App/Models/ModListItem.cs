@@ -9,6 +9,7 @@ namespace CKAN.App.Models
         private string queueStateLabel       = "";
         private string queueStateBackground  = "#00000000";
         private string queueStateBorderBrush = "#00000000";
+        private string queueRowAccentBrush   = "#00000000";
 
         public string Identifier { get; init; } = "";
 
@@ -107,6 +108,19 @@ namespace CKAN.App.Models
                 if (queueStateBorderBrush != value)
                 {
                     queueStateBorderBrush = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string QueueRowAccentBrush
+        {
+            get => queueRowAccentBrush;
+            set
+            {
+                if (queueRowAccentBrush != value)
+                {
+                    queueRowAccentBrush = value;
                     OnPropertyChanged();
                 }
             }

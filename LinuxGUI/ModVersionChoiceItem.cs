@@ -16,6 +16,11 @@ namespace CKAN.LinuxGUI
 
         public bool HasBadge => !string.IsNullOrWhiteSpace(BadgeText);
 
+        public string SelectionBadgeText
+            => IsInstalledVersion ? "Installed" : "";
+
+        public bool HasSelectionBadge => !string.IsNullOrWhiteSpace(SelectionBadgeText);
+
         public bool IsInstalledVersion { get; init; }
 
         public bool IsCompatible { get; init; }
@@ -30,6 +35,8 @@ namespace CKAN.LinuxGUI
             => string.Join(" • ", new[] { CompatibilityText, ReleaseDateText }
                 .Where(value => !string.IsNullOrWhiteSpace(value)
                                 && !string.Equals(value, "Unknown", System.StringComparison.OrdinalIgnoreCase)));
+
+        public bool HasMetaText => !string.IsNullOrWhiteSpace(MetaText);
 
         public override string ToString()
             => VersionText;

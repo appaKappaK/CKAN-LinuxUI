@@ -814,6 +814,11 @@ namespace CKAN.LinuxGUI
 
         public bool ShowSelectedModVersionPicker => SelectedModAvailableVersions.Count > 0;
 
+        public string SelectedModVersionPickerLabel
+            => SelectedModAvailableVersions.Any(choice => choice.IsCompatible)
+                ? "Available versions"
+                : "Version history";
+
         public bool SelectedModSelectedVersionMatchesInstalled
             => SelectedModVersionChoice?.IsInstalledVersion == true;
 
@@ -3598,6 +3603,7 @@ namespace CKAN.LinuxGUI
                 mod.QueueStateLabel = "";
                 mod.QueueStateBackground = "#00000000";
                 mod.QueueStateBorderBrush = "#00000000";
+                mod.QueueRowAccentBrush = "#00000000";
                 return;
             }
 
@@ -3612,13 +3618,13 @@ namespace CKAN.LinuxGUI
                 _ => "Queued",
             };
 
-            (mod.QueueStateBackground, mod.QueueStateBorderBrush) = queued.ActionKind switch
+            (mod.QueueStateBackground, mod.QueueStateBorderBrush, mod.QueueRowAccentBrush) = queued.ActionKind switch
             {
-                QueuedActionKind.Install => ("#1F3A2A", "#3D7A57"),
-                QueuedActionKind.Update => ("#314320", "#76984A"),
-                QueuedActionKind.Remove => ("#4A232A", "#934354"),
-                QueuedActionKind.Download => ("#24354A", "#5A86B4"),
-                _ => ("#2E3540", "#566271"),
+                QueuedActionKind.Install => ("#1A2027", "#4B7B5E", "#664B7B5E"),
+                QueuedActionKind.Update => ("#1A2027", "#7C8F55", "#667C8F55"),
+                QueuedActionKind.Remove => ("#1A2027", "#8A5665", "#668A5665"),
+                QueuedActionKind.Download => ("#1A2027", "#5F7DA0", "#665F7DA0"),
+                _ => ("#1A2027", "#667487", "#66667487"),
             };
         }
 
@@ -4415,10 +4421,10 @@ namespace CKAN.LinuxGUI
                                   : module.version.CompareTo(installedVersion);
                               var badgeText = installedVersion?.Equals(module.version) == true
                                   ? "Installed"
-                                  : isCompatible ? "" : "Incompatible";
+                                  : "";
                               var badgeForeground = installedVersion?.Equals(module.version) == true
                                   ? "#8EC7F3"
-                                  : "#E1A5B0";
+                                  : "#AEB8C6";
 
                               return new ModVersionChoiceItem
                               {
@@ -4540,6 +4546,7 @@ namespace CKAN.LinuxGUI
         private void PublishSelectedModRelationshipState()
         {
             this.RaisePropertyChanged(nameof(ShowSelectedModVersionPicker));
+            this.RaisePropertyChanged(nameof(SelectedModVersionPickerLabel));
             this.RaisePropertyChanged(nameof(SelectedModSelectedVersionMatchesInstalled));
             this.RaisePropertyChanged(nameof(SelectedModSelectedVersionIsCompatible));
             this.RaisePropertyChanged(nameof(HasSelectedModDependencies));
