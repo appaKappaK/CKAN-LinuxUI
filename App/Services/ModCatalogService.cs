@@ -116,6 +116,7 @@ namespace CKAN.App.Services
                     Compatibility    = FormatCompatibility(displayMod, inst),
                     ModuleKind       = FormatModuleKind(displayMod.kind),
                     License          = FormatLicense(displayMod),
+                    Resources        = displayMod.resources,
                     ReleaseDate      = displayMod.release_date?.ToString("yyyy-MM-dd") ?? "Unknown",
                     DownloadSize     = displayMod.download_size > 0
                         ? CkanModule.FmtSize(displayMod.download_size)

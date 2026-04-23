@@ -159,6 +159,7 @@ namespace CKAN.LinuxGUI
             QueuedActions = new ObservableCollection<QueuedActionModel>();
             CompatibleGameVersionOptions = new ObservableCollection<CompatibilityVersionOption>();
             SelectedModAvailableVersions = new ObservableCollection<ModVersionChoiceItem>();
+            SelectedModResourceLinks = new ObservableCollection<ModResourceLinkItem>();
             SelectedModDependencies = new ObservableCollection<string>();
             SelectedModRecommendations = new ObservableCollection<string>();
             SelectedModSuggestions = new ObservableCollection<string>();
@@ -391,6 +392,8 @@ namespace CKAN.LinuxGUI
         public ObservableCollection<CompatibilityVersionOption> CompatibleGameVersionOptions { get; }
 
         public ObservableCollection<ModVersionChoiceItem> SelectedModAvailableVersions { get; }
+
+        public ObservableCollection<ModResourceLinkItem> SelectedModResourceLinks { get; }
 
         public ObservableCollection<string> SelectedModDependencies { get; }
 
@@ -813,6 +816,8 @@ namespace CKAN.LinuxGUI
         }
 
         public bool ShowSelectedModVersionPicker => SelectedModAvailableVersions.Count > 0;
+
+        public bool ShowSelectedModResourceLinks => SelectedModResourceLinks.Count > 0;
 
         public string SelectedModVersionPickerLabel
             => SelectedModAvailableVersions.Any(choice => choice.IsCompatible)
@@ -2970,6 +2975,7 @@ namespace CKAN.LinuxGUI
                 SelectedModBody = "The selected mod failed to load its details.";
                 SelectedModVersionChoice = null;
                 SelectedModAvailableVersions.Clear();
+                ReplaceSelectedModResourceLinks(Array.Empty<ModResourceLinkItem>());
                 ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
                 ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
                 ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
@@ -3392,6 +3398,22 @@ namespace CKAN.LinuxGUI
             Utilities.OpenFileBrowser(path);
             StatusMessage = "Opened cached archive location in your file manager.";
         }
+
+        private void OpenSelectedModResourceLink(ModResourceLinkItem? link)
+        {
+            if (link == null || string.IsNullOrWhiteSpace(link.Url))
+            {
+                StatusMessage = "No link is available for this resource.";
+                return;
+            }
+
+            LaunchExternal(link.Url,
+                           $"Opened {link.Label.ToLowerInvariant()}.",
+                           $"Could not open {link.Label.ToLowerInvariant()}.");
+        }
+
+        internal void OpenSelectedModResourceLinkFromUi(ModResourceLinkItem? link)
+            => OpenSelectedModResourceLink(link);
 
         private void OpenUserGuide()
             => LaunchExternal(HelpURLs.UserGuide,
@@ -3949,6 +3971,7 @@ namespace CKAN.LinuxGUI
             SelectedModBody = "The details pane will show summary, description, compatibility, and install state.";
             SelectedModVersionChoice = null;
             SelectedModAvailableVersions.Clear();
+            ReplaceSelectedModResourceLinks(Array.Empty<ModResourceLinkItem>());
             ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
             ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
             ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
@@ -4378,6 +4401,62 @@ namespace CKAN.LinuxGUI
                                                   IEnumerable<string>         values)
             => ReplacePreviewCollection(target, values);
 
+        private void ReplaceSelectedModResourceLinks(IEnumerable<ModResourceLinkItem> values)
+        {
+            SelectedModResourceLinks.Clear();
+            foreach (var value in values)
+            {
+                SelectedModResourceLinks.Add(value);
+            }
+
+            this.RaisePropertyChanged(nameof(ShowSelectedModResourceLinks));
+        }
+
+        private static IReadOnlyList<ModResourceLinkItem> BuildSelectedModResourceLinks(ResourcesDescriptor? resources)
+        {
+            if (resources == null)
+            {
+                return Array.Empty<ModResourceLinkItem>();
+            }
+
+            var links = new List<ModResourceLinkItem>();
+
+            AddResourceLink(links, "Home page", resources.homepage);
+            AddResourceLink(links, "SpaceDock", resources.spacedock);
+            AddResourceLink(links, "Curse", resources.curse);
+            AddResourceLink(links, "Repository", resources.repository);
+            AddResourceLink(links, "Bug tracker", resources.bugtracker);
+            AddResourceLink(links, "Discussions", resources.discussions);
+            AddResourceLink(links, "CI", resources.ci);
+            AddResourceLink(links, "License", resources.license);
+            AddResourceLink(links, "Manual", resources.manual);
+            AddResourceLink(links, "Metanetkan", resources.metanetkan);
+            AddResourceLink(links, "Remote version file", resources.remoteAvc);
+            AddResourceLink(links, "Remote version info", resources.remoteSWInfo);
+            AddResourceLink(links, "Store", resources.store);
+            AddResourceLink(links, "Steam", resources.steamstore);
+            AddResourceLink(links, "GOG", resources.gogstore);
+            AddResourceLink(links, "Epic", resources.epicstore);
+
+            return links;
+        }
+
+        private static void AddResourceLink(ICollection<ModResourceLinkItem> target,
+                                            string                           label,
+                                            Uri?                             url)
+        {
+            if (url == null)
+            {
+                return;
+            }
+
+            target.Add(new ModResourceLinkItem
+            {
+                Label = label,
+                Url   = url.ToString(),
+            });
+        }
+
         private void PopulateSelectedModVersionChoices(ModDetailsModel details)
         {
             SelectedModAvailableVersions.Clear();
@@ -4464,6 +4543,7 @@ namespace CKAN.LinuxGUI
                 ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
                 ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
                 ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+                ReplaceSelectedModResourceLinks(BuildSelectedModResourceLinks(selectedModDetails.Resources));
                 SelectedModIsCached = selectedModDetails.IsCached;
                 SelectedModIsIncompatible = selectedModDetails.IsIncompatible;
                 UpdateSelectedModCachedArchivePath();
@@ -4488,6 +4568,7 @@ namespace CKAN.LinuxGUI
             ReplaceSelectedModCollection(SelectedModDependencies, dependencies);
             ReplaceSelectedModCollection(SelectedModRecommendations, recommendations);
             ReplaceSelectedModCollection(SelectedModSuggestions, suggestions);
+            ReplaceSelectedModResourceLinks(BuildSelectedModResourceLinks(module.resources ?? selectedModDetails.Resources));
 
             SelectedModRelationships = $"{dependencies.Count} depends • {recommendations.Count} recommends • {suggestions.Count} suggests";
             SelectedModDependencyCountLabel = CountLabel(dependencies.Count, "Dependency", "Dependencies");
@@ -4552,6 +4633,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasSelectedModDependencies));
             this.RaisePropertyChanged(nameof(HasSelectedModRecommendations));
             this.RaisePropertyChanged(nameof(HasSelectedModSuggestions));
+            this.RaisePropertyChanged(nameof(ShowSelectedModResourceLinks));
             this.RaisePropertyChanged(nameof(ShowSelectedModDependenciesExpanded));
             this.RaisePropertyChanged(nameof(ShowSelectedModRecommendationsExpanded));
             this.RaisePropertyChanged(nameof(ShowSelectedModSuggestionsExpanded));

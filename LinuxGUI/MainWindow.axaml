@@ -166,12 +166,23 @@
       <Setter Property="Background" Value="#2A323C" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem">
-      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Background" Value="#1B232B" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="Foreground" Value="#F4F6F8" />
-      <Setter Property="Padding" Value="8,4" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover">
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#4F6377" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected">
-      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#5F7488" />
     </Style>
     <Style Selector="MenuItem.app-menu-item">
       <Setter Property="Background" Value="#20262D" />
@@ -182,13 +193,13 @@
       <Setter Property="Background" Value="#2A323C" />
     </Style>
     <Style Selector="Button.surface-view-tab">
-      <Setter Property="MinHeight" Value="38" />
-      <Setter Property="MinWidth" Value="96" />
-      <Setter Property="Padding" Value="14,8" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="MinWidth" Value="90" />
+      <Setter Property="Padding" Value="14,6" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="ListBox#ModsListBox">
       <Setter Property="Background" Value="Transparent" />
@@ -203,6 +214,8 @@
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="CornerRadius" Value="5" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="1" />
@@ -330,6 +343,18 @@
       <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
+    <Style Selector="Button.detail-link-button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.detail-link-button:pointerover">
+      <Setter Property="Background" Value="#1A2027" />
+      <Setter Property="BorderBrush" Value="#304255" />
+    </Style>
     <Style Selector="ComboBox.detail-version-picker">
       <Setter Property="Background" Value="#1A2027" />
       <Setter Property="BorderBrush" Value="#2B323C" />
@@ -385,7 +410,7 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="0,9,9,0" />
       <Setter Property="Foreground" Value="#F4F6F8" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:pointerover">
@@ -594,9 +619,9 @@
             Background="#1E252D"
             BorderBrush="#2F3741"
             BorderThickness="0,0,0,1"
-            Padding="12,6"
+            Padding="10,5"
             IsVisible="{Binding ShowReadyHeader}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto"
             VerticalAlignment="Center">
           <Menu Classes="app-menu-bar ready-title-menu"
                 VerticalAlignment="Center">
@@ -680,10 +705,61 @@
             </MenuItem>
           </Menu>
 
-          <StackPanel Grid.Column="2"
+          <Border Grid.Column="1"
+                  Background="#14191F"
+                  BorderBrush="#2B323C"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="4"
+                  Margin="4,0,0,0"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="4">
+              <Button Classes="surface-view-tab"
+                      Background="{Binding BrowseSurfaceButtonBackground}"
+                      BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
+                      Foreground="#F4F6F8"
+                      Command="{Binding ShowBrowseSurfaceCommand}"
+                      Content="Browse" />
+              <Button Classes="surface-view-tab"
+                      Background="{Binding PreviewSurfaceButtonBackground}"
+                      BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
+                      Foreground="#F4F6F8"
+                      Command="{Binding ShowPreviewSurfaceCommand}"
+                      Content="{Binding PreviewSurfaceButtonLabel}" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Column="2"
+                  Background="#14191F"
+                  BorderBrush="#2B323C"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="12,6"
+                  Margin="12,0,0,0"
+                  VerticalAlignment="Center"
+                  IsVisible="{Binding IsCatalogLoading}">
+            <Grid ColumnDefinitions="Auto,*">
+              <ProgressBar Width="112"
+                           Height="12"
+                           Minimum="0"
+                           Maximum="100"
+                           IsIndeterminate="{Binding IsCatalogLoading}" />
+              <TextBlock Grid.Column="1"
+                         Margin="10,0,0,0"
+                         VerticalAlignment="Center"
+                         FontSize="12"
+                         Opacity="0.78"
+                         TextTrimming="CharacterEllipsis"
+                         MaxLines="1"
+                         Text="{Binding CatalogStatusMessage}" />
+            </Grid>
+          </Border>
+
+          <StackPanel Grid.Column="3"
                       Orientation="Horizontal"
                       Spacing="8"
-                      Margin="14,0,38,0"
+                      Margin="12,0,38,0"
                       HorizontalAlignment="Left"
                       VerticalAlignment="Center">
             <Button Classes="header-instance-reload"
@@ -723,6 +799,10 @@
                         IsVisible="{Binding ShowPassiveHeaderInstanceLabel}">
                   <TextBlock FontSize="15"
                              FontWeight="SemiBold"
+                             HorizontalAlignment="Stretch"
+                             TextWrapping="NoWrap"
+                             VerticalAlignment="Center"
+                             TextAlignment="Center"
                              TextTrimming="CharacterEllipsis"
                              Text="{Binding CurrentInstanceName}" />
                 </Border>
@@ -738,10 +818,26 @@
                           ItemsSource="{Binding Instances}"
                           SelectedItem="{Binding SelectedInstance}"
                           SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
+                  <ComboBox.SelectionBoxItemTemplate>
+                    <DataTemplate DataType="models:InstanceSummary">
+                      <Grid ColumnDefinitions="24,*,0">
+                        <TextBlock Grid.Column="1"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Stretch"
+                                   TextWrapping="NoWrap"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="{Binding Name}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ComboBox.SelectionBoxItemTemplate>
                   <ComboBox.ItemTemplate>
                     <DataTemplate DataType="models:InstanceSummary">
                       <TextBlock FontSize="15"
                                  FontWeight="SemiBold"
+                                 TextWrapping="NoWrap"
                                  TextTrimming="CharacterEllipsis"
                                  Text="{Binding Name}" />
                     </DataTemplate>
@@ -751,7 +847,7 @@
             </Border>
           </StackPanel>
 
-          <Border Grid.Column="3"
+          <Border Grid.Column="4"
                   Background="{Binding StatusSurfaceBackground}"
                   BorderBrush="{Binding StatusSurfaceBorderBrush}"
                   BorderThickness="1"
@@ -782,7 +878,7 @@
 
     <Grid Grid.Row="2"
           ColumnDefinitions="Auto,*"
-          Margin="16"
+          Margin="12"
           MinHeight="0">
       <Border Background="#161B21"
               BorderBrush="#2B323C"
@@ -1103,10 +1199,10 @@
 
           <Border Background="#202930"
                   CornerRadius="12"
-                  Padding="16"
+                  Padding="12"
                   IsVisible="{Binding IsReady}"
                   MinHeight="0">
-            <Grid RowDefinitions="Auto,Auto,*"
+            <Grid RowDefinitions="Auto,*"
                   MinHeight="0">
               <Border Background="#4A3920"
                       BorderBrush="#9A7B37"
@@ -1132,62 +1228,12 @@
               </Border>
 
               <Grid Grid.Row="1"
-                    ColumnDefinitions="Auto,*"
-                    Margin="0,0,0,14">
-                <Border Background="#14191F"
-                        BorderBrush="#2B323C"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="6"
-                        HorizontalAlignment="Left">
-                  <StackPanel Orientation="Horizontal"
-                              Spacing="6">
-                    <Button Classes="surface-view-tab"
-                            Background="{Binding BrowseSurfaceButtonBackground}"
-                            BorderBrush="{Binding BrowseSurfaceButtonBorderBrush}"
-                            Foreground="#F4F6F8"
-                            Command="{Binding ShowBrowseSurfaceCommand}"
-                            Content="Browse" />
-                    <Button Classes="surface-view-tab"
-                            Background="{Binding PreviewSurfaceButtonBackground}"
-                            BorderBrush="{Binding PreviewSurfaceButtonBorderBrush}"
-                            Foreground="#F4F6F8"
-                            Command="{Binding ShowPreviewSurfaceCommand}"
-                            Content="{Binding PreviewSurfaceButtonLabel}" />
-                  </StackPanel>
-                </Border>
-
-                <Border Grid.Column="1"
-                        Background="Transparent"
-                        CornerRadius="8"
-                        Padding="10,8"
-                        Margin="12,0,0,0"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding IsCatalogLoading}">
-                  <Grid ColumnDefinitions="Auto,*">
-                    <ProgressBar Width="120"
-                                 Height="14"
-                                 Minimum="0"
-                                 Maximum="100"
-                                 IsIndeterminate="{Binding IsCatalogLoading}" />
-                    <TextBlock Grid.Column="1"
-                               Margin="10,0,0,0"
-                               VerticalAlignment="Center"
-                               FontSize="12"
-                               Opacity="0.78"
-                               TextTrimming="CharacterEllipsis"
-                               Text="{Binding CatalogStatusMessage}" />
-                  </Grid>
-                </Border>
-              </Grid>
-
-              <Grid Grid.Row="2"
                     ColumnDefinitions="*,Auto"
                     IsVisible="{Binding ShowBrowseSurface}"
                     MinHeight="0">
                 <Border Background="#161B21"
                         CornerRadius="10"
-                        Padding="12"
+                        Padding="10"
                         Margin="0,0,6,0"
                         MinHeight="0">
                   <Grid RowDefinitions="Auto,*"
@@ -2142,6 +2188,40 @@
                                     Height="1"
                                     Margin="0,0,0,8" />
 
+                            <StackPanel Spacing="6"
+                                        Margin="0,0,0,8"
+                                        IsVisible="{Binding ShowSelectedModResourceLinks}">
+                              <TextBlock Classes="detail-label"
+                                         Text="Links" />
+                              <ItemsControl ItemsSource="{Binding SelectedModResourceLinks}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="vm:ModResourceLinkItem">
+                                    <Grid ColumnDefinitions="92,*"
+                                          Margin="0,0,0,4">
+                                      <TextBlock Classes="detail-label"
+                                                 Margin="0,6,10,0"
+                                                 VerticalAlignment="Top"
+                                                 Text="{Binding Label}" />
+                                      <Button Grid.Column="1"
+                                              Classes="detail-link-button"
+                                              Click="SelectedModResourceLinkButton_OnClick">
+                                        <TextBlock FontSize="11.5"
+                                                   Foreground="#7FAFDF"
+                                                   TextWrapping="Wrap"
+                                                   MaxLines="2"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Url}" />
+                                      </Button>
+                                    </Grid>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8"
+                                    IsVisible="{Binding ShowSelectedModResourceLinks}" />
+
                             <StackPanel Spacing="4"
                                         Margin="0,0,0,8">
                               <Button Classes="detail-disclosure"
@@ -2245,7 +2325,7 @@
                 </Border>
               </Grid>
 
-              <Border Grid.Row="2"
+              <Border Grid.Row="1"
                       Background="#161B21"
                       CornerRadius="10"
                       Padding="18"

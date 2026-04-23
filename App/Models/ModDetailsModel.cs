@@ -22,6 +22,8 @@ namespace CKAN.App.Models
 
         public string License { get; init; } = "";
 
+        public ResourcesDescriptor? Resources { get; init; }
+
         public string ReleaseDate { get; init; } = "";
 
         public string DownloadSize { get; init; } = "";

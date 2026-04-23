@@ -335,6 +335,17 @@ namespace CKAN.LinuxGUI
             Close();
         }
 
+        private void SelectedModResourceLinkButton_OnClick(object? sender,
+                                                           Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (sender is Control control
+                && control.DataContext is ModResourceLinkItem link
+                && DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.OpenSelectedModResourceLinkFromUi(link);
+            }
+        }
+
         private void ModRow_OnPointerPressed(object? sender,
                                              PointerPressedEventArgs e)
         {
