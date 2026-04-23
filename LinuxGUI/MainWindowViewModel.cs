@@ -211,13 +211,15 @@ namespace CKAN.LinuxGUI
             pendingUiScalePercent = appliedUiScalePercent;
             showDetailsPane = false;
 
-            var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing)
-                                 .CombineLatest(this.WhenAnyValue(vm => vm.IsApplyingChanges),
-                                                (refreshing, applying) => !refreshing && !applying);
+            var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing,
+                                               vm => vm.IsApplyingChanges,
+                                               vm => vm.IsCatalogLoading,
+                                               (refreshing, applying, loading) => !refreshing && !applying && !loading);
             var canUseSelected = this.WhenAnyValue(vm => vm.SelectedInstance,
                                                    vm => vm.IsRefreshing,
                                                    vm => vm.IsApplyingChanges,
-                                                   (inst, refreshing, applying) => inst != null && !refreshing && !applying);
+                                                   vm => vm.IsCatalogLoading,
+                                                   (inst, refreshing, applying, loading) => inst != null && !refreshing && !applying && !loading);
             var canQueueInstall = this.WhenAnyValue(vm => vm.SelectedMod,
                                                     vm => vm.IsApplyingChanges,
                                                     (mod, applying) => mod != null
@@ -240,7 +242,8 @@ namespace CKAN.LinuxGUI
                                                   vm => vm.IsApplyingChanges,
                                                   (hasActions, applying) => hasActions && !applying);
             var canToggleAdvancedFilters = this.WhenAnyValue(vm => vm.IsApplyingChanges,
-                                                             applying => !applying);
+                                                             vm => vm.IsCatalogLoading,
+                                                             (applying, loading) => !applying && !loading);
             var canClearFilters = this.WhenAnyValue(vm => vm.HasActiveFilters,
                                                     vm => vm.IsApplyingChanges,
                                                     (hasFilters, applying) => hasFilters && !applying);
@@ -1201,12 +1204,23 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref isCatalogLoading, value);
+                if (value)
+                {
+                    ShowAdvancedFilters = false;
+                    ShowTagFilterPicker = false;
+                    ShowLabelFilterPicker = false;
+                    ShowSortOptions = false;
+                }
+
+                this.RaisePropertyChanged(nameof(CanInteractWithCatalog));
                 this.RaisePropertyChanged(nameof(ModCountLabel));
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
                 this.RaisePropertyChanged(nameof(ShowModList));
                 this.RaisePropertyChanged(nameof(ShowEmptyModResults));
             }
         }
+
+        public bool CanInteractWithCatalog => !IsCatalogLoading;
 
         public bool HasMods => Mods.Count > 0;
 
@@ -1792,7 +1806,7 @@ namespace CKAN.LinuxGUI
 
         public string AdvancedFilterToggleLabel => ShowAdvancedFilterEditor ? "Simple Filters" : "Advanced Filters";
 
-        public double FiltersPopupWidth => ShowAdvancedFilterEditor ? 708 : 360;
+        public double FiltersPopupWidth => ShowAdvancedFilterEditor ? 708 : 404;
 
         public double FiltersPopupHorizontalOffset => ShowAdvancedFilterEditor ? -596 : -248;
 
@@ -3063,7 +3077,8 @@ namespace CKAN.LinuxGUI
             if (SelectedMod != null
                 && string.Equals(SelectedMod.Identifier, mod.Identifier, StringComparison.OrdinalIgnoreCase))
             {
-                ShowDetailsPane = !ShowDetailsPane;
+                SelectedMod = null;
+                ShowDetailsPane = false;
                 return;
             }
 

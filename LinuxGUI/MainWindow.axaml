@@ -277,6 +277,7 @@
       <Setter Property="Foreground" Value="#F4F6F8" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover">
       <Setter Property="Background" Value="Transparent" />
@@ -286,30 +287,38 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
     <Style Selector="Grid.ready-menu-key">
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="IsHitTestVisible" Value="False" />
       <Setter Property="MinHeight" Value="36" />
     </Style>
     <Style Selector="Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#262B33" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="7" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Border.ready-menu-key-top-edge">
-      <Setter Property="Height" Value="2" />
+      <Setter Property="Height" Value="1" />
       <Setter Property="Margin" Value="7,0,7,0" />
-      <Setter Property="Background" Value="#404853" />
+      <Setter Property="Background" Value="#4A5561" />
+      <Setter Property="Opacity" Value="0.28" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.ready-menu-key-bottom-edge">
-      <Setter Property="Height" Value="2" />
+      <Setter Property="Height" Value="1" />
       <Setter Property="Margin" Value="7,0,7,0" />
-      <Setter Property="Background" Value="#141920" />
+      <Setter Property="Background" Value="#121820" />
+      <Setter Property="Opacity" Value="0.45" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Bottom" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -317,7 +326,8 @@
     <Style Selector="Border.ready-menu-key-left-edge">
       <Setter Property="Width" Value="1" />
       <Setter Property="Margin" Value="0,7,0,7" />
-      <Setter Property="Background" Value="#363E49" />
+      <Setter Property="Background" Value="#3A4450" />
+      <Setter Property="Opacity" Value="0.18" />
       <Setter Property="HorizontalAlignment" Value="Left" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -325,7 +335,8 @@
     <Style Selector="Border.ready-menu-key-right-edge">
       <Setter Property="Width" Value="1" />
       <Setter Property="Margin" Value="0,7,0,7" />
-      <Setter Property="Background" Value="#1E242C" />
+      <Setter Property="Background" Value="#141A21" />
+      <Setter Property="Opacity" Value="0.2" />
       <Setter Property="HorizontalAlignment" Value="Right" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -341,7 +352,7 @@
     <Style Selector="TextBlock.ready-menu-key-label">
       <Setter Property="FontSize" Value="13" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#A2ABB6" />
+      <Setter Property="Foreground" Value="#B6C0CB" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Viewbox.ready-menu-globe">
@@ -351,32 +362,33 @@
     </Style>
     <Style Selector="Ellipse.ready-menu-icon-planet">
       <Setter Property="Fill" Value="Transparent" />
-      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="Stroke" Value="#516072" />
       <Setter Property="StrokeThickness" Value="1.2" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Ellipse.ready-menu-icon-inner">
-      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="Stroke" Value="#516072" />
       <Setter Property="StrokeThickness" Value="0.9" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Line.ready-menu-icon-inner">
-      <Setter Property="Stroke" Value="#3A3A55" />
+      <Setter Property="Stroke" Value="#516072" />
       <Setter Property="StrokeThickness" Value="0.9" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Ellipse.ready-menu-icon-ring">
-      <Setter Property="Stroke" Value="#2A2A45" />
+      <Setter Property="Stroke" Value="#324050" />
       <Setter Property="StrokeThickness" Value="1" />
       <Setter Property="Fill" Value="Transparent" />
       <Setter Property="StrokeDashArray" Value="2,1.5" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#2D343E" />
+      <Setter Property="Background" Value="#252D37" />
+      <Setter Property="BorderBrush" Value="#45515F" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
-      <Setter Property="Foreground" Value="#CCCCCC" />
+      <Setter Property="Foreground" Value="#D8E1EA" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Ellipse.ready-menu-icon-planet">
       <Setter Property="Fill" Value="#0D1F3A" />
@@ -392,36 +404,98 @@
       <Setter Property="Stroke" Value="#4CAF7D" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#1C222C" />
-      <Setter Property="Margin" Value="0,1,0,0" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-top-edge">
-      <Setter Property="Background" Value="#151B24" />
+      <Setter Property="Background" Value="#4A5561" />
+      <Setter Property="Opacity" Value="0.28" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-bottom-edge">
-      <Setter Property="Background" Value="#46505D" />
+      <Setter Property="Background" Value="#121820" />
+      <Setter Property="Opacity" Value="0.45" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-left-edge">
-      <Setter Property="Background" Value="#202833" />
+      <Setter Property="Background" Value="#3A4450" />
+      <Setter Property="Opacity" Value="0.18" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-right-edge">
-      <Setter Property="Background" Value="#2A323D" />
+      <Setter Property="Background" Value="#141A21" />
+      <Setter Property="Opacity" Value="0.2" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected TextBlock.ready-menu-key-label">
-      <Setter Property="Foreground" Value="#AAAAAA" />
+      <Setter Property="Foreground" Value="#B6C0CB" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-planet">
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Line.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-ring">
+      <Setter Property="Stroke" Value="#324050" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus Border.ready-menu-key-shell">
+      <Setter Property="Background" Value="#252D37" />
+      <Setter Property="BorderBrush" Value="#45515F" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus TextBlock.ready-menu-key-label">
+      <Setter Property="Foreground" Value="#D8E1EA" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-planet">
       <Setter Property="Fill" Value="#0D1F3A" />
       <Setter Property="Stroke" Value="#5A9FF5" />
     </Style>
-    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-inner">
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-inner">
       <Setter Property="Stroke" Value="#3A7ACC" />
     </Style>
-    <Style Selector="Menu.ready-title-menu > MenuItem:selected Line.ready-menu-icon-inner">
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus Line.ready-menu-icon-inner">
       <Setter Property="Stroke" Value="#3A7ACC" />
     </Style>
-    <Style Selector="Menu.ready-title-menu > MenuItem:selected Ellipse.ready-menu-icon-ring">
+    <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-ring">
       <Setter Property="Stroke" Value="#4CAF7D" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-shell">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-top-edge">
+      <Setter Property="Background" Value="#4A5561" />
+      <Setter Property="Opacity" Value="0.28" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-bottom-edge">
+      <Setter Property="Background" Value="#121820" />
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-left-edge">
+      <Setter Property="Background" Value="#3A4450" />
+      <Setter Property="Opacity" Value="0.18" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-right-edge">
+      <Setter Property="Background" Value="#141A21" />
+      <Setter Property="Opacity" Value="0.2" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] TextBlock.ready-menu-key-label">
+      <Setter Property="Foreground" Value="#B6C0CB" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Ellipse.ready-menu-icon-planet">
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Ellipse.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Line.ready-menu-icon-inner">
+      <Setter Property="Stroke" Value="#516072" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Ellipse.ready-menu-icon-ring">
+      <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="MenuItem.app-menu-item">
       <Setter Property="Background" Value="#20262D" />
@@ -438,10 +512,38 @@
       <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Width" Value="256" />
+    </Style>
+    <Style Selector="Border.surface-view-toggle-rim">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="BorderThickness" Value="1,0,1,0" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.surface-view-toggle-left-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="1,7,0,7" />
+      <Setter Property="Background" Value="#3A4450" />
+      <Setter Property="Opacity" Value="0.18" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.surface-view-toggle-right-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="0,7,1,7" />
+      <Setter Property="Background" Value="#141A21" />
+      <Setter Property="Opacity" Value="0.2" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Button.surface-view-tab">
       <Setter Property="MinHeight" Value="38" />
-      <Setter Property="MinWidth" Value="104" />
+      <Setter Property="MinWidth" Value="0" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -451,6 +553,9 @@
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Foreground" Value="#9AA4AF" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.surface-view-tab:pointerover TextBlock.surface-view-label">
+      <Setter Property="Foreground" Value="#C4CDD8" />
     </Style>
     <Style Selector="Button.surface-view-tab /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -474,26 +579,48 @@
       <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Border.surface-view-tab-shell">
-      <Setter Property="Background" Value="#2C3139" />
+      <Setter Property="Background" Value="#2A3038" />
+      <Setter Property="BorderBrush" Value="#394350" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Border.surface-view-tab-top-edge">
-      <Setter Property="Height" Value="2" />
+      <Setter Property="Height" Value="1" />
       <Setter Property="Margin" Value="14,0,14,0" />
-      <Setter Property="Background" Value="#474F5B" />
+      <Setter Property="Background" Value="#55606D" />
+      <Setter Property="Opacity" Value="0.42" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.surface-view-tab-bottom-edge">
-      <Setter Property="Height" Value="2" />
+      <Setter Property="Height" Value="1" />
       <Setter Property="Margin" Value="14,0,14,0" />
-      <Setter Property="Background" Value="#181D24" />
+      <Setter Property="Background" Value="#121821" />
+      <Setter Property="Opacity" Value="0.72" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.surface-view-tab-left-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="1,7,0,7" />
+      <Setter Property="Background" Value="#3A4450" />
+      <Setter Property="Opacity" Value="0.18" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.surface-view-tab-right-edge">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="0,7,1,7" />
+      <Setter Property="Background" Value="#141A21" />
+      <Setter Property="Opacity" Value="0.2" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="StackPanel.surface-view-tab-content">
@@ -511,20 +638,36 @@
       <Setter Property="TextAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-shell">
-      <Setter Property="Background" Value="#223355" />
+      <Setter Property="Background" Value="#28456D" />
+      <Setter Property="BorderBrush" Value="#3E679A" />
       <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-top-edge">
-      <Setter Property="Background" Value="#1A2840" />
+      <Setter Property="Background" Value="#173050" />
+      <Setter Property="Opacity" Value="0.72" />
     </Style>
     <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-bottom-edge">
-      <Setter Property="Background" Value="#2A4A80" />
+      <Setter Property="Background" Value="#5C86BE" />
+      <Setter Property="Opacity" Value="0.58" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-left-edge">
+      <Setter Property="Background" Value="#18304E" />
+      <Setter Property="Opacity" Value="0.36" />
+    </Style>
+    <Style Selector="Button.surface-view-tab.active Border.surface-view-tab-right-edge">
+      <Setter Property="Background" Value="#476FA2" />
+      <Setter Property="Opacity" Value="0.26" />
     </Style>
     <Style Selector="Button.surface-view-tab.active TextBlock.surface-view-label">
       <Setter Property="Foreground" Value="#8EC5F7" />
     </Style>
+    <Style Selector="Button.surface-view-tab:pointerover Border.surface-view-tab-shell">
+      <Setter Property="Background" Value="#303742" />
+      <Setter Property="BorderBrush" Value="#435061" />
+    </Style>
     <Style Selector="Button.surface-view-tab.active:pointerover Border.surface-view-tab-shell">
-      <Setter Property="Background" Value="#223355" />
+      <Setter Property="Background" Value="#28456D" />
+      <Setter Property="BorderBrush" Value="#3E679A" />
     </Style>
     <Style Selector="Button.surface-view-tab.active:pointerover TextBlock.surface-view-label">
       <Setter Property="Foreground" Value="#8EC5F7" />
@@ -969,6 +1112,7 @@
       <Grid ColumnDefinitions="Auto,*,Auto,Auto"
             VerticalAlignment="Center">
           <Menu Classes="app-menu-bar ready-title-menu"
+                IsEnabled="{Binding CanInteractWithCatalog}"
                 VerticalAlignment="Center">
             <MenuItem>
               <MenuItem.Header>
@@ -1210,54 +1354,6 @@
             </MenuItem>
           </Menu>
 
-          <Border Grid.ColumnSpan="4"
-                  Classes="surface-view-toggle"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center">
-            <Grid>
-              <Border Classes="surface-view-toggle-rim" />
-              <StackPanel Orientation="Horizontal"
-                          Spacing="0">
-                <Button Classes="surface-view-tab"
-                        Classes.active="{Binding ShowBrowseSurface}"
-                        Command="{Binding ShowBrowseSurfaceCommand}"
-                        HorizontalAlignment="Stretch">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <Border Grid.RowSpan="3"
-                            Classes="surface-view-tab-shell" />
-                    <Border Classes="surface-view-tab-top-edge" />
-                    <StackPanel Grid.Row="1"
-                                Classes="surface-view-tab-content">
-                      <TextBlock Classes="surface-view-label"
-                                 Text="Browse" />
-                      <Border Classes="surface-view-indicator" />
-                    </StackPanel>
-                    <Border Grid.Row="2"
-                            Classes="surface-view-tab-bottom-edge" />
-                  </Grid>
-                </Button>
-                <Button Classes="surface-view-tab"
-                        Classes.active="{Binding ShowPreviewSurface}"
-                        Command="{Binding ShowPreviewSurfaceCommand}"
-                        HorizontalAlignment="Stretch">
-                  <Grid RowDefinitions="Auto,*,Auto">
-                    <Border Grid.RowSpan="3"
-                            Classes="surface-view-tab-shell" />
-                    <Border Classes="surface-view-tab-top-edge" />
-                    <StackPanel Grid.Row="1"
-                                Classes="surface-view-tab-content">
-                      <TextBlock Classes="surface-view-label"
-                                 Text="{Binding PreviewSurfaceButtonLabel}" />
-                      <Border Classes="surface-view-indicator" />
-                    </StackPanel>
-                    <Border Grid.Row="2"
-                            Classes="surface-view-tab-bottom-edge" />
-                  </Grid>
-                </Button>
-              </StackPanel>
-            </Grid>
-          </Border>
-
           <StackPanel Grid.Column="2"
                       Orientation="Horizontal"
                       Spacing="8"
@@ -1265,6 +1361,7 @@
                       HorizontalAlignment="Left"
                       VerticalAlignment="Center">
             <Button Classes="header-instance-reload"
+                    IsEnabled="{Binding CanInteractWithCatalog}"
                     Command="{Binding RefreshCommand}"
                     Content="Reload" />
 
@@ -1316,7 +1413,7 @@
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           IsVisible="{Binding ShowHeaderInstanceSwitcher}"
-                          IsEnabled="{Binding ShowHeaderInstanceSwitcher}"
+                          IsEnabled="{Binding CanInteractWithCatalog}"
                           ItemsSource="{Binding Instances}"
                           SelectedItem="{Binding SelectedInstance}"
                           SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
@@ -1376,6 +1473,68 @@
             </Grid>
           </Border>
         </Grid>
+    </Border>
+
+    <Border Grid.Row="0"
+            ZIndex="20"
+            Classes="surface-view-toggle"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            IsVisible="{Binding ShowReadyHeader}">
+      <Grid>
+        <Border Classes="surface-view-toggle-rim" />
+        <Grid ColumnDefinitions="*,*"
+              Margin="10,0">
+          <Button Classes="surface-view-tab"
+                  Classes.active="{Binding ShowBrowseSurface}"
+                  Command="{Binding ShowBrowseSurfaceCommand}"
+                  IsEnabled="{Binding CanInteractWithCatalog}"
+                  Grid.Column="0"
+                  HorizontalAlignment="Stretch">
+            <Grid RowDefinitions="Auto,*,Auto">
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-shell" />
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-left-edge" />
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-right-edge" />
+              <Border Classes="surface-view-tab-top-edge" />
+              <StackPanel Grid.Row="1"
+                          Classes="surface-view-tab-content">
+                <TextBlock Classes="surface-view-label"
+                           Text="Browse" />
+                <Border Classes="surface-view-indicator" />
+              </StackPanel>
+              <Border Grid.Row="2"
+                      Classes="surface-view-tab-bottom-edge" />
+            </Grid>
+          </Button>
+          <Button Classes="surface-view-tab"
+                  Classes.active="{Binding ShowPreviewSurface}"
+                  Command="{Binding ShowPreviewSurfaceCommand}"
+                  IsEnabled="{Binding CanInteractWithCatalog}"
+                  Grid.Column="1"
+                  HorizontalAlignment="Stretch">
+            <Grid RowDefinitions="Auto,*,Auto">
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-shell" />
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-left-edge" />
+              <Border Grid.RowSpan="3"
+                      Classes="surface-view-tab-right-edge" />
+              <Border Classes="surface-view-tab-top-edge" />
+              <StackPanel Grid.Row="1"
+                          Classes="surface-view-tab-content">
+                <TextBlock Classes="surface-view-label"
+                           Text="{Binding PreviewSurfaceButtonLabel}" />
+                <Border Classes="surface-view-indicator" />
+              </StackPanel>
+              <Border Grid.Row="2"
+                      Classes="surface-view-tab-bottom-edge" />
+            </Grid>
+          </Button>
+        </Grid>
+      </Grid>
     </Border>
 
     <Grid Grid.Row="2"
@@ -1702,6 +1861,7 @@
           <Border Background="#202930"
                   CornerRadius="12"
                   Padding="12"
+                  IsHitTestVisible="{Binding CanInteractWithCatalog}"
                   IsVisible="{Binding IsReady}"
                   MinHeight="0">
             <Grid RowDefinitions="Auto,*"
@@ -1746,6 +1906,8 @@
                                Classes="browser-search"
                                MinHeight="34"
                                Padding="12,6"
+                               IsEnabled="{Binding CanInteractWithCatalog}"
+                               IsReadOnly="{Binding IsCatalogLoading}"
                                Watermark="Search mods or use tokens like is:installed author:nertea"
                                Text="{Binding ModSearchText}" />
                       <Border Grid.Column="1"
@@ -1767,6 +1929,7 @@
                               Classes="browser-chip"
                               Margin="8,0,0,0"
                               MinWidth="112"
+                              IsEnabled="{Binding CanInteractWithCatalog}"
                               Background="{Binding MoreFiltersButtonBackground}"
                               BorderBrush="{Binding MoreFiltersButtonBorderBrush}"
                               Foreground="#F4F6F8"
@@ -1794,44 +1957,41 @@
                                 x:CompileBindings="False"
                                 BoxShadow="0 18 36 0 #66000000">
                           <Grid RowDefinitions="Auto,*">
-                            <Grid ColumnDefinitions="*,Auto,Auto"
+                            <Grid ColumnDefinitions="*,Auto"
                                   Margin="0,0,0,12">
-                              <StackPanel Spacing="2">
-                                <TextBlock FontSize="13.5"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding FiltersPopupTitle}" />
-                                <TextBlock Classes="filter-drawer-note"
-                                           Text="Quick states live here. Open Advanced Filters when you need field filters, tri-state exclusions, tags, or labels." />
+                              <TextBlock FontSize="13.5"
+                                         FontWeight="SemiBold"
+                                         VerticalAlignment="Center"
+                                         Text="Filters" />
+                              <StackPanel Grid.Column="1"
+                                          Orientation="Horizontal"
+                                          HorizontalAlignment="Right"
+                                          Spacing="12">
+                                <CheckBox VerticalAlignment="Center"
+                                          IsChecked="{Binding ShowAdvancedFilterEditor, Mode=TwoWay}">
+                                  <TextBlock FontSize="12.5"
+                                             FontWeight="SemiBold"
+                                             Text="Advanced" />
+                                </CheckBox>
+                                <Button Width="88"
+                                        VerticalAlignment="Top"
+                                        Opacity="{Binding ClearPopupFiltersButtonOpacity}"
+                                        IsEnabled="{Binding HasActiveAdvancedFilters}"
+                                        Background="{Binding ClearFiltersButtonBackground}"
+                                        BorderBrush="{Binding ClearFiltersButtonBorderBrush}"
+                                        Foreground="#F4F6F8"
+                                        Command="{Binding ClearPopupFiltersCommand}"
+                                        Content="Clear All" />
                               </StackPanel>
-                              <Button Grid.Column="1"
-                                      MinWidth="132"
-                                      Margin="0,0,10,0"
-                                      VerticalAlignment="Top"
-                                      Classes="browser-chip"
-                                      Command="{Binding ToggleAdvancedFilterEditorCommand}"
-                                      Content="{Binding AdvancedFilterToggleLabel}" />
-                              <Button Grid.Column="2"
-                                      Width="88"
-                                      VerticalAlignment="Top"
-                                      Opacity="{Binding ClearPopupFiltersButtonOpacity}"
-                                      IsEnabled="{Binding HasActiveAdvancedFilters}"
-                                      Background="{Binding ClearFiltersButtonBackground}"
-                                      BorderBrush="{Binding ClearFiltersButtonBorderBrush}"
-                                      Foreground="#F4F6F8"
-                                      Command="{Binding ClearPopupFiltersCommand}"
-                                      Content="Clear All" />
                             </Grid>
 
                             <Grid Grid.Row="1">
                               <StackPanel IsVisible="{Binding ShowSimpleFilterMenu}"
                                           Spacing="12">
-                                <Border Classes="filter-drawer-section"
-                                        Padding="12">
+                                <Grid ColumnDefinitions="*,*">
                                   <StackPanel Spacing="8">
-                                    <TextBlock Classes="filter-drawer-title"
-                                               Text="Quick Filters" />
-                                    <TextBlock Classes="filter-drawer-note"
-                                               Text="These are the fast state filters. Search text in the main box stays untouched." />
+                                    <TextBlock Classes="filter-drawer-label"
+                                               Text="State" />
                                     <ToggleButton Classes="filter-menu-item"
                                                   IsChecked="{Binding FilterCompatibleOnly, Mode=TwoWay}">
                                       <TextBlock Foreground="#F4F6F8"
@@ -1852,6 +2012,12 @@
                                       <TextBlock Foreground="#F4F6F8"
                                                  Text="{Binding ReplaceableFilterLabel}" />
                                     </ToggleButton>
+                                  </StackPanel>
+                                  <StackPanel Grid.Column="1"
+                                              Margin="12,0,0,0"
+                                              Spacing="8">
+                                    <TextBlock Classes="filter-drawer-label"
+                                               Text="Availability" />
                                     <ToggleButton Classes="filter-menu-item"
                                                   IsChecked="{Binding FilterCachedOnly, Mode=TwoWay}">
                                       <TextBlock Foreground="#F4F6F8"
@@ -1872,24 +2038,17 @@
                                       <TextBlock Foreground="#F4F6F8"
                                                  Text="{Binding IncompatibleFilterLabel}" />
                                     </ToggleButton>
-                                    <Button Classes="filter-menu-item"
-                                            Background="{Binding AllFilterButtonBackground}"
-                                            BorderBrush="{Binding AllFilterButtonBorderBrush}"
-                                            Command="{Binding ClearPopupFiltersCommand}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding AllFilterLabel}" />
-                                    </Button>
                                   </StackPanel>
-                                </Border>
-
-                                <Border Classes="filter-drawer-section">
-                                  <StackPanel Spacing="6">
-                                    <TextBlock Classes="filter-drawer-title"
-                                               Text="Need More Precision?" />
-                                    <TextBlock Classes="filter-drawer-note"
-                                               Text="Open Advanced Filters for token hints, text fields, tri-state exclusions, tags, labels, and compatibility matching." />
-                                  </StackPanel>
-                                </Border>
+                                </Grid>
+                                <Button Classes="filter-menu-item"
+                                        Background="{Binding AllFilterButtonBackground}"
+                                        BorderBrush="{Binding AllFilterButtonBorderBrush}"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding ClearPopupFiltersCommand}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             TextAlignment="Center"
+                                             Text="{Binding AllFilterLabel}" />
+                                </Button>
                               </StackPanel>
 
                               <Grid IsVisible="{Binding ShowAdvancedFilterEditor}"
@@ -2322,6 +2481,7 @@
                                 </Border>
                               </Grid>
                             </Grid>
+
                           </Grid>
                         </Border>
                       </Popup>
@@ -2460,6 +2620,7 @@
                       </ItemsControl>
 
                         <Grid RowDefinitions="Auto,*"
+                              IsEnabled="{Binding CanInteractWithCatalog}"
                               IsVisible="{Binding ShowModList}"
                               MinHeight="0">
                           <Grid ColumnDefinitions="4,*,320"
@@ -2501,6 +2662,7 @@
                                    MinHeight="0"
                                    ItemsSource="{Binding Mods}"
                                    AutoScrollToSelectedItem="False"
+                                   PointerPressed="ModsListBox_OnPointerPressed"
                                    SelectedItem="{Binding SelectedMod}">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:ModListItem">
@@ -2677,35 +2839,6 @@
 	                                    Content="Clear Filters" />
 	                          </StackPanel>
 	                        </Border>
-	                        <Border Background="#1B2430F2"
-	                                BorderBrush="#4D6177"
-	                                BorderThickness="1"
-	                                CornerRadius="12"
-	                                Padding="14,12"
-	                                Width="360"
-	                                HorizontalAlignment="Center"
-	                                VerticalAlignment="Center"
-	                                IsHitTestVisible="False"
-	                                IsVisible="{Binding IsCatalogLoading}"
-	                                BoxShadow="0 18 36 0 #66000000">
-	                          <StackPanel Spacing="8">
-	                            <TextBlock FontSize="12"
-	                                       FontWeight="SemiBold"
-	                                       Opacity="0.86"
-	                                       HorizontalAlignment="Center"
-	                                       Text="Loading Catalog" />
-	                            <ProgressBar Height="12"
-	                                         Minimum="0"
-	                                         Maximum="100"
-	                                         IsIndeterminate="{Binding IsCatalogLoading}" />
-	                            <TextBlock FontSize="12"
-	                                       Opacity="0.78"
-	                                       TextAlignment="Center"
-	                                       TextWrapping="Wrap"
-	                                       MaxLines="2"
-	                                       Text="{Binding CatalogStatusMessage}" />
-	                          </StackPanel>
-	                        </Border>
 	                      </Grid>
 	                    </Border>
 
@@ -2722,6 +2855,7 @@
                         Width="292"
                         MinWidth="272"
                         MinHeight="0"
+                        IsHitTestVisible="{Binding CanInteractWithCatalog}"
                         ClipToBounds="True"
                         IsVisible="{Binding ShowDetailsSidebar}">
                   <Grid MinHeight="0"
@@ -3327,128 +3461,53 @@
                       CornerRadius="10"
                       Padding="18"
                       IsVisible="{Binding ShowPreviewSurface}">
-                <Grid RowDefinitions="Auto,*,Auto">
-                  <Border Background="#1A2027"
-                          CornerRadius="10"
-                          Padding="14">
-                    <Grid ColumnDefinitions="Auto,*">
-                      <TextBlock FontSize="16"
-                                 FontWeight="SemiBold"
-                                 VerticalAlignment="Center"
-                                 Text="Preview &amp; Apply" />
-                      <TextBlock FontSize="12"
-                                 Grid.Column="1"
-                                 Margin="12,0,0,0"
-                                 Opacity="0.72"
-                                 VerticalAlignment="Center"
-                                 TextTrimming="CharacterEllipsis"
-                                 Text="{Binding PreviewSummary}" />
-                    </Grid>
-                  </Border>
+                <Grid RowDefinitions="*,Auto">
 
-                  <Border Grid.Row="1"
-                          Background="#1A2027"
+                  <Border Background="#1A2027"
                           CornerRadius="12"
                           Padding="24"
-                          Margin="0,14,0,0"
                           HorizontalAlignment="Stretch"
                           VerticalAlignment="Top"
                           IsVisible="{Binding ShowPreviewEmptyWorkspace}">
-                    <Grid ColumnDefinitions="1.1*,0.9*">
-                      <StackPanel Spacing="12"
-                                  HorizontalAlignment="Left"
-                                  MaxWidth="640"
-                                  Margin="0,0,18,0">
-                        <TextBlock FontSize="28"
-                                   FontWeight="SemiBold"
-                                   Text="Nothing Queued Yet" />
-                        <TextBlock FontSize="14"
-                                   Opacity="0.82"
+                    <StackPanel Spacing="14"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                MaxWidth="560">
+                      <TextBlock FontSize="26"
+                                 FontWeight="SemiBold"
+                                 HorizontalAlignment="Center"
+                                 TextAlignment="Center"
+                                 Text="Nothing Queued Yet" />
+                      <TextBlock FontSize="14"
+                                 Opacity="0.82"
+                                 TextWrapping="Wrap"
+                                 TextAlignment="Center"
+                                 Text="{Binding PreviewPanelGuidance}" />
+                      <Border Background="#20262D"
+                              CornerRadius="12"
+                              Padding="16">
+                        <TextBlock Opacity="0.84"
                                    TextWrapping="Wrap"
-                                   Text="{Binding PreviewPanelGuidance}" />
-                        <Border Background="#20262D"
-                                CornerRadius="12"
-                                Padding="16">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontSize="15"
-                                       FontWeight="SemiBold"
-                                       Text="What Happens Here" />
-                            <TextBlock Opacity="0.84"
-                                       TextWrapping="Wrap"
-                                       Text="Build a safe preflight before touching GameData. This page collects downloads, dependencies, removals, conflicts, and prompts into one review surface." />
-                          </StackPanel>
-                        </Border>
-                      </StackPanel>
-
-                      <WrapPanel Grid.Column="1"
-                                 HorizontalAlignment="Stretch"
-                                 ItemWidth="220"
-                                 ItemHeight="116"
-                                 Margin="0,2,0,0">
-                        <Border Background="#20262D"
-                                CornerRadius="12"
-                                Padding="16"
-                                Margin="0,0,12,12">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Downloads" />
-                            <TextBlock Opacity="0.82"
-                                       TextWrapping="Wrap"
-                                       Text="See every archive CKAN needs before anything is applied." />
-                          </StackPanel>
-                        </Border>
-                        <Border Background="#20262D"
-                                CornerRadius="12"
-                                Padding="16"
-                                Margin="0,0,12,12">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Dependencies" />
-                            <TextBlock Opacity="0.82"
-                                       TextWrapping="Wrap"
-                                       Text="Required installs are listed here so there are no hidden surprises." />
-                          </StackPanel>
-                        </Border>
-                        <Border Background="#20262D"
-                                CornerRadius="12"
-                                Padding="16"
-                                Margin="0,0,12,12">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Blockers" />
-                            <TextBlock Opacity="0.82"
-                                       TextWrapping="Wrap"
-                                       Text="Conflicts and required steps appear before Apply becomes available." />
-                          </StackPanel>
-                        </Border>
-                        <Border Background="#20262D"
-                                CornerRadius="12"
-                                Padding="16"
-                                Margin="0,0,12,12">
-                          <StackPanel Spacing="8">
-                            <TextBlock FontWeight="SemiBold"
-                                       Text="Auto-Removals" />
-                            <TextBlock Opacity="0.82"
-                                       TextWrapping="Wrap"
-                                       Text="Mods that must leave the install are called out before the queue runs." />
-                          </StackPanel>
-                        </Border>
-                      </WrapPanel>
-                    </Grid>
+                                   TextAlignment="Center"
+                                   Text="Queue installs, updates, removals, or cache downloads from Browse. This page becomes the holding area where CKAN summarizes what will change before anything is applied." />
+                      </Border>
+                    </StackPanel>
                   </Border>
 
-                  <Grid Grid.Row="1"
-                        ColumnDefinitions="0.92*,1.08*"
-                        Margin="0,14,0,0"
+                  <Grid ColumnDefinitions="1.08*,0.92*"
                         IsVisible="{Binding ShowPreviewActiveWorkspace}">
                     <Border Background="#1A2027"
                             CornerRadius="10"
                             Padding="16"
                             Margin="0,0,12,0">
                       <Grid RowDefinitions="Auto,*,Auto">
-                        <StackPanel Spacing="5">
-                          <TextBlock Classes="panel-kicker"
-                                     Text="Queued Actions" />
+                        <StackPanel Spacing="4">
+                          <TextBlock Classes="panel-title"
+                                     Text="Queued Mods" />
+                          <TextBlock FontSize="12"
+                                     Opacity="0.72"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding PreviewQueuedGuidance}" />
                         </StackPanel>
 
                         <Grid Grid.Row="1"
@@ -3462,28 +3521,35 @@
                                 <Border Background="#20262D"
                                         CornerRadius="10"
                                         Margin="0,0,0,10"
-                                        Padding="12">
-                                  <StackPanel Spacing="6">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                      <TextBlock FontWeight="SemiBold"
-                                                 Text="{Binding Name}" />
-                                      <Border Grid.Column="1"
-                                              Background="#28303A"
-                                              CornerRadius="999"
-                                              Padding="10,4"
-                                              Margin="10,0,0,0">
-                                        <TextBlock FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   Text="{Binding ActionText}" />
-                                      </Border>
-                                    </Grid>
-                                    <TextBlock FontSize="12"
-                                               Opacity="0.75"
-                                               Text="{Binding Identifier}" />
-                                    <TextBlock TextWrapping="Wrap"
-                                               Opacity="0.84"
-                                               Text="{Binding DetailText}" />
-                                  </StackPanel>
+                                        Padding="0">
+                                  <Grid ColumnDefinitions="4,*">
+                                    <Border Background="#4B7DB7"
+                                            CornerRadius="3,0,0,3" />
+                                    <StackPanel Grid.Column="1"
+                                                Spacing="6"
+                                                Margin="12">
+                                      <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock FontWeight="SemiBold"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding Name}" />
+                                        <Border Grid.Column="1"
+                                                Background="#28303A"
+                                                CornerRadius="999"
+                                                Padding="10,4"
+                                                Margin="10,0,0,0">
+                                          <TextBlock FontSize="11"
+                                                     FontWeight="SemiBold"
+                                                     Text="{Binding ActionText}" />
+                                        </Border>
+                                      </Grid>
+                                      <TextBlock FontSize="12"
+                                                 Opacity="0.75"
+                                                 Text="{Binding Identifier}" />
+                                      <TextBlock TextWrapping="Wrap"
+                                                 Opacity="0.84"
+                                                 Text="{Binding DetailText}" />
+                                    </StackPanel>
+                                  </Grid>
                                 </Border>
                               </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -3491,7 +3557,7 @@
 
                           <Border Background="#20262D"
                                   CornerRadius="10"
-                                  Padding="16"
+                                  Padding="18"
                                   IsVisible="{Binding ShowEmptyQueueState}">
                             <StackPanel Spacing="8"
                                         VerticalAlignment="Center">
@@ -3529,7 +3595,11 @@
                         <StackPanel Spacing="12">
                           <StackPanel Spacing="4">
                             <TextBlock Classes="panel-title"
-                                       Text="{Binding PreviewOutcomeTitle}" />
+                                       Text="Queue Summary" />
+                            <TextBlock FontSize="12"
+                                       Opacity="0.72"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding PreviewSummary}" />
                           </StackPanel>
 
                           <Border Background="{Binding ApplyResultBackground}"
@@ -3739,7 +3809,7 @@
                             </Border>
                           </WrapPanel>
 
-                          <ProgressBar Height="16"
+                          <ProgressBar Height="12"
                                        IsIndeterminate="{Binding IsPreviewLoading}"
                                        IsVisible="{Binding IsPreviewLoading}" />
 
@@ -3908,7 +3978,7 @@
                     </Border>
                   </Grid>
 
-                  <Border Grid.Row="2"
+                  <Border Grid.Row="1"
                           Background="#1A2027"
                           CornerRadius="10"
                           Padding="14"
@@ -3989,6 +4059,40 @@
         </Grid>
       </Border>
     </Grid>
+
+    <Border Grid.RowSpan="3"
+            ZIndex="80"
+            Background="#07101824"
+            IsVisible="{Binding IsCatalogLoading}">
+      <Border Background="#1B2430F2"
+              BorderBrush="#4D6177"
+              BorderThickness="1"
+              CornerRadius="12"
+              Padding="14,12"
+              Width="360"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsVisible="{Binding IsCatalogLoading}"
+              BoxShadow="0 18 36 0 #66000000">
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="12"
+                     FontWeight="SemiBold"
+                     Opacity="0.86"
+                     HorizontalAlignment="Center"
+                     Text="Loading Catalog" />
+          <ProgressBar Height="12"
+                       Minimum="0"
+                       Maximum="100"
+                       IsIndeterminate="{Binding IsCatalogLoading}" />
+          <TextBlock FontSize="12"
+                     Opacity="0.78"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     MaxLines="2"
+                     Text="{Binding CatalogStatusMessage}" />
+        </StackPanel>
+      </Border>
+    </Border>
 
     <Border Grid.RowSpan="3"
             ZIndex="100"

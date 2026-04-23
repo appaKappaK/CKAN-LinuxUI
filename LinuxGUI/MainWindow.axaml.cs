@@ -423,6 +423,15 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            if (updateKind == PointerUpdateKind.MiddleButtonPressed)
+            {
+                CloseActiveModRowMenu();
+                viewModel.SelectedMod = null;
+                ModsListBox.Focus();
+                e.Handled = true;
+                return;
+            }
+
             if (updateKind != PointerUpdateKind.RightButtonPressed)
             {
                 return;
@@ -482,6 +491,26 @@ namespace CKAN.LinuxGUI
 
             activeModRowMenu = menu;
             menu.Open(control);
+            e.Handled = true;
+        }
+
+        private void ModsListBox_OnPointerPressed(object? sender,
+                                                  PointerPressedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var updateKind = e.GetCurrentPoint(ModsListBox).Properties.PointerUpdateKind;
+            if (updateKind != PointerUpdateKind.MiddleButtonPressed)
+            {
+                return;
+            }
+
+            CloseActiveModRowMenu();
+            viewModel.SelectedMod = null;
+            ModsListBox.Focus();
             e.Handled = true;
         }
 

@@ -38,7 +38,7 @@ namespace CKAN.App.Models
 
         public bool? SortDescending { get; init; }
 
-        public bool InstalledOnly { get; init; }
+        public bool InstalledOnly { get; init; } = true;
 
         public bool NotInstalledOnly { get; init; }
 
