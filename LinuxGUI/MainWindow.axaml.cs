@@ -227,25 +227,7 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            var dialog = new SettingsWindow
-            {
-                OpenDisplayScaleAsync = OpenDisplayScaleAsync,
-                OpenCompatibleGameVersionsAsync = viewModel.HasCurrentInstance
-                    ? OpenCompatibleGameVersionsAsync
-                    : null,
-                OpenGameCommandLinesAsync = viewModel.HasCurrentInstance
-                    ? OpenGameCommandLinesAsync
-                    : null,
-                OpenPreferredHostsAsync = viewModel.CurrentRegistry != null
-                    ? OpenPreferredHostsAsync
-                    : null,
-                OpenInstallationFiltersAsync = viewModel.HasCurrentInstance
-                    ? OpenInstallationFiltersAsync
-                    : null,
-                OpenPluginsAsync = viewModel.HasCurrentInstance
-                    ? OpenPluginsAsync
-                    : null,
-            };
+            var dialog = new SettingsWindow(viewModel);
 
             await dialog.ShowDialog(this);
         }
