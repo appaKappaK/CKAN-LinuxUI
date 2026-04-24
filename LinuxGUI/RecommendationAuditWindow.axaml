@@ -1,10 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:CKAN.LinuxGUI"
         x:Class="CKAN.LinuxGUI.RecommendationAuditWindow"
         x:CompileBindings="False"
-        Width="860"
+        Width="980"
         Height="620"
-        MinWidth="760"
+        MinWidth="860"
         MinHeight="520"
         WindowStartupLocation="CenterOwner"
         Title="Audit Recommendations"
@@ -36,23 +37,24 @@
       <Setter Property="Foreground" Value="#7B8794" />
       <Setter Property="Opacity" Value="1" />
     </Style>
+    <Style Selector="TextBlock.detail-label">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="#98A5B3" />
+      <Setter Property="Margin" Value="0,1,0,1" />
+    </Style>
+    <Style Selector="TextBlock.detail-value">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#EEF3F8" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+      <Setter Property="Margin" Value="0,1,0,1" />
+    </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto"
+  <Grid RowDefinitions="Auto,*,Auto"
         Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="Audit Recommendations" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="{Binding SummaryText}" />
-    </StackPanel>
-
-    <Grid Grid.Row="1"
+    <Grid
           ColumnDefinitions="*,Auto"
-          Margin="0,16,0,0">
+          Margin="0,0,0,12">
       <TextBlock VerticalAlignment="Center"
                  FontSize="13"
                  Opacity="0.82"
@@ -61,80 +63,234 @@
                   Orientation="Horizontal"
                   Spacing="10">
         <Button Classes="dialog-action"
-                Click="CheckRecommendationsButton_OnClick"
-                Content="Check Recommendations" />
+                Click="UncheckAllButton_OnClick"
+                Content="Uncheck All" />
         <Button Classes="dialog-action"
                 Click="CheckAllButton_OnClick"
                 Content="Check All" />
         <Button Classes="dialog-action"
-                Click="UncheckAllButton_OnClick"
-                Content="Uncheck All" />
+                Click="CheckRecommendationsButton_OnClick"
+                Content="Check Recommendations" />
+        <Button Classes="dialog-action"
+                Click="CheckSuggestionsButton_OnClick"
+                Content="Check Suggestions" />
       </StackPanel>
     </Grid>
 
-    <Border Grid.Row="2"
-            Margin="0,14,0,0"
+    <Border Grid.Row="1"
             Background="#161B21"
             BorderBrush="#2B323C"
             BorderThickness="1"
             CornerRadius="10"
             Padding="12">
-      <ListBox Classes="utility-list"
-               ItemsSource="{Binding Items}">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <Border Classes="utility-list-row">
-              <Grid ColumnDefinitions="Auto,*,Auto">
-                <CheckBox VerticalAlignment="Top"
-                          Margin="0,0,12,0"
-                          IsEnabled="{Binding CanQueue}"
-                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
-                <StackPanel Grid.Column="1"
-                            Spacing="5">
-                  <Grid ColumnDefinitions="Auto,*">
-                    <Border Background="{Binding KindBadgeBackground}"
-                            BorderBrush="{Binding KindBadgeBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="999"
-                            Margin="0,0,10,0"
-                            Padding="9,3">
-                      <TextBlock FontSize="11"
-                                 FontWeight="SemiBold"
-                                 Text="{Binding Kind}" />
-                    </Border>
-                    <TextBlock Grid.Column="1"
+      <Grid RowDefinitions="Auto,*,Auto">
+        <Grid ColumnDefinitions="34,2.1*,1.35*,2.35*"
+              Margin="10,0,18,6">
+          <TextBlock Grid.Column="1"
+                     FontSize="12"
+                     FontWeight="SemiBold"
+                     Foreground="#AEB9C5"
+                     Text="Mod" />
+          <TextBlock Grid.Column="2"
+                     FontSize="12"
+                     FontWeight="SemiBold"
+                     Foreground="#AEB9C5"
+                     Text="Related mod" />
+          <TextBlock Grid.Column="3"
+                     FontSize="12"
+                     FontWeight="SemiBold"
+                     Foreground="#AEB9C5"
+                     Text="Mod description" />
+        </Grid>
+
+        <Border Grid.Row="1"
+                Background="#111820"
+                BorderBrush="#252F3A"
+                BorderThickness="1">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="local:RecommendationAuditGroupHeader">
+                  <Border Background="#151D26"
+                          BorderBrush="#26313C"
+                          BorderThickness="0,0,0,1"
+                          Padding="10,7">
+                    <TextBlock FontSize="12"
                                FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis"
-                               Text="{Binding Name}" />
-                  </Grid>
-                  <TextBlock FontSize="12"
-                             Opacity="0.72"
-                             TextTrimming="CharacterEllipsis"
-                             Text="{Binding Identifier}" />
-                  <TextBlock FontSize="12"
-                             Opacity="0.82"
-                             TextWrapping="Wrap"
-                             Text="{Binding Summary}" />
-                  <TextBlock FontSize="12"
-                             Opacity="0.68"
-                             TextWrapping="Wrap"
-                             Text="{Binding Source}" />
-                </StackPanel>
-                <TextBlock Grid.Column="2"
-                           MinWidth="88"
-                           HorizontalAlignment="Right"
-                           TextAlignment="Right"
-                           Opacity="0.76"
+                               Foreground="#8EB8F4"
+                               Text="{Binding Title}" />
+                  </Border>
+                </DataTemplate>
+                <DataTemplate DataType="local:RecommendationAuditItem">
+                  <Border Background="{Binding DetailRowBackground}"
+                          BorderBrush="{Binding DetailRowBorderBrush}"
+                          BorderThickness="0,0,0,1"
+                          Padding="10,8"
+                          PointerPressed="RecommendationRow_OnPointerPressed">
+                    <Grid ColumnDefinitions="34,2.1*,1.35*,2.35*">
+                      <CheckBox VerticalAlignment="Top"
+                                IsEnabled="{Binding CanQueue}"
+                                IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+
+                      <StackPanel Grid.Column="1"
+                                  Margin="0,0,14,0"
+                                  Spacing="3">
+                        <Grid ColumnDefinitions="Auto,*">
+                          <Border Background="{Binding KindBadgeBackground}"
+                                  BorderBrush="{Binding KindBadgeBorderBrush}"
+                                  BorderThickness="1"
+                                  CornerRadius="999"
+                                  Margin="0,0,8,0"
+                                  Padding="7,2">
+                            <TextBlock FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Kind}" />
+                          </Border>
+                          <TextBlock Grid.Column="1"
+                                     FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis"
+                                     Text="{Binding NameAndVersion}" />
+                        </Grid>
+                        <TextBlock FontSize="12"
+                                   Opacity="0.62"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="{Binding Identifier}" />
+                      </StackPanel>
+
+                      <TextBlock Grid.Column="2"
+                                 Margin="0,0,14,0"
+                                 FontSize="12"
+                                 Opacity="0.78"
+                                 TextWrapping="Wrap"
+                                 Text="{Binding RelatedMods}" />
+
+                      <TextBlock Grid.Column="3"
+                                 FontSize="12"
+                                 Opacity="0.84"
+                                 TextWrapping="Wrap"
+                                 MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Text="{Binding Summary}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="2"
+                IsVisible="{Binding ShowDetailPane}"
+                Margin="0,12,0,0"
+                Background="#111820"
+                BorderBrush="#2B3846"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12">
+          <Grid ColumnDefinitions="280,*">
+            <StackPanel Margin="0,0,18,0"
+                        Spacing="8">
+              <StackPanel Spacing="2">
+                <TextBlock FontSize="15"
+                           FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis"
-                           Text="{Binding Version}" />
+                           Text="{Binding SelectedDetailItem.Name}" />
+                <TextBlock FontSize="12"
+                           Foreground="#AEB9C5"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding SelectedDetailItem.Identifier}" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="80,*"
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Classes="detail-label"
+                           Text="Type" />
+                <TextBlock Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.Kind}" />
+
+                <TextBlock Grid.Row="1"
+                           Classes="detail-label"
+                           Text="Version" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.Version}" />
+
+                <TextBlock Grid.Row="2"
+                           Classes="detail-label"
+                           Text="Related" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.RelatedMods}" />
+
+                <TextBlock Grid.Row="3"
+                           Classes="detail-label"
+                           Text="Authors" />
+                <TextBlock Grid.Row="3"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.AuthorsText}" />
+
+                <TextBlock Grid.Row="4"
+                           Classes="detail-label"
+                           Text="License" />
+                <TextBlock Grid.Row="4"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.LicenseText}" />
+
+                <TextBlock Grid.Row="5"
+                           Classes="detail-label"
+                           Text="Download" />
+                <TextBlock Grid.Row="5"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.DownloadSizeText}" />
               </Grid>
-            </Border>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+            </StackPanel>
+
+            <Grid Grid.Column="1"
+                  RowDefinitions="Auto,*,Auto">
+              <TextBlock FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="#AEB9C5"
+                         Text="Description" />
+              <ScrollViewer Grid.Row="1"
+                            Margin="0,6,0,8"
+                            MaxHeight="126"
+                            VerticalScrollBarVisibility="Auto">
+                <TextBlock FontSize="12"
+                           Foreground="#E1E7EE"
+                           TextWrapping="Wrap"
+                           Text="{Binding SelectedDetailItem.DetailDescription}" />
+              </ScrollViewer>
+              <Grid Grid.Row="2"
+                    ColumnDefinitions="70,*"
+                    RowDefinitions="Auto,Auto">
+                <TextBlock Classes="detail-label"
+                           Text="Released" />
+                <TextBlock Grid.Column="1"
+                           Classes="detail-value"
+                           Text="{Binding SelectedDetailItem.ReleaseDateText}" />
+
+                <TextBlock Grid.Row="1"
+                           Classes="detail-label"
+                           Text="Resource" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Classes="detail-value"
+                           Foreground="#AEB9C5"
+                           Text="{Binding SelectedDetailItem.ResourceText}" />
+              </Grid>
+            </Grid>
+          </Grid>
+        </Border>
+      </Grid>
     </Border>
 
-    <StackPanel Grid.Row="3"
+    <StackPanel Grid.Row="2"
                 Margin="0,18,0,0"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"

@@ -565,6 +565,7 @@ namespace CKAN.LinuxGUI.VisualTests
             public GameInstanceManager Manager => inner.Manager;
             public RepositoryDataManager RepositoryData => inner.RepositoryData;
             public CKAN.Configuration.IConfiguration Configuration => inner.Configuration;
+            public Registry? CurrentRegistry => inner.CurrentRegistry;
             public GameInstance? CurrentInstance => inner.CurrentInstance;
             public RegistryManager? CurrentRegistryManager => inner.CurrentRegistryManager;
             public System.Collections.Generic.IReadOnlyList<CKAN.App.Models.InstanceSummary> Instances => inner.Instances;
@@ -577,6 +578,10 @@ namespace CKAN.LinuxGUI.VisualTests
                 => inner.InitializeErrorAsync(cancellationToken);
             public Task SetCurrentInstanceAsync(string name, System.Threading.CancellationToken cancellationToken)
                 => inner.SetCurrentInstanceAsync(name, cancellationToken);
+            public RegistryManager? AcquireWriteRegistryManager()
+                => inner.AcquireWriteRegistryManager();
+            public void RefreshCurrentRegistry()
+                => inner.RefreshCurrentRegistry();
             public void Dispose() => inner.Dispose();
         }
     }

@@ -912,8 +912,8 @@ namespace CKAN.App.Services
                                                                  ApplyChangesResult result)
         {
             var summaryLines = result.SummaryLines
-                                     .Where(line => !line.Contains("queued action",
-                                                                   StringComparison.OrdinalIgnoreCase))
+                                     .Where(line => line.IndexOf("queued action",
+                                                                 StringComparison.OrdinalIgnoreCase) < 0)
                                      .ToList();
             if (summaryLines.Count == 0)
             {
@@ -935,8 +935,8 @@ namespace CKAN.App.Services
                                                                 ApplyChangesResult result)
         {
             var summaryLines = result.SummaryLines
-                                     .Where(line => !line.Contains("queued action",
-                                                                   StringComparison.OrdinalIgnoreCase))
+                                     .Where(line => line.IndexOf("queued action",
+                                                                 StringComparison.OrdinalIgnoreCase) < 0)
                                      .ToList();
             if (summaryLines.Count == 0)
             {

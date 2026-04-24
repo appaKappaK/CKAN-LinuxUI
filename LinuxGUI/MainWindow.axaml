@@ -3235,15 +3235,16 @@
                                         Margin="0,0,0,8">
                               <Button Classes="detail-disclosure"
                                       Command="{Binding ToggleSelectedModDependenciesCommand}">
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="Auto,Auto"
+                                      HorizontalAlignment="Left">
                                   <TextBlock Classes="detail-value"
                                              TextWrapping="Wrap"
                                              Text="{Binding SelectedModDependencyCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
-                                             FontSize="16"
+                                             FontSize="18"
                                              FontWeight="SemiBold"
-                                             Margin="8,0,0,0"
+                                             Margin="4,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModDependencyChevron}" />
                                 </Grid>
@@ -3268,15 +3269,16 @@
                                         Margin="0,0,0,8">
                               <Button Classes="detail-disclosure"
                                       Command="{Binding ToggleSelectedModRecommendationsCommand}">
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="Auto,Auto"
+                                      HorizontalAlignment="Left">
                                   <TextBlock Classes="detail-value"
                                              TextWrapping="Wrap"
                                              Text="{Binding SelectedModRecommendationCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
-                                             FontSize="16"
+                                             FontSize="18"
                                              FontWeight="SemiBold"
-                                             Margin="8,0,0,0"
+                                             Margin="4,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModRecommendationChevron}" />
                                 </Grid>
@@ -3301,15 +3303,16 @@
                                         Margin="0,0,0,8">
                               <Button Classes="detail-disclosure"
                                       Command="{Binding ToggleSelectedModSuggestionsCommand}">
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="Auto,Auto"
+                                      HorizontalAlignment="Left">
                                   <TextBlock Classes="detail-value"
                                              TextWrapping="Wrap"
                                              Text="{Binding SelectedModSuggestionCountLabel}" />
                                   <TextBlock Grid.Column="1"
                                              Classes="detail-label"
-                                             FontSize="16"
+                                             FontSize="18"
                                              FontWeight="SemiBold"
-                                             Margin="8,0,0,0"
+                                             Margin="4,0,0,0"
                                              VerticalAlignment="Center"
                                              Text="{Binding SelectedModSuggestionChevron}" />
                                 </Grid>
@@ -3509,7 +3512,7 @@
                             <TextBlock FontSize="12"
                                        Opacity="0.72"
                                        TextWrapping="Wrap"
-                                       Text="{Binding PreviewSummary}" />
+                                       Text="{Binding PreviewStatusLabel}" />
                           </StackPanel>
 
                           <Border Background="{Binding ApplyResultBackground}"
@@ -3566,7 +3569,7 @@
                             <StackPanel Spacing="6">
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.84"
-                                         Text="{Binding PreviewImpactSummary}" />
+                                         Text="{Binding PreviewPanelGuidance}" />
                             </StackPanel>
                           </Border>
 
@@ -3577,7 +3580,7 @@
                             <StackPanel Spacing="6">
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.84"
-                                         Text="{Binding PreviewImpactSummary}" />
+                                         Text="{Binding PreviewPanelGuidance}" />
                             </StackPanel>
                           </Border>
 
@@ -3588,7 +3591,7 @@
                             <StackPanel Spacing="6">
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.84"
-                                         Text="{Binding PreviewImpactSummary}" />
+                                         Text="{Binding PreviewPanelGuidance}" />
                             </StackPanel>
                           </Border>
 
@@ -3599,125 +3602,9 @@
                             <StackPanel Spacing="6">
                               <TextBlock TextWrapping="Wrap"
                                          Opacity="0.84"
-                                         Text="{Binding PreviewImpactSummary}" />
+                                         Text="{Binding PreviewPanelGuidance}" />
                             </StackPanel>
                           </Border>
-
-                          <WrapPanel ItemHeight="52"
-                                     IsVisible="{Binding HasQueuedActions}">
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewQueuedMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Direct Changes" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewQueuedCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewQueuedDownloadMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="{Binding PreviewDownloadMetricTitle}" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewDownloadQueueCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewDownloadCountMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Required Downloads" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewDownloadCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewDependencyMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Auto Installs" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewDependencyCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewAutoRemovalMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Auto-Removals" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewAutoRemovalCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewConflictMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Conflicts" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewConflictCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="preview-summary-metric-card"
-                                    Background="#161B21"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    Margin="0,0,8,8"
-                                    Width="168"
-                                    IsVisible="{Binding ShowPreviewAttentionMetric}">
-                              <StackPanel Classes="preview-summary-metric"
-                                          Spacing="3">
-                                <TextBlock FontSize="11"
-                                           Opacity="0.7"
-                                           Text="Required Steps" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding PreviewAttentionCountLabel}" />
-                              </StackPanel>
-                            </Border>
-                          </WrapPanel>
 
                           <ProgressBar Height="12"
                                        IsIndeterminate="{Binding IsPreviewLoading}"

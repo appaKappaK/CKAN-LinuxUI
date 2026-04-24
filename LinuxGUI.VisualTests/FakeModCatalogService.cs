@@ -263,14 +263,14 @@ namespace CKAN.LinuxGUI.VisualTests
                                                         FilterState                       filter)
             => new FilterOptionCounts
             {
-                Compatible   = items.Count(item => Matches(item, WithCompatibleOnly(filter))),
-                Installed    = items.Count(item => Matches(item, WithInstalledOnly(filter))),
-                Updatable    = items.Count(item => Matches(item, WithUpdatableOnly(filter))),
-                Replaceable  = items.Count(item => Matches(item, WithReplacementOnly(filter))),
-                Cached       = items.Count(item => Matches(item, WithCachedOnly(filter))),
-                Uncached     = items.Count(item => Matches(item, WithUncachedOnly(filter))),
-                NotInstalled = items.Count(item => Matches(item, WithNotInstalledOnly(filter))),
-                Incompatible = items.Count(item => Matches(item, WithIncompatibleOnly(filter))),
+                Compatible   = CountForPreview(items, filter, WithCompatibleOnly),
+                Installed    = CountForPreview(items, filter, WithInstalledOnly),
+                Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
+                Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
+                Cached       = CountForPreview(items, filter, WithCachedOnly),
+                Uncached     = CountForPreview(items, filter, WithUncachedOnly),
+                NotInstalled = CountForPreview(items, filter, WithNotInstalledOnly),
+                Incompatible = CountForPreview(items, filter, WithIncompatibleOnly),
             };
 
         public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
@@ -358,139 +358,67 @@ namespace CKAN.LinuxGUI.VisualTests
             return true;
         }
 
+        private static int CountForPreview(IReadOnlyCollection<ModListItem> items,
+                                           FilterState                       filter,
+                                           Func<FilterState, FilterState>    applyPreviewFilter)
+            => items.Count(item => Matches(item, applyPreviewFilter(filter)));
+
         private static FilterState WithInstalledOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = true,
-                CompatibleOnly     = filter.CompatibleOnly,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
-                IncompatibleOnly   = filter.IncompatibleOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
+                InstalledOnly    = true,
+                NotInstalledOnly = false,
             };
 
         private static FilterState WithNotInstalledOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
                 NotInstalledOnly   = true,
-                CompatibleOnly     = filter.CompatibleOnly,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
-                IncompatibleOnly   = filter.IncompatibleOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
+                InstalledOnly      = false,
+                UpdatableOnly      = false,
             };
 
         private static FilterState WithUpdatableOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
                 UpdatableOnly      = true,
-                InstalledOnly      = filter.InstalledOnly,
-                CompatibleOnly     = filter.CompatibleOnly,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
-                IncompatibleOnly   = filter.IncompatibleOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
+                NotInstalledOnly   = false,
+                NotUpdatableOnly   = false,
             };
 
         private static FilterState WithCompatibleOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = filter.InstalledOnly,
-                NotInstalledOnly   = filter.NotInstalledOnly,
-                UpdatableOnly      = filter.UpdatableOnly,
                 CompatibleOnly     = true,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
+                IncompatibleOnly   = false,
             };
 
         private static FilterState WithCachedOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = filter.InstalledOnly,
-                NotInstalledOnly   = filter.NotInstalledOnly,
-                UpdatableOnly      = filter.UpdatableOnly,
-                CompatibleOnly     = filter.CompatibleOnly,
                 CachedOnly         = true,
-                IncompatibleOnly   = filter.IncompatibleOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
+                UncachedOnly       = false,
             };
 
         private static FilterState WithUncachedOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = filter.InstalledOnly,
-                NotInstalledOnly   = filter.NotInstalledOnly,
-                UpdatableOnly      = filter.UpdatableOnly,
-                CompatibleOnly     = filter.CompatibleOnly,
+                CachedOnly         = false,
                 UncachedOnly       = true,
-                IncompatibleOnly   = filter.IncompatibleOnly,
-                HasReplacementOnly = filter.HasReplacementOnly,
             };
 
         private static FilterState WithIncompatibleOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = filter.InstalledOnly,
-                NotInstalledOnly   = filter.NotInstalledOnly,
-                UpdatableOnly      = filter.UpdatableOnly,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
+                CompatibleOnly     = false,
                 IncompatibleOnly   = true,
-                HasReplacementOnly = filter.HasReplacementOnly,
             };
 
         private static FilterState WithReplacementOnly(FilterState filter)
-            => new FilterState
+            => filter with
             {
-                SearchText         = filter.SearchText,
-                AuthorText         = filter.AuthorText,
-                CompatibilityText  = filter.CompatibilityText,
-                SortOption         = filter.SortOption,
-                SortDescending     = filter.SortDescending,
-                InstalledOnly      = filter.InstalledOnly,
-                NotInstalledOnly   = filter.NotInstalledOnly,
-                UpdatableOnly      = filter.UpdatableOnly,
-                CompatibleOnly     = filter.CompatibleOnly,
-                CachedOnly         = filter.CachedOnly,
-                UncachedOnly       = filter.UncachedOnly,
-                IncompatibleOnly   = filter.IncompatibleOnly,
                 HasReplacementOnly = true,
+                NoReplacementOnly  = false,
             };
 
         private static bool Contains(string text, string search)

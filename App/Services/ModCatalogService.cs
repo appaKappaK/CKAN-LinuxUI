@@ -246,7 +246,7 @@ namespace CKAN.App.Services
                 Summary           = displayMod.@abstract?.Trim() ?? "",
                 Description       = string.IsNullOrWhiteSpace(displayMod.description)
                     ? displayMod.@abstract?.Trim() ?? ""
-                    : displayMod.description.Trim(),
+                    : displayMod.description!.Trim(),
                 License           = FormatLicense(displayMod),
                 Languages         = string.Join(", ", displayMod.localizations ?? Array.Empty<string>()),
                 Depends           = FormatRelationshipList(displayMod.depends),

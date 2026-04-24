@@ -297,7 +297,8 @@ namespace CKAN.LinuxGUI
             DismissUiScaleRestartStripCommand = ReactiveCommand.Create(DismissUiScaleRestartStrip);
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
                                                                           canRestartForUiScale);
-            ApplyChangesCommand = ReactiveCommand.CreateFromTask(ApplyQueuedChangesAsync, canApplyChanges);
+            ApplyChangesCommand = ReactiveCommand.CreateFromTask(() => ApplyQueuedChangesAsync(),
+                                                                 canApplyChanges);
             DownloadQueuedCommand = ReactiveCommand.CreateFromTask(DownloadQueuedAsync, canDownloadQueued);
             ToggleQueueDrawerCommand = ReactiveCommand.Create(ToggleQueueDrawer);
             ApplyChangesFromCollapsedQueueCommand = ReactiveCommand.CreateFromTask(ApplyChangesFromCollapsedQueueAsync,
@@ -1151,7 +1152,37 @@ namespace CKAN.LinuxGUI
 
         public Registry? CurrentRegistry => gameInstanceService.CurrentRegistry;
 
+        public RegistryManager? CurrentRegistryManager => gameInstanceService.CurrentRegistryManager;
+
         public NetModuleCache? CurrentCache => gameInstanceService.Manager.Cache;
+
+        public RegistryManager? AcquireWriteRegistryManager()
+            => gameInstanceService.AcquireWriteRegistryManager();
+
+        public Func<IReadOnlyList<RecommendationAuditItem>, Task<IReadOnlyList<RecommendationAuditItem>?>>?
+            RecommendationSelectionPromptAsync { get; set; }
+
+        public bool PreselectRecommendedMods
+        {
+            get => appSettingsService.PreselectRecommendedMods;
+            set
+            {
+                if (appSettingsService.PreselectRecommendedMods == value)
+                {
+                    return;
+                }
+
+                appSettingsService.SavePreselectRecommendedMods(value);
+                this.RaisePropertyChanged();
+            }
+        }
+
+        public void RefreshCurrentRegistryReference()
+        {
+            gameInstanceService.RefreshCurrentRegistry();
+            this.RaisePropertyChanged(nameof(CurrentRegistry));
+            this.RaisePropertyChanged(nameof(CurrentRegistryManager));
+        }
 
         public IReadOnlyList<GameInstance> KnownGameInstances
             => gameInstanceService.Manager.Instances.Values.ToList();
@@ -1294,10 +1325,11 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        public async Task DeduplicateInstalledFilesAsync()
+        public async Task<string> DeduplicateInstalledFilesAsync()
         {
             IsUserBusy = true;
             StatusMessage = "Scanning for duplicate installed files...";
+            var previousMessage = user.LastMessage;
             try
             {
                 await Task.Run(() =>
@@ -1306,12 +1338,22 @@ namespace CKAN.LinuxGUI
                                                                  gameInstanceService.RepositoryData);
                     deduper.DeduplicateAll(user);
                 });
-                StatusMessage = "Deduplicate installed files finished.";
+                var result = string.IsNullOrWhiteSpace(user.LastMessage) || user.LastMessage == previousMessage
+                    ? "Deduplicate installed files finished."
+                    : user.LastMessage;
+                StatusMessage = result;
+                return result;
+            }
+            catch (CancelledActionKraken)
+            {
+                StatusMessage = "Deduplicate installed files canceled.";
+                return StatusMessage;
             }
             catch (Exception ex)
             {
                 Diagnostics = ex.Message;
                 StatusMessage = "Deduplicate installed files failed.";
+                return $"{StatusMessage}\n\n{ex.Message}";
             }
             finally
             {
@@ -1392,6 +1434,7 @@ namespace CKAN.LinuxGUI
 
             var instance = CurrentInstance;
             var registry = CurrentRegistry;
+            var preselectRecommendations = PreselectRecommendedMods;
             StatusMessage = "Auditing recommendations for installed mods...";
 
             try
@@ -1417,7 +1460,8 @@ namespace CKAN.LinuxGUI
 
                     return BuildRecommendationAuditItems(recommendations,
                                                          suggestions,
-                                                         supporters);
+                                                         supporters,
+                                                         preselectRecommendations);
                 });
 
                 StatusMessage = items.Count == 0
@@ -1459,7 +1503,7 @@ namespace CKAN.LinuxGUI
                     continue;
                 }
 
-                changesetService.QueueInstall(catalogItem);
+                changesetService.QueueInstall(catalogItem, item.Version);
                 queued++;
             }
 
@@ -1476,6 +1520,143 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private async Task<bool> PromptForQueuedRecommendationsAsync()
+        {
+            if (RecommendationSelectionPromptAsync == null
+                || CurrentInstance == null
+                || CurrentRegistry == null
+                || !HasQueuedChangeActions)
+            {
+                return true;
+            }
+
+            var shown = new List<CkanModule>();
+            while (true)
+            {
+                var items = await BuildQueuedRecommendationAuditItemsAsync(shown);
+                if (items.Count == 0)
+                {
+                    return true;
+                }
+
+                shown.AddRange(items.Select(item => item.Module));
+
+                var selections = await RecommendationSelectionPromptAsync(items);
+                if (selections == null)
+                {
+                    StatusMessage = "Apply canceled before optional recommendations were installed.";
+                    return false;
+                }
+
+                var selected = selections.Where(item => item.CanQueue)
+                                         .ToList();
+                if (selected.Count == 0)
+                {
+                    StatusMessage = "Continuing without optional recommendations.";
+                    return true;
+                }
+
+                QueueRecommendationAuditSelections(selected);
+            }
+        }
+
+        private async Task<IReadOnlyList<RecommendationAuditItem>> BuildQueuedRecommendationAuditItemsAsync(
+            IReadOnlyList<CkanModule> shown)
+        {
+            if (CurrentInstance == null || CurrentRegistry == null)
+            {
+                return Array.Empty<RecommendationAuditItem>();
+            }
+
+            var instance = CurrentInstance;
+            var registry = CurrentRegistry;
+            var actions = changesetService.CurrentApplyQueue.ToList();
+            var preselectRecommendations = PreselectRecommendedMods;
+            if (actions.Count == 0)
+            {
+                return Array.Empty<RecommendationAuditItem>();
+            }
+
+            var queuedIdentifiers = actions.Select(action => action.Identifier)
+                                           .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                return await Task.Run<IReadOnlyList<RecommendationAuditItem>>(() =>
+                {
+                    var requestedInstalls = new List<CkanModule>();
+                    var requestedUpdates = new List<CkanModule>();
+                    var requestedRemovals = new List<InstalledModule>();
+
+                    foreach (var action in actions)
+                    {
+                        switch (action.ActionKind)
+                        {
+                            case QueuedActionKind.Install:
+                                if (ResolveQueuedModule(registry, instance, action) is CkanModule installMod)
+                                {
+                                    requestedInstalls.Add(installMod);
+                                }
+                                break;
+                            case QueuedActionKind.Update:
+                                if (ResolveQueuedModule(registry, instance, action) is CkanModule updateMod)
+                                {
+                                    requestedUpdates.Add(updateMod);
+                                }
+                                break;
+                            case QueuedActionKind.Remove:
+                                if (registry.InstalledModule(action.Identifier) is InstalledModule removeMod)
+                                {
+                                    requestedRemovals.Add(removeMod);
+                                }
+                                break;
+                        }
+                    }
+
+                    var combinedInstalls = DistinctRecommendationModules(requestedInstalls.Concat(requestedUpdates));
+                    if (combinedInstalls.Count == 0)
+                    {
+                        return Array.Empty<RecommendationAuditItem>();
+                    }
+
+                    var allRemoving = DistinctRecommendationModules(requestedRemovals.Select(module => module.Module));
+                    var resolver = new RelationshipResolver(combinedInstalls,
+                                                            allRemoving,
+                                                            RelationshipResolverOptions.ConflictsOpts(instance.StabilityToleranceConfig),
+                                                            registry,
+                                                            instance.Game,
+                                                            instance.VersionCriteria());
+                    var resolvedInstalls = DistinctRecommendationModules(resolver.ModList(false));
+
+                    if (!ModuleInstaller.FindRecommendations(instance,
+                                                             resolvedInstalls,
+                                                             resolvedInstalls,
+                                                             allRemoving,
+                                                             shown,
+                                                             registry,
+                                                             out var recommendations,
+                                                             out var suggestions,
+                                                             out var supporters))
+                    {
+                        return Array.Empty<RecommendationAuditItem>();
+                    }
+
+                    return BuildRecommendationAuditItems(recommendations,
+                                                         suggestions,
+                                                         supporters,
+                                                         preselectRecommendations)
+                           .Where(item => !queuedIdentifiers.Contains(item.Identifier))
+                           .ToList();
+                });
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Recommendation check failed; continuing with queued changes only.";
+                return Array.Empty<RecommendationAuditItem>();
+            }
+        }
+
         public bool ShowStartupInstancePanel => !IsReady;
 
         public bool ShowReadyInstancePanel => IsReady;
@@ -1483,6 +1664,7 @@ namespace CKAN.LinuxGUI
         public bool ShowReadyStatusSurface
             => IsReady
                && !ShowExecutionOverlay
+               && !IsCatalogLoading
                && (IsRefreshing
                    || IsApplyingChanges
                    || IsUserBusy
@@ -1549,6 +1731,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(CanInteractWithCatalog));
                 this.RaisePropertyChanged(nameof(CanSwitchInstances));
                 this.RaisePropertyChanged(nameof(CanUseCatalogPanel));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ModCountLabel));
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
                 this.RaisePropertyChanged(nameof(ShowModList));
@@ -3415,6 +3598,7 @@ namespace CKAN.LinuxGUI
         public void ActivateModFromBrowser(ModListItem mod)
         {
             if (SelectedMod != null
+                && ShowDetailsPane
                 && string.Equals(SelectedMod.Identifier, mod.Identifier, StringComparison.OrdinalIgnoreCase))
             {
                 SelectedMod = null;
@@ -3593,21 +3777,43 @@ namespace CKAN.LinuxGUI
 
         private async Task RefreshAsync()
         {
+            var wasReady = IsReady;
             IsRefreshing = true;
             ClearApplyResult();
-            StartupStage = StartupStage.Loading;
             Diagnostics = "Loading instance metadata.";
-            StageTitle = "Loading Instances";
-            StageDescription = "Inspecting your configured installs and preparing the browser.";
-            StatusMessage = "Checking CKAN game instances…";
+            if (wasReady)
+            {
+                IsCatalogLoading = true;
+                CatalogStatusMessage = "Reloading mods from the current CKAN registry and repository cache…";
+                StatusMessage = "Reloading the current instance…";
+            }
+            else
+            {
+                StartupStage = StartupStage.Loading;
+                StageTitle = "Loading Instances";
+                StageDescription = "Inspecting your configured installs and preparing the browser.";
+                StatusMessage = "Checking CKAN game instances…";
+            }
 
             try
             {
                 await gameInstanceService.InitializeAsync(CancellationToken.None);
-                ReloadInstances();
+                ReloadInstances(loadCatalog: false, updateReadyStatus: !wasReady);
+                if (IsReady)
+                {
+                    await LoadModCatalogAsync();
+                }
+                else if (wasReady)
+                {
+                    IsCatalogLoading = false;
+                }
             }
             catch (Exception ex)
             {
+                if (wasReady)
+                {
+                    IsCatalogLoading = false;
+                }
                 Diagnostics = ex.Message;
                 StatusMessage = "Instance startup failed.";
                 StageTitle = "Could Not Load Instances";
@@ -3680,7 +3886,8 @@ namespace CKAN.LinuxGUI
             return true;
         }
 
-        private void ReloadInstances(bool loadCatalog = true)
+        private void ReloadInstances(bool loadCatalog = true,
+                                     bool updateReadyStatus = true)
         {
             Instances.Clear();
             foreach (var inst in gameInstanceService.Instances)
@@ -3717,7 +3924,10 @@ namespace CKAN.LinuxGUI
                 StartupStage = StartupStage.Ready;
                 StageTitle = "Ready";
                 StageDescription = "";
-                StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")} and activated {gameInstanceService.CurrentInstance.Name}.";
+                if (updateReadyStatus)
+                {
+                    StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")} and activated {gameInstanceService.CurrentInstance.Name}.";
+                }
                 SelectedActionLabel = "Open Selected Install";
                 SelectedActionHint = "Choose a different install here if you want to switch contexts.";
                 if (loadCatalog)
@@ -4689,12 +4899,13 @@ namespace CKAN.LinuxGUI
         private static IReadOnlyList<RecommendationAuditItem> BuildRecommendationAuditItems(
             Dictionary<CkanModule, Tuple<bool, List<string>>> recommendations,
             Dictionary<CkanModule, List<string>>              suggestions,
-            Dictionary<CkanModule, HashSet<string>>           supporters)
+            Dictionary<CkanModule, HashSet<string>>           supporters,
+            bool                                              preselectRecommendations)
             => recommendations
                    .Select(kvp => new RecommendationAuditItem(kvp.Key,
                                                               "Recommendation",
                                                               FormatRecommendationSource("Recommended by", kvp.Value.Item2),
-                                                              kvp.Value.Item1))
+                                                              preselectRecommendations && kvp.Value.Item1))
                    .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                    .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                    .Concat(suggestions
@@ -4722,6 +4933,38 @@ namespace CKAN.LinuxGUI
                 ? label
                 : $"{label}: {sourceText}";
         }
+
+        private static CkanModule? ResolveQueuedModule(IRegistryQuerier  registry,
+                                                       GameInstance      instance,
+                                                       QueuedActionModel action)
+        {
+            if (!string.IsNullOrWhiteSpace(action.TargetVersion))
+            {
+                var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier,
+                                                                                       action.TargetVersion));
+                if (exact != null)
+                {
+                    return exact;
+                }
+
+                if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
+                    && string.Equals(installed.version.ToString(), action.TargetVersion, StringComparison.Ordinal))
+                {
+                    return installed;
+                }
+
+                return null;
+            }
+
+            return Utilities.DefaultIfThrows(() => registry.LatestAvailable(action.Identifier,
+                                                                            instance.StabilityToleranceConfig,
+                                                                            instance.VersionCriteria()));
+        }
+
+        private static List<CkanModule> DistinctRecommendationModules(IEnumerable<CkanModule> modules)
+            => modules.GroupBy(module => module.identifier, StringComparer.OrdinalIgnoreCase)
+                      .Select(group => group.First())
+                      .ToList();
 
         private void RemoveSelectedQueuedAction()
         {
@@ -4895,9 +5138,16 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private async Task ApplyQueuedChangesAsync()
+        private async Task ApplyQueuedChangesAsync(bool   promptForRecommendations = true,
+                                                   string executionTitle = "Applying Changes",
+                                                   string executionStatus = "Applying changes…")
         {
-            SetExecutionState("Applying Changes", "Applying changes…");
+            if (promptForRecommendations && !await PromptForQueuedRecommendationsAsync())
+            {
+                return;
+            }
+
+            SetExecutionState(executionTitle, executionStatus);
             IsApplyingChanges = true;
             ApplyChangesResult? result = null;
             try
@@ -4943,6 +5193,22 @@ namespace CKAN.LinuxGUI
             }
 
             var targetMod = SelectedMod;
+            if (!HasQueuedChangeActions)
+            {
+                ClearApplyResult();
+                changesetService.QueueInstall(targetMod, SelectedModVersionChoice?.VersionKey);
+                if (!await PromptForQueuedRecommendationsAsync())
+                {
+                    changesetService.ClearApplyQueue();
+                    return;
+                }
+
+                await ApplyQueuedChangesAsync(promptForRecommendations: false,
+                                              executionTitle: $"Installing {targetMod.Name}",
+                                              executionStatus: $"Installing {targetMod.Name}…");
+                return;
+            }
+
             ClearApplyResult();
             SetExecutionState($"Installing {targetMod.Name}", $"Installing {targetMod.Name}…");
             IsApplyingChanges = true;

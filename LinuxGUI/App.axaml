@@ -23,28 +23,28 @@
       <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
     <Style Selector="ListBox.utility-list">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="#111820" />
+      <Setter Property="BorderBrush" Value="#252F3A" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem">
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="Margin" Value="0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="ClipToBounds" Value="True" />
-      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#EA8AF7" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -52,27 +52,27 @@
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected /template/ Border">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#EA8AF7" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:pointerover">
-      <Setter Property="Background" Value="#261C2B" />
-      <Setter Property="BorderBrush" Value="#B06AC4" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#261C2B" />
+      <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:pointerover /template/ Border">
-      <Setter Property="Background" Value="#261C2B" />
-      <Setter Property="BorderBrush" Value="#B06AC4" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected:pointerover">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#EA8AF7" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -80,8 +80,8 @@
     </Style>
     <Style Selector="ListBox.utility-list > ListBoxItem:selected:pointerover /template/ Border">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#EA8AF7" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.utility-list ScrollBar:vertical">
       <Setter Property="Width" Value="10" />
@@ -104,6 +104,27 @@
       <Setter Property="BorderThickness" Value="0,0,0,1" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Padding" Value="10,8" />
+    </Style>
+    <Style Selector="ListBox.utility-list > ListBoxItem:pointerover Border.utility-list-row">
+      <Setter Property="Background" Value="#211B2A" />
+      <Setter Property="BorderBrush" Value="#B06AC4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="9,7" />
+    </Style>
+    <Style Selector="ListBox.utility-list > ListBoxItem:selected Border.utility-list-row">
+      <Setter Property="Background" Value="#1D2430" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="9,7" />
+    </Style>
+    <Style Selector="ListBox.utility-list > ListBoxItem:selected:pointerover Border.utility-list-row">
+      <Setter Property="Background" Value="#211B2A" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="9,7" />
     </Style>
   </Application.Styles>
 </Application>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -33,9 +34,71 @@ namespace CKAN.LinuxGUI
             viewModel.RefreshCacheSummary();
         }
 
+        public bool RepositoryAdded => viewModel.RepositoryAdded;
+
+        public bool RepositoryRemoved => viewModel.RepositoryRemoved;
+
+        public bool RepositoryMoved => viewModel.RepositoryMoved;
+
         private async void CheckForUpdatesButton_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
             => await viewModel.CheckForUpdatesAsync();
+
+        private async void AddRepositoryButton_OnClick(object? sender,
+                                                       Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            viewModel.SetRepositoryStatus("Loading official repositories...");
+            var repositories = await viewModel.LoadOfficialRepositoriesAsync();
+            viewModel.SetRepositoryStatus("");
+
+            var dialog = new AddRepositoryWindow(repositories);
+            if (await dialog.ShowDialog<bool>(this)
+                && dialog.Selection is Repository repo)
+            {
+                await viewModel.AddRepositoryAsync(repo);
+            }
+        }
+
+        private async void RemoveRepositoryButton_OnClick(object? sender,
+                                                          Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (viewModel.SelectedRepositoryRow == null)
+            {
+                return;
+            }
+
+            var choice = await new SimplePromptWindow(
+                $"Remove metadata repository \"{viewModel.SelectedRepositoryRow.Name}\"?",
+                new[] { "Remove", "Cancel" },
+                "Remove",
+                "Cancel").ShowDialog<int>(this);
+            if (choice == 0)
+            {
+                await viewModel.RemoveSelectedRepositoryAsync();
+            }
+        }
+
+        private async void MoveRepositoryUpButton_OnClick(object? sender,
+                                                          Avalonia.Interactivity.RoutedEventArgs e)
+            => await viewModel.MoveSelectedRepositoryAsync(-1);
+
+        private async void MoveRepositoryDownButton_OnClick(object? sender,
+                                                            Avalonia.Interactivity.RoutedEventArgs e)
+            => await viewModel.MoveSelectedRepositoryAsync(1);
+
+        private async void AddAuthTokenButton_OnClick(object? sender,
+                                                      Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            var dialog = new AddAuthTokenWindow(viewModel.AuthTokenHosts);
+            if (await dialog.ShowDialog<bool>(this))
+            {
+                viewModel.AddAuthToken(dialog.ResultHost, dialog.ResultToken);
+            }
+        }
+
+        private void RemoveAuthTokenButton_OnClick(object? sender,
+                                                   Avalonia.Interactivity.RoutedEventArgs e)
+            => viewModel.RemoveSelectedAuthToken();
 
         private async void ChangeCachePathButton_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
@@ -78,41 +141,40 @@ namespace CKAN.LinuxGUI
         private sealed class WindowViewModel : ReactiveObject
         {
             private readonly IConfiguration? configuration;
+            private readonly MainWindowViewModel? mainWindowViewModel;
             private readonly GameInstanceManager? manager;
-            private readonly Registry? registry;
+            private RegistryManager? registryManager;
+            private Registry? registry;
             private readonly GameInstance? instance;
             private readonly LinuxGuiConfiguration? guiConfiguration;
             private string latestVersion = "Not checked";
             private string downloadCacheSummary = "Calculating...";
             private string cacheErrorMessage = "";
+            private string repositoryStatusMessage = "";
+            private string authTokenStatusMessage = "";
             private string cacheSizeLimitMiBText = "";
             private string refreshRateText = "0";
             private string? selectedLanguage;
+            private RepositoryRow? selectedRepositoryRow;
+            private AuthTokenRow? selectedAuthTokenRow;
             private ReleaseStatusOption? selectedStabilityTolerance;
 
             public WindowViewModel(MainWindowViewModel? mainWindowViewModel)
             {
+                this.mainWindowViewModel = mainWindowViewModel;
                 configuration = mainWindowViewModel?.CurrentConfiguration;
                 manager = mainWindowViewModel?.CurrentManager;
-                registry = mainWindowViewModel?.CurrentRegistry;
+                registryManager = mainWindowViewModel?.CurrentRegistryManager;
+                registry = registryManager?.registry ?? mainWindowViewModel?.CurrentRegistry;
                 instance = mainWindowViewModel?.CurrentInstance;
                 guiConfiguration = instance != null
                     ? LinuxGuiConfiguration.LoadOrCreate(instance)
                     : null;
 
-                RepositoryRows = registry?.Repositories.Values
-                    .OrderBy(repo => repo.priority)
-                    .Select(repo => new RepositoryRow(repo.name, repo.uri?.ToString() ?? ""))
-                    .ToList()
-                    ?? new List<RepositoryRow>();
-                AuthTokenRows = configuration?.GetAuthTokenHosts()
-                    .OrderBy(host => host, StringComparer.OrdinalIgnoreCase)
-                    .Select(host => new AuthTokenRow(host,
-                                                     configuration.TryGetAuthToken(host, out var token)
-                                                         ? token ?? ""
-                                                         : ""))
-                    .ToList()
-                    ?? new List<AuthTokenRow>();
+                RepositoryRows = new ObservableCollection<RepositoryRow>();
+                RefreshRepositoryRows();
+                AuthTokenRows = new ObservableCollection<AuthTokenRow>();
+                RefreshAuthTokenRows();
                 LocalVersion = Meta.ReleaseVersion.ToString();
                 DownloadCachePath = configuration?.DownloadCacheDir
                                     ?? GameInstanceManager.DefaultDownloadCacheDir;
@@ -135,9 +197,81 @@ namespace CKAN.LinuxGUI
                 }
             }
 
-            public IReadOnlyList<RepositoryRow> RepositoryRows { get; }
+            public ObservableCollection<RepositoryRow> RepositoryRows { get; }
 
-            public IReadOnlyList<AuthTokenRow> AuthTokenRows { get; }
+            public RepositoryRow? SelectedRepositoryRow
+            {
+                get => selectedRepositoryRow;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref selectedRepositoryRow, value);
+                    RaiseRepositoryButtonStateChanged();
+                }
+            }
+
+            public bool RepositoryAdded { get; private set; }
+
+            public bool RepositoryRemoved { get; private set; }
+
+            public bool RepositoryMoved { get; private set; }
+
+            public bool CanAddRepository => instance != null && registry != null && mainWindowViewModel != null;
+
+            public bool CanRemoveRepository => instance != null
+                                            && SelectedRepositoryRow != null
+                                            && RepositoryRows.Count > 1;
+
+            public bool CanMoveRepositoryUp => instance != null
+                                            && SelectedRepositoryRow != null
+                                            && RepositoryRows.IndexOf(SelectedRepositoryRow) > 0;
+
+            public bool CanMoveRepositoryDown => instance != null
+                                              && SelectedRepositoryRow != null
+                                              && RepositoryRows.IndexOf(SelectedRepositoryRow) >= 0
+                                              && RepositoryRows.IndexOf(SelectedRepositoryRow) < RepositoryRows.Count - 1;
+
+            public string RepositoryStatusMessage
+            {
+                get => repositoryStatusMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref repositoryStatusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowRepositoryStatus));
+                }
+            }
+
+            public bool ShowRepositoryStatus => !string.IsNullOrWhiteSpace(RepositoryStatusMessage);
+
+            public ObservableCollection<AuthTokenRow> AuthTokenRows { get; }
+
+            public IReadOnlyCollection<string> AuthTokenHosts
+                => AuthTokenRows.Select(row => row.Host).ToList();
+
+            public AuthTokenRow? SelectedAuthTokenRow
+            {
+                get => selectedAuthTokenRow;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref selectedAuthTokenRow, value);
+                    this.RaisePropertyChanged(nameof(CanRemoveAuthToken));
+                }
+            }
+
+            public bool CanAddAuthToken => configuration != null;
+
+            public bool CanRemoveAuthToken => configuration != null && SelectedAuthTokenRow != null;
+
+            public string AuthTokenStatusMessage
+            {
+                get => authTokenStatusMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref authTokenStatusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowAuthTokenStatus));
+                }
+            }
+
+            public bool ShowAuthTokenStatus => !string.IsNullOrWhiteSpace(AuthTokenStatusMessage);
 
             public string LocalVersion { get; }
 
@@ -350,6 +484,19 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool PreselectRecommendedMods
+            {
+                get => mainWindowViewModel?.PreselectRecommendedMods ?? false;
+                set
+                {
+                    if (mainWindowViewModel != null)
+                    {
+                        mainWindowViewModel.PreselectRecommendedMods = value;
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
             public IReadOnlyList<ReleaseStatusOption> StabilityToleranceOptions { get; }
 
             public ReleaseStatusOption? SelectedStabilityTolerance
@@ -366,6 +513,201 @@ namespace CKAN.LinuxGUI
             }
 
             public bool CanEditStabilityTolerance => instance != null;
+
+            public void SetRepositoryStatus(string message)
+                => RepositoryStatusMessage = message;
+
+            public Task<IReadOnlyList<Repository>> LoadOfficialRepositoriesAsync()
+                => Task.Run<IReadOnlyList<Repository>>(() =>
+                {
+                    if (instance == null)
+                    {
+                        return Array.Empty<Repository>();
+                    }
+
+                    var repositories = RepositoryList.DefaultRepositories(instance.Game,
+                                                                          Net.UserAgentString)
+                                                     ?.repositories;
+                    if (repositories is { Length: > 0 })
+                    {
+                        return repositories;
+                    }
+
+                    return FallbackOfficialRepositories(instance);
+                });
+
+            public async Task AddRepositoryAsync(Repository repo)
+            {
+                var writeManager = AcquireRepositoryWriteManager(out var disposeWhenDone);
+                if (writeManager == null)
+                {
+                    RepositoryStatusMessage = "Repository changes are unavailable for the current instance.";
+                    return;
+                }
+
+                try
+                {
+                    var writeRegistry = writeManager.registry;
+                    if (writeRegistry.Repositories.Values.Any(other => other.uri == repo.uri))
+                    {
+                        RepositoryStatusMessage = $"A repository already uses {repo.uri}.";
+                        return;
+                    }
+
+                    if (writeRegistry.Repositories.TryGetValue(repo.name, out Repository? existing))
+                    {
+                        repo.priority = existing.priority;
+                        writeRegistry.RepositoriesRemove(repo.name);
+                    }
+                    else
+                    {
+                        repo.priority = writeRegistry.Repositories.Count;
+                    }
+                    writeRegistry.RepositoriesAdd(repo);
+                    NormalizeRepositoryPriorities(writeRegistry);
+                    await SaveRepositoriesAsync(writeManager);
+                    RepositoryAdded = true;
+                    RefreshRepositoryState(repo.name);
+                    RepositoryStatusMessage = $"Added {repo.name}. The catalog will refresh when settings closes.";
+                }
+                catch (Exception ex)
+                {
+                    RepositoryStatusMessage = ex.Message;
+                    RefreshRepositoryState(SelectedRepositoryRow?.Name);
+                }
+                finally
+                {
+                    DisposeTransientRegistryManager(writeManager, disposeWhenDone);
+                }
+            }
+
+            public async Task RemoveSelectedRepositoryAsync()
+            {
+                if (SelectedRepositoryRow == null)
+                {
+                    return;
+                }
+
+                var writeManager = AcquireRepositoryWriteManager(out var disposeWhenDone);
+                if (writeManager == null)
+                {
+                    RepositoryStatusMessage = "Repository changes are unavailable for the current instance.";
+                    return;
+                }
+
+                var writeRegistry = writeManager.registry;
+                if (writeRegistry.Repositories.Count <= 1)
+                {
+                    RepositoryStatusMessage = "Add another repository before removing the last one.";
+                    DisposeTransientRegistryManager(writeManager, disposeWhenDone);
+                    return;
+                }
+
+                var removedName = SelectedRepositoryRow.Name;
+                try
+                {
+                    writeRegistry.RepositoriesRemove(removedName);
+                    NormalizeRepositoryPriorities(writeRegistry);
+                    await SaveRepositoriesAsync(writeManager);
+                    RepositoryRemoved = true;
+                    RefreshRepositoryState(null);
+                    RepositoryStatusMessage = $"Removed {removedName}.";
+                }
+                catch (Exception ex)
+                {
+                    RepositoryStatusMessage = ex.Message;
+                    RefreshRepositoryState(removedName);
+                }
+                finally
+                {
+                    DisposeTransientRegistryManager(writeManager, disposeWhenDone);
+                }
+            }
+
+            public async Task MoveSelectedRepositoryAsync(int direction)
+            {
+                if (SelectedRepositoryRow == null)
+                {
+                    return;
+                }
+
+                var writeManager = AcquireRepositoryWriteManager(out var disposeWhenDone);
+                if (writeManager == null)
+                {
+                    RepositoryStatusMessage = "Repository changes are unavailable for the current instance.";
+                    return;
+                }
+
+                var writeRegistry = writeManager.registry;
+                var ordered = OrderedRepositories(writeRegistry).ToList();
+                var index = ordered.FindIndex(repo => string.Equals(repo.name,
+                                                                    SelectedRepositoryRow.Name,
+                                                                    StringComparison.Ordinal));
+                var newIndex = index + direction;
+                if (index < 0 || newIndex < 0 || newIndex >= ordered.Count)
+                {
+                    DisposeTransientRegistryManager(writeManager, disposeWhenDone);
+                    return;
+                }
+
+                var selected = ordered[index];
+                ordered.RemoveAt(index);
+                ordered.Insert(newIndex, selected);
+                for (var i = 0; i < ordered.Count; ++i)
+                {
+                    ordered[i].priority = i;
+                }
+
+                try
+                {
+                    await SaveRepositoriesAsync(writeManager);
+                    RepositoryMoved = true;
+                    RefreshRepositoryState(selected.name);
+                    RepositoryStatusMessage = $"Moved {selected.name}.";
+                }
+                catch (Exception ex)
+                {
+                    RepositoryStatusMessage = ex.Message;
+                    RefreshRepositoryState(selected.name);
+                }
+                finally
+                {
+                    DisposeTransientRegistryManager(writeManager, disposeWhenDone);
+                }
+            }
+
+            public void AddAuthToken(string host,
+                                     string token)
+            {
+                if (configuration == null)
+                {
+                    AuthTokenStatusMessage = "Authentication tokens are unavailable.";
+                    return;
+                }
+
+                if (configuration.TryGetAuthToken(host, out _))
+                {
+                    AuthTokenStatusMessage = $"A token already exists for {host}.";
+                    return;
+                }
+
+                configuration.SetAuthToken(host, token);
+                RefreshAuthTokenRows(host);
+                AuthTokenStatusMessage = "";
+            }
+
+            public void RemoveSelectedAuthToken()
+            {
+                if (configuration == null || SelectedAuthTokenRow == null)
+                {
+                    return;
+                }
+
+                var host = SelectedAuthTokenRow.Host;
+                configuration.SetAuthToken(host, null);
+                RefreshAuthTokenRows();
+                AuthTokenStatusMessage = "";
+            }
 
             public async Task CheckForUpdatesAsync()
             {
@@ -473,6 +815,135 @@ namespace CKAN.LinuxGUI
             public bool CanResetCachePath
                 => DownloadCachePath != GameInstanceManager.DefaultDownloadCacheDir;
 
+            private void RefreshRepositoryRows(string? selectName = null)
+            {
+                var fallbackName = selectName ?? SelectedRepositoryRow?.Name;
+                RepositoryRows.Clear();
+                foreach (var repo in OrderedRepositories())
+                {
+                    RepositoryRows.Add(new RepositoryRow(repo));
+                }
+
+                SelectedRepositoryRow = !string.IsNullOrWhiteSpace(fallbackName)
+                    ? RepositoryRows.FirstOrDefault(row => string.Equals(row.Name,
+                                                                         fallbackName,
+                                                                         StringComparison.Ordinal))
+                      ?? RepositoryRows.FirstOrDefault()
+                    : RepositoryRows.FirstOrDefault();
+                RaiseRepositoryButtonStateChanged();
+            }
+
+            private void RefreshAuthTokenRows(string? selectHost = null)
+            {
+                var fallbackHost = selectHost ?? SelectedAuthTokenRow?.Host;
+                AuthTokenRows.Clear();
+                if (configuration != null)
+                {
+                    foreach (var host in configuration.GetAuthTokenHosts()
+                                                      .OrderBy(host => host, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (configuration.TryGetAuthToken(host, out var token))
+                        {
+                            AuthTokenRows.Add(new AuthTokenRow(host, token ?? ""));
+                        }
+                    }
+                }
+
+                SelectedAuthTokenRow = !string.IsNullOrWhiteSpace(fallbackHost)
+                    ? AuthTokenRows.FirstOrDefault(row => string.Equals(row.Host,
+                                                                        fallbackHost,
+                                                                        StringComparison.OrdinalIgnoreCase))
+                      ?? AuthTokenRows.FirstOrDefault()
+                    : AuthTokenRows.FirstOrDefault();
+                this.RaisePropertyChanged(nameof(CanAddAuthToken));
+                this.RaisePropertyChanged(nameof(CanRemoveAuthToken));
+            }
+
+            private IEnumerable<Repository> OrderedRepositories()
+                => registry?.Repositories.Values
+                          .OrderBy(repo => repo.priority)
+                          .ThenBy(repo => repo.name, StringComparer.OrdinalIgnoreCase)
+                   ?? Enumerable.Empty<Repository>();
+
+            private static IEnumerable<Repository> OrderedRepositories(Registry registry)
+                => registry.Repositories.Values
+                          .OrderBy(repo => repo.priority)
+                          .ThenBy(repo => repo.name, StringComparer.OrdinalIgnoreCase);
+
+            private static void NormalizeRepositoryPriorities(Registry registry)
+            {
+                var index = 0;
+                foreach (var repo in registry.Repositories.Values
+                                             .OrderBy(repo => repo.priority)
+                                             .ThenBy(repo => repo.name, StringComparer.OrdinalIgnoreCase))
+                {
+                    repo.priority = index++;
+                }
+            }
+
+            private RegistryManager? AcquireRepositoryWriteManager(out bool disposeWhenDone)
+            {
+                disposeWhenDone = false;
+                var writeManager = mainWindowViewModel?.AcquireWriteRegistryManager();
+                if (writeManager == null)
+                {
+                    return null;
+                }
+
+                disposeWhenDone = !ReferenceEquals(writeManager, mainWindowViewModel?.CurrentRegistryManager);
+                return writeManager;
+            }
+
+            private static Repository[] FallbackOfficialRepositories(GameInstance instance)
+            {
+                if (string.Equals(instance.Game.ShortName, "KSP", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new[]
+                    {
+                        new Repository("KSP-default",
+                                       "https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"),
+                        new Repository("MechJeb2-dev",
+                                       "https://ksp.sarbian.com/ckan/MechJeb2-ci.tar.gz"),
+                        new Repository("Kopernicus_BE",
+                                       "https://github.com/R-T-B/CKAN-meta-dev-Kopernicus_BE/archive/master.tar.gz"),
+                        new Repository("Sol",
+                                       "https://github.com/RSS-Reborn/CKAN-meta/archive/main.tar.gz"),
+                    };
+                }
+
+                return new[] { Repository.DefaultGameRepo(instance.Game) };
+            }
+
+            private async Task SaveRepositoriesAsync(RegistryManager writeManager)
+            {
+                await Task.Run(() => writeManager.Save());
+            }
+
+            private void RefreshRepositoryState(string? selectName)
+            {
+                mainWindowViewModel?.RefreshCurrentRegistryReference();
+                registryManager = mainWindowViewModel?.CurrentRegistryManager;
+                registry = registryManager?.registry ?? mainWindowViewModel?.CurrentRegistry;
+                RefreshRepositoryRows(selectName);
+            }
+
+            private static void DisposeTransientRegistryManager(RegistryManager writeManager,
+                                                                bool            disposeWhenDone)
+            {
+                if (disposeWhenDone)
+                {
+                    writeManager.Dispose();
+                }
+            }
+
+            private void RaiseRepositoryButtonStateChanged()
+            {
+                this.RaisePropertyChanged(nameof(CanAddRepository));
+                this.RaisePropertyChanged(nameof(CanRemoveRepository));
+                this.RaisePropertyChanged(nameof(CanMoveRepositoryUp));
+                this.RaisePropertyChanged(nameof(CanMoveRepositoryDown));
+            }
+
             private void SaveGuiConfiguration()
             {
                 if (guiConfiguration != null)
@@ -482,7 +953,19 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private sealed record RepositoryRow(string Name, string Url);
+        private sealed class RepositoryRow
+        {
+            public RepositoryRow(Repository repository)
+            {
+                Repository = repository;
+            }
+
+            public Repository Repository { get; }
+
+            public string Name => Repository.name;
+
+            public string Url => Repository.uri?.ToString() ?? "";
+        }
 
         private sealed record AuthTokenRow(string Host, string Token);
 

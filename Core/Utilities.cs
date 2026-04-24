@@ -4,6 +4,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 using ChinhDo.Transactions;
 using log4net;
@@ -286,14 +287,14 @@ namespace CKAN
         [ExcludeFromCodeCoverage]
         private static bool StartKdeDefaultFileManager(string path)
             => IsKdeDesktop()
-               && (StartIfCommandExists("kde-open6", path)
-                   || StartIfCommandExists("kde-open5", path)
-                   || StartIfCommandExists("kioclient6", "exec", path)
-                   || StartIfCommandExists("kioclient5", "exec", path));
+               && (StartIfCommandExists("kioclient6", "exec", path)
+                   || StartIfCommandExists("kioclient5", "exec", path)
+                   || StartIfCommandExists("kde-open6", path)
+                   || StartIfCommandExists("kde-open5", path));
 
         private static bool IsKdeDesktop()
             => (Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "")
-                   .Split(':', StringSplitOptions.RemoveEmptyEntries)
+                   .Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)
                    .Any(desktop => string.Equals(desktop, "KDE", StringComparison.OrdinalIgnoreCase))
                || string.Equals(Environment.GetEnvironmentVariable("KDE_FULL_SESSION"),
                                 "true",
@@ -333,7 +334,7 @@ namespace CKAN
 
             var dataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS");
             foreach (var dir in (string.IsNullOrWhiteSpace(dataDirs) ? "/usr/local/share:/usr/share" : dataDirs)
-                     .Split(':', StringSplitOptions.RemoveEmptyEntries))
+                     .Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 yield return Path.Combine(dir, "applications");
             }
@@ -405,10 +406,10 @@ namespace CKAN
                 }
                 else
                 {
-                    var replaced = token.Replace("%f", path, StringComparison.Ordinal)
-                                        .Replace("%F", path, StringComparison.Ordinal)
-                                        .Replace("%u", uri, StringComparison.Ordinal)
-                                        .Replace("%U", uri, StringComparison.Ordinal);
+                    var replaced = token.Replace("%f", path)
+                                        .Replace("%F", path)
+                                        .Replace("%u", uri)
+                                        .Replace("%U", uri);
                     usedPath |= !string.Equals(replaced, token, StringComparison.Ordinal);
                     expanded.Add(replaced);
                 }
@@ -503,7 +504,7 @@ namespace CKAN
             => Path.IsPathRooted(command)
                 ? File.Exists(command)
                 : (Environment.GetEnvironmentVariable("PATH") ?? "")
-                    .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+                    .Split(new[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries)
                     .Any(dir => File.Exists(Path.Combine(dir, command)));
 
         [ExcludeFromCodeCoverage]
@@ -528,12 +529,57 @@ namespace CKAN
             {
                 UseShellExecute = false,
             };
+#if NET5_0_OR_GREATER
             foreach (var arg in args)
             {
                 startInfo.ArgumentList.Add(arg);
             }
+#else
+            startInfo.Arguments = string.Join(" ", args.Select(QuoteProcessArgument));
+#endif
             return startInfo;
         }
+
+#if !NET5_0_OR_GREATER
+        private static string QuoteProcessArgument(string arg)
+        {
+            if (arg.Length == 0)
+            {
+                return "\"\"";
+            }
+            if (!arg.Any(ch => char.IsWhiteSpace(ch) || ch == '"'))
+            {
+                return arg;
+            }
+
+            var quoted = new StringBuilder();
+            quoted.Append('"');
+            var backslashes = 0;
+            foreach (var ch in arg)
+            {
+                if (ch == '\\')
+                {
+                    backslashes++;
+                }
+                else if (ch == '"')
+                {
+                    quoted.Append('\\', backslashes * 2 + 1);
+                    quoted.Append(ch);
+                    backslashes = 0;
+                }
+                else
+                {
+                    quoted.Append('\\', backslashes);
+                    quoted.Append(ch);
+                    backslashes = 0;
+                }
+            }
+
+            quoted.Append('\\', backslashes * 2);
+            quoted.Append('"');
+            return quoted.ToString();
+        }
+#endif
 
         private static string? DirPath(string path)
             => Directory.Exists(path) ? path

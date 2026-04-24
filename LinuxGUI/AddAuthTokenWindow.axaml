@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.AddAuthTokenWindow"
+        x:CompileBindings="False"
+        Width="440"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="Add Authentication Token"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="92" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#405061" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F3F7FC" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.dialog-action:pointerover">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.dialog-action:pressed">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.dialog-action:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.form-label">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,Auto"
+        Margin="20">
+    <Grid RowDefinitions="Auto,Auto"
+          ColumnDefinitions="72,*">
+      <TextBlock Classes="form-label"
+                 Text="Host:" />
+      <TextBox x:Name="HostTextBox"
+               Grid.Column="1"
+               TextChanged="InputTextBox_OnTextChanged" />
+
+      <TextBlock Grid.Row="1"
+                 Classes="form-label"
+                 Margin="0,10,0,0"
+                 Text="Token:" />
+      <TextBox x:Name="TokenTextBox"
+               Grid.Row="1"
+               Grid.Column="1"
+               Margin="0,10,0,0"
+               TextChanged="InputTextBox_OnTextChanged" />
+    </Grid>
+
+    <TextBlock x:Name="ErrorTextBlock"
+               Grid.Row="1"
+               Margin="0,12,0,0"
+               FontSize="12"
+               Foreground="#FF6B6B"
+               TextWrapping="Wrap" />
+
+    <StackPanel Grid.Row="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12"
+                Margin="0,18,0,0">
+      <Button Classes="dialog-action"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button x:Name="AcceptButton"
+              Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Click="AcceptButton_OnClick"
+              Content="Accept" />
+    </StackPanel>
+  </Grid>
+</Window>

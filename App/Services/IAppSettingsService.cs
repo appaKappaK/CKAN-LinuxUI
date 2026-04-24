@@ -18,6 +18,8 @@ namespace CKAN.App.Services
 
         int UiScalePercent { get; }
 
+        bool PreselectRecommendedMods { get; }
+
         IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; }
 
         void SaveLastInstanceName(string? instanceName);
@@ -28,6 +30,8 @@ namespace CKAN.App.Services
         void SaveWindowState(AppWindowState windowState);
 
         void SaveUiScalePercent(int uiScalePercent);
+
+        void SavePreselectRecommendedMods(bool preselectRecommendedMods);
 
         void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows);
     }

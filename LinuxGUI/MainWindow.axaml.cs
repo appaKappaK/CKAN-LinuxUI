@@ -221,6 +221,10 @@ namespace CKAN.LinuxGUI
             var dialog = new SettingsWindow(viewModel);
 
             await dialog.ShowDialog(this);
+            if (dialog.RepositoryAdded || dialog.RepositoryRemoved || dialog.RepositoryMoved)
+            {
+                await viewModel.RefreshCurrentStateAsync();
+            }
         }
 
         private async void GameCommandLinesMenuItem_OnClick(object? sender,
@@ -402,7 +406,9 @@ namespace CKAN.LinuxGUI
         {
             if (DataContext is MainWindowViewModel viewModel)
             {
-                await viewModel.DeduplicateInstalledFilesAsync();
+                var result = await viewModel.DeduplicateInstalledFilesAsync();
+                await new MessageDialogWindow("Deduplicate Installed Files", result)
+                    .ShowDialog(this);
             }
         }
 
@@ -787,6 +793,7 @@ namespace CKAN.LinuxGUI
 
             if (observedViewModel != null)
             {
+                observedViewModel.RecommendationSelectionPromptAsync = null;
                 observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             }
 
@@ -794,6 +801,7 @@ namespace CKAN.LinuxGUI
 
             if (observedViewModel != null)
             {
+                observedViewModel.RecommendationSelectionPromptAsync = ShowRecommendationSelectionAsync;
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
                 CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
                                           observedViewModel.CurrentUser);
@@ -804,6 +812,24 @@ namespace CKAN.LinuxGUI
                 CKAN.GUI.Main.ClearInstance();
                 DisposePluginController();
             }
+        }
+
+        private async Task<IReadOnlyList<RecommendationAuditItem>?> ShowRecommendationSelectionAsync(
+            IReadOnlyList<RecommendationAuditItem> items)
+        {
+            if (items.Count == 0 || DataContext is not MainWindowViewModel viewModel)
+            {
+                return Array.Empty<RecommendationAuditItem>();
+            }
+
+            var dialog = new RecommendationAuditWindow(items,
+                                                       viewModel.CurrentInstance?.Name ?? "current instance")
+            {
+                Title = "Choose Recommended Mods",
+            };
+            return await dialog.ShowDialog<bool>(this)
+                ? dialog.SelectedItems
+                : null;
         }
 
         private void ViewModel_OnPropertyChanged(object? sender,

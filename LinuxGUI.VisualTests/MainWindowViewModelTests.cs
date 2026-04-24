@@ -7,6 +7,7 @@ using Avalonia.Headless.NUnit;
 
 using NUnit.Framework;
 
+using CKAN.Versioning;
 using CKAN.App.Models;
 using CKAN.App.Services;
 
@@ -302,7 +303,7 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
-        public async Task UninstalledCompatibleMod_HidesEmptyBadgeStrip_AndVersionsStayVersionOnly()
+        public async Task UninstalledCompatibleCachedMod_ShowsCacheBadge_AndVersionsStayVersionOnly()
         {
             var (viewModel, service) = CreateViewModel();
 
@@ -314,7 +315,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.ShowSelectedModStateBadges, Is.False);
+                    Assert.That(viewModel.ShowSelectedModStateBadges, Is.True);
+                    Assert.That(viewModel.SelectedModIsCached, Is.True);
                     Assert.That(viewModel.SelectedModInstallState, Is.EqualTo("Not installed"));
                     Assert.That(viewModel.SelectedModVersions, Is.EqualTo("Latest 2.1.0"));
                 });
@@ -439,7 +441,7 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
-        public async Task DownloadOnly_IsContextualAndDoesNotReplacePrimaryAction()
+        public async Task AddToCache_IsContextualAndDoesNotReplacePrimaryAction()
         {
             var catalog = new DownloadReadyCatalogService();
             var (viewModel, service) = CreateViewModel(catalog: catalog);
@@ -455,7 +457,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
                     Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
                     Assert.That(viewModel.HasSelectedModQueuedDownload, Is.False);
-                    Assert.That(viewModel.DownloadOnlyContextLabel(viewModel.SelectedMod!), Is.EqualTo("Download Only"));
+                    Assert.That(viewModel.DownloadOnlyContextLabel(viewModel.SelectedMod!), Is.EqualTo("Add to Cache"));
                 });
 
                 viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
@@ -466,8 +468,8 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasSelectedModQueuedAction, Is.False);
                     Assert.That(viewModel.HasSelectedModQueuedDownload, Is.True);
                     Assert.That(viewModel.PrimarySelectedModActionLabel, Is.EqualTo("Queue Install"));
-                    Assert.That(viewModel.SelectedModQueueStatus, Does.Contain("Download Only queued"));
-                    Assert.That(viewModel.SelectedMod!.QueueStateLabel, Is.EqualTo("Queued Download"));
+                    Assert.That(viewModel.SelectedModQueueStatus, Does.Contain("Add to Cache queued"));
+                    Assert.That(viewModel.SelectedMod!.QueueStateLabel, Is.EqualTo("Queued Cache"));
                 });
 
                 viewModel.ToggleDownloadOnlyFromBrowser(viewModel.SelectedMod!);
@@ -772,7 +774,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
+                    Assert.That(viewModel.SelectedMod, Is.Null);
                     Assert.That(viewModel.ShowDetailsPane, Is.False);
                 });
 
@@ -886,6 +888,46 @@ namespace CKAN.LinuxGUI.VisualTests
             }
         }
 
+        [AvaloniaTest]
+        public void PreselectRecommendedMods_PersistsThroughSettingsService()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                Assert.That(viewModel.PreselectRecommendedMods, Is.False);
+
+                viewModel.PreselectRecommendedMods = true;
+
+                Assert.That(viewModel.PreselectRecommendedMods, Is.True);
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public void RecommendationAuditItem_HonorsInitialSelection()
+        {
+            var module = CreateRecommendationModule("optional-pack", "Optional Pack");
+
+            var optOutItem = new RecommendationAuditItem(module,
+                                                        "Recommendation",
+                                                        "Recommended by: Test Mod",
+                                                        false);
+            var preselectedItem = new RecommendationAuditItem(module,
+                                                             "Recommendation",
+                                                             "Recommended by: Test Mod",
+                                                             true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(optOutItem.IsSelected, Is.False);
+                Assert.That(preselectedItem.IsSelected, Is.True);
+            });
+        }
+
         private static (MainWindowViewModel ViewModel, FakeGameInstanceService Service) CreateViewModel(ApplyChangesResult? applyResult = null,
                                                                                                         IModCatalogService?  catalog = null)
         {
@@ -913,6 +955,18 @@ namespace CKAN.LinuxGUI.VisualTests
             return (viewModel, service, user);
         }
 
+        private static CkanModule CreateRecommendationModule(string identifier,
+                                                            string name)
+            => new CkanModule(new ModuleVersion("v1.0"),
+                              identifier,
+                              name,
+                              $"{name} summary",
+                              $"{name} description",
+                              new List<string> { "Test Author" },
+                              new List<License> { License.UnknownLicense },
+                              new ModuleVersion("1.0.0"),
+                              new List<Uri> { new Uri("https://example.invalid/") });
+
         private static async Task WaitForAsync(Func<bool> condition,
                                                int        timeoutMs = 1000)
         {
@@ -925,6 +979,31 @@ namespace CKAN.LinuxGUI.VisualTests
 
             Assert.That(condition(), Is.True, "Timed out waiting for the expected state.");
         }
+
+        private static Task<IReadOnlyList<ModListItem>> StaticModListAsync(IReadOnlyList<ModListItem> items,
+                                                                           System.Threading.CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(items);
+        }
+
+        private static IReadOnlyList<ModListItem> ApplyStaticFilter(IReadOnlyList<ModListItem> items,
+                                                                    FilterState                 filter)
+            => items;
+
+        private static FilterOptionCounts StaticFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                                   FilterState                       filter)
+            => new FilterOptionCounts
+            {
+                Compatible   = items.Count(item => !item.IsIncompatible),
+                Installed    = items.Count(item => item.IsInstalled),
+                Updatable    = items.Count(item => item.HasVersionUpdate),
+                Replaceable  = items.Count(item => item.HasReplacement),
+                Cached       = items.Count(item => item.IsCached),
+                Uncached     = items.Count(item => !item.IsCached),
+                NotInstalled = items.Count(item => !item.IsInstalled),
+                Incompatible = items.Count(item => item.IsIncompatible),
+            };
 
         private sealed class DownloadReadyCatalogService : IModCatalogService
         {
@@ -946,11 +1025,14 @@ namespace CKAN.LinuxGUI.VisualTests
                 Compatibility      = "KSP 1.12.5",
             };
 
+            public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(System.Threading.CancellationToken cancellationToken)
+                => StaticModListAsync(new[] { item }, cancellationToken);
+
             public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                     System.Threading.CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { item });
+                return Task.FromResult(ApplyFilter(new[] { item }, filter));
             }
 
             public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
@@ -969,6 +1051,14 @@ namespace CKAN.LinuxGUI.VisualTests
                     Incompatible = 0,
                 });
             }
+
+            public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                          FilterState                 filter)
+                => ApplyStaticFilter(items, filter);
+
+            public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                            FilterState                       filter)
+                => StaticFilterOptionCounts(items, filter);
 
             public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                              System.Threading.CancellationToken cancellationToken)
@@ -1028,11 +1118,14 @@ namespace CKAN.LinuxGUI.VisualTests
                 HasStatusSummary   = false,
             };
 
+            public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(System.Threading.CancellationToken cancellationToken)
+                => StaticModListAsync(new[] { Item }, cancellationToken);
+
             public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                     System.Threading.CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { Item });
+                return Task.FromResult(ApplyFilter(new[] { Item }, filter));
             }
 
             public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
@@ -1051,6 +1144,14 @@ namespace CKAN.LinuxGUI.VisualTests
                     Incompatible = 0,
                 });
             }
+
+            public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                          FilterState                 filter)
+                => ApplyStaticFilter(items, filter);
+
+            public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                            FilterState                       filter)
+                => StaticFilterOptionCounts(items, filter);
 
             public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                              System.Threading.CancellationToken cancellationToken)
@@ -1117,11 +1218,14 @@ namespace CKAN.LinuxGUI.VisualTests
                 HasStatusSummary   = false,
             };
 
+            public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(System.Threading.CancellationToken cancellationToken)
+                => StaticModListAsync(new[] { Item }, cancellationToken);
+
             public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                     System.Threading.CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Task.FromResult((IReadOnlyList<ModListItem>)new[] { Item });
+                return Task.FromResult(ApplyFilter(new[] { Item }, filter));
             }
 
             public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
@@ -1140,6 +1244,14 @@ namespace CKAN.LinuxGUI.VisualTests
                     Incompatible = 1,
                 });
             }
+
+            public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                          FilterState                 filter)
+                => ApplyStaticFilter(items, filter);
+
+            public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                            FilterState                       filter)
+                => StaticFilterOptionCounts(items, filter);
 
             public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                              System.Threading.CancellationToken cancellationToken)
@@ -1215,11 +1327,14 @@ namespace CKAN.LinuxGUI.VisualTests
                 },
             };
 
+            public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(System.Threading.CancellationToken cancellationToken)
+                => StaticModListAsync(items, cancellationToken);
+
             public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                     System.Threading.CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Task.FromResult(items);
+                return Task.FromResult(ApplyFilter(items, filter));
             }
 
             public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
@@ -1238,6 +1353,14 @@ namespace CKAN.LinuxGUI.VisualTests
                     Incompatible = 0,
                 });
             }
+
+            public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                          FilterState                 filter)
+                => ApplyStaticFilter(items, filter);
+
+            public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                            FilterState                       filter)
+                => StaticFilterOptionCounts(items, filter);
 
             public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                              System.Threading.CancellationToken cancellationToken)

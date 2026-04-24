@@ -91,6 +91,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public IConfiguration Configuration { get; }
 
+        public Registry? CurrentRegistry => null;
+
         public GameInstance? CurrentInstance { get; private set; }
 
         public RegistryManager? CurrentRegistryManager => null;
@@ -127,6 +129,13 @@ namespace CKAN.LinuxGUI.VisualTests
                 }
             }
             return Task.CompletedTask;
+        }
+
+        public RegistryManager? AcquireWriteRegistryManager()
+            => null;
+
+        public void RefreshCurrentRegistry()
+        {
         }
 
         public void ThrowOnInitialize()

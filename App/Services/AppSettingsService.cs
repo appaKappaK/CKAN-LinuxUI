@@ -84,6 +84,17 @@ namespace CKAN.App.Services
             }
         }
 
+        public bool PreselectRecommendedMods
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return settings.PreselectRecommendedMods;
+                }
+            }
+        }
+
         public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows
         {
             get
@@ -154,6 +165,20 @@ namespace CKAN.App.Services
                 }
 
                 settings.UiScalePercent = normalized;
+                SaveSettings();
+            }
+        }
+
+        public void SavePreselectRecommendedMods(bool preselectRecommendedMods)
+        {
+            lock (sync)
+            {
+                if (settings.PreselectRecommendedMods == preselectRecommendedMods)
+                {
+                    return;
+                }
+
+                settings.PreselectRecommendedMods = preselectRecommendedMods;
                 SaveSettings();
             }
         }
@@ -324,6 +349,8 @@ namespace CKAN.App.Services
             public AppWindowState WindowState { get; set; } = new AppWindowState();
 
             public int UiScalePercent { get; set; } = UiScaleSettings.DefaultPercent;
+
+            public bool PreselectRecommendedMods { get; set; }
 
             public List<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; set; } = new List<CatalogSkeletonSnapshotRow>();
         }

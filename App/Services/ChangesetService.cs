@@ -134,7 +134,7 @@ namespace CKAN.App.Services
 
             try
             {
-                var comparison = new ModuleVersion(targetVersion).CompareTo(new ModuleVersion(installedVersion));
+                var comparison = new ModuleVersion(targetVersion!).CompareTo(new ModuleVersion(installedVersion));
                 return comparison switch
                 {
                     < 0 => "Downgrade",

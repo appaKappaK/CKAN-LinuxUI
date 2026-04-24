@@ -8,8 +8,7 @@ namespace CKAN.App.Services
 {
     public interface IModCatalogService
     {
-        Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
-            => GetModListAsync(new FilterState { InstalledOnly = false }, cancellationToken);
+        Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken);
 
         Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                          CancellationToken cancellationToken);
@@ -18,12 +17,10 @@ namespace CKAN.App.Services
                                                             CancellationToken cancellationToken);
 
         IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
-                                               FilterState                 filter)
-            => items;
+                                               FilterState                 filter);
 
         FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
-                                                 FilterState                       filter)
-            => new FilterOptionCounts();
+                                                 FilterState                       filter);
 
         Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                   CancellationToken cancellationToken);

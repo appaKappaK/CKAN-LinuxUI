@@ -62,8 +62,14 @@ namespace CKAN.LinuxGUI
             public string ValidationMessage
             {
                 get => validationMessage;
-                private set => this.RaiseAndSetIfChanged(ref validationMessage, value);
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref validationMessage, value);
+                    this.RaisePropertyChanged(nameof(HasValidationMessage));
+                }
             }
+
+            public bool HasValidationMessage => !string.IsNullOrWhiteSpace(ValidationMessage);
 
             public string TotalHoursLabel
             {

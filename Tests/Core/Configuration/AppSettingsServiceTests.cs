@@ -46,12 +46,15 @@ namespace Tests.Core.Configuration
                 });
                 first.SaveUiScalePercent(90);
 
+                Assert.That(first.PreselectRecommendedMods, Is.False);
+                first.SavePreselectRecommendedMods(true);
+
                 var second = new AppSettingsService(settingsPath);
 
                 Assert.Multiple(() =>
                 {
                     Assert.That(second.LastInstanceName, Is.EqualTo("Career Save"));
-                    Assert.That(second.ShowAdvancedFilters, Is.False);
+                    Assert.That(second.ShowAdvancedFilters, Is.True);
                     Assert.That(second.FilterState.SearchText, Is.EqualTo("restock"));
                     Assert.That(second.FilterState.AuthorText, Is.EqualTo("Nertea"));
                     Assert.That(second.FilterState.CompatibilityText, Is.EqualTo("1.12"));
@@ -69,6 +72,7 @@ namespace Tests.Core.Configuration
                     Assert.That(second.WindowState.PositionY, Is.EqualTo(80));
                     Assert.That(second.WindowState.IsMaximized, Is.True);
                     Assert.That(second.UiScalePercent, Is.EqualTo(90));
+                    Assert.That(second.PreselectRecommendedMods, Is.True);
                 });
             }
             finally

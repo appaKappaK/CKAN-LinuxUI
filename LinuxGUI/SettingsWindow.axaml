@@ -157,12 +157,12 @@
       <Border Classes="settings-group"
               Grid.ColumnSpan="2"
               Margin="0,0,14,14">
-        <Grid RowDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Metadata Repositories" />
           <Grid Grid.Row="1"
                 RowDefinitions="Auto,*">
-            <Grid ColumnDefinitions="140,*"
+            <Grid ColumnDefinitions="130,*"
                   Margin="0,0,0,4">
               <TextBlock Classes="settings-label"
                          Text="Name" />
@@ -172,15 +172,18 @@
             </Grid>
             <ListBox Grid.Row="1"
                      Classes="settings-list"
-                    ItemsSource="{Binding RepositoryRows}">
+                     ItemsSource="{Binding RepositoryRows}"
+                     SelectedItem="{Binding SelectedRepositoryRow, Mode=TwoWay}">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="140,*"
+                  <Grid ColumnDefinitions="130,*"
                         Margin="8,4">
                     <TextBlock Foreground="#E8EDF2"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding Name}" />
                     <TextBlock Grid.Column="1"
                                Foreground="#E8EDF2"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding Url}" />
                   </Grid>
                 </DataTemplate>
@@ -192,28 +195,39 @@
             <Button Classes="settings-button"
                     DockPanel.Dock="Right"
                     HorizontalAlignment="Right"
-                    IsEnabled="False"
-                    Content="Delete" />
+                    IsEnabled="{Binding CanRemoveRepository}"
+                    Click="RemoveRepositoryButton_OnClick"
+                    Content="Remove" />
             <StackPanel Orientation="Horizontal"
                         Spacing="8">
               <Button Classes="settings-button"
-                      IsEnabled="False"
-                      Content="New" />
+                      IsEnabled="{Binding CanAddRepository}"
+                      Click="AddRepositoryButton_OnClick"
+                      Content="Add" />
               <Button Classes="settings-button"
-                      IsEnabled="False"
-                      Content="Up" />
+                      IsEnabled="{Binding CanMoveRepositoryUp}"
+                      Click="MoveRepositoryUpButton_OnClick"
+                      ToolTip.Tip="Move selected repository earlier in priority order"
+                      Content="Move Up" />
               <Button Classes="settings-button"
-                      IsEnabled="False"
-                      Content="Down" />
+                      IsEnabled="{Binding CanMoveRepositoryDown}"
+                      Click="MoveRepositoryDownButton_OnClick"
+                      ToolTip.Tip="Move selected repository later in priority order"
+                      Content="Move Down" />
             </StackPanel>
           </DockPanel>
+          <TextBlock Grid.Row="3"
+                     Classes="card-error"
+                     Margin="0,6,0,0"
+                     IsVisible="{Binding ShowRepositoryStatus}"
+                     Text="{Binding RepositoryStatusMessage}" />
         </Grid>
       </Border>
 
       <Border Grid.Column="2"
               Classes="settings-group"
               Margin="0,0,0,14">
-        <Grid RowDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Authentication Tokens" />
           <Grid Grid.Row="1"
@@ -228,15 +242,18 @@
             </Grid>
             <ListBox Grid.Row="1"
                      Classes="settings-list"
-                    ItemsSource="{Binding AuthTokenRows}">
+                     ItemsSource="{Binding AuthTokenRows}"
+                     SelectedItem="{Binding SelectedAuthTokenRow, Mode=TwoWay}">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="110,*"
                         Margin="8,4">
                     <TextBlock Foreground="#E8EDF2"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding Host}" />
                     <TextBlock Grid.Column="1"
                                Foreground="#E8EDF2"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding Token}" />
                   </Grid>
                 </DataTemplate>
@@ -248,12 +265,19 @@
             <Button Classes="settings-button"
                     DockPanel.Dock="Right"
                     HorizontalAlignment="Right"
-                    IsEnabled="False"
+                    IsEnabled="{Binding CanRemoveAuthToken}"
+                    Click="RemoveAuthTokenButton_OnClick"
                     Content="Delete" />
             <Button Classes="settings-button"
-                    IsEnabled="False"
+                    IsEnabled="{Binding CanAddAuthToken}"
+                    Click="AddAuthTokenButton_OnClick"
                     Content="New" />
           </DockPanel>
+          <TextBlock Grid.Row="3"
+                     Classes="card-error"
+                     Margin="0,6,0,0"
+                     IsVisible="{Binding ShowAuthTokenStatus}"
+                     Text="{Binding AuthTokenStatusMessage}" />
         </Grid>
       </Border>
 
@@ -322,7 +346,7 @@
                     Classes="settings-button"
                     Margin="8,0,0,0"
                     Click="ChangeCachePathButton_OnClick"
-                    Content="Edit" />
+                    Content="Browse" />
           </Grid>
           <TextBlock Grid.Row="2"
                      Classes="settings-muted"
@@ -411,7 +435,7 @@
               Grid.Column="1"
               Grid.ColumnSpan="2"
               Classes="settings-group">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="More Settings" />
           <Grid Grid.Row="1"
@@ -441,7 +465,11 @@
                     Classes="settings-check"
                     IsChecked="{Binding AutoSortByUpdate}"
                     Content="Automatically sort by &quot;Update&quot; column when clicking &quot;Add available updates&quot;" />
-          <Grid Grid.Row="6"
+          <CheckBox Grid.Row="6"
+                    Classes="settings-check"
+                    IsChecked="{Binding PreselectRecommendedMods}"
+                    Content="Preselect recommended mods when prompted" />
+          <Grid Grid.Row="7"
                 Margin="0,4,0,0"
                 ColumnDefinitions="270,*">
             <TextBlock Classes="settings-label"

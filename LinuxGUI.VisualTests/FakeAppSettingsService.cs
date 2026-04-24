@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using CKAN.App.Models;
 using CKAN.App.Services;
 
@@ -17,6 +19,11 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public int UiScalePercent { get; private set; } = UiScaleSettings.DefaultPercent;
 
+        public bool PreselectRecommendedMods { get; private set; }
+
+        public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; private set; }
+            = new List<CatalogSkeletonSnapshotRow>();
+
         public void SaveLastInstanceName(string? instanceName)
             => LastInstanceName = instanceName;
 
@@ -32,5 +39,11 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public void SaveUiScalePercent(int uiScalePercent)
             => UiScalePercent = UiScaleSettings.NormalizePercent(uiScalePercent);
+
+        public void SavePreselectRecommendedMods(bool preselectRecommendedMods)
+            => PreselectRecommendedMods = preselectRecommendedMods;
+
+        public void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows)
+            => CatalogSkeletonRows = rows ?? new List<CatalogSkeletonSnapshotRow>();
     }
 }

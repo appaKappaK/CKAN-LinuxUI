@@ -38,20 +38,9 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto"
+  <Grid RowDefinitions="*,Auto"
         Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="Download Statistics" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="{Binding SummaryText}" />
-    </StackPanel>
-
-    <Border Grid.Row="1"
-            Margin="0,18,0,0"
+    <Border
             Background="#161B21"
             BorderBrush="#2B323C"
             BorderThickness="1"
@@ -89,7 +78,7 @@
       </Grid>
     </Border>
 
-    <StackPanel Grid.Row="2"
+    <StackPanel Grid.Row="1"
                 Margin="0,18,0,0"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
