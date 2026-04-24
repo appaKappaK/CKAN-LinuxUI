@@ -232,34 +232,46 @@ namespace CKAN.LinuxGUI.VisualTests
                 },
             };
 
-        public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
-                                                                CancellationToken cancellationToken)
+        public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var filtered = allMods.Where(item => Matches(item, filter));
-            var result = SortItems(filtered,
-                                   filter.SortOption,
-                                   filter.SortDescending ?? DefaultSortDescending(filter.SortOption)).ToList();
-            return Task.FromResult((IReadOnlyList<ModListItem>)result);
+            return Task.FromResult(allMods);
         }
+
+        public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                      CancellationToken cancellationToken)
+            => ApplyFilter(await GetAllModListAsync(cancellationToken), filter);
 
         public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
                                                                    CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return Task.FromResult(new FilterOptionCounts
-            {
-                Compatible   = allMods.Count(item => Matches(item, WithCompatibleOnly(filter))),
-                Installed    = allMods.Count(item => Matches(item, WithInstalledOnly(filter))),
-                Updatable    = allMods.Count(item => Matches(item, WithUpdatableOnly(filter))),
-                Replaceable  = allMods.Count(item => Matches(item, WithReplacementOnly(filter))),
-                Cached       = allMods.Count(item => Matches(item, WithCachedOnly(filter))),
-                Uncached     = allMods.Count(item => Matches(item, WithUncachedOnly(filter))),
-                NotInstalled = allMods.Count(item => Matches(item, WithNotInstalledOnly(filter))),
-                Incompatible = allMods.Count(item => Matches(item, WithIncompatibleOnly(filter))),
-            });
+            return Task.FromResult(GetFilterOptionCounts(allMods, filter));
         }
+
+        public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                      FilterState                 filter)
+        {
+            var filtered = items.Where(item => Matches(item, filter));
+            return SortItems(filtered,
+                             filter.SortOption,
+                             filter.SortDescending ?? DefaultSortDescending(filter.SortOption)).ToList();
+        }
+
+        public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                        FilterState                       filter)
+            => new FilterOptionCounts
+            {
+                Compatible   = items.Count(item => Matches(item, WithCompatibleOnly(filter))),
+                Installed    = items.Count(item => Matches(item, WithInstalledOnly(filter))),
+                Updatable    = items.Count(item => Matches(item, WithUpdatableOnly(filter))),
+                Replaceable  = items.Count(item => Matches(item, WithReplacementOnly(filter))),
+                Cached       = items.Count(item => Matches(item, WithCachedOnly(filter))),
+                Uncached     = items.Count(item => Matches(item, WithUncachedOnly(filter))),
+                NotInstalled = items.Count(item => Matches(item, WithNotInstalledOnly(filter))),
+                Incompatible = items.Count(item => Matches(item, WithIncompatibleOnly(filter))),
+            };
 
         public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                          CancellationToken cancellationToken)

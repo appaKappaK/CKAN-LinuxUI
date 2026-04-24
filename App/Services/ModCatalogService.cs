@@ -19,8 +19,7 @@ namespace CKAN.App.Services
             this.gameInstanceService = gameInstanceService;
         }
 
-        public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
-                                                                CancellationToken cancellationToken)
+        public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
             => Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -30,15 +29,12 @@ namespace CKAN.App.Services
                 }
 
                 PrimeRepositoryCache(context);
-                var items = BuildItems(context)
-                    .Where(item => Matches(item, filter))
-                    .ToList();
-                items = SortItems(items,
-                                  filter.SortOption,
-                                  filter.SortDescending ?? DefaultSortDescending(filter.SortOption))
-                    .ToList();
-                return (IReadOnlyList<ModListItem>)items;
+                return (IReadOnlyList<ModListItem>)BuildItems(context).ToList();
             }, cancellationToken);
+
+        public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                      CancellationToken cancellationToken)
+            => ApplyFilter(await GetAllModListAsync(cancellationToken), filter);
 
         public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
                                                                    CancellationToken cancellationToken)
@@ -53,18 +49,29 @@ namespace CKAN.App.Services
                 PrimeRepositoryCache(context);
                 var items = BuildItems(context).ToList();
 
-                return new FilterOptionCounts
-                {
-                    Compatible   = CountForPreview(items, filter, WithCompatibleOnly),
-                    Installed    = CountForPreview(items, filter, WithInstalledOnly),
-                    Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
-                    Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
-                    Cached       = CountForPreview(items, filter, WithCachedOnly),
-                    Uncached     = CountForPreview(items, filter, WithUncachedOnly),
-                    NotInstalled = CountForPreview(items, filter, WithNotInstalledOnly),
-                    Incompatible = CountForPreview(items, filter, WithIncompatibleOnly),
-                };
+                return GetFilterOptionCounts(items, filter);
             }, cancellationToken);
+
+        public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                      FilterState                 filter)
+            => SortItems(items.Where(item => Matches(item, filter)),
+                         filter.SortOption,
+                         filter.SortDescending ?? DefaultSortDescending(filter.SortOption))
+                .ToList();
+
+        public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                        FilterState                       filter)
+            => new FilterOptionCounts
+            {
+                Compatible   = CountForPreview(items, filter, WithCompatibleOnly),
+                Installed    = CountForPreview(items, filter, WithInstalledOnly),
+                Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
+                Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
+                Cached       = CountForPreview(items, filter, WithCachedOnly),
+                Uncached     = CountForPreview(items, filter, WithUncachedOnly),
+                NotInstalled = CountForPreview(items, filter, WithNotInstalledOnly),
+                Incompatible = CountForPreview(items, filter, WithIncompatibleOnly),
+            };
 
         public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                          CancellationToken cancellationToken)

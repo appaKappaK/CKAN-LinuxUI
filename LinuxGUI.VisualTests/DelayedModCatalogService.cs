@@ -28,6 +28,17 @@ namespace CKAN.LinuxGUI.VisualTests
             this.inner = inner ?? new FakeModCatalogService();
         }
 
+        public async Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
+        {
+            ModListRequestCount++;
+            if (listDelayMs > 0)
+            {
+                await Task.Delay(listDelayMs, cancellationToken);
+            }
+
+            return await inner.GetAllModListAsync(cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
                                                                       CancellationToken cancellationToken)
         {
@@ -63,5 +74,13 @@ namespace CKAN.LinuxGUI.VisualTests
 
             return await inner.GetFilterOptionCountsAsync(filter, cancellationToken);
         }
+
+        public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> items,
+                                                      FilterState                 filter)
+            => inner.ApplyFilter(items, filter);
+
+        public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> items,
+                                                        FilterState                       filter)
+            => inner.GetFilterOptionCounts(items, filter);
     }
 }

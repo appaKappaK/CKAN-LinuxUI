@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -17,7 +18,9 @@ using ReactiveUI;
 using CKAN.App.Models;
 using CKAN.App.Services;
 using CKAN.Configuration;
+using CKAN.Exporters;
 using CKAN.IO;
+using CKAN.Types;
 using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
@@ -148,6 +151,7 @@ namespace CKAN.LinuxGUI
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
         private bool    suppressFilterAutoRefresh;
+        private IReadOnlyList<ModListItem> allCatalogItems = Array.Empty<ModListItem>();
         private IReadOnlyList<CatalogSkeletonRow> catalogSkeletonRows = Array.Empty<CatalogSkeletonRow>();
         private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
@@ -614,6 +618,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
                 this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
                 this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
+                this.RaisePropertyChanged(nameof(CanSwitchInstances));
                 this.RaisePropertyChanged(nameof(ShowLegacyShell));
                 this.RaisePropertyChanged(nameof(ShowReadyShell));
                 this.RaisePropertyChanged(nameof(LegacySidebarWidth));
@@ -1089,7 +1094,11 @@ namespace CKAN.LinuxGUI
         public int InstanceCount
         {
             get => instanceCount;
-            private set => this.RaiseAndSetIfChanged(ref instanceCount, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref instanceCount, value);
+                this.RaisePropertyChanged(nameof(CanSwitchInstances));
+            }
         }
 
         public bool IsRefreshing
@@ -1100,6 +1109,7 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref isRefreshing, value);
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(CanSwitchInstances));
             }
         }
 
@@ -1146,8 +1156,325 @@ namespace CKAN.LinuxGUI
         public IReadOnlyList<GameInstance> KnownGameInstances
             => gameInstanceService.Manager.Instances.Values.ToList();
 
+        public void RefreshInstanceSummaries()
+            => ReloadInstances(loadCatalog: false);
+
         public Task RefreshCurrentStateAsync()
             => RefreshAsync();
+
+        public async Task InstallFromCkanFilesAsync(IEnumerable<string> paths)
+        {
+            if (CurrentInstance == null || CurrentRegistry == null)
+            {
+                StatusMessage = "Select an instance before installing from .ckan files.";
+                return;
+            }
+
+            var queued = 0;
+            var skipped = 0;
+            ClearApplyResult();
+
+            foreach (var path in paths)
+            {
+                try
+                {
+                    var module = CkanModule.FromFile(path);
+                    if (module.IsDLC)
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    queued += QueueInstallCandidate(module) ? 1 : 0;
+                    skipped += changesetService.FindQueuedApplyAction(module.identifier) == null ? 1 : 0;
+
+                    if (module.IsMetapackage && module.depends != null)
+                    {
+                        foreach (var dependency in module.depends)
+                        {
+                            var match = dependency.LatestAvailableWithProvides(CurrentRegistry,
+                                                                               CurrentInstance.StabilityToleranceConfig,
+                                                                               CurrentInstance.VersionCriteria())
+                                                  .FirstOrDefault();
+                            if (match == null)
+                            {
+                                skipped++;
+                                continue;
+                            }
+
+                            queued += QueueInstallCandidate(match) ? 1 : 0;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    skipped++;
+                    Diagnostics = ex.Message;
+                }
+            }
+
+            if (queued > 0)
+            {
+                ShowPreviewSurface = true;
+                StatusMessage = skipped == 0
+                    ? $"Queued {queued} item{(queued == 1 ? "" : "s")} from .ckan file{(queued == 1 ? "" : "s")}."
+                    : $"Queued {queued} item{(queued == 1 ? "" : "s")} from .ckan files; skipped {skipped}.";
+            }
+            else
+            {
+                StatusMessage = "No installable modules from the selected .ckan files could be queued.";
+            }
+
+            await Task.CompletedTask;
+        }
+
+        public async Task ImportDownloadedModsAsync(IEnumerable<string> paths)
+        {
+            if (CurrentInstance == null || CurrentRegistry == null || CurrentCache == null)
+            {
+                StatusMessage = "Select an instance before importing downloaded mods.";
+                return;
+            }
+
+            var files = paths.Select(path => new FileInfo(path))
+                             .Where(file => file.Exists)
+                             .ToHashSet();
+            if (files.Count == 0)
+            {
+                StatusMessage = "No downloaded mod archives were selected.";
+                return;
+            }
+
+            IsUserBusy = true;
+            StatusMessage = "Importing downloaded mods into the cache...";
+            var installable = new List<CkanModule>();
+            try
+            {
+                var imported = await Task.Run(() =>
+                    ModuleImporter.ImportFiles(files,
+                                               user,
+                                               mod => installable.Add(mod),
+                                               CurrentRegistry,
+                                               CurrentInstance,
+                                               CurrentCache));
+
+                if (imported)
+                {
+                    var queued = 0;
+                    foreach (var module in installable)
+                    {
+                        queued += QueueInstallCandidate(module) ? 1 : 0;
+                    }
+
+                    if (queued > 0)
+                    {
+                        ShowPreviewSurface = true;
+                        StatusMessage = $"Imported files and queued {queued} install{(queued == 1 ? "" : "s")}.";
+                    }
+                    else
+                    {
+                        StatusMessage = "Imported files into the cache.";
+                    }
+
+                    await RefreshCurrentStateAsync();
+                }
+                else
+                {
+                    StatusMessage = "No matching CKAN mods were found in the selected files.";
+                }
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Import downloaded mods failed.";
+            }
+            finally
+            {
+                IsUserBusy = false;
+            }
+        }
+
+        public async Task DeduplicateInstalledFilesAsync()
+        {
+            IsUserBusy = true;
+            StatusMessage = "Scanning for duplicate installed files...";
+            try
+            {
+                await Task.Run(() =>
+                {
+                    var deduper = new InstalledFilesDeduplicator(CurrentManager.Instances.Values,
+                                                                 gameInstanceService.RepositoryData);
+                    deduper.DeduplicateAll(user);
+                });
+                StatusMessage = "Deduplicate installed files finished.";
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Deduplicate installed files failed.";
+            }
+            finally
+            {
+                IsUserBusy = false;
+            }
+        }
+
+        public async Task ExportInstalledModListAsync(string         path,
+                                                      ExportFileType exportFileType)
+        {
+            if (CurrentInstance == null || CurrentRegistry == null)
+            {
+                StatusMessage = "Select an instance before exporting the installed mod list.";
+                return;
+            }
+
+            try
+            {
+                using var transientRegistryManager = gameInstanceService.CurrentRegistryManager == null
+                    ? gameInstanceService.AcquireWriteRegistryManager()
+                    : null;
+                var manager = transientRegistryManager ?? gameInstanceService.CurrentRegistryManager;
+                if (manager == null)
+                {
+                    StatusMessage = "Could not open the current registry for export.";
+                    return;
+                }
+
+                await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+                new Exporter(exportFileType).Export(manager, manager.registry, stream);
+                StatusMessage = $"Saved installed mod list to {path}.";
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Save installed mod list failed.";
+            }
+        }
+
+        public async Task ExportModpackAsync(string path)
+        {
+            if (CurrentInstance == null)
+            {
+                StatusMessage = "Select an instance before exporting a modpack.";
+                return;
+            }
+
+            try
+            {
+                using var transientRegistryManager = gameInstanceService.CurrentRegistryManager == null
+                    ? gameInstanceService.AcquireWriteRegistryManager()
+                    : null;
+                var manager = transientRegistryManager ?? gameInstanceService.CurrentRegistryManager;
+                if (manager == null)
+                {
+                    StatusMessage = "Could not open the current registry for modpack export.";
+                    return;
+                }
+
+                var json = manager.GenerateModpack(false, true).ToJson();
+                await File.WriteAllTextAsync(path, json);
+                StatusMessage = $"Exported re-importable modpack to {path}.";
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Export modpack failed.";
+            }
+        }
+
+        public async Task<IReadOnlyList<RecommendationAuditItem>> AuditRecommendationsAsync()
+        {
+            if (CurrentInstance == null || CurrentRegistry == null)
+            {
+                StatusMessage = "Recommendation audit is unavailable until an instance and registry are loaded.";
+                return Array.Empty<RecommendationAuditItem>();
+            }
+
+            var instance = CurrentInstance;
+            var registry = CurrentRegistry;
+            StatusMessage = "Auditing recommendations for installed mods...";
+
+            try
+            {
+                var items = await Task.Run(() =>
+                {
+                    var installedModules = registry.InstalledModules
+                                                   .Select(installed => installed.Module)
+                                                   .ToHashSet();
+
+                    if (!ModuleInstaller.FindRecommendations(instance,
+                                                             installedModules,
+                                                             Array.Empty<CkanModule>(),
+                                                             Array.Empty<CkanModule>(),
+                                                             Array.Empty<CkanModule>(),
+                                                             registry,
+                                                             out var recommendations,
+                                                             out var suggestions,
+                                                             out var supporters))
+                    {
+                        return Array.Empty<RecommendationAuditItem>();
+                    }
+
+                    return BuildRecommendationAuditItems(recommendations,
+                                                         suggestions,
+                                                         supporters);
+                });
+
+                StatusMessage = items.Count == 0
+                    ? "No recommended, suggested, or supporting mods found."
+                    : $"Found {items.Count} recommendation audit item{(items.Count == 1 ? "" : "s")}.";
+                return items;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Recommendation audit failed.";
+                return Array.Empty<RecommendationAuditItem>();
+            }
+        }
+
+        public void QueueRecommendationAuditSelections(IEnumerable<RecommendationAuditItem> selections)
+        {
+            var selected = selections.Where(item => item.CanQueue)
+                                     .ToList();
+            if (selected.Count == 0)
+            {
+                StatusMessage = "No recommendation audit items were selected.";
+                return;
+            }
+
+            ClearApplyResult();
+
+            var queued = 0;
+            var skipped = 0;
+            foreach (var item in selected)
+            {
+                var catalogItem = allCatalogItems.FirstOrDefault(mod =>
+                    string.Equals(mod.Identifier, item.Identifier, StringComparison.OrdinalIgnoreCase));
+                if (catalogItem == null
+                    || catalogItem.IsInstalled
+                    || catalogItem.IsIncompatible)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                changesetService.QueueInstall(catalogItem);
+                queued++;
+            }
+
+            if (queued > 0)
+            {
+                ShowPreviewSurface = true;
+                StatusMessage = skipped == 0
+                    ? $"Queued {queued} recommendation audit item{(queued == 1 ? "" : "s")}."
+                    : $"Queued {queued} recommendation audit item{(queued == 1 ? "" : "s")}; skipped {skipped} unavailable item{(skipped == 1 ? "" : "s")}.";
+            }
+            else
+            {
+                StatusMessage = "No selected recommendation audit items could be queued.";
+            }
+        }
 
         public bool ShowStartupInstancePanel => !IsReady;
 
@@ -1191,7 +1518,15 @@ namespace CKAN.LinuxGUI
             => SelectedInstance != null
                && !SelectedInstance.IsCurrent
                && !IsRefreshing
-               && !IsApplyingChanges;
+               && !IsApplyingChanges
+               && !IsCatalogLoading;
+
+        public bool CanSwitchInstances
+            => IsReady
+               && InstanceCount > 1
+               && !IsRefreshing
+               && !IsApplyingChanges
+               && !IsCatalogLoading;
 
         public string SelectedInstanceContextTitle
             => SelectedInstanceIsCurrent
@@ -1206,13 +1541,14 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref isCatalogLoading, value);
                 if (value)
                 {
-                    ShowAdvancedFilters = false;
                     ShowTagFilterPicker = false;
                     ShowLabelFilterPicker = false;
                     ShowSortOptions = false;
                 }
 
                 this.RaisePropertyChanged(nameof(CanInteractWithCatalog));
+                this.RaisePropertyChanged(nameof(CanSwitchInstances));
+                this.RaisePropertyChanged(nameof(CanUseCatalogPanel));
                 this.RaisePropertyChanged(nameof(ModCountLabel));
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
                 this.RaisePropertyChanged(nameof(ShowModList));
@@ -1221,6 +1557,8 @@ namespace CKAN.LinuxGUI
         }
 
         public bool CanInteractWithCatalog => !IsCatalogLoading;
+
+        public bool CanUseCatalogPanel => !IsCatalogLoading || ShowAdvancedFilters;
 
         public bool HasMods => Mods.Count > 0;
 
@@ -1528,6 +1866,7 @@ namespace CKAN.LinuxGUI
                     ShowLabelFilterPicker = false;
                 }
                 modSearchService.SetShowAdvancedFilters(value);
+                this.RaisePropertyChanged(nameof(CanUseCatalogPanel));
             }
         }
 
@@ -1806,9 +2145,9 @@ namespace CKAN.LinuxGUI
 
         public string AdvancedFilterToggleLabel => ShowAdvancedFilterEditor ? "Simple Filters" : "Advanced Filters";
 
-        public double FiltersPopupWidth => ShowAdvancedFilterEditor ? 708 : 404;
+        public double FiltersPopupWidth => 404;
 
-        public double FiltersPopupHorizontalOffset => ShowAdvancedFilterEditor ? -596 : -248;
+        public double FiltersPopupHorizontalOffset => -248;
 
         public string ClearFiltersButtonBackground => "#6B2B2B";
 
@@ -2267,6 +2606,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(PreviewFooterNote));
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(CanSwitchInstances));
                 PublishExecutionOverlayState();
             }
         }
@@ -3282,7 +3622,7 @@ namespace CKAN.LinuxGUI
 
         private async Task SetCurrentInstanceAsync()
         {
-            if (SelectedInstance == null)
+            if (SelectedInstance == null || IsCatalogLoading)
             {
                 return;
             }
@@ -3318,6 +3658,12 @@ namespace CKAN.LinuxGUI
             }
 
             var target = SelectedInstance;
+            if (IsCatalogLoading || IsRefreshing || IsApplyingChanges)
+            {
+                SelectedInstance = Instances.FirstOrDefault(inst => inst.IsCurrent) ?? target;
+                return false;
+            }
+
             if (HasQueuedActions)
             {
                 bool confirmed = await confirmDiscardQueueAsync(InstanceSwitchDiscardPrompt);
@@ -3334,7 +3680,7 @@ namespace CKAN.LinuxGUI
             return true;
         }
 
-        private void ReloadInstances()
+        private void ReloadInstances(bool loadCatalog = true)
         {
             Instances.Clear();
             foreach (var inst in gameInstanceService.Instances)
@@ -3374,7 +3720,10 @@ namespace CKAN.LinuxGUI
                 StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")} and activated {gameInstanceService.CurrentInstance.Name}.";
                 SelectedActionLabel = "Open Selected Install";
                 SelectedActionHint = "Choose a different install here if you want to switch contexts.";
-                _ = LoadModCatalogAsync();
+                if (loadCatalog)
+                {
+                    _ = LoadModCatalogAsync();
+                }
             }
             else
             {
@@ -3414,64 +3763,16 @@ namespace CKAN.LinuxGUI
 
                     try
                     {
-                        var currentFilter = CurrentFilter();
-                        var itemsTask = modCatalogService.GetModListAsync(currentFilter, CancellationToken.None);
-                        var countsTask = modCatalogService.GetFilterOptionCountsAsync(currentFilter, CancellationToken.None);
-                        Task<IReadOnlyList<ModListItem>>? tagOptionsTask = null;
-                        Task<IReadOnlyList<ModListItem>>? labelOptionsTask = null;
-                        if (!string.IsNullOrWhiteSpace(currentFilter.TagText))
-                        {
-                            tagOptionsTask = modCatalogService.GetModListAsync(currentFilter with { TagText = "" },
-                                                                              CancellationToken.None);
-                        }
-                        if (!string.IsNullOrWhiteSpace(currentFilter.LabelText))
-                        {
-                            labelOptionsTask = modCatalogService.GetModListAsync(currentFilter with { LabelText = "" },
-                                                                                CancellationToken.None);
-                        }
-                        var pendingTasks = new List<Task> { itemsTask, countsTask };
-                        if (tagOptionsTask != null)
-                        {
-                            pendingTasks.Add(tagOptionsTask);
-                        }
-                        if (labelOptionsTask != null)
-                        {
-                            pendingTasks.Add(labelOptionsTask);
-                        }
-                        await Task.WhenAll(pendingTasks);
-                        var items = SortItems(itemsTask.Result).ToList();
+                        var items = await modCatalogService.GetAllModListAsync(CancellationToken.None);
                         if (activeRequestId != catalogLoadRequestId)
                         {
                             continue;
                         }
 
-                        filterOptionCounts = countsTask.Result;
-                        hasFilterOptionCounts = true;
-
-                        ReplaceVisibleMods(items);
-                        ReplaceAvailableTagOptions(BuildAvailableTagOptions(tagOptionsTask?.Result ?? itemsTask.Result,
-                                                                            currentFilter.TagText));
-                        ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(labelOptionsTask?.Result ?? itemsTask.Result,
-                                                                                currentFilter.LabelText));
-                        PublishVisibleModQueueState();
+                        allCatalogItems = items;
+                        ApplyCatalogFilterToLoadedItems(previousSelection);
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
-
-                        SelectedMod = previousSelection != null
-                            ? Mods.FirstOrDefault(mod => mod.Identifier == previousSelection) ?? Mods.FirstOrDefault()
-                            : Mods.FirstOrDefault();
-
-                        if (pendingModListScrollReset)
-                        {
-                            pendingModListScrollReset = false;
-                            ModListScrollResetRequestId++;
-                        }
-
-                        CatalogStatusMessage = Mods.Count == 0
-                            ? "No mods matched the current search and filter state."
-                            : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
-                        PublishCatalogStateLabels();
-                        PublishFilterOptionCountLabels();
                     }
                     catch (Exception ex)
                     {
@@ -3631,21 +3932,6 @@ namespace CKAN.LinuxGUI
             => new FilterState
             {
                 SearchText          = ModSearchText,
-                NameText            = AdvancedNameFilter,
-                IdentifierText      = AdvancedIdentifierFilter,
-                AuthorText          = AdvancedAuthorFilter,
-                SummaryText         = AdvancedSummaryFilter,
-                DescriptionText     = AdvancedDescriptionFilter,
-                LicenseText         = AdvancedLicenseFilter,
-                LanguageText        = AdvancedLanguageFilter,
-                DependsText         = AdvancedDependsFilter,
-                RecommendsText      = AdvancedRecommendsFilter,
-                SuggestsText        = AdvancedSuggestsFilter,
-                ConflictsText       = AdvancedConflictsFilter,
-                SupportsText        = AdvancedSupportsFilter,
-                TagText             = AdvancedTagsFilter,
-                LabelText           = AdvancedLabelsFilter,
-                CompatibilityText   = AdvancedCompatibilityFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
                 SortDescending      = SortDescending,
                 InstalledOnly       = FilterInstalledOnly,
@@ -3672,28 +3958,35 @@ namespace CKAN.LinuxGUI
             if (IsReady)
             {
                 pendingModListScrollReset = true;
-                _ = LoadModCatalogAsync();
+                if (allCatalogItems.Count > 0)
+                {
+                    ApplyCatalogFilterToLoadedItems();
+                }
+                else
+                {
+                    _ = LoadModCatalogAsync();
+                }
             }
         }
 
         private void ApplyStoredFilterState(FilterState filter)
         {
             modSearchText = filter.SearchText ?? "";
-            advancedNameFilter = filter.NameText ?? "";
-            advancedIdentifierFilter = filter.IdentifierText ?? "";
-            advancedAuthorFilter = filter.AuthorText ?? "";
-            advancedSummaryFilter = filter.SummaryText ?? "";
-            advancedDescriptionFilter = filter.DescriptionText ?? "";
-            advancedLicenseFilter = filter.LicenseText ?? "";
-            advancedLanguageFilter = filter.LanguageText ?? "";
-            advancedDependsFilter = filter.DependsText ?? "";
-            advancedRecommendsFilter = filter.RecommendsText ?? "";
-            advancedSuggestsFilter = filter.SuggestsText ?? "";
-            advancedConflictsFilter = filter.ConflictsText ?? "";
-            advancedSupportsFilter = filter.SupportsText ?? "";
-            advancedTagsFilter = filter.TagText ?? "";
-            advancedLabelsFilter = filter.LabelText ?? "";
-            advancedCompatibilityFilter = filter.CompatibilityText ?? "";
+            advancedNameFilter = "";
+            advancedIdentifierFilter = "";
+            advancedAuthorFilter = "";
+            advancedSummaryFilter = "";
+            advancedDescriptionFilter = "";
+            advancedLicenseFilter = "";
+            advancedLanguageFilter = "";
+            advancedDependsFilter = "";
+            advancedRecommendsFilter = "";
+            advancedSuggestsFilter = "";
+            advancedConflictsFilter = "";
+            advancedSupportsFilter = "";
+            advancedTagsFilter = "";
+            advancedLabelsFilter = "";
+            advancedCompatibilityFilter = "";
             filterInstalledOnly = filter.InstalledOnly;
             filterNotInstalledOnly = filter.NotInstalledOnly;
             filterUpdatableOnly = filter.UpdatableOnly;
@@ -4055,6 +4348,38 @@ namespace CKAN.LinuxGUI
             ConsumePendingModListScrollReset();
         }
 
+        private void ApplyCatalogFilterToLoadedItems(string? preferredSelectionIdentifier = null)
+        {
+            var currentFilter = CurrentFilter();
+            var visibleItems = modCatalogService.ApplyFilter(allCatalogItems, currentFilter);
+
+            filterOptionCounts = modCatalogService.GetFilterOptionCounts(allCatalogItems, currentFilter);
+            hasFilterOptionCounts = true;
+
+            ReplaceVisibleMods(visibleItems);
+            ReplaceAvailableTagOptions(BuildAvailableTagOptions(allCatalogItems, currentFilter.TagText));
+            ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(allCatalogItems, currentFilter.LabelText));
+            PublishVisibleModQueueState();
+
+            string? selectedIdentifier = preferredSelectionIdentifier ?? SelectedMod?.Identifier;
+            SelectedMod = selectedIdentifier != null
+                ? Mods.FirstOrDefault(mod => mod.Identifier.Equals(selectedIdentifier, StringComparison.OrdinalIgnoreCase))
+                  ?? Mods.FirstOrDefault()
+                : Mods.FirstOrDefault();
+
+            if (pendingModListScrollReset)
+            {
+                pendingModListScrollReset = false;
+                ModListScrollResetRequestId++;
+            }
+
+            CatalogStatusMessage = Mods.Count == 0
+                ? "No mods matched the current search and filter state."
+                : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
+            PublishCatalogStateLabels();
+            PublishFilterOptionCountLabels();
+        }
+
         private void ReplaceVisibleMods(IEnumerable<ModListItem> items)
         {
             var visibleItems = items.ToList();
@@ -4282,6 +4607,7 @@ namespace CKAN.LinuxGUI
 
         private void ClearCatalogState()
         {
+            allCatalogItems = Array.Empty<ModListItem>();
             Mods.Clear();
             AvailableTagOptions.Clear();
             AvailableLabelOptions.Clear();
@@ -4316,6 +4642,24 @@ namespace CKAN.LinuxGUI
                 : $"Queued install of {SelectedMod.Name} {SelectedModVersionChoice.VersionText}.";
         }
 
+        private bool QueueInstallCandidate(CkanModule module)
+        {
+            if (module.IsDLC)
+            {
+                return false;
+            }
+
+            var catalogItem = allCatalogItems.FirstOrDefault(mod =>
+                string.Equals(mod.Identifier, module.identifier, StringComparison.OrdinalIgnoreCase));
+            if (catalogItem == null || catalogItem.IsInstalled || catalogItem.IsIncompatible)
+            {
+                return false;
+            }
+
+            changesetService.QueueInstall(catalogItem, module.version?.ToString());
+            return true;
+        }
+
         private void QueueUpdateSelected()
         {
             if (SelectedMod == null)
@@ -4340,6 +4684,43 @@ namespace CKAN.LinuxGUI
             ClearApplyResult();
             changesetService.QueueRemove(SelectedMod);
             StatusMessage = $"Queued removal for {SelectedMod.Name}.";
+        }
+
+        private static IReadOnlyList<RecommendationAuditItem> BuildRecommendationAuditItems(
+            Dictionary<CkanModule, Tuple<bool, List<string>>> recommendations,
+            Dictionary<CkanModule, List<string>>              suggestions,
+            Dictionary<CkanModule, HashSet<string>>           supporters)
+            => recommendations
+                   .Select(kvp => new RecommendationAuditItem(kvp.Key,
+                                                              "Recommendation",
+                                                              FormatRecommendationSource("Recommended by", kvp.Value.Item2),
+                                                              kvp.Value.Item1))
+                   .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                   .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                   .Concat(suggestions
+                       .Select(kvp => new RecommendationAuditItem(kvp.Key,
+                                                                  "Suggestion",
+                                                                  FormatRecommendationSource("Suggested by", kvp.Value),
+                                                                  false))
+                       .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                       .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase))
+                   .Concat(supporters
+                       .Select(kvp => new RecommendationAuditItem(kvp.Key,
+                                                                  "Supporter",
+                                                                  FormatRecommendationSource("Supports", kvp.Value),
+                                                                  false))
+                       .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                       .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase))
+                   .ToList();
+
+        private static string FormatRecommendationSource(string              label,
+                                                         IEnumerable<string> sources)
+        {
+            var sourceText = string.Join(", ", sources.Where(source => !string.IsNullOrWhiteSpace(source))
+                                                      .OrderBy(source => source, StringComparer.OrdinalIgnoreCase));
+            return string.IsNullOrWhiteSpace(sourceText)
+                ? label
+                : $"{label}: {sourceText}";
         }
 
         private void RemoveSelectedQueuedAction()

@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CKAN.LinuxGUI.InstallationHistoryWindow"
         x:CompileBindings="False"
-        Width="920"
-        Height="580"
+        Width="960"
+        Height="620"
         MinWidth="820"
         MinHeight="480"
         WindowStartupLocation="CenterOwner"
@@ -12,8 +12,29 @@
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="92" />
       <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#405061" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F3F7FC" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.dialog-action:pointerover">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.dialog-action:pressed">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.dialog-action:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
   </Window.Styles>
 
@@ -42,19 +63,19 @@
           <TextBlock FontWeight="SemiBold"
                      Text="Snapshots" />
           <ListBox Grid.Row="1"
-                   Margin="0,12,0,0"
+                   Classes="utility-list"
+                   Margin="0,10,2,0"
                    ItemsSource="{Binding Snapshots}"
                    SelectedItem="{Binding SelectedSnapshot, Mode=TwoWay}">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <Border BorderBrush="#242B33"
-                        BorderThickness="0,0,0,1"
-                        Padding="0,10">
-                  <StackPanel Spacing="4">
+                <Border Classes="utility-list-row">
+                  <StackPanel Spacing="3">
                     <TextBlock FontWeight="SemiBold"
                                Text="{Binding TimestampText}" />
                     <TextBlock FontSize="12"
                                Opacity="0.68"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding FileName}" />
                   </StackPanel>
                 </Border>
@@ -82,24 +103,31 @@
           </StackPanel>
 
           <ScrollViewer Grid.Row="1"
-                        Margin="0,12,0,0">
+                        Margin="0,12,12,0"
+                        VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Modules}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border BorderBrush="#242B33"
                           BorderThickness="0,0,0,1"
-                          Padding="0,10">
-                    <Grid ColumnDefinitions="*,Auto">
+                          Padding="0,11,8,11">
+                    <Grid ColumnDefinitions="*,96">
                       <StackPanel Spacing="3">
                         <TextBlock FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
                                    Text="{Binding Name}" />
                         <TextBlock FontSize="12"
                                    Opacity="0.66"
+                                   TextTrimming="CharacterEllipsis"
                                    Text="{Binding Identifier}" />
                       </StackPanel>
                       <TextBlock Grid.Column="1"
+                                 Margin="16,0,0,0"
                                  VerticalAlignment="Center"
+                                 HorizontalAlignment="Right"
+                                 TextAlignment="Right"
                                  Opacity="0.76"
+                                 TextTrimming="CharacterEllipsis"
                                  Text="{Binding Version}" />
                     </Grid>
                   </Border>

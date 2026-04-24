@@ -12,8 +12,29 @@
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="92" />
       <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#405061" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F3F7FC" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.dialog-action:pointerover">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.dialog-action:pressed">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.dialog-action:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
   </Window.Styles>
 

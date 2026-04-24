@@ -24,11 +24,114 @@
       <Setter Property="MinWidth" Value="86" />
       <Setter Property="Padding" Value="14,7" />
       <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="Background" Value="#202B35" />
+      <Setter Property="BorderBrush" Value="#3B4B5B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#E6EEF7" />
     </Style>
     <Style Selector="Button.toolbar-chip">
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="Padding" Value="14,7" />
       <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="Background" Value="#202B35" />
+      <Setter Property="BorderBrush" Value="#3B4B5B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#E6EEF7" />
+    </Style>
+    <Style Selector="Button.toolbar-chip:pointerover">
+      <Setter Property="Background" Value="#2A3744" />
+      <Setter Property="BorderBrush" Value="#55697E" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-chip:pointerover">
+      <Setter Property="Background" Value="#2A3744" />
+      <Setter Property="BorderBrush" Value="#55697E" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-chip:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.toolbar-chip:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.command-button">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="96" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#405061" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F3F7FC" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.command-button:pointerover">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.command-button:pressed">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.command-button:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.command-button.primary">
+      <Setter Property="Background" Value="#24527D" />
+      <Setter Property="BorderBrush" Value="#3A79AD" />
+      <Setter Property="Foreground" Value="#F7FBFF" />
+    </Style>
+    <Style Selector="Button.command-button.primary:pointerover">
+      <Setter Property="Background" Value="#2B6092" />
+      <Setter Property="BorderBrush" Value="#5A95C6" />
+    </Style>
+    <Style Selector="Button.command-button.primary:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.command-button.subtle">
+      <Setter Property="Background" Value="#1C242D" />
+      <Setter Property="BorderBrush" Value="#33404D" />
+      <Setter Property="Foreground" Value="#DDE6EF" />
+    </Style>
+    <Style Selector="Button.command-button.subtle:pointerover">
+      <Setter Property="Background" Value="#252F3A" />
+      <Setter Property="BorderBrush" Value="#4C5E70" />
+    </Style>
+    <Style Selector="Button.command-button.subtle:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.command-button.danger">
+      <Setter Property="Background" Value="#3A2227" />
+      <Setter Property="BorderBrush" Value="#7C3A45" />
+      <Setter Property="Foreground" Value="#FFF5F6" />
+    </Style>
+    <Style Selector="Button.command-button.danger:pointerover">
+      <Setter Property="Background" Value="#4A2930" />
+      <Setter Property="BorderBrush" Value="#A34A58" />
+    </Style>
+    <Style Selector="Button.command-button.danger:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="Button.preview-action">
       <Setter Property="MinHeight" Value="38" />
@@ -38,6 +141,14 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.preview-action:pointerover">
+      <Setter Property="Opacity" Value="0.92" />
+    </Style>
+    <Style Selector="Button.preview-action:pressed">
+      <Setter Property="Opacity" Value="0.78" />
     </Style>
     <Style Selector="StackPanel.preview-summary-metric">
       <Setter Property="VerticalAlignment" Value="Center" />
@@ -68,6 +179,22 @@
       <Setter Property="BorderBrush" Value="#34404C" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#EAF1F8" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.browser-chip:pointerover">
+      <Setter Property="Background" Value="#202A34" />
+      <Setter Property="BorderBrush" Value="#4C5E70" />
+    </Style>
+    <Style Selector="Button.browser-chip:pressed">
+      <Setter Property="Background" Value="#121820" />
+      <Setter Property="BorderBrush" Value="#617287" />
+    </Style>
+    <Style Selector="Button.browser-chip:disabled">
+      <Setter Property="Background" Value="#1D232A" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7A8490" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="Border.browser-chip">
       <Setter Property="MinHeight" Value="34" />
@@ -147,19 +274,21 @@
     <Style Selector="TextBox.filter-drawer-input">
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="Padding" Value="10,6" />
-      <Setter Property="Background" Value="#14191F" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="BorderBrush" Value="#3D4E60" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="SelectionBrush" Value="#355779" />
+      <Setter Property="CaretBrush" Value="#F4F6F8" />
     </Style>
     <Style Selector="TextBox.filter-drawer-input:pointerover">
-      <Setter Property="Background" Value="#171D24" />
-      <Setter Property="BorderBrush" Value="#4B5A6B" />
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#4B5D70" />
     </Style>
     <Style Selector="TextBox.filter-drawer-input:focus">
-      <Setter Property="Background" Value="#171D24" />
-      <Setter Property="BorderBrush" Value="#637489" />
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
     <Style Selector="ComboBox.filter-state-picker">
       <Setter Property="MinHeight" Value="34" />
@@ -259,6 +388,9 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="#F4F6F8" />
     </Style>
+    <Style Selector="PopupRoot">
+      <Setter Property="Background" Value="#20262D" />
+    </Style>
     <Style Selector="Menu.app-menu-bar > MenuItem">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="#F4F6F8" />
@@ -272,7 +404,7 @@
       <Setter Property="Background" Value="#2A323C" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem">
-      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinHeight" Value="30" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -282,6 +414,48 @@
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0,0,8,0" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="999" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="999" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:pointerover /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem:selected /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover">
       <Setter Property="Background" Value="Transparent" />
@@ -298,49 +472,49 @@
     <Style Selector="Grid.ready-menu-key">
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="IsHitTestVisible" Value="False" />
-      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="MinHeight" Value="30" />
     </Style>
     <Style Selector="Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#394654" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="CornerRadius" Value="999" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Border.ready-menu-key-top-edge">
       <Setter Property="Height" Value="1" />
-      <Setter Property="Margin" Value="7,0,7,0" />
-      <Setter Property="Background" Value="#4A5561" />
-      <Setter Property="Opacity" Value="0.28" />
+      <Setter Property="Margin" Value="10,0,10,0" />
+      <Setter Property="Background" Value="#566274" />
+      <Setter Property="Opacity" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.ready-menu-key-bottom-edge">
       <Setter Property="Height" Value="1" />
-      <Setter Property="Margin" Value="7,0,7,0" />
+      <Setter Property="Margin" Value="10,0,10,0" />
       <Setter Property="Background" Value="#121820" />
-      <Setter Property="Opacity" Value="0.45" />
+      <Setter Property="Opacity" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Bottom" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.ready-menu-key-left-edge">
       <Setter Property="Width" Value="1" />
-      <Setter Property="Margin" Value="0,7,0,7" />
+      <Setter Property="Margin" Value="0,10,0,10" />
       <Setter Property="Background" Value="#3A4450" />
-      <Setter Property="Opacity" Value="0.18" />
+      <Setter Property="Opacity" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Left" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.ready-menu-key-right-edge">
       <Setter Property="Width" Value="1" />
-      <Setter Property="Margin" Value="0,7,0,7" />
+      <Setter Property="Margin" Value="0,10,0,10" />
       <Setter Property="Background" Value="#141A21" />
-      <Setter Property="Opacity" Value="0.2" />
+      <Setter Property="Opacity" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Right" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -348,7 +522,7 @@
     <Style Selector="StackPanel.ready-menu-key-content">
       <Setter Property="Orientation" Value="Horizontal" />
       <Setter Property="Spacing" Value="8" />
-      <Setter Property="Margin" Value="12,7,14,6" />
+      <Setter Property="Margin" Value="12,0,14,0" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -360,8 +534,8 @@
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Viewbox.ready-menu-globe">
-      <Setter Property="Width" Value="16" />
-      <Setter Property="Height" Value="16" />
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="14" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Ellipse.ready-menu-icon-planet">
@@ -388,8 +562,8 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#252D37" />
-      <Setter Property="BorderBrush" Value="#45515F" />
+      <Setter Property="Background" Value="#263246" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#D8E1EA" />
@@ -408,25 +582,25 @@
       <Setter Property="Stroke" Value="#4CAF7D" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#394654" />
       <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-top-edge">
-      <Setter Property="Background" Value="#4A5561" />
-      <Setter Property="Opacity" Value="0.28" />
+      <Setter Property="Background" Value="#566274" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-bottom-edge">
       <Setter Property="Background" Value="#121820" />
-      <Setter Property="Opacity" Value="0.45" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-left-edge">
       <Setter Property="Background" Value="#3A4450" />
-      <Setter Property="Opacity" Value="0.18" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-right-edge">
       <Setter Property="Background" Value="#141A21" />
-      <Setter Property="Opacity" Value="0.2" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#B6C0CB" />
@@ -445,8 +619,8 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#394654" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#B6C0CB" />
@@ -465,25 +639,25 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#36404B" />
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
       <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-top-edge">
-      <Setter Property="Background" Value="#4A5561" />
-      <Setter Property="Opacity" Value="0.28" />
+      <Setter Property="Background" Value="#566274" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-bottom-edge">
       <Setter Property="Background" Value="#121820" />
-      <Setter Property="Opacity" Value="0.45" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-left-edge">
       <Setter Property="Background" Value="#3A4450" />
-      <Setter Property="Opacity" Value="0.18" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-right-edge">
       <Setter Property="Background" Value="#141A21" />
-      <Setter Property="Opacity" Value="0.2" />
+      <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#B6C0CB" />
@@ -502,8 +676,8 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#252D37" />
-      <Setter Property="BorderBrush" Value="#45515F" />
+      <Setter Property="Background" Value="#263246" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#D8E1EA" />
@@ -524,16 +698,52 @@
     <Style Selector="MenuItem.app-menu-item">
       <Setter Property="Background" Value="#20262D" />
       <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="MinWidth" Value="220" />
       <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item /template/ ContentPresenter">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item /template/ Border">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303944" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
     <Style Selector="MenuItem.app-menu-item:pointerover">
       <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item:pointerover /template/ Border">
+      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="#303944" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="MenuItem.app-menu-item:selected /template/ Border">
+      <Setter Property="Background" Value="#2A323C" />
+      <Setter Property="BorderBrush" Value="#303944" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
     <Style Selector="Menu.app-menu-bar Separator">
-      <Setter Property="Background" Value="#36404B" />
-      <Setter Property="Foreground" Value="#36404B" />
-      <Setter Property="Height" Value="1" />
-      <Setter Property="Margin" Value="12,6" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="Foreground" Value="#242B33" />
+      <Setter Property="Height" Value="7" />
+      <Setter Property="Margin" Value="0" />
       <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="Border.surface-view-toggle">
@@ -949,7 +1159,7 @@
     <Style Selector="ComboBox.header-instance-picker">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="10,0" />
-      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="Background" Value="#212938" />
       <Setter Property="BorderBrush" Value="#394654" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
@@ -958,15 +1168,15 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:pointerover">
-      <Setter Property="Background" Value="#24303B" />
-      <Setter Property="BorderBrush" Value="#47596B" />
+      <Setter Property="Background" Value="#263246" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:focus">
-      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="Background" Value="#263246" />
       <Setter Property="BorderBrush" Value="#566B80" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:dropdownopen">
-      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="Background" Value="#263246" />
       <Setter Property="BorderBrush" Value="#566B80" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker ComboBoxItem">
@@ -988,7 +1198,7 @@
     <Style Selector="ComboBox.header-instance-picker-segment">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="12,0" />
-      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="Background" Value="#212938" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="0,9,9,0" />
@@ -997,18 +1207,18 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:pointerover">
-      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="Background" Value="#263246" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:focus">
-      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="Background" Value="#263246" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:dropdownopen">
-      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="Background" Value="#263246" />
     </Style>
     <Style Selector="Button.header-instance-reload">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="12,0" />
-      <Setter Property="Background" Value="#1D252E" />
+      <Setter Property="Background" Value="#212938" />
       <Setter Property="BorderBrush" Value="#394654" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
@@ -1016,24 +1226,36 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+    <Style Selector="Button.header-instance-reload /template/ ContentPresenter">
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
     <Style Selector="Button.header-instance-reload:pointerover">
-      <Setter Property="Background" Value="#24303B" />
-      <Setter Property="BorderBrush" Value="#47596B" />
+      <Setter Property="Background" Value="#263246" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
+    </Style>
+    <Style Selector="Button.header-instance-reload:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#263246" />
+      <Setter Property="BorderBrush" Value="#4A5B70" />
     </Style>
     <Style Selector="TextBox.browser-search">
-      <Setter Property="Background" Value="#161B21" />
-      <Setter Property="BorderBrush" Value="#4A5563" />
+      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="BorderBrush" Value="#3D4E60" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="SelectionBrush" Value="#355779" />
+      <Setter Property="CaretBrush" Value="#F4F6F8" />
     </Style>
     <Style Selector="TextBox.browser-search:pointerover">
-      <Setter Property="Background" Value="#1A2027" />
-      <Setter Property="BorderBrush" Value="#556272" />
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#4B5D70" />
     </Style>
     <Style Selector="TextBox.browser-search:focus">
-      <Setter Property="Background" Value="#1A2027" />
-      <Setter Property="BorderBrush" Value="#647487" />
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
   </Window.Styles>
   <LayoutTransformControl HorizontalAlignment="Stretch"
@@ -1061,10 +1283,38 @@
                       Header="Open game directory"
                       Command="{Binding OpenCurrentGameDirectoryCommand}"
                       IsEnabled="{Binding HasCurrentInstance}" />
+            <Separator />
             <MenuItem Classes="app-menu-item"
-                      Header="Installation history"
-                      Click="InstallationHistoryMenuItem_OnClick"
-                      IsEnabled="{Binding HasCurrentInstance}" />
+                      Header="Mods"
+                      IsEnabled="{Binding HasCurrentInstance}">
+              <MenuItem Classes="app-menu-item"
+                        Header="Installation history"
+                        Click="InstallationHistoryMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Install from .ckan..."
+                        Click="InstallFromCkanMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Import downloaded mods..."
+                        Click="ImportDownloadedModsMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Deduplicate installed files..."
+                        Click="DeduplicateInstalledFilesMenuItem_OnClick" />
+              <Separator />
+              <MenuItem Classes="app-menu-item"
+                        Header="Save installed mod list (cannot be re-imported)..."
+                        Click="ExportModListMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Export modpack (can be re-imported)..."
+                        Click="ExportModpackMenuItem_OnClick" />
+              <Separator />
+              <MenuItem Classes="app-menu-item"
+                        Header="Audit recommendations"
+                        Click="AuditRecommendationsMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Unmanaged files"
+                        Click="UnmanagedFilesMenuItem_OnClick" />
+            </MenuItem>
+            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Download statistics"
                       Click="DownloadStatisticsMenuItem_OnClick"
@@ -1072,10 +1322,7 @@
             <MenuItem Classes="app-menu-item"
                       Header="Play time"
                       Click="PlayTimeMenuItem_OnClick" />
-            <MenuItem Classes="app-menu-item"
-                      Header="Unmanaged files"
-                      Click="UnmanagedFilesMenuItem_OnClick"
-                      IsEnabled="{Binding HasCurrentInstance}" />
+            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Exit"
                       Click="ExitMenuItem_OnClick" />
@@ -1192,6 +1439,7 @@
         </StackPanel>
 
         <Button Grid.Column="2"
+                Classes="command-button"
                 Command="{Binding RefreshCommand}"
                 Content="Reload Instances" />
       </Grid>
@@ -1268,10 +1516,38 @@
                         Header="Open game directory"
                         Command="{Binding OpenCurrentGameDirectoryCommand}"
                         IsEnabled="{Binding HasCurrentInstance}" />
+              <Separator />
               <MenuItem Classes="app-menu-item"
-                        Header="Installation history"
-                        Click="InstallationHistoryMenuItem_OnClick"
-                        IsEnabled="{Binding HasCurrentInstance}" />
+                        Header="Mods"
+                        IsEnabled="{Binding HasCurrentInstance}">
+                <MenuItem Classes="app-menu-item"
+                          Header="Installation history"
+                          Click="InstallationHistoryMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Install from .ckan..."
+                          Click="InstallFromCkanMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Import downloaded mods..."
+                          Click="ImportDownloadedModsMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Deduplicate installed files..."
+                          Click="DeduplicateInstalledFilesMenuItem_OnClick" />
+                <Separator />
+                <MenuItem Classes="app-menu-item"
+                          Header="Save installed mod list (cannot be re-imported)..."
+                          Click="ExportModListMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Export modpack (can be re-imported)..."
+                          Click="ExportModpackMenuItem_OnClick" />
+                <Separator />
+                <MenuItem Classes="app-menu-item"
+                          Header="Audit recommendations"
+                          Click="AuditRecommendationsMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Unmanaged files"
+                          Click="UnmanagedFilesMenuItem_OnClick" />
+              </MenuItem>
+              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Download statistics"
                         Click="DownloadStatisticsMenuItem_OnClick"
@@ -1279,10 +1555,7 @@
               <MenuItem Classes="app-menu-item"
                         Header="Play time"
                         Click="PlayTimeMenuItem_OnClick" />
-              <MenuItem Classes="app-menu-item"
-                        Header="Unmanaged files"
-                        Click="UnmanagedFilesMenuItem_OnClick"
-                        IsEnabled="{Binding HasCurrentInstance}" />
+              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Exit"
                         Click="ExitMenuItem_OnClick" />
@@ -1454,14 +1727,14 @@
                     Command="{Binding RefreshCommand}"
                     Content="Reload" />
 
-            <Border Background="#1A2027"
+            <Border Background="#212938"
                     BorderBrush="#394654"
                     BorderThickness="1"
                     CornerRadius="10"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center">
               <Grid ColumnDefinitions="Auto,Auto">
-                <Border Background="#26313C"
+                <Border Background="#212938"
                         BorderBrush="#394654"
                         BorderThickness="0,0,1,0"
                         CornerRadius="9,0,0,9"
@@ -1477,7 +1750,7 @@
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="#1D252E"
+                        Background="#171F2A"
                         CornerRadius="0,9,9,0"
                         MinHeight="30"
                         Padding="12,0"
@@ -1502,7 +1775,7 @@
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           IsVisible="{Binding ShowHeaderInstanceSwitcher}"
-                          IsEnabled="{Binding CanInteractWithCatalog}"
+                          IsEnabled="{Binding CanSwitchInstances}"
                           ItemsSource="{Binding Instances}"
                           SelectedItem="{Binding SelectedInstance}"
                           SelectionChanged="HeaderInstanceSwitcher_OnSelectionChanged">
@@ -1693,6 +1966,7 @@
               </ListBox>
 
               <Button Grid.Row="3"
+                      Classes="command-button primary"
                       Command="{Binding SetCurrentInstanceCommand}"
                       Content="{Binding SelectedActionLabel}" />
             </Grid>
@@ -1750,6 +2024,7 @@
               <ListBox Grid.Row="3"
                        Margin="0,14,0,0"
                        MaxHeight="260"
+                       IsEnabled="{Binding CanSwitchInstances}"
                        ItemsSource="{Binding Instances}"
                        SelectedItem="{Binding SelectedInstance}">
                 <ListBox.ItemTemplate>
@@ -1790,7 +2065,8 @@
                            Opacity="0.72"
                            IsVisible="{Binding SelectedInstanceIsCurrent}"
                            Text="You are already browsing this install." />
-                <Button IsVisible="{Binding ShowSwitchSelectedInstanceAction}"
+                <Button Classes="command-button primary"
+                        IsVisible="{Binding ShowSwitchSelectedInstanceAction}"
                         Command="{Binding SetCurrentInstanceCommand}"
                         Content="Switch Install" />
               </StackPanel>
@@ -1814,6 +2090,7 @@
                              Text="{Binding DisplayScaleSummary}" />
                 </StackPanel>
                 <Button Grid.Column="1"
+                        Classes="command-button subtle"
                         VerticalAlignment="Top"
                         Command="{Binding ToggleDisplaySettingsCommand}"
                         Content="{Binding DisplaySettingsToggleLabel}" />
@@ -1914,6 +2191,7 @@
                            Text="Register a KSP install, then reload to open the mod browser." />
               </Border>
               <Button Width="170"
+                      Classes="command-button primary"
                       HorizontalAlignment="Left"
                       Command="{Binding RefreshCommand}"
                       Content="Scan Again" />
@@ -1943,6 +2221,7 @@
                 </StackPanel>
               </Border>
               <Button Width="230"
+                      Classes="command-button primary"
                       HorizontalAlignment="Left"
                       Command="{Binding SetCurrentInstanceCommand}"
                       Content="{Binding SelectedActionLabel}" />
@@ -1952,7 +2231,7 @@
           <Border Background="#202930"
                   CornerRadius="12"
                   Padding="12"
-                  IsHitTestVisible="{Binding CanInteractWithCatalog}"
+                  IsHitTestVisible="{Binding CanUseCatalogPanel}"
                   IsVisible="{Binding IsReady}"
                   MinHeight="0">
             <Grid RowDefinitions="Auto,*"
@@ -1970,10 +2249,12 @@
                              Opacity="0.86"
                              Text="{Binding UiScaleRestartStripText}" />
                   <Button Grid.Column="1"
+                          Classes="command-button primary"
                           Margin="10,0,0,0"
                           Command="{Binding RestartToApplyUiScaleCommand}"
                           Content="Restart Now" />
                   <Button Grid.Column="2"
+                          Classes="command-button subtle"
                           Margin="10,0,0,0"
                           Command="{Binding DismissUiScaleRestartStripCommand}"
                           Content="Dismiss" />
@@ -2036,8 +2317,7 @@
                              VerticalOffset="8"
                              IsLightDismissEnabled="True"
                              OverlayDismissEventPassThrough="True"
-                             OverlayInputPassThroughElement="{Binding #MoreFiltersButton}"
-                             Opened="AdvancedFiltersPopup_OnOpened">
+                             OverlayInputPassThroughElement="{Binding #MoreFiltersButton}">
                         <Border Background="#20262D"
                                 BorderBrush="#39424E"
                                 BorderThickness="1"
@@ -2047,533 +2327,69 @@
                                 MaxHeight="620"
                                 x:CompileBindings="False"
                                 BoxShadow="0 18 36 0 #66000000">
-                          <Grid RowDefinitions="Auto,*">
-                            <Grid ColumnDefinitions="*,Auto"
-                                  Margin="0,0,0,12">
-                              <TextBlock FontSize="13.5"
-                                         FontWeight="SemiBold"
-                                         VerticalAlignment="Center"
-                                         Text="Filters" />
-                              <StackPanel Grid.Column="1"
-                                          Orientation="Horizontal"
-                                          HorizontalAlignment="Right"
-                                          Spacing="12">
-                                <CheckBox VerticalAlignment="Center"
-                                          IsChecked="{Binding ShowAdvancedFilterEditor, Mode=TwoWay}">
-                                  <TextBlock FontSize="12.5"
-                                             FontWeight="SemiBold"
-                                             Text="Advanced" />
-                                </CheckBox>
-                                <Button Width="88"
-                                        VerticalAlignment="Top"
-                                        Opacity="{Binding ClearPopupFiltersButtonOpacity}"
-                                        IsEnabled="{Binding HasActiveAdvancedFilters}"
-                                        Background="{Binding ClearFiltersButtonBackground}"
-                                        BorderBrush="{Binding ClearFiltersButtonBorderBrush}"
-                                        Foreground="#F4F6F8"
-                                        Command="{Binding ClearPopupFiltersCommand}"
-                                        Content="Clear All" />
-                              </StackPanel>
-                            </Grid>
-
-                            <Grid Grid.Row="1">
-                              <StackPanel IsVisible="{Binding ShowSimpleFilterMenu}"
-                                          Spacing="12">
-                                <Grid ColumnDefinitions="*,*">
-                                  <StackPanel Spacing="8">
-                                    <TextBlock Classes="filter-drawer-label"
-                                               Text="State" />
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterCompatibleOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding CompatibleFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterInstalledOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding InstalledFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterUpdatableOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding UpdatableFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterHasReplacementOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding ReplaceableFilterLabel}" />
-                                    </ToggleButton>
-                                  </StackPanel>
-                                  <StackPanel Grid.Column="1"
-                                              Margin="12,0,0,0"
-                                              Spacing="8">
-                                    <TextBlock Classes="filter-drawer-label"
-                                               Text="Availability" />
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterCachedOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding CachedFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterUncachedOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding UncachedFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterNotInstalledOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding NotInstalledFilterLabel}" />
-                                    </ToggleButton>
-                                    <ToggleButton Classes="filter-menu-item"
-                                                  IsChecked="{Binding FilterIncompatibleOnly, Mode=TwoWay}">
-                                      <TextBlock Foreground="#F4F6F8"
-                                                 Text="{Binding IncompatibleFilterLabel}" />
-                                    </ToggleButton>
-                                  </StackPanel>
-                                </Grid>
-                                <Button Classes="filter-menu-item"
-                                        Background="{Binding AllFilterButtonBackground}"
-                                        BorderBrush="{Binding AllFilterButtonBorderBrush}"
-                                        HorizontalContentAlignment="Center"
-                                        Command="{Binding ClearPopupFiltersCommand}">
+                          <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,*">
+                              <StackPanel Spacing="8">
+                                <TextBlock Classes="filter-drawer-label"
+                                           Text="State" />
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterCompatibleOnly, Mode=TwoWay}">
                                   <TextBlock Foreground="#F4F6F8"
-                                             TextAlignment="Center"
-                                             Text="{Binding AllFilterLabel}" />
-                                </Button>
+                                             Text="{Binding CompatibleFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterInstalledOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding InstalledFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterUpdatableOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding UpdatableFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterHasReplacementOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding ReplaceableFilterLabel}" />
+                                </ToggleButton>
                               </StackPanel>
-
-                              <Grid IsVisible="{Binding ShowAdvancedFilterEditor}"
-                                    RowDefinitions="Auto,Auto,*,Auto">
-                                <Border Classes="filter-drawer-section"
-                                        Padding="12,10"
-                                        Margin="0,0,0,12">
-                                  <StackPanel Spacing="8">
-                                    <TextBlock Classes="filter-drawer-title"
-                                               Text="Quick Tokens" />
-                                    <WrapPanel>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="is:installed" />
-                                      </Border>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="is:cached" />
-                                      </Border>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="is:incompatible" />
-                                      </Border>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="author:nertea" />
-                                      </Border>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="license:gpl" />
-                                      </Border>
-                                      <Border Classes="filter-token-chip">
-                                        <TextBlock FontSize="11.5"
-                                                   Foreground="#DCE5EF"
-                                                   Text="tag:graphics" />
-                                      </Border>
-                                    </WrapPanel>
-                                  </StackPanel>
-                                </Border>
-
-                                <ScrollViewer Grid.Row="1"
-                                              Grid.RowSpan="2"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              VerticalScrollBarVisibility="Auto">
-                                  <StackPanel Spacing="12">
-                                    <Border Classes="filter-drawer-section"
-                                            Margin="0,0,0,12">
-                                      <StackPanel Spacing="10">
-                                        <TextBlock Classes="filter-drawer-title"
-                                                   Text="Status Filters" />
-                                        <TextBlock Classes="filter-drawer-note"
-                                                   Text="Use Any to ignore a state, Yes to require it, or No to exclude it." />
-                                        <Grid ColumnDefinitions="*,Auto"
-                                              RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                          <TextBlock Classes="filter-drawer-label"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,0,10"
-                                                     Text="Compatible" />
-                                          <ComboBox Grid.Column="1"
-                                                    Classes="filter-state-picker"
-                                                    Margin="16,0,0,10"
-                                                    SelectedIndex="{Binding FilterCompatibleTriStateIndex, Mode=TwoWay}">
-                                            <ComboBoxItem Content="Any" />
-                                            <ComboBoxItem Content="Yes" />
-                                            <ComboBoxItem Content="No" />
-                                          </ComboBox>
-
-                                          <TextBlock Grid.Row="1"
-                                                     Classes="filter-drawer-label"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,0,10"
-                                                     Text="Installed" />
-                                          <ComboBox Grid.Row="1"
-                                                    Grid.Column="1"
-                                                    Classes="filter-state-picker"
-                                                    Margin="16,0,0,10"
-                                                    SelectedIndex="{Binding FilterInstalledTriStateIndex, Mode=TwoWay}">
-                                            <ComboBoxItem Content="Any" />
-                                            <ComboBoxItem Content="Yes" />
-                                            <ComboBoxItem Content="No" />
-                                          </ComboBox>
-
-                                          <TextBlock Grid.Row="2"
-                                                     Classes="filter-drawer-label"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,0,10"
-                                                     Text="Cached" />
-                                          <ComboBox Grid.Row="2"
-                                                    Grid.Column="1"
-                                                    Classes="filter-state-picker"
-                                                    Margin="16,0,0,10"
-                                                    SelectedIndex="{Binding FilterCachedTriStateIndex, Mode=TwoWay}">
-                                            <ComboBoxItem Content="Any" />
-                                            <ComboBoxItem Content="Yes" />
-                                            <ComboBoxItem Content="No" />
-                                          </ComboBox>
-
-                                          <TextBlock Grid.Row="3"
-                                                     Classes="filter-drawer-label"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,0,10"
-                                                     Text="Updatable" />
-                                          <ComboBox Grid.Row="3"
-                                                    Grid.Column="1"
-                                                    Classes="filter-state-picker"
-                                                    Margin="16,0,0,10"
-                                                    SelectedIndex="{Binding FilterUpdatableTriStateIndex, Mode=TwoWay}">
-                                            <ComboBoxItem Content="Any" />
-                                            <ComboBoxItem Content="Yes" />
-                                            <ComboBoxItem Content="No" />
-                                          </ComboBox>
-
-                                          <TextBlock Grid.Row="4"
-                                                     Classes="filter-drawer-label"
-                                                     VerticalAlignment="Center"
-                                                     Text="Replaceable" />
-                                          <ComboBox Grid.Row="4"
-                                                    Grid.Column="1"
-                                                    Classes="filter-state-picker"
-                                                    SelectedIndex="{Binding FilterReplaceableTriStateIndex, Mode=TwoWay}">
-                                            <ComboBoxItem Content="Any" />
-                                            <ComboBoxItem Content="Yes" />
-                                            <ComboBoxItem Content="No" />
-                                          </ComboBox>
-                                        </Grid>
-                                      </StackPanel>
-                                    </Border>
-
-                                    <Border Classes="filter-drawer-section">
-                                      <StackPanel Spacing="12">
-                                        <StackPanel Spacing="2">
-                                          <TextBlock Classes="filter-drawer-title"
-                                                     Text="Field Filters" />
-                                          <TextBlock Classes="filter-drawer-note"
-                                                     Text="Blank fields are ignored. Use these for precise matching when the main search is too broad." />
-                                        </StackPanel>
-
-                                        <Grid ColumnDefinitions="*,12,*,12,*"
-                                              RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                          <StackPanel Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Name" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Mod name"
-                                                     Text="{Binding AdvancedNameFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Column="2"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Identifier" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="CKAN identifier"
-                                                     Text="{Binding AdvancedIdentifierFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Column="4"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Author" />
-                                            <TextBox x:Name="AdvancedAuthorFilterTextBox"
-                                                     Classes="filter-drawer-input"
-                                                     Watermark="Author"
-                                                     Text="{Binding AdvancedAuthorFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-
-                                          <StackPanel Grid.Row="1"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Summary" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Short summary"
-                                                     Text="{Binding AdvancedSummaryFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="1"
-                                                      Grid.Column="2"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Description" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Detailed description"
-                                                     Text="{Binding AdvancedDescriptionFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="1"
-                                                      Grid.Column="4"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="License" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="GPL, MIT, CC-BY..."
-                                                     Text="{Binding AdvancedLicenseFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-
-                                          <StackPanel Grid.Row="2"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Language" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="en-US, fr, de..."
-                                                     Text="{Binding AdvancedLanguageFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="2"
-                                                      Grid.Column="2"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Depends" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Required dependency"
-                                                     Text="{Binding AdvancedDependsFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="2"
-                                                      Grid.Column="4"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Recommends" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Recommended mod"
-                                                     Text="{Binding AdvancedRecommendsFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-
-                                          <StackPanel Grid.Row="3"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Suggests" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Suggested mod"
-                                                     Text="{Binding AdvancedSuggestsFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="3"
-                                                      Grid.Column="2"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Conflicts" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Conflicting mod"
-                                                     Text="{Binding AdvancedConflictsFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="3"
-                                                      Grid.Column="4"
-                                                      Spacing="4"
-                                                      Margin="0,0,0,12">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Supports" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="Supported mod or feature"
-                                                     Text="{Binding AdvancedSupportsFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-
-                                          <StackPanel Grid.Row="4"
-                                                      Spacing="4">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Tags" />
-                                            <Grid ColumnDefinitions="*,Auto"
-                                                  RowDefinitions="Auto,Auto">
-                                              <TextBox Classes="filter-drawer-input"
-                                                       Watermark="Graphics, science..."
-                                                       Text="{Binding AdvancedTagsFilter, Mode=TwoWay}" />
-                                              <Button Grid.Column="1"
-                                                      x:Name="TagFilterPickerButton"
-                                                      Classes="browser-chip"
-                                                      Margin="8,0,0,0"
-                                                      MinWidth="78"
-                                                      Command="{Binding ToggleTagFilterPickerCommand}"
-                                                      Content="Pick" />
-                                              <Popup Grid.Row="1"
-                                                     Grid.ColumnSpan="2"
-                                                     IsOpen="{Binding ShowTagFilterPicker, Mode=TwoWay}"
-                                                     Placement="Bottom"
-                                                     PlacementTarget="{Binding #TagFilterPickerButton}"
-                                                     VerticalOffset="8"
-                                                     IsLightDismissEnabled="True">
-                                                <Border Classes="filter-tag-picker-popup">
-                                                  <StackPanel Spacing="8">
-                                                    <Grid ColumnDefinitions="*,Auto">
-                                                      <TextBlock Classes="filter-drawer-title"
-                                                                 VerticalAlignment="Center"
-                                                                 Text="Tags" />
-                                                      <Button Grid.Column="1"
-                                                              Classes="browser-chip"
-                                                              MinWidth="64"
-                                                              Padding="10,4"
-                                                              IsEnabled="{Binding HasSelectedTagFilter}"
-                                                              Command="{Binding ClearTagFilterCommand}"
-                                                              Content="Clear" />
-                                                    </Grid>
-                                                    <TextBlock Classes="filter-drawer-note"
-                                                               Text="{Binding TagFilterPickerSummary}" />
-                                                    <ScrollViewer MaxHeight="260"
-                                                                  HorizontalScrollBarVisibility="Disabled"
-                                                                  VerticalScrollBarVisibility="Auto">
-                                                      <ItemsControl ItemsSource="{Binding AvailableTagOptions}">
-                                                        <ItemsControl.ItemTemplate>
-                                                          <DataTemplate x:DataType="vm:FilterTagOptionItem">
-                                                            <Button Classes="filter-tag-option-button"
-                                                                    Background="{Binding BackgroundBrush}"
-                                                                    BorderBrush="{Binding BorderBrush}"
-                                                                    Command="{Binding DataContext.SelectTagFilterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding}">
-                                                              <Grid ColumnDefinitions="*,Auto">
-                                                                <TextBlock FontSize="12"
-                                                                           Foreground="{Binding NameForeground}"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           Text="{Binding Name}" />
-                                                                <TextBlock Grid.Column="1"
-                                                                           FontSize="11.5"
-                                                                           Margin="10,0,0,0"
-                                                                           Foreground="{Binding CountForeground}"
-                                                                           Text="{Binding CountLabel}" />
-                                                              </Grid>
-                                                            </Button>
-                                                          </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                      </ItemsControl>
-                                                    </ScrollViewer>
-                                                  </StackPanel>
-                                                </Border>
-                                              </Popup>
-                                            </Grid>
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="4"
-                                                      Grid.Column="2"
-                                                      Spacing="4">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Labels" />
-                                            <Grid ColumnDefinitions="*,Auto"
-                                                  RowDefinitions="Auto,Auto">
-                                              <TextBox Classes="filter-drawer-input"
-                                                       Watermark="Custom labels"
-                                                       Text="{Binding AdvancedLabelsFilter, Mode=TwoWay}" />
-                                              <Button Grid.Column="1"
-                                                      x:Name="LabelFilterPickerButton"
-                                                      Classes="browser-chip"
-                                                      Margin="8,0,0,0"
-                                                      MinWidth="78"
-                                                      Command="{Binding ToggleLabelFilterPickerCommand}"
-                                                      Content="Pick" />
-                                              <Popup Grid.Row="1"
-                                                     Grid.ColumnSpan="2"
-                                                     IsOpen="{Binding ShowLabelFilterPicker, Mode=TwoWay}"
-                                                     Placement="Bottom"
-                                                     PlacementTarget="{Binding #LabelFilterPickerButton}"
-                                                     VerticalOffset="8"
-                                                     IsLightDismissEnabled="True">
-                                                <Border Classes="filter-tag-picker-popup">
-                                                  <StackPanel Spacing="8">
-                                                    <Grid ColumnDefinitions="*,Auto">
-                                                      <TextBlock Classes="filter-drawer-title"
-                                                                 VerticalAlignment="Center"
-                                                                 Text="Labels" />
-                                                      <Button Grid.Column="1"
-                                                              Classes="browser-chip"
-                                                              MinWidth="64"
-                                                              Padding="10,4"
-                                                              IsEnabled="{Binding HasSelectedLabelFilter}"
-                                                              Command="{Binding ClearLabelFilterCommand}"
-                                                              Content="Clear" />
-                                                    </Grid>
-                                                    <TextBlock Classes="filter-drawer-note"
-                                                               Text="{Binding LabelFilterPickerSummary}" />
-                                                    <ScrollViewer MaxHeight="260"
-                                                                  HorizontalScrollBarVisibility="Disabled"
-                                                                  VerticalScrollBarVisibility="Auto">
-                                                      <ItemsControl ItemsSource="{Binding AvailableLabelOptions}">
-                                                        <ItemsControl.ItemTemplate>
-                                                          <DataTemplate x:DataType="vm:FilterTagOptionItem">
-                                                            <Button Classes="filter-tag-option-button"
-                                                                    Background="{Binding BackgroundBrush}"
-                                                                    BorderBrush="{Binding BorderBrush}"
-                                                                    Command="{Binding DataContext.SelectLabelFilterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding}">
-                                                              <Grid ColumnDefinitions="*,Auto">
-                                                                <TextBlock FontSize="12"
-                                                                           Foreground="{Binding NameForeground}"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           Text="{Binding Name}" />
-                                                                <TextBlock Grid.Column="1"
-                                                                           FontSize="11.5"
-                                                                           Margin="10,0,0,0"
-                                                                           Foreground="{Binding CountForeground}"
-                                                                           Text="{Binding CountLabel}" />
-                                                              </Grid>
-                                                            </Button>
-                                                          </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                      </ItemsControl>
-                                                    </ScrollViewer>
-                                                  </StackPanel>
-                                                </Border>
-                                              </Popup>
-                                            </Grid>
-                                          </StackPanel>
-                                          <StackPanel Grid.Row="4"
-                                                      Grid.Column="4"
-                                                      Spacing="4">
-                                            <TextBlock Classes="filter-drawer-label"
-                                                       Text="Compatibility" />
-                                            <TextBox Classes="filter-drawer-input"
-                                                     Watermark="KSP version"
-                                                     Text="{Binding AdvancedCompatibilityFilter, Mode=TwoWay}" />
-                                          </StackPanel>
-                                        </Grid>
-                                      </StackPanel>
-                                    </Border>
-                                  </StackPanel>
-                                </ScrollViewer>
-
-                                <Border Grid.Row="3"
-                                        Classes="filter-drawer-section"
-                                        Padding="12,10">
-                                  <StackPanel Spacing="4">
-                                    <TextBlock Classes="filter-drawer-title"
-                                               Text="Active Search Summary" />
-                                    <TextBlock Classes="filter-drawer-note"
-                                               Text="{Binding AdvancedFilterSummary}" />
-                                  </StackPanel>
-                                </Border>
-                              </Grid>
+                              <StackPanel Grid.Column="1"
+                                          Margin="12,0,0,0"
+                                          Spacing="8">
+                                <TextBlock Classes="filter-drawer-label"
+                                           Text="Availability" />
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterCachedOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding CachedFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterUncachedOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding UncachedFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterNotInstalledOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding NotInstalledFilterLabel}" />
+                                </ToggleButton>
+                                <ToggleButton Classes="filter-menu-item"
+                                              IsChecked="{Binding FilterIncompatibleOnly, Mode=TwoWay}">
+                                  <TextBlock Foreground="#F4F6F8"
+                                             Text="{Binding IncompatibleFilterLabel}" />
+                                </ToggleButton>
+                              </StackPanel>
                             </Grid>
-
-                          </Grid>
+                            <Button Classes="filter-menu-item"
+                                    Background="{Binding AllFilterButtonBackground}"
+                                    BorderBrush="{Binding AllFilterButtonBorderBrush}"
+                                    HorizontalContentAlignment="Center"
+                                    Command="{Binding ClearPopupFiltersCommand}">
+                              <TextBlock Foreground="#F4F6F8"
+                                         TextAlignment="Center"
+                                         Text="{Binding AllFilterLabel}" />
+                            </Button>
+                          </StackPanel>
                         </Border>
                       </Popup>
                     </Grid>
@@ -2892,7 +2708,7 @@
                                                          Text="{Binding LatestVersion}" />
                                               <TextBlock Classes="row-version-secondary"
                                                          TextTrimming="CharacterEllipsis"
-                                                         IsVisible="{Binding IsInstalled}"
+                                                         IsVisible="{Binding ShowInstalledVersionInList}"
                                                          Text="{Binding InstalledVersion}" />
                                             </StackPanel>
                                           </Border>
@@ -2912,10 +2728,10 @@
                           </ListBox>
                         </Grid>
 
-	                        <Border Background="#20262D"
-	                                CornerRadius="10"
-	                                Padding="18"
-	                                IsVisible="{Binding ShowEmptyModResults}">
+                        <Border Background="#20262D"
+                                CornerRadius="10"
+                                Padding="18"
+                                IsVisible="{Binding ShowEmptyModResults}">
                           <StackPanel Spacing="8"
                                       VerticalAlignment="Center">
                             <TextBlock FontSize="16"
@@ -2925,13 +2741,14 @@
                                        TextWrapping="Wrap"
                                        Text="Broaden the query or clear the active filters to restore the catalog list." />
                             <Button Width="140"
+                                    Classes="command-button"
                                     HorizontalAlignment="Left"
-	                                    Command="{Binding ClearFiltersCommand}"
-	                                    Content="Clear Filters" />
-	                          </StackPanel>
-	                        </Border>
-	                      </Grid>
-	                    </Border>
+                                    Command="{Binding ClearFiltersCommand}"
+                                    Content="Clear Filters" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+                    </Border>
 
                   </Grid>
                 </Border>
@@ -3201,7 +3018,8 @@
                           </WrapPanel>
 
                           <WrapPanel IsVisible="{Binding ShowSelectedModActionRow}">
-                            <Button HorizontalAlignment="Left"
+                            <Button Classes="command-button primary"
+                                    HorizontalAlignment="Left"
                                     MinHeight="32"
                                     Margin="0,0,10,6"
                                     Padding="10,6"
@@ -3372,7 +3190,8 @@
                               <TextBlock Classes="detail-value"
                                          TextWrapping="Wrap"
                                          Text="{Binding SelectedModCacheState}" />
-                              <Button HorizontalAlignment="Left"
+                              <Button Classes="command-button subtle"
+                                      HorizontalAlignment="Left"
                                       MinHeight="28"
                                       Margin="0,6,0,0"
                                       Padding="10,5"
@@ -4129,6 +3948,7 @@
                            Text="{Binding Diagnostics}" />
               </Border>
               <Button Width="170"
+                      Classes="command-button primary"
                       HorizontalAlignment="Left"
                       Command="{Binding RefreshCommand}"
                       Content="Retry Startup" />
@@ -4140,9 +3960,9 @@
 
     <Border Grid.RowSpan="3"
             ZIndex="80"
-            Background="#07101824"
+            Background="#CC101820"
             IsVisible="{Binding IsCatalogLoading}">
-      <Border Background="#1B2430F2"
+      <Border Background="#1B2430"
               BorderBrush="#4D6177"
               BorderThickness="1"
               CornerRadius="12"

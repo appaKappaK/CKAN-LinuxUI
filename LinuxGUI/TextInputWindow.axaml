@@ -1,12 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="CKAN.LinuxGUI.SimplePromptWindow"
+        x:Class="CKAN.LinuxGUI.TextInputWindow"
         x:CompileBindings="False"
-        Width="440"
+        Width="420"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        Title="CKAN Linux">
+        Title="{Binding Title}">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -28,22 +28,16 @@
       <Setter Property="Background" Value="#1D2730" />
       <Setter Property="BorderBrush" Value="#6A7F94" />
     </Style>
-    <Style Selector="Button.dialog-action:disabled">
-      <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#303A44" />
-      <Setter Property="Foreground" Value="#7B8794" />
-      <Setter Property="Opacity" Value="1" />
-    </Style>
   </Window.Styles>
 
   <Grid RowDefinitions="Auto,Auto"
         Margin="20">
-    <StackPanel Spacing="12">
-      <TextBlock TextWrapping="Wrap"
+    <StackPanel Spacing="10">
+      <TextBlock FontWeight="SemiBold"
                  Text="{Binding Prompt}" />
-
-      <ListBox ItemsSource="{Binding Options}"
-               SelectedIndex="{Binding SelectedIndex}" />
+      <TextBox x:Name="InputTextBox"
+               MinHeight="36"
+               Text="{Binding Value, Mode=TwoWay}" />
     </StackPanel>
 
     <StackPanel Grid.Row="1"
@@ -53,8 +47,10 @@
                 Margin="0,20,0,0">
       <Button Classes="dialog-action"
               Click="CancelButton_OnClick"
-              Content="{Binding CancelLabel}" />
+              Content="Cancel" />
       <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
               Click="ConfirmButton_OnClick"
               Content="{Binding ConfirmLabel}" />
     </StackPanel>

@@ -40,6 +40,8 @@ namespace CKAN.LinuxGUI.VisualTests
                             Name = "Career Save",
                             GameDir = "/games/ksp-career",
                             GameName = "KSP",
+                            VersionText = "1.12.5",
+                            PlayTimeHours = 2.0,
                             IsCurrent = false,
                         },
                         new InstanceSummary
@@ -47,6 +49,7 @@ namespace CKAN.LinuxGUI.VisualTests
                             Name = "RSS Sandbox",
                             GameDir = "/games/ksp-rss",
                             GameName = "KSP",
+                            VersionText = "1.12.3",
                             IsCurrent = false,
                         },
                     };
@@ -61,13 +64,17 @@ namespace CKAN.LinuxGUI.VisualTests
                             Name = "Career Save",
                             GameDir = CurrentInstance.GameDir,
                             GameName = "KSP",
+                            VersionText = "1.12.5",
+                            PlayTimeHours = 2.0,
                             IsCurrent = true,
+                            IsDefault = true,
                         },
                         new InstanceSummary
                         {
                             Name = "RSS Sandbox",
                             GameDir = "/games/ksp-rss",
                             GameName = "KSP",
+                            VersionText = "1.12.3",
                             IsCurrent = false,
                         },
                     };
@@ -179,7 +186,10 @@ namespace CKAN.LinuxGUI.VisualTests
                         ? CurrentInstance.GameDir
                         : inst.GameDir,
                     GameName = inst.GameName,
+                    VersionText = inst.VersionText,
+                    PlayTimeHours = inst.PlayTimeHours,
                     IsCurrent = string.Equals(inst.Name, currentName, StringComparison.Ordinal),
+                    IsDefault = inst.IsDefault,
                 };
             }
 

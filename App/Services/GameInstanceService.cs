@@ -40,13 +40,9 @@ namespace CKAN.App.Services
 
         public IReadOnlyList<InstanceSummary> Instances
             => Manager.Instances.Values
-                      .Select(inst => new InstanceSummary
-                      {
-                          Name      = inst.Name,
-                          GameDir   = inst.GameDir,
-                          GameName  = inst.Game.ShortName,
-                          IsCurrent = CurrentInstance?.Name == inst.Name,
-                      })
+                      .Select(inst => InstanceSummary.From(inst,
+                                                           CurrentInstance?.Name,
+                                                           Configuration.AutoStartInstance))
                       .ToList();
 
         public event Action<GameInstance?>? CurrentInstanceChanged;

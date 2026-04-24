@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
@@ -65,6 +67,10 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private async void ResetCachePathButton_OnClick(object? sender,
+                                                        Avalonia.Interactivity.RoutedEventArgs e)
+            => await viewModel.TryChangeCachePathAsync(GameInstanceManager.DefaultDownloadCacheDir);
+
         private void OpenCacheButton_OnClick(object? sender,
                                              Avalonia.Interactivity.RoutedEventArgs e)
             => viewModel.OpenCacheFolder();
@@ -75,6 +81,7 @@ namespace CKAN.LinuxGUI
             private readonly GameInstanceManager? manager;
             private readonly Registry? registry;
             private readonly GameInstance? instance;
+            private readonly LinuxGuiConfiguration? guiConfiguration;
             private string latestVersion = "Not checked";
             private string downloadCacheSummary = "Calculating...";
             private string cacheErrorMessage = "";
@@ -89,6 +96,9 @@ namespace CKAN.LinuxGUI
                 manager = mainWindowViewModel?.CurrentManager;
                 registry = mainWindowViewModel?.CurrentRegistry;
                 instance = mainWindowViewModel?.CurrentInstance;
+                guiConfiguration = instance != null
+                    ? LinuxGuiConfiguration.LoadOrCreate(instance)
+                    : null;
 
                 RepositoryRows = registry?.Repositories.Values
                     .OrderBy(repo => repo.priority)
@@ -150,6 +160,20 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool CheckForUpdatesOnLaunch
+            {
+                get => guiConfiguration?.CheckForUpdatesOnLaunch ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.CheckForUpdatesOnLaunch = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
             public string DownloadCachePath { get; private set; }
 
             public string DownloadCacheSummary
@@ -197,6 +221,60 @@ namespace CKAN.LinuxGUI
                         configuration.RefreshRate = int.TryParse(value, out var minutes) && minutes > 0
                             ? minutes
                             : 0;
+                        if (configuration.RefreshRate == 0)
+                        {
+                            RefreshPaused = false;
+                        }
+                        this.RaisePropertyChanged(nameof(CanPauseRefresh));
+                    }
+                }
+            }
+
+            public bool CanPauseRefresh => (configuration?.RefreshRate ?? 0) > 0;
+
+            public bool RefreshPaused
+            {
+                get => guiConfiguration?.RefreshPaused ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.RefreshPaused = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool EnableTrayIcon
+            {
+                get => guiConfiguration?.EnableTrayIcon ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.EnableTrayIcon = value;
+                        if (!value)
+                        {
+                            guiConfiguration.MinimizeToTray = false;
+                        }
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                        this.RaisePropertyChanged(nameof(MinimizeToTray));
+                    }
+                }
+            }
+
+            public bool MinimizeToTray
+            {
+                get => guiConfiguration?.MinimizeToTray ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.MinimizeToTray = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
                     }
                 }
             }
@@ -212,6 +290,62 @@ namespace CKAN.LinuxGUI
                     if (configuration != null)
                     {
                         configuration.Language = value;
+                    }
+                }
+            }
+
+            public bool RefreshOnStartup
+            {
+                get => guiConfiguration?.RefreshOnStartup ?? true;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.RefreshOnStartup = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool HideEpochs
+            {
+                get => guiConfiguration?.HideEpochs ?? true;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.HideEpochs = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool HideV
+            {
+                get => guiConfiguration?.HideV ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.HideV = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool AutoSortByUpdate
+            {
+                get => guiConfiguration?.AutoSortByUpdate ?? true;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.AutoSortByUpdate = value;
+                        SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
                     }
                 }
             }
@@ -271,6 +405,7 @@ namespace CKAN.LinuxGUI
                 DownloadCachePath = configuration?.DownloadCacheDir
                                     ?? GameInstanceManager.DefaultDownloadCacheDir;
                 this.RaisePropertyChanged(nameof(DownloadCachePath));
+                this.RaisePropertyChanged(nameof(CanResetCachePath));
                 RefreshCacheSummary();
             }
 
@@ -334,6 +469,17 @@ namespace CKAN.LinuxGUI
                     }
                 });
             }
+
+            public bool CanResetCachePath
+                => DownloadCachePath != GameInstanceManager.DefaultDownloadCacheDir;
+
+            private void SaveGuiConfiguration()
+            {
+                if (guiConfiguration != null)
+                {
+                    guiConfiguration.Save();
+                }
+            }
         }
 
         private sealed record RepositoryRow(string Name, string Url);
@@ -351,6 +497,97 @@ namespace CKAN.LinuxGUI
 
             public override string ToString()
                 => $"{Value.LocalizeName()} - {Value.LocalizeDescription()}";
+        }
+
+        private sealed class LinuxGuiConfiguration
+        {
+            private LinuxGuiConfiguration(GameInstance instance, JsonObject root)
+            {
+                this.instance = instance;
+                this.root = root;
+            }
+
+            public static LinuxGuiConfiguration LoadOrCreate(GameInstance instance)
+                => new LinuxGuiConfiguration(
+                    instance,
+                    Utilities.DefaultIfThrows(() =>
+                        JsonNode.Parse(File.ReadAllText(ConfigPath(instance))) as JsonObject)
+                    ?? new JsonObject());
+
+            public bool CheckForUpdatesOnLaunch
+            {
+                get => GetBool(nameof(CheckForUpdatesOnLaunch), false);
+                set => SetBool(nameof(CheckForUpdatesOnLaunch), value);
+            }
+
+            public bool EnableTrayIcon
+            {
+                get => GetBool(nameof(EnableTrayIcon), false);
+                set => SetBool(nameof(EnableTrayIcon), value);
+            }
+
+            public bool MinimizeToTray
+            {
+                get => GetBool(nameof(MinimizeToTray), false);
+                set => SetBool(nameof(MinimizeToTray), value);
+            }
+
+            public bool HideEpochs
+            {
+                get => GetBool(nameof(HideEpochs), true);
+                set => SetBool(nameof(HideEpochs), value);
+            }
+
+            public bool HideV
+            {
+                get => GetBool(nameof(HideV), false);
+                set => SetBool(nameof(HideV), value);
+            }
+
+            public bool RefreshOnStartup
+            {
+                get => GetBool(nameof(RefreshOnStartup), true);
+                set => SetBool(nameof(RefreshOnStartup), value);
+            }
+
+            public bool RefreshPaused
+            {
+                get => GetBool(nameof(RefreshPaused), false);
+                set => SetBool(nameof(RefreshPaused), value);
+            }
+
+            public bool AutoSortByUpdate
+            {
+                get => GetBool(nameof(AutoSortByUpdate), true);
+                set => SetBool(nameof(AutoSortByUpdate), value);
+            }
+
+            public void Save()
+                => root.ToJsonString(new JsonSerializerOptions
+                   {
+                       WriteIndented = true,
+                   }).WriteThroughTo(ConfigPath(instance));
+
+            private bool GetBool(string key, bool defaultValue)
+            {
+                try
+                {
+                    return root[key]?.GetValue<bool>() ?? defaultValue;
+                }
+                catch (InvalidOperationException)
+                {
+                    return defaultValue;
+                }
+            }
+
+            private void SetBool(string key, bool value)
+                => root[key] = value;
+
+            private static string ConfigPath(GameInstance instance)
+                => Path.Combine(instance.CkanDir, "GUIConfig.json");
+
+            private readonly GameInstance instance;
+            private readonly JsonObject root;
         }
     }
 }

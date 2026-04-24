@@ -1,0 +1,156 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CKAN.LinuxGUI.RecommendationAuditWindow"
+        x:CompileBindings="False"
+        Width="860"
+        Height="620"
+        MinWidth="760"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        Title="Audit Recommendations"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="Button.dialog-action">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="92" />
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="Background" Value="#24303B" />
+      <Setter Property="BorderBrush" Value="#405061" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#F3F7FC" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.dialog-action:pointerover">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.dialog-action:pressed">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.dialog-action:disabled">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+      <Setter Property="Foreground" Value="#7B8794" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto"
+        Margin="20">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="22"
+                 FontWeight="SemiBold"
+                 Text="Audit Recommendations" />
+      <TextBlock FontSize="13"
+                 Opacity="0.74"
+                 TextWrapping="Wrap"
+                 Text="{Binding SummaryText}" />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,Auto"
+          Margin="0,16,0,0">
+      <TextBlock VerticalAlignment="Center"
+                 FontSize="13"
+                 Opacity="0.82"
+                 Text="{Binding SelectionSummary}" />
+      <StackPanel Grid.Column="1"
+                  Orientation="Horizontal"
+                  Spacing="10">
+        <Button Classes="dialog-action"
+                Click="CheckRecommendationsButton_OnClick"
+                Content="Check Recommendations" />
+        <Button Classes="dialog-action"
+                Click="CheckAllButton_OnClick"
+                Content="Check All" />
+        <Button Classes="dialog-action"
+                Click="UncheckAllButton_OnClick"
+                Content="Uncheck All" />
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="2"
+            Margin="0,14,0,0"
+            Background="#161B21"
+            BorderBrush="#2B323C"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="12">
+      <ListBox Classes="utility-list"
+               ItemsSource="{Binding Items}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="utility-list-row">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <CheckBox VerticalAlignment="Top"
+                          Margin="0,0,12,0"
+                          IsEnabled="{Binding CanQueue}"
+                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                <StackPanel Grid.Column="1"
+                            Spacing="5">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Border Background="{Binding KindBadgeBackground}"
+                            BorderBrush="{Binding KindBadgeBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="999"
+                            Margin="0,0,10,0"
+                            Padding="9,3">
+                      <TextBlock FontSize="11"
+                                 FontWeight="SemiBold"
+                                 Text="{Binding Kind}" />
+                    </Border>
+                    <TextBlock Grid.Column="1"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding Name}" />
+                  </Grid>
+                  <TextBlock FontSize="12"
+                             Opacity="0.72"
+                             TextTrimming="CharacterEllipsis"
+                             Text="{Binding Identifier}" />
+                  <TextBlock FontSize="12"
+                             Opacity="0.82"
+                             TextWrapping="Wrap"
+                             Text="{Binding Summary}" />
+                  <TextBlock FontSize="12"
+                             Opacity="0.68"
+                             TextWrapping="Wrap"
+                             Text="{Binding Source}" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           MinWidth="88"
+                           HorizontalAlignment="Right"
+                           TextAlignment="Right"
+                           Opacity="0.76"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding Version}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+
+    <StackPanel Grid.Row="3"
+                Margin="0,18,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+      <Button Classes="dialog-action"
+              Background="#20262D"
+              BorderBrush="#39424E"
+              Foreground="#F4F6F8"
+              Click="CancelButton_OnClick"
+              Content="Cancel" />
+      <Button Classes="dialog-action"
+              Background="#355779"
+              BorderBrush="#5A86B4"
+              Foreground="#F4F6F8"
+              Click="QueueSelectedButton_OnClick"
+              Content="Queue Selected" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -43,6 +43,11 @@ namespace CKAN.App.Models
 
         public string InstalledVersion { get; init; } = "";
 
+        public bool ShowInstalledVersionInList
+            => IsInstalled
+               && !string.IsNullOrWhiteSpace(InstalledVersion)
+               && !string.Equals(InstalledVersion, LatestVersion, StringComparison.Ordinal);
+
         public string ReleaseDate { get; init; } = "";
 
         public DateTime? ReleaseDateValue { get; init; }

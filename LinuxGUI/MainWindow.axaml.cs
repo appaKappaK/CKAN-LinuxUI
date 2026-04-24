@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,11 +7,13 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 using CKAN.App.Models;
 using CKAN.App.Services;
+using CKAN.Types;
 
 namespace CKAN.LinuxGUI
 {
@@ -166,18 +169,6 @@ namespace CKAN.LinuxGUI
             return await dialog.ShowDialog<int>(this) == 0;
         }
 
-        private void AdvancedFiltersPopup_OnOpened(object? sender,
-                                                   EventArgs e)
-        {
-            if (DataContext is not MainWindowViewModel viewModel || !viewModel.ShowAdvancedFilterEditor)
-            {
-                return;
-            }
-
-            AdvancedAuthorFilterTextBox.Focus();
-            AdvancedAuthorFilterTextBox.SelectAll();
-        }
-
         private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
                                                                   Avalonia.Interactivity.RoutedEventArgs e)
             => await OpenCompatibleGameVersionsAsync();
@@ -318,8 +309,15 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new ManageInstancesWindow(viewModel.Instances.ToList(),
-                                                   viewModel.CurrentInstance?.Name);
-            if (await dialog.ShowDialog<bool>(this)
+                                                   viewModel.CurrentInstance?.Name,
+                                                   viewModel.CurrentManager,
+                                                   viewModel.CurrentUser);
+            var shouldSwitch = await dialog.ShowDialog<bool>(this);
+            if (dialog.Changed)
+            {
+                viewModel.RefreshInstanceSummaries();
+            }
+            if (shouldSwitch
                 && dialog.SelectedInstanceName is string instanceName)
             {
                 viewModel.SelectedInstance = viewModel.Instances.FirstOrDefault(inst => inst.Name == instanceName);
@@ -337,6 +335,147 @@ namespace CKAN.LinuxGUI
 
             var dialog = new InstallationHistoryWindow(viewModel.CurrentInstance);
             await dialog.ShowDialog(this);
+        }
+
+        private async void InstallFromCkanMenuItem_OnClick(object? sender,
+                                                          Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Install from .ckan",
+                AllowMultiple = true,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("CKAN files")
+                    {
+                        Patterns = new[] { "*.ckan" },
+                    },
+                },
+            });
+            var paths = files.Select(file => file.TryGetLocalPath())
+                             .Where(path => !string.IsNullOrWhiteSpace(path))
+                             .OfType<string>()
+                             .ToList();
+            if (paths.Count > 0)
+            {
+                await viewModel.InstallFromCkanFilesAsync(paths);
+            }
+        }
+
+        private async void ImportDownloadedModsMenuItem_OnClick(object? sender,
+                                                                Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Import Downloaded Mods",
+                AllowMultiple = true,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Mod archives")
+                    {
+                        Patterns = new[] { "*.zip" },
+                    },
+                },
+            });
+            var paths = files.Select(file => file.TryGetLocalPath())
+                             .Where(path => !string.IsNullOrWhiteSpace(path))
+                             .OfType<string>()
+                             .ToList();
+            if (paths.Count > 0)
+            {
+                await viewModel.ImportDownloadedModsAsync(paths);
+            }
+        }
+
+        private async void DeduplicateInstalledFilesMenuItem_OnClick(object? sender,
+                                                                     Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                await viewModel.DeduplicateInstalledFilesAsync();
+            }
+        }
+
+        private async void ExportModListMenuItem_OnClick(object? sender,
+                                                         Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save Installed Mod List",
+                SuggestedFileName = $"installed-{viewModel.CurrentInstance?.SanitizedName ?? "mods"}.txt",
+                DefaultExtension = "txt",
+                FileTypeChoices = InstalledModListFileTypes,
+            });
+            var path = file?.TryGetLocalPath();
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                await viewModel.ExportInstalledModListAsync(path, ExportTypeForPath(path));
+            }
+        }
+
+        private async void ExportModpackMenuItem_OnClick(object? sender,
+                                                        Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export Re-importable Modpack",
+                SuggestedFileName = $"modpack-{viewModel.CurrentInstance?.SanitizedName ?? "instance"}.ckan",
+                DefaultExtension = "ckan",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType("CKAN modpack")
+                    {
+                        Patterns = new[] { "*.ckan" },
+                    },
+                },
+            });
+            var path = file?.TryGetLocalPath();
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                await viewModel.ExportModpackAsync(path);
+            }
+        }
+
+        private async void AuditRecommendationsMenuItem_OnClick(object? sender,
+                                                                Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.CurrentInstance == null)
+            {
+                return;
+            }
+
+            var items = await viewModel.AuditRecommendationsAsync();
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            var dialog = new RecommendationAuditWindow(items, viewModel.CurrentInstance.Name);
+            if (await dialog.ShowDialog<bool>(this))
+            {
+                viewModel.QueueRecommendationAuditSelections(dialog.SelectedItems);
+            }
         }
 
         private async void DownloadStatisticsMenuItem_OnClick(object? sender,
@@ -382,6 +521,40 @@ namespace CKAN.LinuxGUI
         {
             Close();
         }
+
+        private static IReadOnlyList<FilePickerFileType> InstalledModListFileTypes { get; } = new[]
+        {
+            new FilePickerFileType("Plain text")
+            {
+                Patterns = new[] { "*.txt" },
+            },
+            new FilePickerFileType("Markdown")
+            {
+                Patterns = new[] { "*.md" },
+            },
+            new FilePickerFileType("BBCode")
+            {
+                Patterns = new[] { "*.bbcode", "*.txt" },
+            },
+            new FilePickerFileType("CSV")
+            {
+                Patterns = new[] { "*.csv" },
+            },
+            new FilePickerFileType("TSV")
+            {
+                Patterns = new[] { "*.tsv" },
+            },
+        };
+
+        private static ExportFileType ExportTypeForPath(string path)
+            => System.IO.Path.GetExtension(path).ToLowerInvariant() switch
+            {
+                ".md"     => ExportFileType.Markdown,
+                ".bbcode" => ExportFileType.BbCode,
+                ".csv"    => ExportFileType.Csv,
+                ".tsv"    => ExportFileType.Tsv,
+                _         => ExportFileType.PlainText,
+            };
 
         private void SelectedModResourceLinkButton_OnClick(object? sender,
                                                            Avalonia.Interactivity.RoutedEventArgs e)

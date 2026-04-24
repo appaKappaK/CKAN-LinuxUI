@@ -231,13 +231,13 @@ namespace CKAN
             {
                 if (Platform.IsMac)
                 {
-                    Process.Start("open", $"\"{url}\"");
-                    return true;
+                    return StartProcess("open", url);
                 }
                 else if (Platform.IsUnix)
                 {
-                    Process.Start("xdg-open", $"\"{url}\"");
-                    return true;
+                    return Directory.Exists(url)
+                        ? StartUnixDefaultFileManager(url)
+                        : StartProcess("xdg-open", url);
                 }
                 else
                 {
@@ -264,8 +264,275 @@ namespace CKAN
             // Otherwise the OS would try to open the file in its default application
             if (DirPath(location) is string path)
             {
-                ProcessStartURL(path);
+                OpenDirectory(path);
             }
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static bool OpenDirectory(string path)
+            => Platform.IsMac
+                ? StartProcess("open", path)
+             : Platform.IsUnix
+                ? StartUnixDefaultFileManager(path)
+             : ProcessStartURL(path);
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartUnixDefaultFileManager(string path)
+            => StartKdeDefaultFileManager(path)
+               || StartDesktopFile(QueryDefaultDirectoryDesktopFile(), path)
+               || StartProcess("gio", "open", path)
+               || StartProcess("xdg-open", path);
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartKdeDefaultFileManager(string path)
+            => IsKdeDesktop()
+               && (StartIfCommandExists("kde-open6", path)
+                   || StartIfCommandExists("kde-open5", path)
+                   || StartIfCommandExists("kioclient6", "exec", path)
+                   || StartIfCommandExists("kioclient5", "exec", path));
+
+        private static bool IsKdeDesktop()
+            => (Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "")
+                   .Split(':', StringSplitOptions.RemoveEmptyEntries)
+                   .Any(desktop => string.Equals(desktop, "KDE", StringComparison.OrdinalIgnoreCase))
+               || string.Equals(Environment.GetEnvironmentVariable("KDE_FULL_SESSION"),
+                                "true",
+                                StringComparison.OrdinalIgnoreCase);
+
+        [ExcludeFromCodeCoverage]
+        private static string? QueryDefaultDirectoryDesktopFile()
+            => DesktopFilePath(
+                RunAndReadFirstLine("xdg-mime", "query", "default", "inode/directory"));
+
+        private static string? DesktopFilePath(string? desktopId)
+        {
+            if (string.IsNullOrWhiteSpace(desktopId))
+            {
+                return null;
+            }
+
+            foreach (var applicationsDir in XdgApplicationsDirs())
+            {
+                var direct = Path.Combine(applicationsDir, desktopId);
+                if (File.Exists(direct))
+                {
+                    return direct;
+                }
+            }
+            return null;
+        }
+
+        private static IEnumerable<string> XdgApplicationsDirs()
+        {
+            var home = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            yield return Path.Combine(
+                string.IsNullOrWhiteSpace(home)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share")
+                    : home,
+                "applications");
+
+            var dataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS");
+            foreach (var dir in (string.IsNullOrWhiteSpace(dataDirs) ? "/usr/local/share:/usr/share" : dataDirs)
+                     .Split(':', StringSplitOptions.RemoveEmptyEntries))
+            {
+                yield return Path.Combine(dir, "applications");
+            }
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartDesktopFile(string? desktopFile,
+                                             string  path)
+        {
+            if (desktopFile == null
+                || ReadDesktopExec(desktopFile) is not string execLine)
+            {
+                return false;
+            }
+
+            var args = ExpandDesktopExec(execLine, path);
+            if (args.Count == 0)
+            {
+                return false;
+            }
+
+            return StartProcess(args[0], args.Skip(1));
+        }
+
+        private static string? ReadDesktopExec(string desktopFile)
+        {
+            try
+            {
+                foreach (var line in File.ReadLines(desktopFile))
+                {
+                    if (line.StartsWith("Exec=", StringComparison.Ordinal))
+                    {
+                        return line.Substring("Exec=".Length);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                log.Debug($"Failed to read desktop file {desktopFile}", exc);
+            }
+            return null;
+        }
+
+        private static List<string> ExpandDesktopExec(string execLine,
+                                                      string path)
+        {
+            var tokens = SplitDesktopExec(execLine);
+            var expanded = new List<string>();
+            var usedPath = false;
+            var uri = new Uri(Path.GetFullPath(path)).AbsoluteUri;
+
+            foreach (var token in tokens)
+            {
+                if (token is "%f" or "%F")
+                {
+                    expanded.Add(path);
+                    usedPath = true;
+                }
+                else if (token is "%u" or "%U")
+                {
+                    expanded.Add(uri);
+                    usedPath = true;
+                }
+                else if (token.StartsWith("%", StringComparison.Ordinal))
+                {
+                    // Desktop Entry field codes such as %i, %c, and %k are not needed
+                    // to launch a file manager for one directory.
+                    continue;
+                }
+                else
+                {
+                    var replaced = token.Replace("%f", path, StringComparison.Ordinal)
+                                        .Replace("%F", path, StringComparison.Ordinal)
+                                        .Replace("%u", uri, StringComparison.Ordinal)
+                                        .Replace("%U", uri, StringComparison.Ordinal);
+                    usedPath |= !string.Equals(replaced, token, StringComparison.Ordinal);
+                    expanded.Add(replaced);
+                }
+            }
+
+            if (expanded.Count > 0 && !usedPath)
+            {
+                expanded.Add(path);
+            }
+
+            return expanded;
+        }
+
+        private static List<string> SplitDesktopExec(string execLine)
+        {
+            var tokens = new List<string>();
+            var current = "";
+            var quoted = false;
+            var escaped = false;
+
+            foreach (var ch in execLine)
+            {
+                if (escaped)
+                {
+                    current += ch;
+                    escaped = false;
+                }
+                else if (ch == '\\')
+                {
+                    escaped = true;
+                }
+                else if (ch == '"')
+                {
+                    quoted = !quoted;
+                }
+                else if (char.IsWhiteSpace(ch) && !quoted)
+                {
+                    if (current.Length > 0)
+                    {
+                        tokens.Add(current);
+                        current = "";
+                    }
+                }
+                else
+                {
+                    current += ch;
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                tokens.Add(current);
+            }
+
+            return tokens;
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static string? RunAndReadFirstLine(string command,
+                                                   params string[] args)
+        {
+            try
+            {
+                using var process = new Process
+                {
+                    StartInfo = BuildProcessStartInfo(command, args)
+                };
+                process.StartInfo.RedirectStandardOutput = true;
+                process.Start();
+                var line = process.StandardOutput.ReadLine();
+                process.WaitForExit(2000);
+                return line;
+            }
+            catch (Exception exc)
+            {
+                log.Debug($"Failed to run {command}", exc);
+                return null;
+            }
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartProcess(string command,
+                                         params string[] args)
+            => StartProcess(command, args.AsEnumerable());
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartIfCommandExists(string command,
+                                                 params string[] args)
+            => CommandExists(command) && StartProcess(command, args);
+
+        private static bool CommandExists(string command)
+            => Path.IsPathRooted(command)
+                ? File.Exists(command)
+                : (Environment.GetEnvironmentVariable("PATH") ?? "")
+                    .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+                    .Any(dir => File.Exists(Path.Combine(dir, command)));
+
+        [ExcludeFromCodeCoverage]
+        private static bool StartProcess(string command,
+                                         IEnumerable<string> args)
+        {
+            try
+            {
+                return Process.Start(BuildProcessStartInfo(command, args)) != null;
+            }
+            catch (Exception exc)
+            {
+                log.Error($"Exception starting {command}", exc);
+                return false;
+            }
+        }
+
+        private static ProcessStartInfo BuildProcessStartInfo(string              command,
+                                                              IEnumerable<string> args)
+        {
+            var startInfo = new ProcessStartInfo(command)
+            {
+                UseShellExecute = false,
+            };
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+            return startInfo;
         }
 
         private static string? DirPath(string path)
