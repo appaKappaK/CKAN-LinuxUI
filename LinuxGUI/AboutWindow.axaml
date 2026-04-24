@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:CKAN.LinuxGUI"
+        x:Class="CKAN.LinuxGUI.AboutWindow"
+        x:CompileBindings="False"
+        Width="560"
+        Height="250"
+        MinWidth="520"
+        MinHeight="230"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="About"
+        Background="#171C22">
+  <Window.Styles>
+    <Style Selector="TextBlock.about-label">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Foreground" Value="#D6DEE7" />
+      <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.about-link-button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.about-link-button:pointerover TextBlock">
+      <Setter Property="Foreground" Value="#97C0F0" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="14">
+    <TextBlock FontSize="22"
+               FontWeight="SemiBold"
+               Text="CKAN - The Comprehensive Kerbal Archive Network" />
+
+    <TextBlock Grid.Row="1"
+               Margin="0,8,0,0"
+               FontSize="17"
+               Foreground="#D6DEE7"
+               Text="{Binding VersionText}" />
+
+    <ItemsControl Grid.Row="2"
+                  Margin="0,20,0,0"
+                  ItemsSource="{Binding Links}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate DataType="local:AboutLinkItem">
+          <Grid ColumnDefinitions="98,*"
+                Margin="0,0,0,8">
+            <TextBlock Classes="about-label"
+                       Margin="0,2,12,0"
+                       Text="{Binding Label}" />
+            <Button Grid.Column="1"
+                    Classes="about-link-button"
+                    Tag="{Binding Url}"
+                    Click="AboutLinkButton_OnClick">
+              <TextBlock FontSize="12.5"
+                         Foreground="#73A7E0"
+                         TextWrapping="Wrap"
+                         Text="{Binding Url}" />
+            </Button>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Grid>
+</Window>

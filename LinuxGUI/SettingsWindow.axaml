@@ -1,226 +1,383 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         x:Class="CKAN.LinuxGUI.SettingsWindow"
         x:CompileBindings="False"
-        Width="920"
-        Height="640"
-        MinWidth="820"
-        MinHeight="560"
+        mc:Ignorable="d"
+        Width="900"
+        Height="630"
+        MinWidth="860"
+        MinHeight="600"
         WindowStartupLocation="CenterOwner"
-        Title="CKAN Settings"
-        Background="#171C22">
+        Title="Settings"
+        Background="#20262D">
   <Window.Styles>
-    <Style Selector="Button.dialog-action">
-      <Setter Property="MinHeight" Value="34" />
-      <Setter Property="Padding" Value="14,7" />
-      <Setter Property="CornerRadius" Value="8" />
-    </Style>
-    <Style Selector="Border.settings-card">
-      <Setter Property="Background" Value="#161B21" />
-      <Setter Property="BorderBrush" Value="#2B323C" />
+    <Style Selector="Border.settings-group">
+      <Setter Property="BorderBrush" Value="#55606B" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="14" />
+      <Setter Property="Padding" Value="12" />
     </Style>
-    <Style Selector="Button.settings-open">
-      <Setter Property="Background" Value="#355779" />
-      <Setter Property="BorderBrush" Value="#5A86B4" />
-      <Setter Property="Foreground" Value="#F4F6F8" />
-      <Setter Property="MinWidth" Value="110" />
+    <Style Selector="TextBlock.settings-group-title">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="Margin" Value="0,-21,0,8" />
     </Style>
-    <Style Selector="TextBlock.card-error">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="#F06C6C" />
-      <Setter Property="TextWrapping" Value="Wrap" />
+    <Style Selector="TextBlock.settings-label">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+    </Style>
+    <Style Selector="TextBlock.settings-muted">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#D8DEE5" />
+      <Setter Property="Opacity" Value="0.86" />
+    </Style>
+    <Style Selector="Button.settings-button">
+      <Setter Property="Background" Value="#1C2229" />
+      <Setter Property="BorderBrush" Value="#3E4955" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="88" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="TextBox.settings-textbox">
+      <Setter Property="Background" Value="#0F1419" />
+      <Setter Property="BorderBrush" Value="#0B0F14" />
+      <Setter Property="Foreground" Value="#E8EDF2" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
+    <Style Selector="ComboBox.settings-combo">
+      <Setter Property="Background" Value="#F4F6F8" />
+      <Setter Property="Foreground" Value="#11161C" />
+      <Setter Property="BorderBrush" Value="#0B0F14" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="MinHeight" Value="28" />
+    </Style>
+    <Style Selector="ListBox.settings-list">
+      <Setter Property="Background" Value="#F5F5F5" />
+      <Setter Property="BorderBrush" Value="#0B0F14" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="92" />
+    </Style>
+    <Style Selector="ListBox.settings-list ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="CheckBox.settings-check">
+      <Setter Property="Foreground" Value="#F2F4F7" />
+      <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto"
-        Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="CKAN Settings" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="Use this hub to open the dedicated editors for display, compatibility, launch, host, filter, and plugin settings. Each section stays focused, so the main window does not need to carry the full settings surface." />
-    </StackPanel>
-
-    <ScrollViewer Grid.Row="1"
-                  Margin="0,18,0,0"
-                  HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-      <Grid ColumnDefinitions="*,*"
-            RowDefinitions="Auto,Auto,Auto">
-        <Border Classes="settings-card"
-                Margin="0,0,7,14">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Display Scale" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Adjust LinuxGUI scale for the current display so dense views and dialogs stay readable." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding DisplayScaleCard.ShowError}"
-                       Text="{Binding DisplayScaleCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="DisplayScaleButton_OnClick"
-                      IsEnabled="{Binding DisplayScaleCard.CanInvoke}"
-                      Content="{Binding DisplayScaleCard.ButtonText}" />
-            </StackPanel>
+  <Grid RowDefinitions="*,Auto"
+        Margin="18">
+    <Grid ColumnDefinitions="2*,1*"
+          RowDefinitions="Auto,Auto,Auto"
+          ColumnSpacing="16"
+          RowSpacing="18">
+      <Border Classes="settings-group">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="Metadata Repositories" />
+          <Grid Grid.Row="1"
+                RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="140,*"
+                  Margin="0,0,0,4">
+              <TextBlock Classes="settings-label"
+                         Text="Name" />
+              <TextBlock Grid.Column="1"
+                         Classes="settings-label"
+                         Text="URL" />
+            </Grid>
+            <ListBox Grid.Row="1"
+                     Classes="settings-list"
+                     ItemsSource="{Binding RepositoryRows}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="140,*"
+                        Margin="8,4">
+                    <TextBlock Foreground="#11161C"
+                               Text="{Binding Name}" />
+                    <TextBlock Grid.Column="1"
+                               Foreground="#11161C"
+                               Text="{Binding Url}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+          <StackPanel Grid.Row="2"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      Margin="0,10,0,0">
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="New" />
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="Up" />
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="Down" />
+            <Button Classes="settings-button"
+                    HorizontalAlignment="Right"
+                    IsEnabled="False"
+                    Content="Delete" />
           </StackPanel>
-        </Border>
+        </Grid>
+      </Border>
 
-        <Border Grid.Column="1"
-                Classes="settings-card"
-                Margin="7,0,0,14">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Compatible Game Versions" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Review extra KSP versions that should be treated as compatible for this installation." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding CompatibleGameVersionsCard.ShowError}"
-                       Text="{Binding CompatibleGameVersionsCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="CompatibleGameVersionsButton_OnClick"
-                      IsEnabled="{Binding CompatibleGameVersionsCard.CanInvoke}"
-                      Content="{Binding CompatibleGameVersionsCard.ButtonText}" />
-            </StackPanel>
+      <Border Grid.Column="1"
+              Classes="settings-group">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="Authentication Tokens" />
+          <Grid Grid.Row="1"
+                RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="110,*"
+                  Margin="0,0,0,4">
+              <TextBlock Classes="settings-label"
+                         Text="Host" />
+              <TextBlock Grid.Column="1"
+                         Classes="settings-label"
+                         Text="Token" />
+            </Grid>
+            <ListBox Grid.Row="1"
+                     Classes="settings-list"
+                     ItemsSource="{Binding AuthTokenRows}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="110,*"
+                        Margin="8,4">
+                    <TextBlock Foreground="#11161C"
+                               Text="{Binding Host}" />
+                    <TextBlock Grid.Column="1"
+                               Foreground="#11161C"
+                               Text="{Binding Token}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+          <StackPanel Grid.Row="2"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      Margin="0,10,0,0">
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="New" />
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="Delete" />
           </StackPanel>
-        </Border>
+        </Grid>
+      </Border>
 
-        <Border Grid.Row="1"
-                Classes="settings-card"
-                Margin="0,0,7,14">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Game Command Lines" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Manage default and alternate launch commands for starting the game from LinuxGUI." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding GameCommandLinesCard.ShowError}"
-                       Text="{Binding GameCommandLinesCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="GameCommandLinesButton_OnClick"
-                      IsEnabled="{Binding GameCommandLinesCard.CanInvoke}"
-                      Content="{Binding GameCommandLinesCard.ButtonText}" />
-            </StackPanel>
+      <Border Grid.Row="1"
+              Classes="settings-group">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="Auto-Updates" />
+          <Grid Grid.Row="0"
+                ColumnDefinitions="105,*"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="8"
+                Margin="0,4,0,10">
+            <TextBlock Classes="settings-label"
+                       Text="Local version:" />
+            <TextBlock Grid.Column="1"
+                       Classes="settings-muted"
+                       Text="{Binding LocalVersion}" />
+            <TextBlock Grid.Row="1"
+                       Classes="settings-label"
+                       Text="Latest version:" />
+            <TextBlock Grid.Row="1"
+                       Grid.Column="1"
+                       Classes="settings-muted"
+                       Text="{Binding LatestVersion}" />
+          </Grid>
+          <CheckBox Grid.Row="1"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    Content="Check for CKAN updates on launch" />
+          <CheckBox Grid.Row="2"
+                    Classes="settings-check"
+                    IsChecked="{Binding UseDevBuilds}"
+                    Content="Use dev builds" />
+          <StackPanel Grid.Row="3"
+                      Orientation="Horizontal"
+                      Spacing="10"
+                      Margin="0,10,0,0">
+            <Button Classes="settings-button"
+                    Click="CheckForUpdatesButton_OnClick"
+                    Content="Check for updates" />
+            <Button Classes="settings-button"
+                    IsEnabled="False"
+                    Content="Install update" />
           </StackPanel>
-        </Border>
+        </Grid>
+      </Border>
 
-        <Border Grid.Row="1"
-                Grid.Column="1"
-                Classes="settings-card"
-                Margin="7,0,0,14">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Preferred Hosts" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Choose which download mirrors CKAN should prefer when multiple hosts provide the same package." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding PreferredHostsCard.ShowError}"
-                       Text="{Binding PreferredHostsCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="PreferredHostsButton_OnClick"
-                      IsEnabled="{Binding PreferredHostsCard.CanInvoke}"
-                      Content="{Binding PreferredHostsCard.ButtonText}" />
-            </StackPanel>
+      <Border Grid.Row="1"
+              Grid.Column="1"
+              Classes="settings-group">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="Download Cache" />
+          <Grid ColumnDefinitions="*,Auto"
+                Margin="0,4,0,10">
+            <TextBox Classes="settings-textbox"
+                     IsReadOnly="True"
+                     Text="{Binding DownloadCachePath}" />
+            <Button Grid.Column="1"
+                    Classes="settings-button"
+                    Margin="8,0,0,0"
+                    Click="ChangeCachePathButton_OnClick"
+                    Content="Edit" />
+          </Grid>
+          <TextBlock Grid.Row="1"
+                     Classes="settings-muted"
+                     Margin="0,0,0,10"
+                     Text="{Binding DownloadCacheSummary}" />
+          <Grid Grid.Row="2"
+                ColumnDefinitions="120,80,*"
+                Margin="0,0,0,12">
+            <TextBlock Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="Maximum cache size:" />
+            <TextBox Grid.Column="1"
+                     Classes="settings-textbox"
+                     HorizontalAlignment="Stretch"
+                     Text="{Binding CacheSizeLimitMiBText}" />
+            <TextBlock Grid.Column="2"
+                       Classes="settings-muted"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"
+                       Text="MiB (empty for unlimited)" />
+          </Grid>
+          <StackPanel Grid.Row="3"
+                      Orientation="Horizontal"
+                      Spacing="10">
+            <Button Classes="settings-button"
+                    Click="ChangeCachePathButton_OnClick"
+                    Content="Change..." />
+            <Button Classes="settings-button"
+                    Click="PurgeCacheButton_OnClick"
+                    Content="Purge" />
+            <Button Classes="settings-button"
+                    Click="OpenCacheButton_OnClick"
+                    Content="Open" />
           </StackPanel>
-        </Border>
+          <TextBlock Grid.Row="4"
+                     Classes="card-error"
+                     Margin="0,10,0,0"
+                     IsVisible="{Binding ShowCacheError}"
+                     Text="{Binding CacheErrorMessage}" />
+        </Grid>
+      </Border>
 
-        <Border Grid.Row="2"
-                Classes="settings-card"
-                Margin="0,0,7,0">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Installation Filters" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Edit global and instance-specific install filters that exclude unwanted files from deployment." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding InstallationFiltersCard.ShowError}"
-                       Text="{Binding InstallationFiltersCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="InstallationFiltersButton_OnClick"
-                      IsEnabled="{Binding InstallationFiltersCard.CanInvoke}"
-                      Content="{Binding InstallationFiltersCard.ButtonText}" />
-            </StackPanel>
-          </StackPanel>
-        </Border>
+      <Border Grid.Row="2"
+              Classes="settings-group">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="Behavior" />
+          <CheckBox Classes="settings-check"
+                    IsEnabled="False"
+                    Content="Enable tray icon" />
+          <CheckBox Grid.Row="1"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    Content="Minimize to tray" />
+          <Grid Grid.Row="2"
+                ColumnDefinitions="140,52,*"
+                Margin="0,8,0,8">
+            <TextBlock Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="Refresh modlist every" />
+            <TextBox Grid.Column="1"
+                     Classes="settings-textbox"
+                     Text="{Binding RefreshRateText}" />
+            <TextBlock Grid.Column="2"
+                       Classes="settings-muted"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"
+                       Text="minute(s)" />
+          </Grid>
+          <CheckBox Grid.Row="3"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    Content="Pause refreshing" />
+        </Grid>
+      </Border>
 
-        <Border Grid.Row="2"
-                Grid.Column="1"
-                Classes="settings-card"
-                Margin="7,0,0,0">
-          <StackPanel Spacing="12">
-            <StackPanel Spacing="4">
-              <TextBlock FontSize="15"
-                         FontWeight="SemiBold"
-                         Text="Plugins" />
-              <TextBlock FontSize="12"
-                         Opacity="0.74"
-                         TextWrapping="Wrap"
-                         Text="Manage active and dormant LinuxGUI plugins, reload assemblies, and inspect load failures." />
-            </StackPanel>
-            <TextBlock Classes="card-error"
-                       IsVisible="{Binding PluginsCard.ShowError}"
-                       Text="{Binding PluginsCard.ErrorMessage}" />
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-              <Button Classes="dialog-action settings-open"
-                      Click="PluginsButton_OnClick"
-                      IsEnabled="{Binding PluginsCard.CanInvoke}"
-                      Content="{Binding PluginsCard.ButtonText}" />
-            </StackPanel>
-          </StackPanel>
-        </Border>
-      </Grid>
-    </ScrollViewer>
+      <Border Grid.Row="2"
+              Grid.Column="1"
+              Classes="settings-group">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Classes="settings-group-title"
+                     Text="More Settings" />
+          <Grid Margin="0,4,0,10"
+                ColumnDefinitions="140,*">
+            <TextBlock Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="Language" />
+            <ComboBox Grid.Column="1"
+                      Classes="settings-combo"
+                      ItemsSource="{Binding LanguageOptions}"
+                      SelectedItem="{Binding SelectedLanguage}" />
+          </Grid>
+          <CheckBox Grid.Row="1"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    IsChecked="True"
+                    Content="Update repositories on launch" />
+          <CheckBox Grid.Row="2"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    IsChecked="True"
+                    Content="Hide epoch numbers in mod list (requires restart)" />
+          <CheckBox Grid.Row="3"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    Content="Hide &quot;v&quot; in mod list (requires restart)" />
+          <CheckBox Grid.Row="4"
+                    Classes="settings-check"
+                    IsEnabled="False"
+                    IsChecked="True"
+                    Content="Automatically sort by &quot;Update&quot; column when clicking &quot;Add available updates&quot;" />
+          <Grid Grid.Row="5"
+                Margin="0,4,0,0"
+                ColumnDefinitions="110,*">
+            <TextBlock Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="Stability tolerance:" />
+            <ComboBox Grid.Column="1"
+                      Classes="settings-combo"
+                      IsEnabled="{Binding CanEditStabilityTolerance}"
+                      ItemsSource="{Binding StabilityToleranceOptions}"
+                      SelectedItem="{Binding SelectedStabilityTolerance}" />
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
 
-    <StackPanel Grid.Row="2"
-                Margin="0,18,0,0"
+    <StackPanel Grid.Row="1"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
-                Spacing="12">
-      <Button Classes="dialog-action"
-              Background="#20262D"
-              BorderBrush="#39424E"
-              Foreground="#F4F6F8"
+                Spacing="12"
+                Margin="0,14,0,0">
+      <Button Classes="settings-button"
               Click="CloseButton_OnClick"
               Content="Close" />
     </StackPanel>

@@ -441,24 +441,24 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#252D37" />
-      <Setter Property="BorderBrush" Value="#45515F" />
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#36404B" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus TextBlock.ready-menu-key-label">
-      <Setter Property="Foreground" Value="#D8E1EA" />
+      <Setter Property="Foreground" Value="#B6C0CB" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-planet">
-      <Setter Property="Fill" Value="#0D1F3A" />
-      <Setter Property="Stroke" Value="#5A9FF5" />
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="#516072" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-inner">
-      <Setter Property="Stroke" Value="#3A7ACC" />
+      <Setter Property="Stroke" Value="#516072" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Line.ready-menu-icon-inner">
-      <Setter Property="Stroke" Value="#3A7ACC" />
+      <Setter Property="Stroke" Value="#516072" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Ellipse.ready-menu-icon-ring">
-      <Setter Property="Stroke" Value="#4CAF7D" />
+      <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-shell">
       <Setter Property="Background" Value="#20262D" />
@@ -505,20 +505,27 @@
     <Style Selector="MenuItem.app-menu-item:pointerover">
       <Setter Property="Background" Value="#2A323C" />
     </Style>
+    <Style Selector="Menu.app-menu-bar Separator">
+      <Setter Property="Background" Value="#36404B" />
+      <Setter Property="Foreground" Value="#36404B" />
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Margin" Value="12,6" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
     <Style Selector="Border.surface-view-toggle">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="18" />
-      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="#212938" />
+      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="18,18,24,24" />
+      <Setter Property="Padding" Value="10,4,10,10" />
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="Width" Value="256" />
     </Style>
     <Style Selector="Border.surface-view-toggle-rim">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#36404B" />
-      <Setter Property="BorderThickness" Value="1,0,1,0" />
-      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="18,18,24,24" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="IsHitTestVisible" Value="False" />
@@ -724,6 +731,50 @@
       <Setter Property="Margin" Value="2,2,0,2" />
     </Style>
     <Style Selector="ListBox#ModsListBox ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList > ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList > ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList > ListBoxItem:pointerover">
+      <Setter Property="Background" Value="#261C2B" />
+      <Setter Property="BorderBrush" Value="#B06AC4" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList > ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="#EA8AF7" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ListBox#PreviewQueueList ScrollBar:vertical:pointerover">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
       <Setter Property="Margin" Value="2,2,0,2" />
@@ -958,7 +1009,6 @@
             <MenuItem Classes="app-menu-item"
                       Header="Manage game instances"
                       Click="ManageGameInstancesMenuItem_OnClick" />
-            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Open game directory"
                       Command="{Binding OpenCurrentGameDirectoryCommand}"
@@ -978,11 +1028,6 @@
                       Header="Unmanaged files"
                       Click="UnmanagedFilesMenuItem_OnClick"
                       IsEnabled="{Binding HasCurrentInstance}" />
-            <Separator />
-            <MenuItem Classes="app-menu-item"
-                      Header="Reload"
-                      Command="{Binding RefreshCommand}" />
-            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Exit"
                       Click="ExitMenuItem_OnClick" />
@@ -991,11 +1036,9 @@
             <MenuItem Classes="app-menu-item"
                       Header="CKAN settings"
                       Click="SettingsMenuItem_OnClick" />
-            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Display scale"
                       Click="DisplayScaleMenuItem_OnClick" />
-            <Separator />
             <MenuItem Classes="app-menu-item"
                       Header="Compatible game versions"
                       IsEnabled="{Binding HasCurrentInstance}"
@@ -1035,6 +1078,9 @@
                       Header="Report an issue with mod metadata"
                       Command="{Binding ReportMetadataIssueCommand}"
                       IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
+                      Header="About"
+                      Click="AboutMenuItem_OnClick" />
           </MenuItem>
         </Menu>
 
@@ -1170,7 +1216,6 @@
               <MenuItem Classes="app-menu-item"
                         Header="Manage game instances"
                         Click="ManageGameInstancesMenuItem_OnClick" />
-              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Open game directory"
                         Command="{Binding OpenCurrentGameDirectoryCommand}"
@@ -1190,11 +1235,6 @@
                         Header="Unmanaged files"
                         Click="UnmanagedFilesMenuItem_OnClick"
                         IsEnabled="{Binding HasCurrentInstance}" />
-              <Separator />
-              <MenuItem Classes="app-menu-item"
-                        Header="Reload"
-                        Command="{Binding RefreshCommand}" />
-              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Exit"
                         Click="ExitMenuItem_OnClick" />
@@ -1255,11 +1295,9 @@
               <MenuItem Classes="app-menu-item"
                         Header="CKAN settings"
                         Click="SettingsMenuItem_OnClick" />
-              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Display scale"
                         Click="DisplayScaleMenuItem_OnClick" />
-              <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Compatible game versions"
                         IsEnabled="{Binding HasCurrentInstance}"
@@ -1351,6 +1389,9 @@
                         Header="Report an issue with mod metadata"
                         Command="{Binding ReportMetadataIssueCommand}"
                         IsEnabled="{Binding HasCurrentInstance}" />
+              <MenuItem Classes="app-menu-item"
+                        Header="About"
+                        Click="AboutMenuItem_OnClick" />
             </MenuItem>
           </Menu>
 
@@ -1479,12 +1520,14 @@
             ZIndex="20"
             Classes="surface-view-toggle"
             HorizontalAlignment="Center"
-            VerticalAlignment="Center"
+            VerticalAlignment="Top"
+            Margin="0,2,0,-8"
             IsVisible="{Binding ShowReadyHeader}">
       <Grid>
         <Border Classes="surface-view-toggle-rim" />
         <Grid ColumnDefinitions="*,*"
-              Margin="10,0">
+              Margin="8,0"
+              VerticalAlignment="Center">
           <Button Classes="surface-view-tab"
                   Classes.active="{Binding ShowBrowseSurface}"
                   Command="{Binding ShowBrowseSurfaceCommand}"
@@ -3501,39 +3544,37 @@
                             Padding="16"
                             Margin="0,0,12,0">
                       <Grid RowDefinitions="Auto,*,Auto">
-                        <StackPanel Spacing="4">
+                        <StackPanel Spacing="2">
                           <TextBlock Classes="panel-title"
                                      Text="Queued Mods" />
-                          <TextBlock FontSize="12"
-                                     Opacity="0.72"
-                                     TextWrapping="Wrap"
-                                     Text="{Binding PreviewQueuedGuidance}" />
                         </StackPanel>
 
                         <Grid Grid.Row="1"
                               Margin="0,12,0,0"
                               RowDefinitions="*">
-                          <ListBox ItemsSource="{Binding QueuedActions}"
+                          <ListBox x:Name="PreviewQueueList"
+                                   ItemsSource="{Binding QueuedActions}"
                                    SelectedItem="{Binding SelectedQueuedAction}"
                                    IsVisible="{Binding HasQueuedActions}">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:QueuedActionModel">
                                 <Border Background="#20262D"
                                         CornerRadius="10"
-                                        Margin="0,0,0,10"
                                         Padding="0">
                                   <Grid ColumnDefinitions="4,*">
-                                    <Border Background="#4B7DB7"
+                                    <Border Background="{Binding AccentBrush}"
                                             CornerRadius="3,0,0,3" />
                                     <StackPanel Grid.Column="1"
-                                                Spacing="6"
-                                                Margin="12">
+                                                Spacing="5"
+                                                Margin="12,11">
                                       <Grid ColumnDefinitions="*,Auto">
                                         <TextBlock FontWeight="SemiBold"
                                                    TextWrapping="Wrap"
                                                    Text="{Binding Name}" />
                                         <Border Grid.Column="1"
-                                                Background="#28303A"
+                                                Background="{Binding ActionBadgeBackground}"
+                                                BorderBrush="{Binding ActionBadgeBorderBrush}"
+                                                BorderThickness="1"
                                                 CornerRadius="999"
                                                 Padding="10,4"
                                                 Margin="10,0,0,0">
@@ -3545,8 +3586,10 @@
                                       <TextBlock FontSize="12"
                                                  Opacity="0.75"
                                                  Text="{Binding Identifier}" />
-                                      <TextBlock TextWrapping="Wrap"
-                                                 Opacity="0.84"
+                                      <TextBlock FontSize="13"
+                                                 FontWeight="SemiBold"
+                                                 TextWrapping="Wrap"
+                                                 Opacity="0.92"
                                                  Text="{Binding DetailText}" />
                                     </StackPanel>
                                   </Grid>
@@ -3978,54 +4021,41 @@
                     </Border>
                   </Grid>
 
-                  <Border Grid.Row="1"
-                          Background="#1A2027"
-                          CornerRadius="10"
-                          Padding="14"
-                          Margin="0,14,0,0">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock VerticalAlignment="Center"
-                                 Opacity="0.82"
-                                 TextWrapping="Wrap"
-                                 Margin="0,0,18,0"
-                                 Text="{Binding PreviewFooterNote}" />
-
-                      <WrapPanel Grid.Column="1"
-                                 HorizontalAlignment="Right"
-                                 VerticalAlignment="Center"
-                                 ItemHeight="38">
-                        <Button Classes="preview-action"
-                                Background="#4B535D"
-                                BorderBrush="#4B535D"
-                                Foreground="#F4F6F8"
-                                IsVisible="{Binding ShowInlineApplyResult}"
-                                Command="{Binding DismissApplyResultCommand}"
-                                Content="Dismiss Result" />
-                        <Button Classes="preview-action"
-                                Background="#26191C"
-                                BorderBrush="#6B2B2B"
-                                Foreground="#F4F6F8"
-                                IsVisible="{Binding HasQueuedActions}"
-                                Command="{Binding ClearQueueCommand}"
-                                Content="Clear Queue" />
-                        <Button Classes="preview-action"
-                                Background="{Binding DownloadQueuedButtonBackground}"
-                                BorderBrush="{Binding DownloadQueuedButtonBorderBrush}"
-                                Foreground="#F4F6F8"
-                                IsVisible="{Binding HasQueuedDownloadActions}"
-                                Command="{Binding DownloadQueuedCommand}"
-                                Content="{Binding DownloadQueuedButtonLabel}" />
-                        <Button Classes="preview-action"
-                                MinWidth="144"
-                                Background="{Binding ApplyChangesButtonBackground}"
-                                BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
-                                Foreground="#F4F6F8"
-                                IsVisible="{Binding HasQueuedChangeActions}"
-                                Command="{Binding ApplyChangesCommand}"
-                                Content="Apply Changes" />
-                      </WrapPanel>
-                    </Grid>
-                  </Border>
+                  <WrapPanel Grid.Row="1"
+                             Margin="0,14,0,0"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             ItemHeight="38">
+                    <Button Classes="preview-action"
+                            Background="#4B535D"
+                            BorderBrush="#4B535D"
+                            Foreground="#F4F6F8"
+                            IsVisible="{Binding ShowInlineApplyResult}"
+                            Command="{Binding DismissApplyResultCommand}"
+                            Content="Dismiss Result" />
+                    <Button Classes="preview-action"
+                            Background="#26191C"
+                            BorderBrush="#6B2B2B"
+                            Foreground="#F4F6F8"
+                            IsVisible="{Binding HasQueuedActions}"
+                            Command="{Binding ClearQueueCommand}"
+                            Content="Clear Queue" />
+                    <Button Classes="preview-action"
+                            Background="{Binding DownloadQueuedButtonBackground}"
+                            BorderBrush="{Binding DownloadQueuedButtonBorderBrush}"
+                            Foreground="#F4F6F8"
+                            IsVisible="{Binding HasQueuedDownloadActions}"
+                            Command="{Binding DownloadQueuedCommand}"
+                            Content="{Binding DownloadQueuedButtonLabel}" />
+                    <Button Classes="preview-action"
+                            MinWidth="144"
+                            Background="{Binding ApplyChangesButtonBackground}"
+                            BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
+                            Foreground="#F4F6F8"
+                            IsVisible="{Binding HasQueuedChangeActions}"
+                            Command="{Binding ApplyChangesCommand}"
+                            Content="Apply Changes" />
+                  </WrapPanel>
                 </Grid>
               </Border>
             </Grid>

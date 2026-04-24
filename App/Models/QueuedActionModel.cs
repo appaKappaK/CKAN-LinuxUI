@@ -21,5 +21,35 @@ namespace CKAN.App.Models
         public string ActionText { get; init; } = "";
 
         public string DetailText { get; init; } = "";
+
+        public string AccentBrush
+            => ActionKind switch
+            {
+                QueuedActionKind.Download => "#4B7DB7",
+                QueuedActionKind.Install  => "#3E9B6A",
+                QueuedActionKind.Update   => "#B68B3A",
+                QueuedActionKind.Remove   => "#B45A74",
+                _                         => "#4B7DB7",
+            };
+
+        public string ActionBadgeBackground
+            => ActionKind switch
+            {
+                QueuedActionKind.Download => "#24384D",
+                QueuedActionKind.Install  => "#244031",
+                QueuedActionKind.Update   => "#47371F",
+                QueuedActionKind.Remove   => "#4B2734",
+                _                         => "#28303A",
+            };
+
+        public string ActionBadgeBorderBrush
+            => ActionKind switch
+            {
+                QueuedActionKind.Download => "#40648B",
+                QueuedActionKind.Install  => "#3E7A58",
+                QueuedActionKind.Update   => "#8A6A2E",
+                QueuedActionKind.Remove   => "#8E4A5F",
+                _                         => "#3C4754",
+            };
     }
 }

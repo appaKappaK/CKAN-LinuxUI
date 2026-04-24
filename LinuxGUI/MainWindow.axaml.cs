@@ -28,6 +28,7 @@ namespace CKAN.LinuxGUI
             InitializeComponent();
             Opened += OnOpened;
             Closing += OnClosing;
+            PositionChanged += OnPositionChanged;
             DataContextChanged += OnDataContextChanged;
         }
 
@@ -86,6 +87,10 @@ namespace CKAN.LinuxGUI
             SaveBrowserState();
             SaveWindowState();
         }
+
+        private void OnPositionChanged(object? sender,
+                                       PixelPointEventArgs e)
+            => CloseActiveModRowMenu();
 
         private void SaveBrowserState()
         {
@@ -176,6 +181,10 @@ namespace CKAN.LinuxGUI
         private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
                                                                   Avalonia.Interactivity.RoutedEventArgs e)
             => await OpenCompatibleGameVersionsAsync();
+
+        private async void AboutMenuItem_OnClick(object? sender,
+                                                 Avalonia.Interactivity.RoutedEventArgs e)
+            => await new AboutWindow().ShowDialog(this);
 
         private async Task OpenCompatibleGameVersionsAsync()
         {
