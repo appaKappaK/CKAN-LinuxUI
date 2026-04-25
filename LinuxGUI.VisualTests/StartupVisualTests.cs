@@ -3,8 +3,12 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 using NUnit.Framework;
 
@@ -56,6 +60,60 @@ namespace CKAN.LinuxGUI.VisualTests
                 var listBox = window.FindControl<ListBox>("ModsListBox");
                 Assert.That(listBox, Is.Not.Null);
                 Assert.That(listBox!.AutoScrollToSelectedItem, Is.False);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task MoreFiltersPopup_AllowsModListWheelScrolling()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var user = new AvaloniaUser();
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 700,
+            };
+
+            window.Show();
+            await Task.Delay(300);
+            viewModel.ShowAdvancedFilters = true;
+            await Task.Delay(100);
+
+            try
+            {
+                var listBox = window.FindControl<ListBox>("ModsListBox");
+                Assert.That(listBox, Is.Not.Null);
+                var modsListBox = listBox!;
+                modsListBox.Height = 160;
+                await Task.Delay(50);
+
+                var scrollViewer = modsListBox.GetVisualDescendants()
+                                              .OfType<ScrollViewer>()
+                                              .FirstOrDefault();
+                Assert.That(scrollViewer, Is.Not.Null);
+                Assert.That(scrollViewer!.Extent.Height, Is.GreaterThan(scrollViewer.Viewport.Height));
+
+                double initialOffset = scrollViewer.Offset.Y;
+                var listPoint = new Point(modsListBox.Bounds.Width * 0.25,
+                                          Math.Min(160, modsListBox.Bounds.Height - 20));
+                var windowPoint = modsListBox.TranslatePoint(listPoint, window)
+                                  ?? throw new InvalidOperationException("Could not translate list point to window.");
+
+                window.MouseWheel(windowPoint, new Vector(0, -1), RawInputModifiers.None);
+                await Task.Delay(50);
+
+                Assert.That(scrollViewer.Offset.Y, Is.GreaterThan(initialOffset));
+                Assert.That(viewModel.ShowAdvancedFilters, Is.True);
             }
             finally
             {

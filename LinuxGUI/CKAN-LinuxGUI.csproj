@@ -51,6 +51,9 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <AvaloniaResource Include="..\assets\ckan-256.png">
+      <Link>Assets\ckan-256.png</Link>
+    </AvaloniaResource>
     <Content Include="log4net.linuxgui.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

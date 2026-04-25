@@ -7,10 +7,12 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using ReactiveUI;
@@ -34,6 +36,33 @@ namespace CKAN.LinuxGUI
             Relationships,
             Description,
         }
+
+        private enum GameLaunchMode
+        {
+            Direct,
+            Steam,
+        }
+
+        private sealed class ConflictSideInfo
+        {
+            public string DisplayName { get; init; } = "";
+
+            public QueuedActionModel? QueuedAction { get; init; }
+
+            public ModListItem? Mod { get; init; }
+        }
+
+        private const double MinBrowserMetadataColumnWidth  = 196;
+        private const double MaxBrowserMetadataColumnWidth  = 1040;
+        private const double MinBrowserNameColumnWidth      = 140;
+        private const double MinBrowserDownloadsColumnWidth = 64;
+        private const double MaxBrowserDownloadsColumnWidth = MaxBrowserMetadataColumnWidth;
+        private const double MinBrowserReleasedColumnWidth  = 64;
+        private const double MaxBrowserReleasedColumnWidth  = MaxBrowserMetadataColumnWidth;
+        private const double MinBrowserInstalledColumnWidth = 64;
+        private const double MaxBrowserInstalledColumnWidth = MaxBrowserMetadataColumnWidth;
+        private const double MinBrowserVersionColumnWidth   = 58;
+        private const int    DevQueueSmokeTargetActionCount = 20;
 
         private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
@@ -71,6 +100,10 @@ namespace CKAN.LinuxGUI
         private string  advancedTagsFilter = "";
         private string  advancedLabelsFilter = "";
         private string  advancedCompatibilityFilter = "";
+        private double  browserMetadataColumnWidth = ModBrowserColumnLayout.DefaultMetadataColumnWidth;
+        private double  browserDownloadsColumnWidth = ModBrowserColumnLayout.DefaultDownloadsColumnWidth;
+        private double  browserReleasedColumnWidth = ModBrowserColumnLayout.DefaultReleasedColumnWidth;
+        private double  browserInstalledColumnWidth = ModBrowserColumnLayout.DefaultInstalledColumnWidth;
         private SortOptionItem? selectedSortOption;
         private bool    sortDescending;
         private string  catalogStatusMessage = "Select an instance to load the mod catalog.";
@@ -91,6 +124,7 @@ namespace CKAN.LinuxGUI
         private string  selectedModRecommendationCountLabel = "";
         private string  selectedModSuggestionCountLabel = "";
         private string? selectedModCachedArchivePath;
+        private string  relationshipBrowserScopeText = "";
         private ModVersionChoiceItem? selectedModVersionChoice;
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
         private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod to add it to cache.";
@@ -129,6 +163,7 @@ namespace CKAN.LinuxGUI
         private bool    showDisplaySettings;
         private bool    showDetailsPane = true;
         private bool    showPreviewSurface;
+        private bool    surfaceViewTogglePinned;
         private bool    uiScaleRestartStripDismissed;
         private bool    isQueueDrawerExpanded;
         private bool    queueDrawerStickyCollapsed;
@@ -151,8 +186,17 @@ namespace CKAN.LinuxGUI
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
         private bool    suppressFilterAutoRefresh;
+        private bool    hasRestoredQueuedActionSnapshot;
+        private bool    hasSeededDevQueueSmoke;
+        private bool    suppressQueueSnapshotPersistence;
+        private bool    previewConflictPopupDismissed;
+        private string  dismissedPreviewConflictKey = "";
+        private int     selectedPreviewConflictCount;
+        private string? selectedPreviewConflict;
+        private readonly HashSet<string> selectedPreviewConflicts = new(StringComparer.Ordinal);
         private IReadOnlyList<ModListItem> allCatalogItems = Array.Empty<ModListItem>();
         private IReadOnlyList<CatalogSkeletonRow> catalogSkeletonRows = Array.Empty<CatalogSkeletonRow>();
+        private IReadOnlySet<string> relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
@@ -185,9 +229,9 @@ namespace CKAN.LinuxGUI
             CompatibleGameVersionOptions = new ObservableCollection<CompatibilityVersionOption>();
             SelectedModAvailableVersions = new ObservableCollection<ModVersionChoiceItem>();
             SelectedModResourceLinks = new ObservableCollection<ModResourceLinkItem>();
-            SelectedModDependencies = new ObservableCollection<string>();
-            SelectedModRecommendations = new ObservableCollection<string>();
-            SelectedModSuggestions = new ObservableCollection<string>();
+            SelectedModDependencies = new ObservableCollection<ModRelationshipItem>();
+            SelectedModRecommendations = new ObservableCollection<ModRelationshipItem>();
+            SelectedModSuggestions = new ObservableCollection<ModRelationshipItem>();
             PreviewDownloadsRequired = new ObservableCollection<string>();
             PreviewDependencies = new ObservableCollection<string>();
             PreviewAutoRemovals = new ObservableCollection<string>();
@@ -195,8 +239,10 @@ namespace CKAN.LinuxGUI
             PreviewRecommendations = new ObservableCollection<string>();
             PreviewSuggestions = new ObservableCollection<string>();
             PreviewConflicts = new ObservableCollection<string>();
+            PreviewConflictChoices = new ObservableCollection<PreviewConflictChoiceItem>();
             ApplyResultSummaryLines = new ObservableCollection<string>();
             ApplyResultFollowUpLines = new ObservableCollection<string>();
+            ApplyBrowserColumnLayout(appSettingsService.ModBrowserColumnLayout);
             CatalogSkeletonRows = BuildCatalogSkeletonRows(appSettingsService.CatalogSkeletonRows);
             SortOptions = new[]
             {
@@ -205,6 +251,7 @@ namespace CKAN.LinuxGUI
                 new SortOptionItem { Value = ModSortOption.Popularity, Label = "Downloads" },
                 new SortOptionItem { Value = ModSortOption.Compatibility, Label = "Compatibility" },
                 new SortOptionItem { Value = ModSortOption.ReleaseDate, Label = "Released" },
+                new SortOptionItem { Value = ModSortOption.InstallDate, Label = "Install Date" },
                 new SortOptionItem { Value = ModSortOption.Version, Label = "Version" },
                 new SortOptionItem { Value = ModSortOption.InstalledFirst, Label = "Installed First" },
                 new SortOptionItem { Value = ModSortOption.UpdatesFirst, Label = "Updates First" },
@@ -242,6 +289,9 @@ namespace CKAN.LinuxGUI
             var canRemoveQueuedAction = this.WhenAnyValue(vm => vm.SelectedQueuedAction,
                                                           vm => vm.IsApplyingChanges,
                                                           (action, applying) => action != null && !applying);
+            var canRemoveSelectedPreviewConflict = this.WhenAnyValue(vm => vm.SelectedPreviewConflictCount,
+                                                                     vm => vm.IsApplyingChanges,
+                                                                     (count, applying) => count > 0 && !applying);
             var canClearQueue = this.WhenAnyValue(vm => vm.HasQueuedActions,
                                                   vm => vm.IsApplyingChanges,
                                                   (hasActions, applying) => hasActions && !applying);
@@ -268,6 +318,8 @@ namespace CKAN.LinuxGUI
             var canDownloadQueued = this.WhenAnyValue(vm => vm.HasQueuedDownloadActions,
                                                       vm => vm.IsApplyingChanges,
                                                       (hasDownloads, applying) => hasDownloads && !applying);
+            var canPlayDirect = this.WhenAnyValue(vm => vm.CanPlayDirect);
+            var canPlayViaSteam = this.WhenAnyValue(vm => vm.CanPlayViaSteam);
             RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
             SetCurrentInstanceCommand = ReactiveCommand.CreateFromTask(
                 SetCurrentInstanceAsync,
@@ -276,6 +328,8 @@ namespace CKAN.LinuxGUI
             QueueUpdateCommand = ReactiveCommand.Create(QueueUpdateSelected, canQueueUpdate);
             QueueRemoveCommand = ReactiveCommand.Create(QueueRemoveSelected, canQueueRemove);
             RemoveQueuedActionCommand = ReactiveCommand.Create(RemoveSelectedQueuedAction, canRemoveQueuedAction);
+            RemoveSelectedPreviewConflictCommand = ReactiveCommand.Create(RemoveSelectedPreviewConflict,
+                                                                          canRemoveSelectedPreviewConflict);
             ClearQueueCommand = ReactiveCommand.Create(ClearQueuedActions, canClearQueue);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
             ToggleAdvancedFilterEditorCommand = ReactiveCommand.Create(ToggleAdvancedFilterEditor);
@@ -293,6 +347,7 @@ namespace CKAN.LinuxGUI
             ToggleDetailsPaneCommand = ReactiveCommand.Create(ToggleDetailsPane);
             ShowBrowseSurfaceCommand = ReactiveCommand.Create(ShowBrowseSurfaceTab);
             ShowPreviewSurfaceCommand = ReactiveCommand.Create(ShowPreviewSurfaceTab);
+            DismissPreviewConflictPopupCommand = ReactiveCommand.Create(DismissPreviewConflictPopup);
             ResetUiScaleCommand = ReactiveCommand.Create(ResetUiScale);
             DismissUiScaleRestartStripCommand = ReactiveCommand.Create(DismissUiScaleRestartStrip);
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
@@ -307,6 +362,10 @@ namespace CKAN.LinuxGUI
             AcknowledgeExecutionResultCommand = ReactiveCommand.Create(AcknowledgeExecutionResult);
             OpenCurrentGameDirectoryCommand = ReactiveCommand.Create(OpenCurrentGameDirectory,
                                                                     this.WhenAnyValue(vm => vm.HasCurrentInstance));
+            PlayDirectCommand = ReactiveCommand.CreateFromTask(() => PlayGameAsync(GameLaunchMode.Direct),
+                                                               canPlayDirect);
+            PlayViaSteamCommand = ReactiveCommand.CreateFromTask(() => PlayGameAsync(GameLaunchMode.Steam),
+                                                                 canPlayViaSteam);
             OpenSelectedModCacheLocationCommand = ReactiveCommand.Create(
                 OpenSelectedModCacheLocation,
                 this.WhenAnyValue(vm => vm.ShowOpenSelectedModCacheLocationAction));
@@ -331,6 +390,10 @@ namespace CKAN.LinuxGUI
             ToggleSelectedModDependenciesCommand = ReactiveCommand.Create(ToggleSelectedModDependenciesExpanded);
             ToggleSelectedModRecommendationsCommand = ReactiveCommand.Create(ToggleSelectedModRecommendationsExpanded);
             ToggleSelectedModSuggestionsCommand = ReactiveCommand.Create(ToggleSelectedModSuggestionsExpanded);
+            ViewSelectedModDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("dependencies", SelectedModDependencies));
+            ViewSelectedModRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("recommendations", SelectedModRecommendations));
+            ViewSelectedModSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("suggestions", SelectedModSuggestions));
+            ClearRelationshipBrowserScopeCommand = ReactiveCommand.Create(ClearRelationshipBrowserScope);
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
             ShowRelationshipsDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Relationships));
@@ -340,6 +403,7 @@ namespace CKAN.LinuxGUI
             SelectPopularitySortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Popularity));
             SelectCompatibilitySortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Compatibility));
             SelectReleaseDateSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.ReleaseDate));
+            SelectInstallDateSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.InstallDate));
             SelectVersionSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.Version));
             SelectInstalledFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.InstalledFirst));
             SelectUpdatesFirstSortCommand = ReactiveCommand.Create(() => SelectSortOption(ModSortOption.UpdatesFirst));
@@ -451,11 +515,11 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<ModResourceLinkItem> SelectedModResourceLinks { get; }
 
-        public ObservableCollection<string> SelectedModDependencies { get; }
+        public ObservableCollection<ModRelationshipItem> SelectedModDependencies { get; }
 
-        public ObservableCollection<string> SelectedModRecommendations { get; }
+        public ObservableCollection<ModRelationshipItem> SelectedModRecommendations { get; }
 
-        public ObservableCollection<string> SelectedModSuggestions { get; }
+        public ObservableCollection<ModRelationshipItem> SelectedModSuggestions { get; }
 
         public ObservableCollection<string> PreviewDownloadsRequired { get; }
 
@@ -471,10 +535,527 @@ namespace CKAN.LinuxGUI
 
         public ObservableCollection<string> PreviewConflicts { get; }
 
+        public ObservableCollection<PreviewConflictChoiceItem> PreviewConflictChoices { get; }
+
         public IReadOnlyList<CatalogSkeletonRow> CatalogSkeletonRows
         {
             get => catalogSkeletonRows;
             private set => this.RaiseAndSetIfChanged(ref catalogSkeletonRows, value);
+        }
+
+        public double BrowserMetadataColumnWidth => browserMetadataColumnWidth;
+
+        public double BrowserDownloadsColumnWidth => browserDownloadsColumnWidth;
+
+        public double BrowserReleasedColumnWidth => browserReleasedColumnWidth;
+
+        public double BrowserInstalledColumnWidth => browserInstalledColumnWidth;
+
+        public GridLength BrowserMetadataColumnGridLength
+            => new GridLength(browserMetadataColumnWidth);
+
+        public GridLength BrowserDownloadsColumnGridLength
+            => new GridLength(browserDownloadsColumnWidth);
+
+        public GridLength BrowserReleasedColumnGridLength
+            => new GridLength(browserReleasedColumnWidth);
+
+        public GridLength BrowserInstalledColumnGridLength
+            => new GridLength(browserInstalledColumnWidth);
+
+        public double BrowserColumnResizeMaxMetadataWidth(double tableWidth)
+            => MaxBrowserMetadataColumnWidthForTable(tableWidth);
+
+        public void ResizeBrowserNameDownloadsDivider(double startMetadataWidth,
+                                                       double startDownloadsWidth,
+                                                       double startReleasedWidth,
+                                                       double startInstalledWidth,
+                                                       double maxMetadataWidth,
+                                                       double delta)
+        {
+            maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
+            var minimumMetadataWidth = MinimumBrowserMetadataColumnWidth();
+            var actualDelta = ClampDimension(startMetadataWidth - delta,
+                                             minimumMetadataWidth,
+                                             maxMetadataWidth);
+            actualDelta = startMetadataWidth - actualDelta;
+
+            var metadataWidth = startMetadataWidth - actualDelta;
+            var downloadsWidth = startDownloadsWidth;
+            var releasedWidth = startReleasedWidth;
+            var installedWidth = startInstalledWidth;
+
+            if (actualDelta > 0)
+            {
+                var remainingShrink = actualDelta;
+                ShrinkColumn(ref downloadsWidth, MinBrowserDownloadsColumnWidth, ref remainingShrink);
+                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
+                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
+            }
+            else if (actualDelta < 0)
+            {
+                var remainingGrowth = -actualDelta;
+                GrowColumn(ref downloadsWidth, MaxBrowserDownloadsColumnWidth, ref remainingGrowth);
+                GrowColumn(ref releasedWidth, MaxBrowserReleasedColumnWidth, ref remainingGrowth);
+                GrowColumn(ref installedWidth, MaxBrowserInstalledColumnWidth, ref remainingGrowth);
+            }
+
+            SetBrowserColumnLayout(metadataWidth, downloadsWidth, releasedWidth, installedWidth, maxMetadataWidth);
+        }
+
+        public void ResizeBrowserDownloadsReleasedDivider(double startMetadataWidth,
+                                                          double startDownloadsWidth,
+                                                          double startReleasedWidth,
+                                                          double startInstalledWidth,
+                                                          double maxMetadataWidth,
+                                                          double delta)
+        {
+            maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
+            var startVersionWidth = BrowserVersionColumnWidth(startMetadataWidth,
+                                                              startDownloadsWidth,
+                                                              startReleasedWidth,
+                                                              startInstalledWidth);
+            var metadataWidth = startMetadataWidth;
+            var downloadsWidth = startDownloadsWidth;
+            var releasedWidth = startReleasedWidth;
+            var installedWidth = startInstalledWidth;
+
+            if (delta > 0)
+            {
+                var availableGrowth = (startReleasedWidth - MinBrowserReleasedColumnWidth)
+                                      + (startInstalledWidth - MinBrowserInstalledColumnWidth)
+                                      + (startVersionWidth - MinBrowserVersionColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(delta,
+                                            0,
+                                            Math.Min(MaxBrowserDownloadsColumnWidth - startDownloadsWidth,
+                                                     availableGrowth));
+                downloadsWidth = startDownloadsWidth + growth;
+                var remainingShrink = growth;
+                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
+                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
+                var versionShrink = Math.Min(remainingShrink,
+                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
+                remainingShrink -= versionShrink;
+                metadataWidth += remainingShrink;
+            }
+            else if (delta < 0)
+            {
+                var requestedGrowth = -delta;
+                var availableGrowth = (startDownloadsWidth - MinBrowserDownloadsColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(requestedGrowth,
+                                            0,
+                                            Math.Min(MaxBrowserReleasedColumnWidth - startReleasedWidth,
+                                                     availableGrowth));
+                releasedWidth = startReleasedWidth + growth;
+                var remainingShrink = growth;
+                ShrinkColumn(ref downloadsWidth, MinBrowserDownloadsColumnWidth, ref remainingShrink);
+                metadataWidth += remainingShrink;
+            }
+
+            SetBrowserColumnLayout(metadataWidth, downloadsWidth, releasedWidth, installedWidth, maxMetadataWidth);
+        }
+
+        public void ResizeBrowserReleasedInstalledDivider(double startMetadataWidth,
+                                                          double startDownloadsWidth,
+                                                          double startReleasedWidth,
+                                                          double startInstalledWidth,
+                                                          double maxMetadataWidth,
+                                                          double delta)
+        {
+            maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
+            var startVersionWidth = BrowserVersionColumnWidth(startMetadataWidth,
+                                                              startDownloadsWidth,
+                                                              startReleasedWidth,
+                                                              startInstalledWidth);
+            var metadataWidth = startMetadataWidth;
+            var releasedWidth = startReleasedWidth;
+            var installedWidth = startInstalledWidth;
+
+            if (delta > 0)
+            {
+                var availableGrowth = (startInstalledWidth - MinBrowserInstalledColumnWidth)
+                                      + (startVersionWidth - MinBrowserVersionColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(delta,
+                                            0,
+                                            Math.Min(MaxBrowserReleasedColumnWidth - startReleasedWidth,
+                                                     availableGrowth));
+                releasedWidth = startReleasedWidth + growth;
+                var remainingShrink = growth;
+                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
+                var versionShrink = Math.Min(remainingShrink,
+                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
+                remainingShrink -= versionShrink;
+                metadataWidth += remainingShrink;
+            }
+            else if (delta < 0)
+            {
+                var requestedGrowth = -delta;
+                var availableGrowth = (startReleasedWidth - MinBrowserReleasedColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(requestedGrowth,
+                                            0,
+                                            Math.Min(MaxBrowserInstalledColumnWidth - startInstalledWidth,
+                                                     availableGrowth));
+                installedWidth = startInstalledWidth + growth;
+                var remainingShrink = growth;
+                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
+                metadataWidth += remainingShrink;
+            }
+
+            SetBrowserColumnLayout(metadataWidth,
+                                   startDownloadsWidth,
+                                   releasedWidth,
+                                   installedWidth,
+                                   maxMetadataWidth);
+        }
+
+        public void ResizeBrowserInstalledVersionDivider(double startMetadataWidth,
+                                                         double startDownloadsWidth,
+                                                         double startReleasedWidth,
+                                                         double startInstalledWidth,
+                                                         double maxMetadataWidth,
+                                                         double delta)
+        {
+            maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
+            var startVersionWidth = BrowserVersionColumnWidth(startMetadataWidth,
+                                                              startDownloadsWidth,
+                                                              startReleasedWidth,
+                                                              startInstalledWidth);
+            var metadataWidth = startMetadataWidth;
+            var downloadsWidth = startDownloadsWidth;
+            var releasedWidth = startReleasedWidth;
+            var installedWidth = startInstalledWidth;
+
+            if (delta > 0)
+            {
+                var availableGrowth = (startVersionWidth - MinBrowserVersionColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(delta,
+                                            0,
+                                            Math.Min(MaxBrowserInstalledColumnWidth - startInstalledWidth,
+                                                     availableGrowth));
+                installedWidth = startInstalledWidth + growth;
+                var remainingShrink = growth;
+                var versionShrink = Math.Min(remainingShrink,
+                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
+                remainingShrink -= versionShrink;
+                metadataWidth += remainingShrink;
+            }
+            else if (delta < 0)
+            {
+                var requestedGrowth = -delta;
+                var availableGrowth = (startInstalledWidth - MinBrowserInstalledColumnWidth)
+                                      + (startReleasedWidth - MinBrowserReleasedColumnWidth)
+                                      + (startDownloadsWidth - MinBrowserDownloadsColumnWidth)
+                                      + (maxMetadataWidth - startMetadataWidth);
+                var growth = ClampDimension(requestedGrowth, 0, availableGrowth);
+                var remainingShrink = growth;
+                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
+                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
+                ShrinkColumn(ref downloadsWidth, MinBrowserDownloadsColumnWidth, ref remainingShrink);
+                metadataWidth += remainingShrink;
+            }
+
+            SetBrowserColumnLayout(metadataWidth,
+                                   downloadsWidth,
+                                   releasedWidth,
+                                   installedWidth,
+                                   maxMetadataWidth);
+        }
+
+        public void ResizeBrowserMetadataColumn(double requestedWidth)
+        {
+            var width = ClampBrowserMetadataColumnWidth(requestedWidth);
+            var downloadsWidth = browserDownloadsColumnWidth;
+            var releasedWidth = browserReleasedColumnWidth;
+            var installedWidth = browserInstalledColumnWidth;
+            FitBrowserFixedColumns(width, ref downloadsWidth, ref releasedWidth, ref installedWidth);
+
+            if (Math.Abs(browserMetadataColumnWidth - width) < 0.1
+                && Math.Abs(browserDownloadsColumnWidth - downloadsWidth) < 0.1
+                && Math.Abs(browserReleasedColumnWidth - releasedWidth) < 0.1
+                && Math.Abs(browserInstalledColumnWidth - installedWidth) < 0.1)
+            {
+                return;
+            }
+
+            browserMetadataColumnWidth = width;
+            browserDownloadsColumnWidth = downloadsWidth;
+            browserReleasedColumnWidth = releasedWidth;
+            browserInstalledColumnWidth = installedWidth;
+            RaiseBrowserColumnLayoutChanged();
+        }
+
+        public void ResizeBrowserDownloadsColumn(double requestedWidth)
+        {
+            var width = ClampBrowserDownloadsColumnWidth(requestedWidth);
+            if (Math.Abs(browserDownloadsColumnWidth - width) < 0.1)
+            {
+                return;
+            }
+
+            browserDownloadsColumnWidth = width;
+            RaiseBrowserColumnLayoutChanged();
+        }
+
+        public void ResizeBrowserReleasedColumn(double requestedWidth)
+        {
+            var width = ClampBrowserReleasedColumnWidth(requestedWidth);
+            if (Math.Abs(browserReleasedColumnWidth - width) < 0.1)
+            {
+                return;
+            }
+
+            browserReleasedColumnWidth = width;
+            RaiseBrowserColumnLayoutChanged();
+        }
+
+        public void ResizeBrowserInstalledColumn(double requestedWidth)
+        {
+            var width = ClampBrowserInstalledColumnWidth(requestedWidth);
+            if (Math.Abs(browserInstalledColumnWidth - width) < 0.1)
+            {
+                return;
+            }
+
+            browserInstalledColumnWidth = width;
+            RaiseBrowserColumnLayoutChanged();
+        }
+
+        public void CommitBrowserColumnLayout()
+            => appSettingsService.SaveModBrowserColumnLayout(CurrentBrowserColumnLayout());
+
+        private void ApplyBrowserColumnLayout(ModBrowserColumnLayout? layout)
+        {
+            var normalized = NormalizeBrowserColumnLayout(layout);
+            browserMetadataColumnWidth  = normalized.MetadataColumnWidth;
+            browserDownloadsColumnWidth = normalized.DownloadsColumnWidth;
+            browserReleasedColumnWidth  = normalized.ReleasedColumnWidth;
+            browserInstalledColumnWidth = normalized.InstalledColumnWidth;
+        }
+
+        private ModBrowserColumnLayout CurrentBrowserColumnLayout()
+            => new ModBrowserColumnLayout
+            {
+                MetadataColumnWidth  = Math.Round(browserMetadataColumnWidth),
+                DownloadsColumnWidth = Math.Round(browserDownloadsColumnWidth),
+                ReleasedColumnWidth  = Math.Round(browserReleasedColumnWidth),
+                InstalledColumnWidth = Math.Round(browserInstalledColumnWidth),
+            };
+
+        private static ModBrowserColumnLayout NormalizeBrowserColumnLayout(ModBrowserColumnLayout? layout)
+        {
+            var safeLayout = layout ?? new ModBrowserColumnLayout();
+            var metadataWidth = ClampDimension(safeLayout.MetadataColumnWidth,
+                                               MinBrowserMetadataColumnWidth,
+                                               MaxBrowserMetadataColumnWidth);
+            var downloadsWidth = ClampDimension(safeLayout.DownloadsColumnWidth,
+                                                MinBrowserDownloadsColumnWidth,
+                                                MaxBrowserDownloadsColumnWidth);
+            var releasedWidth = ClampDimension(safeLayout.ReleasedColumnWidth,
+                                               MinBrowserReleasedColumnWidth,
+                                               MaxBrowserReleasedColumnWidth);
+            var installedWidth = ClampDimension(safeLayout.InstalledColumnWidth,
+                                                MinBrowserInstalledColumnWidth,
+                                                MaxBrowserInstalledColumnWidth);
+            FitBrowserFixedColumns(metadataWidth, ref downloadsWidth, ref releasedWidth, ref installedWidth);
+
+            return new ModBrowserColumnLayout
+            {
+                MetadataColumnWidth  = metadataWidth,
+                DownloadsColumnWidth = downloadsWidth,
+                ReleasedColumnWidth  = releasedWidth,
+                InstalledColumnWidth = installedWidth,
+            };
+        }
+
+        private double ClampBrowserMetadataColumnWidth(double requestedWidth)
+            => ClampDimension(requestedWidth,
+                              MinBrowserMetadataColumnWidth,
+                              MaxBrowserMetadataColumnWidth);
+
+        private double ClampBrowserDownloadsColumnWidth(double requestedWidth)
+            => ClampDimension(requestedWidth,
+                              MinBrowserDownloadsColumnWidth,
+                              Math.Min(MaxBrowserDownloadsColumnWidth,
+                                       browserMetadataColumnWidth
+                                       - browserReleasedColumnWidth
+                                       - browserInstalledColumnWidth
+                                       - MinBrowserVersionColumnWidth));
+
+        private double ClampBrowserReleasedColumnWidth(double requestedWidth)
+            => ClampDimension(requestedWidth,
+                              MinBrowserReleasedColumnWidth,
+                              Math.Min(MaxBrowserReleasedColumnWidth,
+                                       browserMetadataColumnWidth
+                                       - browserDownloadsColumnWidth
+                                       - browserInstalledColumnWidth
+                                       - MinBrowserVersionColumnWidth));
+
+        private double ClampBrowserInstalledColumnWidth(double requestedWidth)
+            => ClampDimension(requestedWidth,
+                              MinBrowserInstalledColumnWidth,
+                              Math.Min(MaxBrowserInstalledColumnWidth,
+                                       browserMetadataColumnWidth
+                                       - browserDownloadsColumnWidth
+                                       - browserReleasedColumnWidth
+                                       - MinBrowserVersionColumnWidth));
+
+        private static double ClampDimension(double value,
+                                             double minimum,
+                                             double maximum)
+        {
+            var safeValue = double.IsFinite(value) ? value : minimum;
+            var safeMaximum = Math.Max(minimum, maximum);
+            return Math.Clamp(safeValue, minimum, safeMaximum);
+        }
+
+        private static void FitBrowserFixedColumns(double metadataWidth,
+                                                   ref double downloadsWidth,
+                                                   ref double releasedWidth,
+                                                   ref double installedWidth)
+        {
+            var availableWidth = Math.Max(MinBrowserDownloadsColumnWidth
+                                          + MinBrowserReleasedColumnWidth
+                                          + MinBrowserInstalledColumnWidth,
+                                          metadataWidth - MinBrowserVersionColumnWidth);
+            var combinedWidth = downloadsWidth + releasedWidth + installedWidth;
+            if (combinedWidth <= availableWidth)
+            {
+                return;
+            }
+
+            var downloadsFlex = Math.Max(0, downloadsWidth - MinBrowserDownloadsColumnWidth);
+            var releasedFlex = Math.Max(0, releasedWidth - MinBrowserReleasedColumnWidth);
+            var installedFlex = Math.Max(0, installedWidth - MinBrowserInstalledColumnWidth);
+            var totalFlex = downloadsFlex + releasedFlex + installedFlex;
+            var excessWidth = combinedWidth - availableWidth;
+
+            if (totalFlex <= 0)
+            {
+                downloadsWidth = MinBrowserDownloadsColumnWidth;
+                releasedWidth = MinBrowserReleasedColumnWidth;
+                installedWidth = MinBrowserInstalledColumnWidth;
+                return;
+            }
+
+            downloadsWidth = Math.Max(MinBrowserDownloadsColumnWidth,
+                                      downloadsWidth - (excessWidth * downloadsFlex / totalFlex));
+            releasedWidth = Math.Max(MinBrowserReleasedColumnWidth,
+                                     releasedWidth - (excessWidth * releasedFlex / totalFlex));
+            installedWidth = Math.Max(MinBrowserInstalledColumnWidth,
+                                      installedWidth - (excessWidth * installedFlex / totalFlex));
+        }
+
+        private static double MinimumBrowserMetadataColumnWidth()
+            => Math.Max(MinBrowserMetadataColumnWidth,
+                        MinBrowserDownloadsColumnWidth
+                        + MinBrowserReleasedColumnWidth
+                        + MinBrowserInstalledColumnWidth
+                        + MinBrowserVersionColumnWidth);
+
+        private static double BrowserVersionColumnWidth(double metadataWidth,
+                                                        double downloadsWidth,
+                                                        double releasedWidth,
+                                                        double installedWidth)
+            => Math.Max(MinBrowserVersionColumnWidth,
+                        metadataWidth - downloadsWidth - releasedWidth - installedWidth);
+
+        private static double MaxBrowserMetadataColumnWidthForTable(double tableWidth)
+        {
+            var minimum = MinimumBrowserMetadataColumnWidth();
+            if (!double.IsFinite(tableWidth) || tableWidth <= 0)
+            {
+                return MaxBrowserMetadataColumnWidth;
+            }
+
+            return ClampDimension(tableWidth - MinBrowserNameColumnWidth,
+                                  minimum,
+                                  MaxBrowserMetadataColumnWidth);
+        }
+
+        private static double NormalizeBrowserMaxMetadataWidth(double maxMetadataWidth)
+            => ClampDimension(maxMetadataWidth,
+                              MinimumBrowserMetadataColumnWidth(),
+                              MaxBrowserMetadataColumnWidth);
+
+        private static void ShrinkColumn(ref double width,
+                                         double     minimum,
+                                         ref double remainingShrink)
+        {
+            if (remainingShrink <= 0)
+            {
+                return;
+            }
+
+            var shrink = Math.Min(remainingShrink, Math.Max(0, width - minimum));
+            width -= shrink;
+            remainingShrink -= shrink;
+        }
+
+        private static void GrowColumn(ref double width,
+                                       double     maximum,
+                                       ref double remainingGrowth)
+        {
+            if (remainingGrowth <= 0)
+            {
+                return;
+            }
+
+            var growth = Math.Min(remainingGrowth, Math.Max(0, maximum - width));
+            width += growth;
+            remainingGrowth -= growth;
+        }
+
+        private void SetBrowserColumnLayout(double metadataWidth,
+                                            double downloadsWidth,
+                                            double releasedWidth,
+                                            double installedWidth,
+                                            double maxMetadataWidth = MaxBrowserMetadataColumnWidth)
+        {
+            maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
+            metadataWidth = ClampDimension(metadataWidth,
+                                           MinimumBrowserMetadataColumnWidth(),
+                                           maxMetadataWidth);
+            downloadsWidth = ClampDimension(downloadsWidth,
+                                            MinBrowserDownloadsColumnWidth,
+                                            MaxBrowserDownloadsColumnWidth);
+            releasedWidth = ClampDimension(releasedWidth,
+                                           MinBrowserReleasedColumnWidth,
+                                           MaxBrowserReleasedColumnWidth);
+            installedWidth = ClampDimension(installedWidth,
+                                            MinBrowserInstalledColumnWidth,
+                                            MaxBrowserInstalledColumnWidth);
+            FitBrowserFixedColumns(metadataWidth, ref downloadsWidth, ref releasedWidth, ref installedWidth);
+
+            if (Math.Abs(browserMetadataColumnWidth - metadataWidth) < 0.1
+                && Math.Abs(browserDownloadsColumnWidth - downloadsWidth) < 0.1
+                && Math.Abs(browserReleasedColumnWidth - releasedWidth) < 0.1
+                && Math.Abs(browserInstalledColumnWidth - installedWidth) < 0.1)
+            {
+                return;
+            }
+
+            browserMetadataColumnWidth = metadataWidth;
+            browserDownloadsColumnWidth = downloadsWidth;
+            browserReleasedColumnWidth = releasedWidth;
+            browserInstalledColumnWidth = installedWidth;
+            RaiseBrowserColumnLayoutChanged();
+        }
+
+        private void RaiseBrowserColumnLayoutChanged()
+        {
+            this.RaisePropertyChanged(nameof(BrowserMetadataColumnWidth));
+            this.RaisePropertyChanged(nameof(BrowserDownloadsColumnWidth));
+            this.RaisePropertyChanged(nameof(BrowserReleasedColumnWidth));
+            this.RaisePropertyChanged(nameof(BrowserInstalledColumnWidth));
+            this.RaisePropertyChanged(nameof(BrowserMetadataColumnGridLength));
+            this.RaisePropertyChanged(nameof(BrowserDownloadsColumnGridLength));
+            this.RaisePropertyChanged(nameof(BrowserReleasedColumnGridLength));
+            this.RaisePropertyChanged(nameof(BrowserInstalledColumnGridLength));
         }
 
         public ObservableCollection<string> ApplyResultSummaryLines { get; }
@@ -494,6 +1075,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> QueueRemoveCommand { get; }
 
         public ReactiveCommand<Unit, Unit> RemoveQueuedActionCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> RemoveSelectedPreviewConflictCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearQueueCommand { get; }
 
@@ -529,6 +1112,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ShowPreviewSurfaceCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> DismissPreviewConflictPopupCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ResetUiScaleCommand { get; }
 
         public ReactiveCommand<Unit, Unit> DismissUiScaleRestartStripCommand { get; }
@@ -548,6 +1133,10 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> AcknowledgeExecutionResultCommand { get; }
 
         public ReactiveCommand<Unit, Unit> OpenCurrentGameDirectoryCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> PlayDirectCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> PlayViaSteamCommand { get; }
 
         public ReactiveCommand<Unit, Unit> OpenSelectedModCacheLocationCommand { get; }
 
@@ -573,6 +1162,14 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ToggleSelectedModSuggestionsCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ViewSelectedModDependenciesInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewSelectedModRecommendationsInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewSelectedModSuggestionsInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ClearRelationshipBrowserScopeCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ShowOverviewDetailsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ShowMetadataDetailsCommand { get; }
@@ -590,6 +1187,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> SelectCompatibilitySortCommand { get; }
 
         public ReactiveCommand<Unit, Unit> SelectReleaseDateSortCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> SelectInstallDateSortCommand { get; }
 
         public ReactiveCommand<Unit, Unit> SelectVersionSortCommand { get; }
 
@@ -1059,6 +1658,18 @@ namespace CKAN.LinuxGUI
 
         public bool HasSelectedModSuggestions => SelectedModSuggestions.Count > 0;
 
+        public bool ShowRelationshipBrowserScope => relationshipBrowserScopeIdentifiers.Count > 0;
+
+        private bool ShowConflictBrowserScope
+            => ShowRelationshipBrowserScope
+               && relationshipBrowserScopeText.StartsWith("Conflict:", StringComparison.Ordinal);
+
+        public string RelationshipBrowserScopeText
+        {
+            get => relationshipBrowserScopeText;
+            private set => this.RaiseAndSetIfChanged(ref relationshipBrowserScopeText, value);
+        }
+
         public string SelectedModDependencyChevron
             => HasSelectedModDependencies
                 ? ShowSelectedModDependenciesExpanded ? "▾" : "▸"
@@ -1162,6 +1773,12 @@ namespace CKAN.LinuxGUI
         public Func<IReadOnlyList<RecommendationAuditItem>, Task<IReadOnlyList<RecommendationAuditItem>?>>?
             RecommendationSelectionPromptAsync { get; set; }
 
+        public Func<string, Task<bool>>? ConfirmIncompatibleLaunchAsync { get; set; }
+
+        public bool CanPlayDirect => FindLaunchCommand(GameLaunchMode.Direct) != null;
+
+        public bool CanPlayViaSteam => FindLaunchCommand(GameLaunchMode.Steam) != null;
+
         public bool PreselectRecommendedMods
         {
             get => appSettingsService.PreselectRecommendedMods;
@@ -1183,6 +1800,9 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(CurrentRegistry));
             this.RaisePropertyChanged(nameof(CurrentRegistryManager));
         }
+
+        public void RefreshLaunchCommandState()
+            => PublishLaunchCommandState();
 
         public IReadOnlyList<GameInstance> KnownGameInstances
             => gameInstanceService.Manager.Instances.Values.ToList();
@@ -1461,7 +2081,10 @@ namespace CKAN.LinuxGUI
                     return BuildRecommendationAuditItems(recommendations,
                                                          suggestions,
                                                          supporters,
-                                                         preselectRecommendations);
+                                                         preselectRecommendations,
+                                                         module => gameInstanceService.RepositoryData.GetDownloadCount(
+                                                             registry.Repositories.Values,
+                                                             module.identifier));
                 });
 
                 StatusMessage = items.Count == 0
@@ -1644,7 +2267,10 @@ namespace CKAN.LinuxGUI
                     return BuildRecommendationAuditItems(recommendations,
                                                          suggestions,
                                                          supporters,
-                                                         preselectRecommendations)
+                                                         preselectRecommendations,
+                                                         module => gameInstanceService.RepositoryData.GetDownloadCount(
+                                                             registry.Repositories.Values,
+                                                             module.identifier))
                            .Where(item => !queuedIdentifiers.Contains(item.Identifier))
                            .ToList();
                 });
@@ -1677,14 +2303,26 @@ namespace CKAN.LinuxGUI
             {
                 this.RaiseAndSetIfChanged(ref showPreviewSurface, value);
                 this.RaisePropertyChanged(nameof(ShowBrowseSurface));
+                this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
                 this.RaisePropertyChanged(nameof(BrowseSurfaceButtonBackground));
                 this.RaisePropertyChanged(nameof(BrowseSurfaceButtonBorderBrush));
                 this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
                 this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
+                RefreshPreviewConflictPopupState();
             }
         }
 
         public bool ShowBrowseSurface => !ShowPreviewSurface;
+
+        public bool SurfaceViewTogglePinned
+        {
+            get => surfaceViewTogglePinned;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref surfaceViewTogglePinned, value);
+                this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
+            }
+        }
 
         public bool HasSelectedInstance
         {
@@ -2019,6 +2657,20 @@ namespace CKAN.LinuxGUI
 
         public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
 
+        public bool ShowPreviewConflictPopup
+            => ShowPreviewSurface
+               && HasPreviewConflicts
+               && !IsPreviewLoading
+               && !previewConflictPopupDismissed
+               && !ShowExecutionOverlay;
+
+        public string PreviewConflictPopupTitle
+            => CountLabel(PreviewConflictChoices.Count > 0
+                               ? PreviewConflictChoices.Count
+                               : PreviewConflicts.Count,
+                          "Conflict Found",
+                          "Conflicts Found");
+
         public bool PreviewShowsEmptyCard => !HasQueuedActions;
 
         public bool PreviewShowsLoadingCard => HasQueuedChangeActions && IsPreviewLoading;
@@ -2032,9 +2684,11 @@ namespace CKAN.LinuxGUI
         public bool PreviewShowsBlockedCard
             => HasQueuedChangeActions && !IsPreviewLoading && !PreviewCanApply;
 
-        public bool ShowPreviewEmptyWorkspace => !HasQueuedActions && !ShowInlineApplyResult;
+        public bool ShowPreviewEmptyWorkspace
+            => !ShowExecutionOverlay && !HasQueuedActions && !ShowInlineApplyResult;
 
-        public bool ShowPreviewActiveWorkspace => HasQueuedActions || ShowInlineApplyResult;
+        public bool ShowPreviewActiveWorkspace
+            => !ShowExecutionOverlay && (HasQueuedActions || ShowInlineApplyResult);
 
         public bool ShowAdvancedFilters
         {
@@ -2068,7 +2722,6 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(FiltersPopupTitle));
                 this.RaisePropertyChanged(nameof(AdvancedFilterToggleLabel));
                 this.RaisePropertyChanged(nameof(FiltersPopupWidth));
-                this.RaisePropertyChanged(nameof(FiltersPopupHorizontalOffset));
             }
         }
 
@@ -2203,6 +2856,9 @@ namespace CKAN.LinuxGUI
         public string DetailsPaneToggleLabel
             => ShowDetailsPane ? "Hide Details" : "Show Details";
 
+        public bool SurfaceViewToggleCompact
+            => ShowBrowseSurface && !HasQueuedActions && !HasApplyResult && !SurfaceViewTogglePinned;
+
         public string PreviewSurfaceButtonLabel
             => HasQueuedActions ? $"Preview ({QueuedActions.Count})" : "Preview";
 
@@ -2286,12 +2942,14 @@ namespace CKAN.LinuxGUI
 
         public bool HasAvailableTagOptions => AvailableTagOptions.Count > 0;
 
-        public bool HasSelectedTagFilter => !string.IsNullOrWhiteSpace(AdvancedTagsFilter);
+        public int SelectedCategoryCount => SelectedFilterValues(AdvancedTagsFilter).Count;
+
+        public bool HasSelectedTagFilter => SelectedCategoryCount > 0;
 
         public string TagFilterPickerSummary
             => HasAvailableTagOptions
-                ? $"{AvailableTagOptions.Count} tag{(AvailableTagOptions.Count == 1 ? "" : "s")} in the loaded catalog"
-                : "No tags were found in the loaded catalog.";
+                ? $"{AvailableTagOptions.Count} categor{(AvailableTagOptions.Count == 1 ? "y" : "ies")} in the loaded catalog"
+                : "No categories were found in the loaded catalog.";
 
         public bool HasAvailableLabelOptions => AvailableLabelOptions.Count > 0;
 
@@ -2307,7 +2965,9 @@ namespace CKAN.LinuxGUI
         public double ClearAdvancedTextButtonOpacity => HasAdvancedFilterText ? 1.0 : 0.0;
 
         public int ActiveFilterCount
-            => EnumerateAdvancedTextFilters().Count(filter => !string.IsNullOrWhiteSpace(filter.Value))
+            => EnumerateAdvancedTextFilters().Count(filter => filter.Label != "Category"
+                                                              && !string.IsNullOrWhiteSpace(filter.Value))
+               + SelectedCategoryCount
                + CountTriStateFilter(FilterInstalledState)
                + CountTriStateFilter(FilterUpdatableState)
                + CountTriStateFilter(FilterCompatibleState)
@@ -2329,8 +2989,6 @@ namespace CKAN.LinuxGUI
         public string AdvancedFilterToggleLabel => ShowAdvancedFilterEditor ? "Simple Filters" : "Advanced Filters";
 
         public double FiltersPopupWidth => 404;
-
-        public double FiltersPopupHorizontalOffset => -248;
 
         public string ClearFiltersButtonBackground => "#6B2B2B";
 
@@ -2381,6 +3039,9 @@ namespace CKAN.LinuxGUI
         public string ReleaseDateSortLabel
             => SortOptionLabel(ModSortOption.ReleaseDate, "Released");
 
+        public string InstallDateSortLabel
+            => SortOptionLabel(ModSortOption.InstallDate, "Install Date");
+
         public string VersionSortLabel
             => SortOptionLabel(ModSortOption.Version, "Version");
 
@@ -2399,6 +3060,8 @@ namespace CKAN.LinuxGUI
         public bool CompatibilitySortSelected => SelectedSortOption?.Value == ModSortOption.Compatibility;
 
         public bool ReleaseDateSortSelected => SelectedSortOption?.Value == ModSortOption.ReleaseDate;
+
+        public bool InstallDateSortSelected => SelectedSortOption?.Value == ModSortOption.InstallDate;
 
         public bool VersionSortSelected => SelectedSortOption?.Value == ModSortOption.Version;
 
@@ -2766,6 +3429,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(PreviewShowsLoadingCard));
                 this.RaisePropertyChanged(nameof(PreviewShowsReadyCard));
                 this.RaisePropertyChanged(nameof(PreviewShowsBlockedCard));
+                this.RaisePropertyChanged(nameof(ShowPreviewConflictPopup));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
             }
@@ -3344,9 +4008,32 @@ namespace CKAN.LinuxGUI
             parts.Add($"{label}: {(value.Value ? "Yes" : "No")}");
         }
 
-        private static IReadOnlyList<FilterTagOptionItem> BuildAvailableTagOptions(IEnumerable<ModListItem> items,
-                                                                                   string                  selectedTag)
-            => BuildAvailableFilterOptions(items, selectedTag, item => item.Tags);
+        private IReadOnlyList<FilterTagOptionItem> BuildAvailableTagOptions(IEnumerable<ModListItem> items,
+                                                                            FilterState              currentFilter)
+        {
+            var sourceItems = items.ToList();
+            var selectedValues = SelectedFilterValues(currentFilter.TagText);
+            var allTags = sourceItems.SelectMany(item => SplitListValues(item.Tags))
+                                     .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                                     .OrderBy(tag => tag, StringComparer.CurrentCultureIgnoreCase)
+                                     .ToList();
+
+            return allTags.Select(tag =>
+                          {
+                              var previewValues = selectedValues.ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+                              previewValues.Add(tag);
+                              int count = modCatalogService.ApplyFilter(sourceItems,
+                                                                        currentFilter with
+                                                                        {
+                                                                            TagText = SerializeFilterValues(previewValues),
+                                                                        })
+                                                           .Count;
+                              return new FilterTagOptionItem(tag,
+                                                             count,
+                                                             selectedValues.Contains(tag));
+                          })
+                          .ToList();
+        }
 
         private static IReadOnlyList<FilterTagOptionItem> BuildAvailableLabelOptions(IEnumerable<ModListItem> items,
                                                                                      string                  selectedLabel)
@@ -3376,14 +4063,34 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            var selectedValues = SelectedFilterValues(selectedValue);
             return counts.OrderBy(kvp => kvp.Key, StringComparer.CurrentCultureIgnoreCase)
                          .Select(kvp => new FilterTagOptionItem(kvp.Key,
                                                                 kvp.Value,
-                                                                string.Equals(kvp.Key,
-                                                                              selectedValue,
-                                                                              StringComparison.CurrentCultureIgnoreCase)))
+                                                                selectedValues.Contains(kvp.Key)))
                          .ToList();
         }
+
+        private static HashSet<string> SelectedFilterValues(string? text)
+            => SplitFilterValues(text).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+
+        private static IEnumerable<string> SplitFilterValues(string? text)
+            => (text ?? "").Split(new[] { ',', ';', '\n', '\r' },
+                                  StringSplitOptions.RemoveEmptyEntries
+                                  | StringSplitOptions.TrimEntries)
+                           .Where(value => !string.IsNullOrWhiteSpace(value));
+
+        private static IEnumerable<string> SplitListValues(string? text)
+            => (text ?? "").Split(',',
+                                  StringSplitOptions.RemoveEmptyEntries
+                                  | StringSplitOptions.TrimEntries)
+                           .Where(value => !string.IsNullOrWhiteSpace(value));
+
+        private static string SerializeFilterValues(IEnumerable<string> values)
+            => string.Join("; ",
+                           values.Where(value => !string.IsNullOrWhiteSpace(value))
+                                 .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                                 .OrderBy(value => value, StringComparer.CurrentCultureIgnoreCase));
 
         private IEnumerable<(string Label, string Value)> EnumerateAdvancedTextFilters()
         {
@@ -3399,7 +4106,7 @@ namespace CKAN.LinuxGUI
             yield return ("Suggests", AdvancedSuggestsFilter);
             yield return ("Conflicts", AdvancedConflictsFilter);
             yield return ("Supports", AdvancedSupportsFilter);
-            yield return ("Tags", AdvancedTagsFilter);
+            yield return ("Category", AdvancedTagsFilter);
             yield return ("Labels", AdvancedLabelsFilter);
             yield return ("Compatibility", AdvancedCompatibilityFilter);
         }
@@ -3595,6 +4302,59 @@ namespace CKAN.LinuxGUI
             set => this.RaiseAndSetIfChanged(ref selectedQueuedAction, value);
         }
 
+        public string? SelectedPreviewConflict
+        {
+            get => selectedPreviewConflict;
+            set => this.RaiseAndSetIfChanged(ref selectedPreviewConflict, value);
+        }
+
+        public int SelectedPreviewConflictCount
+        {
+            get => selectedPreviewConflictCount;
+            private set => this.RaiseAndSetIfChanged(ref selectedPreviewConflictCount, value);
+        }
+
+        public bool TogglePreviewConflictSelection(string conflict)
+        {
+            if (string.IsNullOrWhiteSpace(conflict))
+            {
+                return false;
+            }
+
+            var selected = selectedPreviewConflicts.Add(conflict);
+            if (!selected)
+            {
+                selectedPreviewConflicts.Remove(conflict);
+            }
+
+            SelectedPreviewConflict = selectedPreviewConflicts.FirstOrDefault();
+            SelectedPreviewConflictCount = selectedPreviewConflicts.Count;
+            return selected;
+        }
+
+        public void ViewPreviewConflictInBrowser(PreviewConflictChoiceItem choice)
+        {
+            var conflict = choice.ConflictText;
+            var leftSide = ConflictLeftSide(conflict);
+            var rightSide = ConflictRightSide(conflict);
+            var identifiers = ConflictBrowserIdentifiers(leftSide, rightSide);
+            if (identifiers.Count == 0)
+            {
+                StatusMessage = "No browser-visible mods were found for that conflict.";
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = identifiers;
+            RelationshipBrowserScopeText = $"Conflict: {DisplayConflictTarget(leftSide)} vs {DisplayConflictTarget(rightSide)}";
+            pendingModListScrollReset = true;
+            ShowBrowseSurfaceTab();
+            if (IsReady && allCatalogItems.Count > 0)
+            {
+                ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
+            }
+            PublishRelationshipBrowserScopeState();
+        }
+
         public void ActivateModFromBrowser(ModListItem mod)
         {
             if (SelectedMod != null
@@ -3653,9 +4413,14 @@ namespace CKAN.LinuxGUI
 
             if (queued != null)
             {
+                var returnToPreview = ShowConflictBrowserScope;
                 if (changesetService.Remove(queued.Identifier))
                 {
                     StatusMessage = $"Removed queued {queued.ActionText.ToLowerInvariant()} for {mod.Name}.";
+                    if (returnToPreview)
+                    {
+                        _ = ReturnToPreviewAfterConflictQueueChangeAsync();
+                    }
                 }
                 return;
             }
@@ -3930,6 +4695,7 @@ namespace CKAN.LinuxGUI
                 }
                 SelectedActionLabel = "Open Selected Install";
                 SelectedActionHint = "Choose a different install here if you want to switch contexts.";
+                RestorePersistedQueuedActions();
                 if (loadCatalog)
                 {
                     _ = LoadModCatalogAsync();
@@ -3983,6 +4749,7 @@ namespace CKAN.LinuxGUI
                         ApplyCatalogFilterToLoadedItems(previousSelection);
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
+                        SeedDevQueueSmoke(items);
                     }
                     catch (Exception ex)
                     {
@@ -4099,9 +4866,9 @@ namespace CKAN.LinuxGUI
                 SelectedModVersionChoice = null;
                 SelectedModAvailableVersions.Clear();
                 ReplaceSelectedModResourceLinks(Array.Empty<ModResourceLinkItem>());
-                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
-                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
-                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<ModRelationshipItem>());
+                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
+                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
                 ShowSelectedModDependenciesExpanded = false;
                 ShowSelectedModRecommendationsExpanded = false;
                 ShowSelectedModSuggestionsExpanded = false;
@@ -4132,16 +4899,24 @@ namespace CKAN.LinuxGUI
         }
 
         private void OnQueueChanged()
-            => Dispatcher.UIThread.Post(() =>
+        {
+            if (!suppressQueueSnapshotPersistence)
+            {
+                SaveQueuedActionsForCurrentInstance();
+            }
+
+            Dispatcher.UIThread.Post(() =>
             {
                 RefreshQueuedActions();
                 _ = LoadPreviewAsync();
             });
+        }
 
         private FilterState CurrentFilter()
             => new FilterState
             {
                 SearchText          = ModSearchText,
+                TagText             = AdvancedTagsFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
                 SortDescending      = SortDescending,
                 InstalledOnly       = FilterInstalledOnly,
@@ -4154,6 +4929,14 @@ namespace CKAN.LinuxGUI
                 IncompatibleOnly    = FilterIncompatibleOnly,
                 HasReplacementOnly  = FilterHasReplacementOnly,
                 NoReplacementOnly   = FilterNoReplacementOnly,
+            };
+
+        private FilterState CurrentSortOnlyFilter()
+            => new FilterState
+            {
+                SortOption     = SelectedSortOption?.Value ?? ModSortOption.Name,
+                SortDescending = SortDescending,
+                InstalledOnly  = false,
             };
 
         private void RefreshCatalogForFilterChange()
@@ -4194,7 +4977,7 @@ namespace CKAN.LinuxGUI
             advancedSuggestsFilter = "";
             advancedConflictsFilter = "";
             advancedSupportsFilter = "";
-            advancedTagsFilter = "";
+            advancedTagsFilter = SerializeFilterValues(SplitFilterValues(filter.TagText));
             advancedLabelsFilter = "";
             advancedCompatibilityFilter = "";
             filterInstalledOnly = filter.InstalledOnly;
@@ -4302,7 +5085,211 @@ namespace CKAN.LinuxGUI
             => ShowPreviewSurface = false;
 
         private void ShowPreviewSurfaceTab()
-            => ShowPreviewSurface = true;
+        {
+            ShowPreviewSurface = true;
+            RefreshPreviewConflictPopupState();
+        }
+
+        private void DismissPreviewConflictPopup()
+        {
+            dismissedPreviewConflictKey = CurrentPreviewConflictKey();
+            previewConflictPopupDismissed = true;
+            PublishPreviewConflictPopupState();
+        }
+
+        private void RefreshPreviewConflictPopupState()
+        {
+            RefreshPreviewConflictChoices();
+
+            if (!HasPreviewConflicts)
+            {
+                previewConflictPopupDismissed = false;
+                dismissedPreviewConflictKey = "";
+                ClearPreviewConflictSelection();
+                PublishPreviewConflictPopupState();
+                return;
+            }
+
+            RemoveStalePreviewConflictSelections();
+
+            var currentKey = CurrentPreviewConflictKey();
+            if (!string.Equals(dismissedPreviewConflictKey, currentKey, StringComparison.Ordinal))
+            {
+                previewConflictPopupDismissed = false;
+            }
+
+            PublishPreviewConflictPopupState();
+        }
+
+        private void RefreshPreviewConflictChoices()
+        {
+            var seenConflictPairs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            PreviewConflictChoices.Clear();
+
+            foreach (var conflict in PreviewConflicts)
+            {
+                var pairKey = ConflictPairKey(conflict);
+                if (!string.IsNullOrWhiteSpace(pairKey)
+                    && !seenConflictPairs.Add(pairKey))
+                {
+                    continue;
+                }
+
+                PreviewConflictChoices.Add(BuildPreviewConflictChoice(conflict));
+            }
+
+            this.RaisePropertyChanged(nameof(PreviewConflictChoices));
+        }
+
+        private void RemoveStalePreviewConflictSelections()
+        {
+            var validConflicts = PreviewConflicts.ToHashSet(StringComparer.Ordinal);
+            if (selectedPreviewConflicts.RemoveWhere(conflict => !validConflicts.Contains(conflict)) > 0)
+            {
+                SelectedPreviewConflict = selectedPreviewConflicts.FirstOrDefault();
+                SelectedPreviewConflictCount = selectedPreviewConflicts.Count;
+            }
+        }
+
+        private void ClearPreviewConflictSelection()
+        {
+            if (selectedPreviewConflicts.Count == 0
+                && SelectedPreviewConflict == null
+                && SelectedPreviewConflictCount == 0)
+            {
+                return;
+            }
+
+            selectedPreviewConflicts.Clear();
+            SelectedPreviewConflict = null;
+            SelectedPreviewConflictCount = 0;
+        }
+
+        private PreviewConflictChoiceItem BuildPreviewConflictChoice(string conflict)
+        {
+            var leftTarget = ConflictLeftSide(conflict);
+            var rightTarget = ConflictRightSide(conflict);
+            var leftInfo = ResolveConflictSideInfo(leftTarget);
+            var rightInfo = ResolveConflictSideInfo(rightTarget);
+            if (string.IsNullOrWhiteSpace(leftTarget))
+            {
+                leftTarget = leftInfo.DisplayName;
+            }
+
+            var displayLeftTarget = leftInfo.DisplayName;
+            var displayRightTarget = rightInfo.DisplayName;
+            var actionText = string.IsNullOrWhiteSpace(displayRightTarget)
+                ? $"Review {displayLeftTarget}"
+                : $"{displayLeftTarget} conflicts with {displayRightTarget}";
+
+            return new PreviewConflictChoiceItem
+            {
+                ConflictText = conflict,
+                ActionText = actionText,
+                DetailText = BuildConflictChoiceDetail(leftInfo, rightInfo),
+            };
+        }
+
+        private ConflictSideInfo ResolveConflictSideInfo(string side)
+        {
+            var queuedAction = QueuedActionFromConflictSide(side);
+            var mod = ModFromConflictSide(side);
+            var displayName = queuedAction?.Name
+                              ?? mod?.Name
+                              ?? StripConflictVersionSuffix(side);
+            return new ConflictSideInfo
+            {
+                DisplayName = string.IsNullOrWhiteSpace(displayName)
+                    ? "selected mod"
+                    : displayName,
+                QueuedAction = queuedAction,
+                Mod = mod,
+            };
+        }
+
+        private string BuildConflictChoiceDetail(ConflictSideInfo left,
+                                                 ConflictSideInfo right)
+        {
+            var leftQueued = left.QueuedAction?.ActionKind is QueuedActionKind.Install
+                                                      or QueuedActionKind.Update;
+            var rightQueued = right.QueuedAction?.ActionKind is QueuedActionKind.Install
+                                                       or QueuedActionKind.Update;
+            var leftRemoving = left.QueuedAction?.ActionKind == QueuedActionKind.Remove;
+            var rightRemoving = right.QueuedAction?.ActionKind == QueuedActionKind.Remove;
+            var leftInstalled = left.Mod?.IsInstalled == true;
+            var rightInstalled = right.Mod?.IsInstalled == true;
+
+            if (leftRemoving || rightRemoving)
+            {
+                var removing = leftRemoving ? left.DisplayName : right.DisplayName;
+                return $"{removing} is already queued for removal. Review the other mod before applying.";
+            }
+
+            if (leftQueued && rightQueued)
+            {
+                return "Both mods are queued. Unqueue one of them to continue.";
+            }
+
+            if (leftQueued && rightInstalled)
+            {
+                return $"{left.DisplayName} is queued. Unqueue it or queue removal for {right.DisplayName}.";
+            }
+
+            if (rightQueued && leftInstalled)
+            {
+                return $"{right.DisplayName} is queued. Unqueue it or queue removal for {left.DisplayName}.";
+            }
+
+            if (leftInstalled && rightInstalled)
+            {
+                return "Both mods are installed. Queue removal for one of them to continue.";
+            }
+
+            if (leftQueued || rightQueued)
+            {
+                var queued = leftQueued ? left.DisplayName : right.DisplayName;
+                return $"{queued} is queued. Unqueue it or review the other mod.";
+            }
+
+            if (leftInstalled || rightInstalled)
+            {
+                var installed = leftInstalled ? left.DisplayName : right.DisplayName;
+                return $"{installed} is installed. Queue removal if it should not stay.";
+            }
+
+            return "Review both mods in Browse, then unqueue a pending action or queue removal.";
+        }
+
+        private static string ConflictPairKey(string conflict)
+        {
+            var left = NormalizeConflictPairSide(ConflictLeftSide(conflict));
+            var right = NormalizeConflictPairSide(ConflictRightSide(conflict));
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+            {
+                return "";
+            }
+
+            return string.Compare(left, right, StringComparison.OrdinalIgnoreCase) <= 0
+                ? $"{left}|{right}"
+                : $"{right}|{left}";
+        }
+
+        private static string NormalizeConflictPairSide(string side)
+            => StripConflictVersionSuffix(side).Trim().ToUpperInvariant();
+
+        private string CurrentPreviewConflictKey()
+            => string.Join("\n",
+                           PreviewConflicts.OrderBy(conflict => conflict,
+                                                    StringComparer.Ordinal));
+
+        private void PublishPreviewConflictPopupState()
+        {
+            this.RaisePropertyChanged(nameof(ShowPreviewConflictPopup));
+            this.RaisePropertyChanged(nameof(PreviewConflictPopupTitle));
+        }
+
+        internal void ToggleSurfaceViewTogglePinned()
+            => SurfaceViewTogglePinned = !SurfaceViewTogglePinned;
 
         private void ResetUiScale()
             => PendingUiScalePercent = UiScaleSettings.DefaultPercent;
@@ -4366,10 +5353,15 @@ namespace CKAN.LinuxGUI
             var queued = changesetService.FindQueuedApplyAction(SelectedMod.Identifier);
             if (queued != null)
             {
+                var returnToPreview = ShowConflictBrowserScope;
                 ClearApplyResult();
                 if (changesetService.Remove(queued.Identifier))
                 {
                     StatusMessage = $"Removed queued {queued.ActionText.ToLowerInvariant()} for {SelectedMod.Name}.";
+                    if (returnToPreview)
+                    {
+                        _ = ReturnToPreviewAfterConflictQueueChangeAsync();
+                    }
                 }
                 return;
             }
@@ -4412,6 +5404,7 @@ namespace CKAN.LinuxGUI
         private void ClearAllFilters()
         {
             pendingModListScrollReset = true;
+            ClearRelationshipBrowserScope();
             ModSearchText = "";
             ClearPopupFilters();
         }
@@ -4445,7 +5438,13 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            AdvancedTagsFilter = option.Name;
+            var selectedValues = SelectedFilterValues(AdvancedTagsFilter);
+            if (!selectedValues.Add(option.Name))
+            {
+                selectedValues.Remove(option.Name);
+            }
+
+            AdvancedTagsFilter = SerializeFilterValues(selectedValues);
             ShowTagFilterPicker = false;
         }
 
@@ -4561,14 +5560,19 @@ namespace CKAN.LinuxGUI
         private void ApplyCatalogFilterToLoadedItems(string? preferredSelectionIdentifier = null)
         {
             var currentFilter = CurrentFilter();
-            var visibleItems = modCatalogService.ApplyFilter(allCatalogItems, currentFilter);
+            var sourceItems = ShowRelationshipBrowserScope
+                ? allCatalogItems.Where(item => relationshipBrowserScopeIdentifiers.Contains(item.Identifier)).ToList()
+                : allCatalogItems;
+            var visibleItems = ShowRelationshipBrowserScope
+                ? modCatalogService.ApplyFilter(sourceItems, CurrentSortOnlyFilter())
+                : modCatalogService.ApplyFilter(sourceItems, currentFilter);
 
-            filterOptionCounts = modCatalogService.GetFilterOptionCounts(allCatalogItems, currentFilter);
+            filterOptionCounts = modCatalogService.GetFilterOptionCounts(sourceItems, currentFilter);
             hasFilterOptionCounts = true;
 
             ReplaceVisibleMods(visibleItems);
-            ReplaceAvailableTagOptions(BuildAvailableTagOptions(allCatalogItems, currentFilter.TagText));
-            ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(allCatalogItems, currentFilter.LabelText));
+            ReplaceAvailableTagOptions(BuildAvailableTagOptions(sourceItems, currentFilter));
+            ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(sourceItems, currentFilter.LabelText));
             PublishVisibleModQueueState();
 
             string? selectedIdentifier = preferredSelectionIdentifier ?? SelectedMod?.Identifier;
@@ -4583,9 +5587,13 @@ namespace CKAN.LinuxGUI
                 ModListScrollResetRequestId++;
             }
 
-            CatalogStatusMessage = Mods.Count == 0
-                ? "No mods matched the current search and filter state."
-                : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
+            CatalogStatusMessage = ShowRelationshipBrowserScope
+                ? Mods.Count == 0
+                    ? $"No loaded mods matched {RelationshipBrowserScopeText}."
+                    : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} from {RelationshipBrowserScopeText}."
+                : Mods.Count == 0
+                    ? "No mods matched the current search and filter state."
+                    : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
             PublishCatalogStateLabels();
             PublishFilterOptionCountLabels();
         }
@@ -4617,6 +5625,7 @@ namespace CKAN.LinuxGUI
 
             this.RaisePropertyChanged(nameof(HasAvailableTagOptions));
             this.RaisePropertyChanged(nameof(TagFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(SelectedCategoryCount));
             this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
         }
 
@@ -4635,14 +5644,13 @@ namespace CKAN.LinuxGUI
 
         private void UpdateAvailableTagOptionSelection()
         {
-            string selectedTag = AdvancedTagsFilter.Trim();
+            var selectedTags = SelectedFilterValues(AdvancedTagsFilter);
             foreach (var item in AvailableTagOptions)
             {
-                item.IsSelected = string.Equals(item.Name,
-                                                selectedTag,
-                                                StringComparison.CurrentCultureIgnoreCase);
+                item.IsSelected = selectedTags.Contains(item.Name);
             }
 
+            this.RaisePropertyChanged(nameof(SelectedCategoryCount));
             this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
         }
 
@@ -4710,6 +5718,102 @@ namespace CKAN.LinuxGUI
             LaunchExternal(CurrentInstance.GameDir,
                            $"Opened {CurrentInstance.Name} in your file manager.",
                            "Could not open the current game directory.");
+        }
+
+        private async Task PlayGameAsync(GameLaunchMode mode)
+        {
+            if (CurrentInstance is not GameInstance instance)
+            {
+                StatusMessage = "Select a game instance before launching.";
+                return;
+            }
+
+            string? command = FindLaunchCommand(mode);
+            if (command == null)
+            {
+                StatusMessage = mode == GameLaunchMode.Steam
+                    ? "No Steam launch command was detected for this instance."
+                    : "No direct launch command was detected for this instance.";
+                return;
+            }
+
+            if (!await ConfirmLaunchAgainstIncompatibleModsAsync(instance))
+            {
+                StatusMessage = "Launch cancelled.";
+                return;
+            }
+
+            instance.PlayGame(command,
+                              () => Dispatcher.UIThread.Post(() =>
+                              {
+                                  RefreshInstanceSummaries();
+                                  if (mode == GameLaunchMode.Direct)
+                                  {
+                                      StatusMessage = $"{instance.Name} launch process exited.";
+                                  }
+                              }));
+
+            StatusMessage = mode == GameLaunchMode.Steam
+                ? $"Launching {instance.Name} via Steam..."
+                : $"Launching {instance.Name} directly...";
+        }
+
+        private async Task<bool> ConfirmLaunchAgainstIncompatibleModsAsync(GameInstance instance)
+        {
+            if (CurrentRegistry == null)
+            {
+                return true;
+            }
+
+            var suppressedIdentifiers = instance.GetSuppressedCompatWarningIdentifiers;
+            var incompatible = CurrentRegistry.IncompatibleInstalled(instance.VersionCriteria())
+                                              .Where(module => !module.Module.IsDLC
+                                                               && !suppressedIdentifiers.Contains(module.identifier))
+                                              .ToList();
+            if (incompatible.Count == 0)
+            {
+                return true;
+            }
+
+            if (ConfirmIncompatibleLaunchAsync == null)
+            {
+                return true;
+            }
+
+            string details = string.Join(Environment.NewLine,
+                                         incompatible.Select(module =>
+                                             $"- {module.Module} ({module.Module.CompatibleGameVersions(instance.Game)})"));
+            string prompt = "Some installed modules are incompatible with this game version. "
+                            + "It might not be safe to launch the game."
+                            + Environment.NewLine
+                            + Environment.NewLine
+                            + details
+                            + Environment.NewLine
+                            + Environment.NewLine
+                            + "Launch anyway?";
+            return await ConfirmIncompatibleLaunchAsync(prompt);
+        }
+
+        private string? FindLaunchCommand(GameLaunchMode mode)
+        {
+            if (CurrentInstance is not GameInstance instance)
+            {
+                return null;
+            }
+
+            try
+            {
+                return GameCommandLineConfigStore.Load(instance, CurrentSteamLibrary)
+                                                 .FirstOrDefault(command =>
+                                                     mode == GameLaunchMode.Steam
+                                                         ? SteamLibrary.IsSteamCmdLine(command)
+                                                         : !SteamLibrary.IsSteamCmdLine(command));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                return null;
+            }
         }
 
         private void OpenSelectedModCacheLocation()
@@ -4803,6 +5907,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(CurrentInstance));
             this.RaisePropertyChanged(nameof(CurrentRegistry));
             this.RaisePropertyChanged(nameof(CurrentCache));
+            PublishLaunchCommandState();
             this.RaisePropertyChanged(nameof(InstanceCountLabel));
             PublishCompatibleGameVersionState();
             this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
@@ -4813,6 +5918,12 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
             this.RaisePropertyChanged(nameof(SelectedInstanceContextTitle));
             UpdateSelectedModCachedArchivePath();
+        }
+
+        private void PublishLaunchCommandState()
+        {
+            this.RaisePropertyChanged(nameof(CanPlayDirect));
+            this.RaisePropertyChanged(nameof(CanPlayViaSteam));
         }
 
         private void ClearCatalogState()
@@ -4832,6 +5943,7 @@ namespace CKAN.LinuxGUI
             PublishFilterOptionCountLabels();
             this.RaisePropertyChanged(nameof(HasAvailableTagOptions));
             this.RaisePropertyChanged(nameof(TagFilterPickerSummary));
+            this.RaisePropertyChanged(nameof(SelectedCategoryCount));
             this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
             this.RaisePropertyChanged(nameof(HasAvailableLabelOptions));
             this.RaisePropertyChanged(nameof(LabelFilterPickerSummary));
@@ -4896,30 +6008,166 @@ namespace CKAN.LinuxGUI
             StatusMessage = $"Queued removal for {SelectedMod.Name}.";
         }
 
+        private void SeedDevQueueSmoke(IReadOnlyList<ModListItem> catalogItems)
+        {
+            if (hasSeededDevQueueSmoke
+                || !DevQueueSmokeEnabled()
+                || catalogItems.Count == 0)
+            {
+                return;
+            }
+
+            hasSeededDevQueueSmoke = true;
+            suppressQueueSnapshotPersistence = true;
+            SaveEmptyQueuedActionSnapshotForCurrentInstance();
+            ClearApplyResult();
+            changesetService.Clear();
+
+            var usedIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int seeded = 0;
+
+            seeded += QueueDevSmokeActions(catalogItems,
+                                           usedIdentifiers,
+                                           CanQueueInstall,
+                                           mod => changesetService.QueueInstall(mod),
+                                           InstallSmokeScore,
+                                           10);
+            seeded += QueueDevSmokeActions(catalogItems,
+                                           usedIdentifiers,
+                                           CanQueueUpdate,
+                                           mod => changesetService.QueueUpdate(mod),
+                                           _ => 0,
+                                           3);
+            seeded += QueueDevSmokeActions(catalogItems,
+                                           usedIdentifiers,
+                                           CanQueueRemove,
+                                           mod => changesetService.QueueRemove(mod),
+                                           _ => 0,
+                                           3);
+            seeded += QueueDevSmokeActions(catalogItems,
+                                           usedIdentifiers,
+                                           CanQueueDownloadForDevSmoke,
+                                           mod => changesetService.QueueDownload(mod),
+                                           DownloadSmokeScore,
+                                           DevQueueSmokeTargetActionCount - seeded);
+
+            while (seeded < DevQueueSmokeTargetActionCount)
+            {
+                var added = 0;
+                added += QueueDevSmokeActions(catalogItems,
+                                              usedIdentifiers,
+                                              CanQueueInstall,
+                                              mod => changesetService.QueueInstall(mod),
+                                              InstallSmokeScore,
+                                              1);
+                added += QueueDevSmokeActions(catalogItems,
+                                              usedIdentifiers,
+                                              CanQueueUpdate,
+                                              mod => changesetService.QueueUpdate(mod),
+                                              _ => 0,
+                                              1);
+                added += QueueDevSmokeActions(catalogItems,
+                                              usedIdentifiers,
+                                              CanQueueRemove,
+                                              mod => changesetService.QueueRemove(mod),
+                                              _ => 0,
+                                              1);
+                added += QueueDevSmokeActions(catalogItems,
+                                              usedIdentifiers,
+                                              CanQueueDownloadForDevSmoke,
+                                              mod => changesetService.QueueDownload(mod),
+                                              DownloadSmokeScore,
+                                              1);
+                if (added == 0)
+                {
+                    break;
+                }
+
+                seeded += added;
+            }
+
+            if (seeded > 0)
+            {
+                ShowPreviewSurface = true;
+                IsQueueDrawerExpanded = true;
+                PublishQueueStateLabels();
+            }
+        }
+
+        private static int QueueDevSmokeActions(IReadOnlyList<ModListItem> catalogItems,
+                                                HashSet<string>            usedIdentifiers,
+                                                Func<ModListItem, bool>    canQueue,
+                                                Action<ModListItem>        queue,
+                                                Func<ModListItem, int>     score,
+                                                int                        count)
+        {
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            var mods = catalogItems.Where(item => !usedIdentifiers.Contains(item.Identifier)
+                                                  && canQueue(item))
+                                   .OrderByDescending(score)
+                                   .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                                   .Take(count)
+                                   .ToList();
+            foreach (var mod in mods)
+            {
+                usedIdentifiers.Add(mod.Identifier);
+                queue(mod);
+            }
+
+            return mods.Count;
+        }
+
+        private static bool CanQueueDownloadForDevSmoke(ModListItem mod)
+            => !mod.IsAutodetected
+               && !mod.IsCached
+               && !mod.IsIncompatible;
+
+        private static int InstallSmokeScore(ModListItem mod)
+            => (!string.IsNullOrWhiteSpace(mod.Depends) ? 4 : 0)
+               + (!string.IsNullOrWhiteSpace(mod.Recommends) ? 3 : 0)
+               + (!string.IsNullOrWhiteSpace(mod.Suggests) ? 2 : 0)
+               + (!mod.IsCached ? 1 : 0);
+
+        private static int DownloadSmokeScore(ModListItem mod)
+            => !mod.IsInstalled ? 1 : 0;
+
+        private static bool DevQueueSmokeEnabled()
+            => string.Equals(Environment.GetEnvironmentVariable("CKAN_LINUX_DEV_QUEUE_SMOKE"),
+                             "1",
+                             StringComparison.Ordinal);
+
         private static IReadOnlyList<RecommendationAuditItem> BuildRecommendationAuditItems(
             Dictionary<CkanModule, Tuple<bool, List<string>>> recommendations,
             Dictionary<CkanModule, List<string>>              suggestions,
             Dictionary<CkanModule, HashSet<string>>           supporters,
-            bool                                              preselectRecommendations)
+            bool                                              preselectRecommendations,
+            Func<CkanModule, int?>                            downloadCountForModule)
             => recommendations
                    .Select(kvp => new RecommendationAuditItem(kvp.Key,
                                                               "Recommendation",
                                                               FormatRecommendationSource("Recommended by", kvp.Value.Item2),
-                                                              preselectRecommendations && kvp.Value.Item1))
+                                                              preselectRecommendations && kvp.Value.Item1,
+                                                              downloadCountForModule(kvp.Key)))
                    .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                    .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                    .Concat(suggestions
                        .Select(kvp => new RecommendationAuditItem(kvp.Key,
                                                                   "Suggestion",
                                                                   FormatRecommendationSource("Suggested by", kvp.Value),
-                                                                  false))
+                                                                  false,
+                                                                  downloadCountForModule(kvp.Key)))
                        .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                        .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase))
                    .Concat(supporters
                        .Select(kvp => new RecommendationAuditItem(kvp.Key,
                                                                   "Supporter",
                                                                   FormatRecommendationSource("Supports", kvp.Value),
-                                                                  false))
+                                                                  false,
+                                                                  downloadCountForModule(kvp.Key)))
                        .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                        .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase))
                    .ToList();
@@ -4940,26 +6188,72 @@ namespace CKAN.LinuxGUI
         {
             if (!string.IsNullOrWhiteSpace(action.TargetVersion))
             {
-                var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier,
-                                                                                       action.TargetVersion));
+                var exact = TryQueuedVersion(registry, action);
                 if (exact != null)
                 {
                     return exact;
                 }
 
-                if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
-                    && string.Equals(installed.version.ToString(), action.TargetVersion, StringComparison.Ordinal))
-                {
-                    return installed;
-                }
-
                 return null;
             }
 
-            return Utilities.DefaultIfThrows(() => registry.LatestAvailable(action.Identifier,
-                                                                            instance.StabilityToleranceConfig,
-                                                                            instance.VersionCriteria()));
+            return TryLatestCompatible(registry, instance, action.Identifier);
         }
+
+        private static CkanModule? TryQueuedVersion(IRegistryQuerier  registry,
+                                                    QueuedActionModel action)
+        {
+            var targetVersion = action.TargetVersion.Trim();
+            var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier,
+                                                                                    targetVersion));
+            if (exact != null)
+            {
+                return exact;
+            }
+
+            if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
+                && VersionTextMatches(installed.version.ToString(), targetVersion))
+            {
+                return installed;
+            }
+
+            return Utilities.DefaultIfThrows(() => registry.AvailableByIdentifier(action.Identifier)
+                .FirstOrDefault(module => VersionTextMatches(module.version.ToString(), targetVersion)));
+        }
+
+        private static CkanModule? TryLatestCompatible(IRegistryQuerier registry,
+                                                       GameInstance    instance,
+                                                       string          identifier)
+        {
+            try
+            {
+                var latest = registry.LatestAvailable(identifier,
+                                                       instance.StabilityToleranceConfig,
+                                                       instance.VersionCriteria());
+                if (latest != null)
+                {
+                    return latest;
+                }
+            }
+            catch
+            {
+            }
+
+            var versionCriteria = instance.VersionCriteria();
+            return Utilities.DefaultIfThrows(() => registry.AvailableByIdentifier(identifier)
+                .Where(module => module.IsCompatible(versionCriteria))
+                .OrderByDescending(module => module.version)
+                .FirstOrDefault());
+        }
+
+        private static bool VersionTextMatches(string left, string right)
+            => string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase)
+               || string.Equals(NormalizeVersionText(left),
+                                NormalizeVersionText(right),
+                                StringComparison.OrdinalIgnoreCase);
+
+        private static string NormalizeVersionText(string version)
+            => version.Trim().TrimStart('v', 'V');
 
         private static List<CkanModule> DistinctRecommendationModules(IEnumerable<CkanModule> modules)
             => modules.GroupBy(module => module.identifier, StringComparer.OrdinalIgnoreCase)
@@ -4980,6 +6274,160 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private void RemoveSelectedPreviewConflict()
+        {
+            if (selectedPreviewConflicts.Count == 0)
+            {
+                return;
+            }
+
+            var targets = selectedPreviewConflicts
+                .Select(QueuedActionFromConflict)
+                .Where(target => target != null)
+                .Select(target => target!)
+                .GroupBy(target => target.Identifier, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+            if (targets.Count == 0)
+            {
+                StatusMessage = "Select conflicts for queued mods before removing them.";
+                return;
+            }
+
+            ClearApplyResult();
+            var removedNames = new List<string>();
+            foreach (var target in targets)
+            {
+                if (changesetService.Remove(target.Identifier))
+                {
+                    removedNames.Add(target.Name);
+                }
+            }
+
+            ClearPreviewConflictSelection();
+            if (removedNames.Count > 0)
+            {
+                StatusMessage = removedNames.Count == 1
+                    ? $"Removed queued action for {removedNames[0]}."
+                    : $"Removed {removedNames.Count} queued actions.";
+            }
+        }
+
+        private QueuedActionModel? QueuedActionFromConflict(string conflict)
+            => QueuedActionFromConflictSide(ConflictLeftSide(conflict))
+               ?? QueuedActions.OrderByDescending(action => action.Identifier.Length)
+                               .FirstOrDefault(action => ConflictMentionsQueuedAction(conflict, action));
+
+        private QueuedActionModel? QueuedActionFromConflictSide(string side)
+            => QueuedActions.OrderByDescending(action => action.Identifier.Length)
+                            .FirstOrDefault(action => ConflictSideStartsWith(side, action.Identifier)
+                                                   || ConflictSideStartsWith(side, action.Name));
+
+        private ModListItem? ModFromConflictSide(string side)
+        {
+            var directMatch = allCatalogItems
+                .OrderByDescending(item => item.Identifier.Length)
+                .FirstOrDefault(item => ConflictSideStartsWith(side, item.Identifier)
+                                     || ConflictSideStartsWith(side, item.Name));
+            if (directMatch != null)
+            {
+                return directMatch;
+            }
+
+            var displayName = StripConflictVersionSuffix(side);
+            return allCatalogItems
+                .OrderByDescending(item => item.Identifier.Length)
+                .FirstOrDefault(item => ContainsText(item.Identifier, displayName)
+                                     || ContainsText(item.Name, displayName)
+                                     || ContainsText(displayName, item.Identifier)
+                                     || ContainsText(displayName, item.Name));
+        }
+
+        private static string ConflictLeftSide(string conflict)
+        {
+            var parts = conflict.Split(new[] { " conflicts with " },
+                                       StringSplitOptions.None);
+            return parts.Length > 0
+                ? parts[0].Trim()
+                : conflict.Trim();
+        }
+
+        private static string ConflictRightSide(string conflict)
+        {
+            var parts = conflict.Split(new[] { " conflicts with " },
+                                       StringSplitOptions.None);
+            return parts.Length > 1
+                ? parts[1].Trim()
+                : "";
+        }
+
+        private static string DisplayConflictTarget(string side,
+                                                    QueuedActionModel? queuedTarget = null)
+        {
+            if (queuedTarget != null
+                && (ConflictSideStartsWith(side, queuedTarget.Identifier)
+                    || ConflictSideStartsWith(side, queuedTarget.Name)))
+            {
+                return queuedTarget.Name;
+            }
+
+            return StripConflictVersionSuffix(side);
+        }
+
+        private static string StripConflictVersionSuffix(string value)
+        {
+            var trimmed = value.Trim();
+            if (trimmed.Length == 0)
+            {
+                return "";
+            }
+
+            var withoutVersion = Regex.Replace(trimmed,
+                                               @"\s+(?:\d+:)?v?\d+(?:[.\-_]\w+)+(?:\+\S*)?$",
+                                               "",
+                                               RegexOptions.IgnoreCase);
+            return withoutVersion.Length > 0
+                ? withoutVersion
+                : trimmed;
+        }
+
+        private static bool ConflictMentionsQueuedAction(string conflict,
+                                                        QueuedActionModel action)
+            => ContainsText(conflict, action.Identifier)
+               || ContainsText(conflict, action.Name);
+
+        private static bool ConflictSideStartsWith(string side,
+                                                   string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(side) || string.IsNullOrWhiteSpace(candidate))
+            {
+                return false;
+            }
+
+            var trimmedSide = side.Trim();
+            var trimmedCandidate = candidate.Trim();
+            if (!trimmedSide.StartsWith(trimmedCandidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (trimmedSide.Length == trimmedCandidate.Length)
+            {
+                return true;
+            }
+
+            var next = trimmedSide[trimmedCandidate.Length];
+            return char.IsWhiteSpace(next)
+                   || next == ':'
+                   || next == '('
+                   || next == '[';
+        }
+
+        private static bool ContainsText(string text,
+                                         string value)
+            => !string.IsNullOrWhiteSpace(value)
+               && text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+
         private void ClearQueuedActions()
         {
             ClearApplyResult();
@@ -4995,6 +6443,117 @@ namespace CKAN.LinuxGUI
             ResetPreviewState();
             ShowPreviewSurface = false;
         }
+
+        private void RestorePersistedQueuedActions()
+        {
+            if (hasRestoredQueuedActionSnapshot)
+            {
+                return;
+            }
+
+            var instanceName = gameInstanceService.CurrentInstance?.Name;
+            if (string.IsNullOrWhiteSpace(instanceName))
+            {
+                return;
+            }
+
+            hasRestoredQueuedActionSnapshot = true;
+            var snapshot = appSettingsService.QueuedActionSnapshot;
+            if (snapshot.Actions.Count == 0)
+            {
+                return;
+            }
+
+            if (!string.Equals(snapshot.InstanceName, instanceName, StringComparison.Ordinal))
+            {
+                SaveQueuedActionsForCurrentInstance();
+                return;
+            }
+
+            var actions = snapshot.Actions
+                                  .Select(ToQueuedActionModel)
+                                  .Where(action => !string.IsNullOrWhiteSpace(action.Identifier))
+                                  .ToList();
+            if (actions.Count == 0)
+            {
+                SaveQueuedActionsForCurrentInstance();
+                return;
+            }
+
+            changesetService.Restore(actions);
+        }
+
+        private void SaveQueuedActionsForCurrentInstance()
+        {
+            appSettingsService.SaveQueuedActionSnapshot(new QueuedActionSnapshot
+            {
+                InstanceName = gameInstanceService.CurrentInstance?.Name ?? "",
+                Actions = changesetService.CurrentQueue
+                    .Select(ToQueuedActionSnapshotItem)
+                    .ToList(),
+            });
+        }
+
+        private void SaveEmptyQueuedActionSnapshotForCurrentInstance()
+            => appSettingsService.SaveQueuedActionSnapshot(new QueuedActionSnapshot
+            {
+                InstanceName = gameInstanceService.CurrentInstance?.Name ?? "",
+                Actions = new List<QueuedActionSnapshotItem>(),
+            });
+
+        private static QueuedActionSnapshotItem ToQueuedActionSnapshotItem(QueuedActionModel action)
+            => new QueuedActionSnapshotItem
+            {
+                Identifier    = action.Identifier,
+                Name          = action.Name,
+                TargetVersion = action.TargetVersion,
+                ActionKind    = action.ActionKind,
+                ActionText    = action.ActionText,
+                DetailText    = action.DetailText,
+            };
+
+        private static QueuedActionModel ToQueuedActionModel(QueuedActionSnapshotItem item)
+            => new QueuedActionModel
+            {
+                Identifier    = item.Identifier ?? "",
+                Name          = item.Name ?? item.Identifier ?? "",
+                TargetVersion = item.TargetVersion ?? "",
+                ActionKind    = item.ActionKind,
+                ActionText    = string.IsNullOrWhiteSpace(item.ActionText)
+                    ? DefaultQueuedActionText(item.ActionKind)
+                    : item.ActionText,
+                DetailText    = string.IsNullOrWhiteSpace(item.DetailText)
+                    ? DefaultQueuedDetailText(item)
+                    : item.DetailText,
+            };
+
+        private static string DefaultQueuedActionText(QueuedActionKind kind)
+            => kind switch
+            {
+                QueuedActionKind.Download => "Add to Cache",
+                QueuedActionKind.Install  => "Install",
+                QueuedActionKind.Update   => "Update",
+                QueuedActionKind.Remove   => "Remove",
+                _                         => "Queue",
+            };
+
+        private static string DefaultQueuedDetailText(QueuedActionSnapshotItem item)
+            => item.ActionKind switch
+            {
+                QueuedActionKind.Download => string.IsNullOrWhiteSpace(item.TargetVersion)
+                    ? "Cache latest available version for later install"
+                    : $"Cache {item.TargetVersion} for later install",
+                QueuedActionKind.Install => string.IsNullOrWhiteSpace(item.TargetVersion)
+                    ? "Install latest available version"
+                    : $"Install {item.TargetVersion}",
+                QueuedActionKind.Update => string.IsNullOrWhiteSpace(item.TargetVersion)
+                    ? "Update to latest available version"
+                    : $"Update to {item.TargetVersion}",
+                QueuedActionKind.Remove => string.IsNullOrWhiteSpace(item.TargetVersion)
+                    ? "Remove installed module"
+                    : $"Remove {item.TargetVersion}",
+                _ => "Queued action",
+            };
 
         private void RefreshQueuedActions()
         {
@@ -5084,6 +6643,7 @@ namespace CKAN.LinuxGUI
 
             if (!HasQueuedChangeActions)
             {
+                IsPreviewLoading = false;
                 PreviewSummary = QueuedDownloadActionCount == 1
                     ? "1 queued download is ready."
                     : $"{QueuedDownloadActionCount} queued downloads are ready.";
@@ -5419,9 +6979,9 @@ namespace CKAN.LinuxGUI
             SelectedModVersionChoice = null;
             SelectedModAvailableVersions.Clear();
             ReplaceSelectedModResourceLinks(Array.Empty<ModResourceLinkItem>());
-            ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
-            ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
-            ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+            ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<ModRelationshipItem>());
+            ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
+            ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
             ShowSelectedModDependenciesExpanded = false;
             ShowSelectedModRecommendationsExpanded = false;
             ShowSelectedModSuggestionsExpanded = false;
@@ -5464,6 +7024,8 @@ namespace CKAN.LinuxGUI
         {
             this.RaisePropertyChanged(nameof(HasActiveAdvancedFilters));
             this.RaisePropertyChanged(nameof(HasAdvancedFilterText));
+            this.RaisePropertyChanged(nameof(SelectedCategoryCount));
+            this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
             this.RaisePropertyChanged(nameof(ActiveFilterCount));
             this.RaisePropertyChanged(nameof(HasActiveFilters));
             this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
@@ -5473,7 +7035,6 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(FiltersPopupTitle));
             this.RaisePropertyChanged(nameof(AdvancedFilterToggleLabel));
             this.RaisePropertyChanged(nameof(FiltersPopupWidth));
-            this.RaisePropertyChanged(nameof(FiltersPopupHorizontalOffset));
             this.RaisePropertyChanged(nameof(ShowSimpleFilterMenu));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBackground));
             this.RaisePropertyChanged(nameof(ClearFiltersButtonBorderBrush));
@@ -5499,6 +7060,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PopularitySortLabel));
             this.RaisePropertyChanged(nameof(CompatibilitySortLabel));
             this.RaisePropertyChanged(nameof(ReleaseDateSortLabel));
+            this.RaisePropertyChanged(nameof(InstallDateSortLabel));
             this.RaisePropertyChanged(nameof(VersionSortLabel));
             this.RaisePropertyChanged(nameof(InstalledFirstSortLabel));
             this.RaisePropertyChanged(nameof(UpdatesFirstSortLabel));
@@ -5507,6 +7069,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PopularitySortSelected));
             this.RaisePropertyChanged(nameof(CompatibilitySortSelected));
             this.RaisePropertyChanged(nameof(ReleaseDateSortSelected));
+            this.RaisePropertyChanged(nameof(InstallDateSortSelected));
             this.RaisePropertyChanged(nameof(VersionSortSelected));
             this.RaisePropertyChanged(nameof(InstalledFirstSortSelected));
             this.RaisePropertyChanged(nameof(UpdatesFirstSortSelected));
@@ -5528,6 +7091,7 @@ namespace CKAN.LinuxGUI
         private static bool DefaultSortDescending(ModSortOption sortOption)
             => sortOption == ModSortOption.Popularity
                || sortOption == ModSortOption.ReleaseDate
+               || sortOption == ModSortOption.InstallDate
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
 
@@ -5577,6 +7141,16 @@ namespace CKAN.LinuxGUI
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
                         : items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
                                .ThenBy(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstallDate
+                    => descending
+                        ? items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenByDescending(item => item.InstallDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenBy(item => item.InstallDateValue)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.Version
@@ -5636,6 +7210,7 @@ namespace CKAN.LinuxGUI
         private void PublishQueueStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasQueuedActions));
+            this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
             this.RaisePropertyChanged(nameof(QueuedChangeActionCount));
             this.RaisePropertyChanged(nameof(QueuedDownloadActionCount));
             this.RaisePropertyChanged(nameof(HasQueuedChangeActions));
@@ -5713,6 +7288,7 @@ namespace CKAN.LinuxGUI
 
         private void PublishPreviewStateLabels()
         {
+            RefreshPreviewConflictPopupState();
             this.RaisePropertyChanged(nameof(HasPreviewDownloadsRequired));
             this.RaisePropertyChanged(nameof(HasPreviewDependencies));
             this.RaisePropertyChanged(nameof(HasPreviewAutoRemovals));
@@ -5771,7 +7347,7 @@ namespace CKAN.LinuxGUI
 
             (ApplyResultBackground, ApplyResultBorderBrush) = result.Kind switch
             {
-                ApplyResultKind.Success => ("#1F3A2A", "#3D7A57"),
+                ApplyResultKind.Success => ("#14191F", "#3D7A57"),
                 ApplyResultKind.Warning => ("#4A3920", "#9A7B37"),
                 ApplyResultKind.Blocked => ("#4A232A", "#934354"),
                 ApplyResultKind.Canceled => ("#2E3540", "#566271"),
@@ -5797,6 +7373,7 @@ namespace CKAN.LinuxGUI
         private void PublishApplyResultStateLabels()
         {
             this.RaisePropertyChanged(nameof(HasApplyResult));
+            this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
             this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
             this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
             this.RaisePropertyChanged(nameof(ShowInlineApplyResult));
@@ -5821,6 +7398,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowExecutionProgressOverlay));
             this.RaisePropertyChanged(nameof(ShowExecutionResultOverlay));
             this.RaisePropertyChanged(nameof(ShowInlineApplyResult));
+            this.RaisePropertyChanged(nameof(ShowPreviewConflictPopup));
             this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
             this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
@@ -5842,6 +7420,7 @@ namespace CKAN.LinuxGUI
 
         private void ResetPreviewState()
         {
+            IsPreviewLoading = false;
             PreviewSummary = "Queue installs, updates, removals, or downloads from Browse to review them before running anything.";
             PreviewCanApply = false;
             ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
@@ -5864,9 +7443,15 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private void ReplaceSelectedModCollection(ObservableCollection<string> target,
-                                                  IEnumerable<string>         values)
-            => ReplacePreviewCollection(target, values);
+        private static void ReplaceSelectedModCollection(ObservableCollection<ModRelationshipItem> target,
+                                                         IEnumerable<ModRelationshipItem>         values)
+        {
+            target.Clear();
+            foreach (var value in values)
+            {
+                target.Add(value);
+            }
+        }
 
         private void ReplaceSelectedModResourceLinks(IEnumerable<ModResourceLinkItem> values)
         {
@@ -5961,7 +7546,9 @@ namespace CKAN.LinuxGUI
 
             return modules.Select(module =>
                           {
-                              var isCompatible = module.IsCompatible(CurrentInstance.VersionCriteria());
+                              var isCompatible = IsModuleInstallable(module,
+                                                                     CurrentRegistry,
+                                                                     CurrentInstance);
                               var comparison = installedVersion == null
                                   ? 0
                                   : module.version.CompareTo(installedVersion);
@@ -5995,7 +7582,9 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            if (SelectedModVersionChoice?.Module is not CkanModule module || CurrentInstance == null)
+            if (SelectedModVersionChoice?.Module is not CkanModule module
+                || CurrentInstance == null
+                || CurrentRegistry == null)
             {
                 SelectedModCompatibility = selectedModDetails.Compatibility;
                 SelectedModCacheState = selectedModDetails.IsCached ? "Cached" : "Not cached";
@@ -6007,9 +7596,9 @@ namespace CKAN.LinuxGUI
                 SelectedModDependencyCountLabel = CountLabel(selectedModDetails.DependencyCount, "Dependency", "Dependencies");
                 SelectedModRecommendationCountLabel = CountLabel(selectedModDetails.RecommendationCount, "Recommendation", "Recommendations");
                 SelectedModSuggestionCountLabel = CountLabel(selectedModDetails.SuggestionCount, "Suggestion", "Suggestions");
-                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<string>());
-                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<string>());
-                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<string>());
+                ReplaceSelectedModCollection(SelectedModDependencies, Array.Empty<ModRelationshipItem>());
+                ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
+                ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
                 ReplaceSelectedModResourceLinks(BuildSelectedModResourceLinks(selectedModDetails.Resources));
                 SelectedModIsCached = selectedModDetails.IsCached;
                 SelectedModIsIncompatible = selectedModDetails.IsIncompatible;
@@ -6042,7 +7631,9 @@ namespace CKAN.LinuxGUI
             SelectedModRecommendationCountLabel = CountLabel(recommendations.Count, "Recommendation", "Recommendations");
             SelectedModSuggestionCountLabel = CountLabel(suggestions.Count, "Suggestion", "Suggestions");
             SelectedModIsCached = CurrentCache?.IsMaybeCachedZip(module) == true;
-            SelectedModIsIncompatible = !module.IsCompatible(CurrentInstance.VersionCriteria());
+            SelectedModIsIncompatible = !IsModuleInstallable(module,
+                                                             CurrentRegistry,
+                                                             CurrentInstance);
             UpdateSelectedModCachedArchivePath();
             PublishSelectedModRelationshipState();
             PublishSelectedModActionState();
@@ -6082,14 +7673,150 @@ namespace CKAN.LinuxGUI
                              .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
         }
 
-        private List<string> BuildRelationshipEntries(IEnumerable<RelationshipDescriptor>? relationships)
+        private List<ModRelationshipItem> BuildRelationshipEntries(IEnumerable<RelationshipDescriptor>? relationships)
             => (relationships ?? Enumerable.Empty<RelationshipDescriptor>())
-                .Select(relationship => CurrentRegistry != null && CurrentInstance != null
-                    ? relationship.ToStringWithCompat(CurrentRegistry, CurrentInstance.Game)
-                    : relationship.ToString() ?? "")
-                .Where(text => !string.IsNullOrWhiteSpace(text))
-                .Select(text => text!)
+                .Select(relationship => new ModRelationshipItem
+                {
+                    Text = CurrentRegistry != null && CurrentInstance != null
+                        ? relationship.ToStringWithCompat(CurrentRegistry, CurrentInstance.Game)
+                        : relationship.ToString() ?? "",
+                    Identifiers = RelationshipIdentifiers(relationship).ToList(),
+                })
+                .Where(item => !string.IsNullOrWhiteSpace(item.Text))
                 .ToList();
+
+        private static IEnumerable<string> RelationshipIdentifiers(RelationshipDescriptor relationship)
+            => relationship switch
+            {
+                ModuleRelationshipDescriptor moduleRelationship
+                    => Enumerable.Repeat(moduleRelationship.name, 1),
+                AnyOfRelationshipDescriptor anyOfRelationship
+                    => anyOfRelationship.any_of?.SelectMany(RelationshipIdentifiers)
+                       ?? Enumerable.Empty<string>(),
+                _ => Enumerable.Empty<string>(),
+            };
+
+        private void ShowRelationshipsInBrowser(string relationshipName,
+                                                IEnumerable<ModRelationshipItem> relationships)
+        {
+            var identifiers = relationships.SelectMany(item => item.Identifiers)
+                                           .Where(identifier => !string.IsNullOrWhiteSpace(identifier))
+                                           .Distinct(StringComparer.OrdinalIgnoreCase)
+                                           .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (identifiers.Count == 0)
+            {
+                StatusMessage = $"No browser-visible {relationshipName} were found for {SelectedModTitle}.";
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = identifiers;
+            RelationshipBrowserScopeText = $"{relationshipName} for {SelectedModTitle}";
+            pendingModListScrollReset = true;
+            ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
+            PublishRelationshipBrowserScopeState();
+        }
+
+        private IReadOnlySet<string> ConflictBrowserIdentifiers(string leftSide,
+                                                                string rightSide)
+        {
+            var identifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddConflictBrowserIdentifier(identifiers, leftSide);
+            AddConflictBrowserIdentifier(identifiers, rightSide);
+            return identifiers;
+        }
+
+        private void AddConflictBrowserIdentifier(HashSet<string> identifiers,
+                                                  string          side)
+        {
+            if (string.IsNullOrWhiteSpace(side))
+            {
+                return;
+            }
+
+            var matchingItem = allCatalogItems
+                .OrderByDescending(item => item.Identifier.Length)
+                .FirstOrDefault(item => ConflictSideStartsWith(side, item.Identifier)
+                                     || ConflictSideStartsWith(side, item.Name));
+            if (matchingItem != null)
+            {
+                identifiers.Add(matchingItem.Identifier);
+                return;
+            }
+
+            var displayName = StripConflictVersionSuffix(side);
+            matchingItem = allCatalogItems
+                .OrderByDescending(item => item.Identifier.Length)
+                .FirstOrDefault(item => ContainsText(item.Identifier, displayName)
+                                     || ContainsText(item.Name, displayName)
+                                     || ContainsText(displayName, item.Identifier)
+                                     || ContainsText(displayName, item.Name));
+            if (matchingItem != null)
+            {
+                identifiers.Add(matchingItem.Identifier);
+            }
+        }
+
+        private void ClearRelationshipBrowserScope()
+        {
+            if (!ShowRelationshipBrowserScope)
+            {
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            RelationshipBrowserScopeText = "";
+            pendingModListScrollReset = true;
+            if (IsReady && allCatalogItems.Count > 0)
+            {
+                ApplyCatalogFilterToLoadedItems();
+            }
+            PublishRelationshipBrowserScopeState();
+        }
+
+        private async Task ReturnToPreviewAfterConflictQueueChangeAsync()
+        {
+            relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            RelationshipBrowserScopeText = "";
+            ShowPreviewSurface = true;
+            IsPreviewLoading = true;
+            PublishRelationshipBrowserScopeState();
+            PublishFilterStateLabels();
+            if (IsReady && allCatalogItems.Count > 0)
+            {
+                ApplyCatalogFilterToLoadedItems();
+            }
+            await Task.Delay(180);
+            await LoadPreviewAsync();
+        }
+
+        private static bool IsModuleInstallable(CkanModule module,
+                                                IRegistryQuerier registry,
+                                                GameInstance instance)
+        {
+            var versionCriteria = instance.VersionCriteria();
+            if (!module.IsCompatible(versionCriteria))
+            {
+                return false;
+            }
+
+            var stabilityTolerance = instance.StabilityToleranceConfig.ModStabilityTolerance(module.identifier)
+                                     ?? instance.StabilityToleranceConfig.OverallStabilityTolerance;
+            if ((module.release_status ?? ReleaseStatus.stable) > stabilityTolerance)
+            {
+                return false;
+            }
+
+            try
+            {
+                return registry.IdentifierCompatible(module.identifier,
+                                                     instance.StabilityToleranceConfig,
+                                                     versionCriteria);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private void PublishSelectedModRelationshipState()
         {
@@ -6107,6 +7834,13 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(SelectedModDependencyChevron));
             this.RaisePropertyChanged(nameof(SelectedModRecommendationChevron));
             this.RaisePropertyChanged(nameof(SelectedModSuggestionChevron));
+        }
+
+        private void PublishRelationshipBrowserScopeState()
+        {
+            this.RaisePropertyChanged(nameof(ShowRelationshipBrowserScope));
+            this.RaisePropertyChanged(nameof(RelationshipBrowserScopeText));
+            this.RaisePropertyChanged(nameof(ModCountLabel));
         }
 
         private void ToggleSelectedModDependenciesExpanded()

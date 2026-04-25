@@ -36,85 +36,123 @@
       <Setter Property="Foreground" Value="#7B8794" />
       <Setter Property="Opacity" Value="1" />
     </Style>
+    <Style Selector="TextBox.command-editor">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="SelectionBrush" Value="#355779" />
+      <Setter Property="CaretBrush" Value="#F4F6F8" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="TextBox.command-editor:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.command-editor:focus">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.command-editor /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="TextBox.command-editor:pointerover /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.command-editor:focus /template/ Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto"
+  <Grid RowDefinitions="*,Auto,Auto"
         Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="Game Command Lines" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="{Binding SummaryText}" />
-    </StackPanel>
-
-    <StackPanel Grid.Row="1"
-                Margin="0,18,0,0"
-                Spacing="12">
-      <Border Background="#161B21"
-              BorderBrush="#2B323C"
-              BorderThickness="1"
-              CornerRadius="10"
-              Padding="14">
-        <StackPanel Spacing="10">
-          <TextBlock FontSize="14"
-                     FontWeight="SemiBold"
-                     Text="Launch Commands" />
-          <TextBlock FontSize="12"
-                     Opacity="0.72"
-                     TextWrapping="Wrap"
-                     Text="Enter one full launch command per line. The first line is the default choice, and additional lines act as alternate launch presets." />
-          <TextBox AcceptsReturn="True"
-                   Height="250"
+    <Border Margin="0,0,0,12"
+            Background="#161B21"
+            BorderBrush="#2B323C"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="14">
+      <Grid RowDefinitions="Auto,Auto,*">
+        <TextBlock FontSize="14"
+                   FontWeight="SemiBold"
+                   Text="Command Lines" />
+        <TextBlock Grid.Row="1"
+                   Margin="0,10,0,0"
+                   FontSize="12"
+                   Opacity="0.72"
+                   TextWrapping="Wrap"
+                   Text="Enter one full launch command per line. The first line is the default choice, and additional lines act as alternate launch presets." />
+        <Border Grid.Row="2"
+                Margin="0,10,0,0"
+                Background="#16202A"
+                BorderBrush="#3D4E60"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10,8">
+          <TextBox Classes="command-editor"
+                   AcceptsReturn="True"
+                   MinHeight="180"
+                   Background="Transparent"
+                   BorderBrush="Transparent"
+                   BorderThickness="0"
                    Text="{Binding CommandLinesText, Mode=TwoWay}"
                    TextWrapping="NoWrap"
+                   VerticalAlignment="Stretch"
                    VerticalContentAlignment="Top" />
-        </StackPanel>
-      </Border>
+        </Border>
+      </Grid>
+    </Border>
 
-      <Border Background="#20262D"
-              BorderBrush="#39424E"
-              BorderThickness="1"
-              CornerRadius="10"
-              Padding="12">
-        <TextBlock FontSize="12"
-                   Opacity="0.76"
-                   TextWrapping="Wrap"
-                   Text="{Binding DefaultsSummaryText}" />
-      </Border>
-
+    <Border Grid.Row="1"
+            Background="#20262D"
+            BorderBrush="#39424E"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="12">
       <TextBlock FontSize="12"
+                 Opacity="0.76"
+                 TextWrapping="Wrap"
+                 Text="{Binding PreviewText}" />
+    </Border>
+
+    <Grid Grid.Row="2"
+          Margin="0,14,0,0"
+          ColumnDefinitions="*,Auto">
+      <TextBlock VerticalAlignment="Center"
+                 FontSize="12"
                  Foreground="#F06C6C"
                  IsVisible="{Binding ShowValidationMessage}"
                  TextWrapping="Wrap"
                  Text="{Binding ValidationMessage}" />
-    </StackPanel>
-
-    <StackPanel Grid.Row="2"
-                Margin="0,18,0,0"
-                Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                Spacing="12">
-      <Button Classes="dialog-action"
-              Background="#1F3D58"
-              BorderBrush="#31597B"
-              Foreground="#F4F6F8"
-              Click="ResetToDefaultsButton_OnClick"
-              Content="Reset To Defaults" />
-      <Button Classes="dialog-action"
-              Background="#20262D"
-              BorderBrush="#39424E"
-              Foreground="#F4F6F8"
-              Click="CancelButton_OnClick"
-              Content="Cancel" />
-      <Button Classes="dialog-action"
-              Background="#355779"
-              BorderBrush="#5A86B4"
-              Foreground="#F4F6F8"
-              Click="SaveButton_OnClick"
-              Content="Save" />
-    </StackPanel>
+      <StackPanel Grid.Column="1"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="12">
+        <Button Classes="dialog-action"
+                Background="#1F3D58"
+                BorderBrush="#31597B"
+                Foreground="#F4F6F8"
+                Click="ResetToDefaultsButton_OnClick"
+                Content="Reset" />
+        <Button Classes="dialog-action"
+                Background="#20262D"
+                BorderBrush="#39424E"
+                Foreground="#F4F6F8"
+                Click="CancelButton_OnClick"
+                Content="Cancel" />
+        <Button Classes="dialog-action"
+                Background="#355779"
+                BorderBrush="#5A86B4"
+                Foreground="#F4F6F8"
+                Click="SaveButton_OnClick"
+                Content="Save" />
+      </StackPanel>
+    </Grid>
   </Grid>
 </Window>

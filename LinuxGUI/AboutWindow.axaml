@@ -4,9 +4,9 @@
         x:Class="CKAN.LinuxGUI.AboutWindow"
         x:CompileBindings="False"
         Width="560"
-        Height="250"
+        Height="270"
         MinWidth="520"
-        MinHeight="230"
+        MinHeight="250"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="About"
@@ -35,6 +35,7 @@
         Margin="14">
     <TextBlock FontSize="22"
                FontWeight="SemiBold"
+               TextWrapping="Wrap"
                Text="CKAN - The Comprehensive Kerbal Archive Network" />
 
     <TextBlock Grid.Row="1"

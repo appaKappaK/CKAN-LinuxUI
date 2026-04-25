@@ -28,6 +28,8 @@ namespace CKAN.App.Services
 
         void QueueRemove(ModListItem mod);
 
+        void Restore(IReadOnlyList<QueuedActionModel> actions);
+
         bool Remove(string identifier);
 
         void Clear();

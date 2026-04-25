@@ -17,8 +17,7 @@ namespace CKAN.LinuxGUI
         public GameCommandLinesWindow()
         {
             InitializeComponent();
-            viewModel = new EditorViewModel("No current instance is available.",
-                                            Array.Empty<string>(),
+            viewModel = new EditorViewModel(Array.Empty<string>(),
                                             Array.Empty<string>());
             DataContext = viewModel;
         }
@@ -31,10 +30,7 @@ namespace CKAN.LinuxGUI
             var defaults = instance.Game.DefaultCommandLines(steamLibrary,
                                                              new System.IO.DirectoryInfo(instance.GameDir));
             var current = GameCommandLineConfigStore.Load(instance, steamLibrary);
-            viewModel = new EditorViewModel(
-                $"Edit launch commands for {instance.Name}. The first entry acts as the primary launch option.",
-                current,
-                defaults);
+            viewModel = new EditorViewModel(current, defaults);
             DataContext = viewModel;
         }
 
@@ -64,28 +60,32 @@ namespace CKAN.LinuxGUI
             private string commandLinesText;
             private string validationMessage = "";
 
-            public EditorViewModel(string                summaryText,
-                                   IReadOnlyCollection<string> currentCommandLines,
+            public EditorViewModel(IReadOnlyCollection<string> currentCommandLines,
                                    IEnumerable<string>   defaults)
             {
-                SummaryText = summaryText;
                 this.defaults = defaults.Where(line => !string.IsNullOrWhiteSpace(line))
+                                        .Distinct()
                                         .ToArray();
-                DefaultsSummaryText = this.defaults.Length == 0
-                    ? "No built-in defaults were detected for this install."
-                    : $"Built-in defaults: {string.Join(" | ", this.defaults)}";
-                commandLinesText = string.Join(Environment.NewLine, currentCommandLines);
+                commandLinesText = string.Join(Environment.NewLine,
+                                               currentCommandLines
+                                                   .Where(line => !string.IsNullOrWhiteSpace(line))
+                                                   .Distinct());
             }
-
-            public string SummaryText { get; }
-
-            public string DefaultsSummaryText { get; }
 
             public string CommandLinesText
             {
                 get => commandLinesText;
-                set => this.RaiseAndSetIfChanged(ref commandLinesText, value);
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref commandLinesText, value);
+                    this.RaisePropertyChanged(nameof(PreviewText));
+                }
             }
+
+            public string PreviewText
+                => CommandLines.Length == 0
+                    ? "No launch commands are configured."
+                    : $"Launch commands that will be saved:{Environment.NewLine}{string.Join(Environment.NewLine, CommandLines)}";
 
             public string ValidationMessage
             {
@@ -104,6 +104,7 @@ namespace CKAN.LinuxGUI
                                           StringSplitOptions.RemoveEmptyEntries)
                                    .Select(line => line.Trim())
                                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                                   .Distinct()
                                    .ToArray();
 
             public void ResetToDefaults()

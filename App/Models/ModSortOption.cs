@@ -10,5 +10,6 @@ namespace CKAN.App.Models
         Version,
         InstalledFirst,
         UpdatesFirst,
+        InstallDate,
     }
 }

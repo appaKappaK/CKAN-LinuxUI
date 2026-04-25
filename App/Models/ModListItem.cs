@@ -52,6 +52,10 @@ namespace CKAN.App.Models
 
         public DateTime? ReleaseDateValue { get; init; }
 
+        public string InstallDate { get; init; } = "";
+
+        public DateTime? InstallDateValue { get; init; }
+
         public int? DownloadCount { get; init; }
 
         public string DownloadCountLabel { get; init; } = "";

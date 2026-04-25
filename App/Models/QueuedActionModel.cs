@@ -22,6 +22,28 @@ namespace CKAN.App.Models
 
         public string DetailText { get; init; } = "";
 
+        public string VersionText
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(TargetVersion))
+                {
+                    return TargetVersion;
+                }
+
+                if (!string.IsNullOrWhiteSpace(ActionText)
+                    && DetailText.StartsWith(ActionText + " ", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return DetailText[(ActionText.Length + 1)..].Trim();
+                }
+
+                var arrowIndex = DetailText.LastIndexOf(" -> ", System.StringComparison.Ordinal);
+                return arrowIndex >= 0
+                    ? DetailText[(arrowIndex + 4)..].Trim()
+                    : DetailText;
+            }
+        }
+
         public string AccentBrush
             => ActionKind switch
             {

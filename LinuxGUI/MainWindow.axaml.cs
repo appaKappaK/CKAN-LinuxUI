@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -19,19 +21,49 @@ namespace CKAN.LinuxGUI
 {
     public partial class MainWindow : Window
     {
+        private enum BrowserColumnResizeTarget
+        {
+            None,
+            Metadata,
+            Downloads,
+            Released,
+            Installed,
+        }
+
         private readonly IAppSettingsService? appSettings;
         private bool suppressHeaderInstanceSelection;
         private MainWindowViewModel? observedViewModel;
         private ContextMenu? activeModRowMenu;
+        private Window? activeOwnedDialog;
         private LinuxGuiPluginController? pluginController;
         private string? pluginControllerInstanceDir;
+        private BrowserColumnResizeTarget activeBrowserColumnResizeTarget;
+        private double browserColumnResizeStartX;
+        private double browserColumnResizeStartMetadataWidth;
+        private double browserColumnResizeStartDownloadsWidth;
+        private double browserColumnResizeStartReleasedWidth;
+        private double browserColumnResizeStartInstalledWidth;
+        private double browserColumnResizeMaxMetadataWidth;
+        private const double OverlayWheelScrollPixels = 48;
+        private static readonly IBrush PreviewConflictRowBackground = Brush.Parse("#2A1820");
+        private static readonly IBrush PreviewConflictRowBorder = Brush.Parse("#3C212B");
+        private static readonly IBrush PreviewConflictSelectedRowBackground = Brush.Parse("#361B24");
+        private static readonly IBrush PreviewConflictSelectedRowBorder = Brush.Parse("#D95A72");
 
         public MainWindow()
         {
             InitializeComponent();
+            AddHandler(InputElement.PointerWheelChangedEvent,
+                       Window_OnPointerWheelChanged,
+                       RoutingStrategies.Tunnel);
+            SurfaceViewToggle.AddHandler(InputElement.PointerPressedEvent,
+                                         SurfaceViewToggle_OnPointerPressed,
+                                         RoutingStrategies.Tunnel,
+                                         true);
             Opened += OnOpened;
             Closing += OnClosing;
             PositionChanged += OnPositionChanged;
+            Activated += OnActivated;
             DataContextChanged += OnDataContextChanged;
         }
 
@@ -94,6 +126,91 @@ namespace CKAN.LinuxGUI
         private void OnPositionChanged(object? sender,
                                        PixelPointEventArgs e)
             => CloseActiveModRowMenu();
+
+        private void OnActivated(object? sender,
+                                 EventArgs e)
+            => ActivateOwnedDialog();
+
+        private void ActivateOwnedDialog()
+        {
+            if (activeOwnedDialog == null)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (activeOwnedDialog != null)
+                {
+                    activeOwnedDialog.Activate();
+                }
+            }, DispatcherPriority.Input);
+        }
+
+        private async Task ShowOwnedDialogAsync(Window dialog)
+            => await TrackOwnedDialogAsync(dialog,
+                                           () => dialog.ShowDialog(this));
+
+        private async Task<TResult> ShowOwnedDialogAsync<TResult>(Window dialog)
+            => await TrackOwnedDialogAsync(dialog,
+                                           () => dialog.ShowDialog<TResult>(this));
+
+        private async Task TrackOwnedDialogAsync(Window dialog,
+                                                 Func<Task> showDialogAsync)
+        {
+            activeOwnedDialog = dialog;
+            dialog.Opened += OwnedDialog_OnOpened;
+            dialog.Closed += OwnedDialog_OnClosed;
+
+            try
+            {
+                await showDialogAsync();
+            }
+            finally
+            {
+                dialog.Opened -= OwnedDialog_OnOpened;
+                dialog.Closed -= OwnedDialog_OnClosed;
+                if (ReferenceEquals(activeOwnedDialog, dialog))
+                {
+                    activeOwnedDialog = null;
+                }
+            }
+        }
+
+        private async Task<TResult> TrackOwnedDialogAsync<TResult>(Window dialog,
+                                                                   Func<Task<TResult>> showDialogAsync)
+        {
+            activeOwnedDialog = dialog;
+            dialog.Opened += OwnedDialog_OnOpened;
+            dialog.Closed += OwnedDialog_OnClosed;
+
+            try
+            {
+                return await showDialogAsync();
+            }
+            finally
+            {
+                dialog.Opened -= OwnedDialog_OnOpened;
+                dialog.Closed -= OwnedDialog_OnClosed;
+                if (ReferenceEquals(activeOwnedDialog, dialog))
+                {
+                    activeOwnedDialog = null;
+                }
+            }
+        }
+
+        private void OwnedDialog_OnOpened(object? sender,
+                                          EventArgs e)
+            => ActivateOwnedDialog();
+
+        private void OwnedDialog_OnClosed(object? sender,
+                                          EventArgs e)
+        {
+            if (ReferenceEquals(activeOwnedDialog, sender))
+            {
+                activeOwnedDialog = null;
+            }
+        }
 
         private void SaveBrowserState()
         {
@@ -166,7 +283,7 @@ namespace CKAN.LinuxGUI
                                                 Array.Empty<string>(),
                                                 "Discard Queue and Switch",
                                                 "Cancel");
-            return await dialog.ShowDialog<int>(this) == 0;
+            return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }
 
         private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
@@ -175,7 +292,7 @@ namespace CKAN.LinuxGUI
 
         private async void AboutMenuItem_OnClick(object? sender,
                                                  Avalonia.Interactivity.RoutedEventArgs e)
-            => await new AboutWindow().ShowDialog(this);
+            => await ShowOwnedDialogAsync(new AboutWindow());
 
         private async Task OpenCompatibleGameVersionsAsync()
         {
@@ -186,7 +303,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new CompatibleGameVersionsWindow(instance);
-            if (await dialog.ShowDialog<bool>(this))
+            if (await ShowOwnedDialogAsync<bool>(dialog))
             {
                 await viewModel.ApplyCompatibleGameVersionsAsync(dialog.SelectedVersions);
             }
@@ -208,7 +325,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new DisplayScaleWindow(viewModel);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private async Task OpenSettingsAsync()
@@ -220,7 +337,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new SettingsWindow(viewModel);
 
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
             if (dialog.RepositoryAdded || dialog.RepositoryRemoved || dialog.RepositoryMoved)
             {
                 await viewModel.RefreshCurrentStateAsync();
@@ -241,7 +358,10 @@ namespace CKAN.LinuxGUI
 
             var dialog = new GameCommandLinesWindow(instance,
                                                     viewModel.CurrentSteamLibrary);
-            await dialog.ShowDialog<bool>(this);
+            if (await ShowOwnedDialogAsync<bool>(dialog))
+            {
+                viewModel.RefreshLaunchCommandState();
+            }
         }
 
         private async void PluginsMenuItem_OnClick(object? sender,
@@ -263,7 +383,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new PluginsWindow(pluginController);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private async void PreferredHostsMenuItem_OnClick(object? sender,
@@ -280,7 +400,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new PreferredHostsWindow(viewModel.CurrentConfiguration,
                                                   viewModel.CurrentRegistry);
-            await dialog.ShowDialog<bool>(this);
+            await ShowOwnedDialogAsync<bool>(dialog);
         }
 
         private async void InstallationFiltersMenuItem_OnClick(object? sender,
@@ -297,7 +417,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new InstallationFiltersWindow(viewModel.CurrentConfiguration,
                                                        instance);
-            if (await dialog.ShowDialog<bool>(this)
+            if (await ShowOwnedDialogAsync<bool>(dialog)
                 && dialog.Changed)
             {
                 await viewModel.RefreshCurrentStateAsync();
@@ -316,7 +436,7 @@ namespace CKAN.LinuxGUI
                                                    viewModel.CurrentInstance?.Name,
                                                    viewModel.CurrentManager,
                                                    viewModel.CurrentUser);
-            var shouldSwitch = await dialog.ShowDialog<bool>(this);
+            var shouldSwitch = await ShowOwnedDialogAsync<bool>(dialog);
             if (dialog.Changed)
             {
                 viewModel.RefreshInstanceSummaries();
@@ -338,7 +458,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new InstallationHistoryWindow(viewModel.CurrentInstance);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private async void InstallFromCkanMenuItem_OnClick(object? sender,
@@ -407,8 +527,8 @@ namespace CKAN.LinuxGUI
             if (DataContext is MainWindowViewModel viewModel)
             {
                 var result = await viewModel.DeduplicateInstalledFilesAsync();
-                await new MessageDialogWindow("Deduplicate Installed Files", result)
-                    .ShowDialog(this);
+                await ShowOwnedDialogAsync(
+                    new MessageDialogWindow("Deduplicate Installed Files", result));
             }
         }
 
@@ -478,7 +598,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new RecommendationAuditWindow(items, viewModel.CurrentInstance.Name);
-            if (await dialog.ShowDialog<bool>(this))
+            if (await ShowOwnedDialogAsync<bool>(dialog))
             {
                 viewModel.QueueRecommendationAuditSelections(dialog.SelectedItems);
             }
@@ -494,7 +614,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new DownloadStatisticsWindow(viewModel.CurrentCache,
                                                       viewModel.CurrentRegistry);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private async void PlayTimeMenuItem_OnClick(object? sender,
@@ -506,7 +626,7 @@ namespace CKAN.LinuxGUI
             }
 
             var dialog = new PlayTimeWindow(viewModel.KnownGameInstances);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private async void UnmanagedFilesMenuItem_OnClick(object? sender,
@@ -519,7 +639,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new UnmanagedFilesWindow(viewModel.CurrentInstance,
                                                   viewModel.CurrentRegistry);
-            await dialog.ShowDialog(this);
+            await ShowOwnedDialogAsync(dialog);
         }
 
         private void ExitMenuItem_OnClick(object? sender,
@@ -571,6 +691,55 @@ namespace CKAN.LinuxGUI
             {
                 viewModel.OpenSelectedModResourceLinkFromUi(link);
             }
+        }
+
+        private void PreviewConflictRowButton_OnClick(object? sender,
+                                                      RoutedEventArgs e)
+        {
+            if (sender is not Button button)
+            {
+                return;
+            }
+
+            if (button.DataContext is PreviewConflictChoiceItem choice
+                && DataContext is MainWindowViewModel viewModel)
+            {
+                var selected = viewModel.TogglePreviewConflictSelection(choice.ConflictText);
+                button.Classes.Set("selected", selected);
+                SetPreviewConflictRowVisual(button, selected);
+            }
+            e.Handled = true;
+        }
+
+        private void PreviewConflictViewButton_OnClick(object? sender,
+                                                       RoutedEventArgs e)
+        {
+            if (sender is Control control
+                && control.DataContext is PreviewConflictChoiceItem choice
+                && DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.ViewPreviewConflictInBrowser(choice);
+            }
+            e.Handled = true;
+        }
+
+        private static void SetPreviewConflictRowVisual(Button button,
+                                                        bool selected)
+        {
+            var row = button.GetVisualDescendants()
+                            .OfType<Border>()
+                            .FirstOrDefault(border => border.Classes.Contains("preview-conflict-row"));
+            if (row == null)
+            {
+                return;
+            }
+
+            row.Background = selected
+                ? PreviewConflictSelectedRowBackground
+                : PreviewConflictRowBackground;
+            row.BorderBrush = selected
+                ? PreviewConflictSelectedRowBorder
+                : PreviewConflictRowBorder;
         }
 
         private void ModRow_OnPointerPressed(object? sender,
@@ -684,6 +853,189 @@ namespace CKAN.LinuxGUI
             e.Handled = true;
         }
 
+        private void SurfaceViewToggle_OnPointerPressed(object? sender,
+                                                        PointerPressedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var source = sender as Control ?? this;
+            var updateKind = e.GetCurrentPoint(source).Properties.PointerUpdateKind;
+            if (updateKind != PointerUpdateKind.RightButtonPressed)
+            {
+                return;
+            }
+
+            viewModel.ToggleSurfaceViewTogglePinned();
+            e.Handled = true;
+        }
+
+        private void BrowserColumnResizeHandle_OnPointerPressed(object? sender,
+                                                                 PointerPressedEventArgs e)
+        {
+            if (sender is not Control control
+                || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var updateKind = e.GetCurrentPoint(control).Properties.PointerUpdateKind;
+            if (updateKind != PointerUpdateKind.LeftButtonPressed)
+            {
+                return;
+            }
+
+            var target = BrowserColumnResizeTargetFor(control.Tag as string);
+            if (target == BrowserColumnResizeTarget.None)
+            {
+                return;
+            }
+
+            activeBrowserColumnResizeTarget = target;
+            browserColumnResizeStartX = e.GetPosition(this).X;
+            browserColumnResizeStartMetadataWidth = viewModel.BrowserMetadataColumnWidth;
+            browserColumnResizeStartDownloadsWidth = viewModel.BrowserDownloadsColumnWidth;
+            browserColumnResizeStartReleasedWidth = viewModel.BrowserReleasedColumnWidth;
+            browserColumnResizeStartInstalledWidth = viewModel.BrowserInstalledColumnWidth;
+            browserColumnResizeMaxMetadataWidth = viewModel.BrowserColumnResizeMaxMetadataWidth(ModsListBox.Bounds.Width);
+            e.Pointer.Capture(control);
+            e.Handled = true;
+        }
+
+        private void BrowserColumnResizeHandle_OnPointerMoved(object? sender,
+                                                              PointerEventArgs e)
+        {
+            if (activeBrowserColumnResizeTarget == BrowserColumnResizeTarget.None
+                || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var delta = e.GetPosition(this).X - browserColumnResizeStartX;
+            switch (activeBrowserColumnResizeTarget)
+            {
+                case BrowserColumnResizeTarget.Metadata:
+                    viewModel.ResizeBrowserNameDownloadsDivider(browserColumnResizeStartMetadataWidth,
+                                                                 browserColumnResizeStartDownloadsWidth,
+                                                                 browserColumnResizeStartReleasedWidth,
+                                                                 browserColumnResizeStartInstalledWidth,
+                                                                 browserColumnResizeMaxMetadataWidth,
+                                                                 delta);
+                    break;
+
+                case BrowserColumnResizeTarget.Downloads:
+                    viewModel.ResizeBrowserDownloadsReleasedDivider(browserColumnResizeStartMetadataWidth,
+                                                                    browserColumnResizeStartDownloadsWidth,
+                                                                    browserColumnResizeStartReleasedWidth,
+                                                                    browserColumnResizeStartInstalledWidth,
+                                                                    browserColumnResizeMaxMetadataWidth,
+                                                                    delta);
+                    break;
+
+                case BrowserColumnResizeTarget.Released:
+                    viewModel.ResizeBrowserReleasedInstalledDivider(browserColumnResizeStartMetadataWidth,
+                                                                    browserColumnResizeStartDownloadsWidth,
+                                                                    browserColumnResizeStartReleasedWidth,
+                                                                    browserColumnResizeStartInstalledWidth,
+                                                                    browserColumnResizeMaxMetadataWidth,
+                                                                    delta);
+                    break;
+
+                case BrowserColumnResizeTarget.Installed:
+                    viewModel.ResizeBrowserInstalledVersionDivider(browserColumnResizeStartMetadataWidth,
+                                                                   browserColumnResizeStartDownloadsWidth,
+                                                                   browserColumnResizeStartReleasedWidth,
+                                                                   browserColumnResizeStartInstalledWidth,
+                                                                   browserColumnResizeMaxMetadataWidth,
+                                                                   delta);
+                    break;
+            }
+
+            e.Handled = true;
+        }
+
+        private void BrowserColumnResizeHandle_OnPointerReleased(object? sender,
+                                                                 PointerReleasedEventArgs e)
+        {
+            if (activeBrowserColumnResizeTarget == BrowserColumnResizeTarget.None)
+            {
+                return;
+            }
+
+            activeBrowserColumnResizeTarget = BrowserColumnResizeTarget.None;
+            e.Pointer.Capture(null);
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.CommitBrowserColumnLayout();
+            }
+
+            e.Handled = true;
+        }
+
+        private static BrowserColumnResizeTarget BrowserColumnResizeTargetFor(string? tag)
+            => tag switch
+            {
+                "Metadata"  => BrowserColumnResizeTarget.Metadata,
+                "Downloads" => BrowserColumnResizeTarget.Downloads,
+                "Released"  => BrowserColumnResizeTarget.Released,
+                "Installed" => BrowserColumnResizeTarget.Installed,
+                _           => BrowserColumnResizeTarget.None,
+            };
+
+        private void Window_OnPointerWheelChanged(object? sender,
+                                                  PointerWheelEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel { ShowAdvancedFilters: true }
+                || PointerIsInsideAdvancedFiltersPopup(e)
+                || !PointerIsInsideModsList(e))
+            {
+                return;
+            }
+
+            var scrollViewer = GetModListScrollViewer();
+            if (scrollViewer == null)
+            {
+                return;
+            }
+
+            double maxOffsetY = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+            if (maxOffsetY <= 0)
+            {
+                return;
+            }
+
+            double offsetY = Math.Clamp(scrollViewer.Offset.Y - (e.Delta.Y * OverlayWheelScrollPixels),
+                                        0,
+                                        maxOffsetY);
+            if (Math.Abs(offsetY - scrollViewer.Offset.Y) < 0.01)
+            {
+                return;
+            }
+
+            scrollViewer.Offset = new Vector(scrollViewer.Offset.X, offsetY);
+            e.Handled = true;
+        }
+
+        private bool PointerIsInsideAdvancedFiltersPopup(PointerEventArgs e)
+        {
+            if (AdvancedFiltersPopup.Child is not Visual popupChild
+                || e.Source is not Visual source)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(source, popupChild)
+                   || popupChild.IsVisualAncestorOf(source);
+        }
+
+        private bool PointerIsInsideModsList(PointerEventArgs e)
+        {
+            var point = e.GetPosition(ModsListBox);
+            return new Rect(ModsListBox.Bounds.Size).Contains(point);
+        }
+
         private void Window_OnKeyDown(object? sender,
                                       KeyEventArgs e)
         {
@@ -794,6 +1146,7 @@ namespace CKAN.LinuxGUI
             if (observedViewModel != null)
             {
                 observedViewModel.RecommendationSelectionPromptAsync = null;
+                observedViewModel.ConfirmIncompatibleLaunchAsync = null;
                 observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             }
 
@@ -802,6 +1155,7 @@ namespace CKAN.LinuxGUI
             if (observedViewModel != null)
             {
                 observedViewModel.RecommendationSelectionPromptAsync = ShowRecommendationSelectionAsync;
+                observedViewModel.ConfirmIncompatibleLaunchAsync = ConfirmIncompatibleLaunchAsync;
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
                 CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
                                           observedViewModel.CurrentUser);
@@ -827,9 +1181,18 @@ namespace CKAN.LinuxGUI
             {
                 Title = "Choose Recommended Mods",
             };
-            return await dialog.ShowDialog<bool>(this)
+            return await ShowOwnedDialogAsync<bool>(dialog)
                 ? dialog.SelectedItems
                 : null;
+        }
+
+        private async Task<bool> ConfirmIncompatibleLaunchAsync(string prompt)
+        {
+            var dialog = new SimplePromptWindow(prompt,
+                                                new[] { "Launch anyway" },
+                                                "Launch",
+                                                "Cancel");
+            return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }
 
         private void ViewModel_OnPropertyChanged(object? sender,
@@ -852,15 +1215,18 @@ namespace CKAN.LinuxGUI
         {
             Dispatcher.UIThread.Post(() =>
             {
-                var scrollViewer = ModsListBox.GetVisualDescendants()
-                                              .OfType<ScrollViewer>()
-                                              .FirstOrDefault();
+                var scrollViewer = GetModListScrollViewer();
                 if (scrollViewer != null)
                 {
                     scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 0);
                 }
             }, DispatcherPriority.Background);
         }
+
+        private ScrollViewer? GetModListScrollViewer()
+            => ModsListBox.GetVisualDescendants()
+                          .OfType<ScrollViewer>()
+                          .FirstOrDefault();
 
         private void RefreshPluginControllerForCurrentInstance(GameInstance? instance)
         {

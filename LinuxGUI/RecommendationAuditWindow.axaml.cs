@@ -79,7 +79,11 @@ namespace CKAN.LinuxGUI
                 foreach (var item in Items)
                 {
                     item.WhenAnyValue(entry => entry.IsSelected)
-                        .Subscribe(_ => this.RaisePropertyChanged(nameof(SelectionSummary)));
+                        .Subscribe(_ =>
+                        {
+                            this.RaisePropertyChanged(nameof(SelectionSummary));
+                            this.RaisePropertyChanged(nameof(PrimaryActionLabel));
+                        });
                 }
             }
 
@@ -117,16 +121,22 @@ namespace CKAN.LinuxGUI
 
             public bool ShowDetailPane => SelectedDetailItem != null;
 
+            public int SelectedCount
+                => Items.Count(item => item.IsSelected && item.CanQueue);
+
             public string SelectionSummary
             {
                 get
                 {
-                    var selected = Items.Count(item => item.IsSelected && item.CanQueue);
+                    var selected = SelectedCount;
                     return selected == 1
                         ? "1 item selected"
                         : $"{selected} items selected";
                 }
             }
+
+            public string PrimaryActionLabel
+                => SelectedCount == 0 ? "Continue" : "Queue Selected";
 
             public void SelectRecommendations()
                 => SelectKind("Recommendation");

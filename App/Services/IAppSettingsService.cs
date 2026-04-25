@@ -20,7 +20,11 @@ namespace CKAN.App.Services
 
         bool PreselectRecommendedMods { get; }
 
+        ModBrowserColumnLayout ModBrowserColumnLayout { get; }
+
         IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; }
+
+        QueuedActionSnapshot QueuedActionSnapshot { get; }
 
         void SaveLastInstanceName(string? instanceName);
 
@@ -33,6 +37,10 @@ namespace CKAN.App.Services
 
         void SavePreselectRecommendedMods(bool preselectRecommendedMods);
 
+        void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout);
+
         void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows);
+
+        void SaveQueuedActionSnapshot(QueuedActionSnapshot snapshot);
     }
 }

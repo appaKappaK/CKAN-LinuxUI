@@ -472,6 +472,10 @@ namespace CKAN.LinuxGUI.VisualTests
                 Description = item.Description,
                 LatestVersion = item.LatestVersion,
                 InstalledVersion = item.InstalledVersion,
+                ReleaseDate = item.ReleaseDate,
+                ReleaseDateValue = item.ReleaseDateValue,
+                InstallDate = item.InstallDate,
+                InstallDateValue = item.InstallDateValue,
                 DownloadCount = item.DownloadCount,
                 DownloadCountLabel = item.DownloadCountLabel,
                 IsInstalled = item.IsInstalled,
@@ -524,6 +528,26 @@ namespace CKAN.LinuxGUI.VisualTests
                         : items.OrderBy(item => item.Compatibility, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.ReleaseDate
+                    => descending
+                        ? items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenByDescending(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.ReleaseDateValue.HasValue)
+                               .ThenBy(item => item.ReleaseDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstallDate
+                    => descending
+                        ? items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenByDescending(item => item.InstallDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenBy(item => item.InstallDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.Version
                     => descending
                         ? items.OrderByDescending(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
@@ -562,6 +586,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
         private static bool DefaultSortDescending(ModSortOption sortOption)
             => sortOption == ModSortOption.Popularity
+               || sortOption == ModSortOption.ReleaseDate
+               || sortOption == ModSortOption.InstallDate
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
     }

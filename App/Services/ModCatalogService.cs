@@ -138,7 +138,7 @@ namespace CKAN.App.Services
                     HasUpdate        = hasUpdate,
                     HasVersionUpdate = hasVersionUpdate,
                     IsCached         = IsCached(context, displayMod),
-                    IsIncompatible   = latestCompatible == null
+                    IsIncompatible   = !IdentifierCompatible(registry, identifier, inst)
                                        && (installed == null || !installed.IsCompatible(inst.VersionCriteria())),
                     HasReplacement   = registry.GetReplacement(identifier,
                                                                inst.StabilityToleranceConfig,
@@ -176,7 +176,7 @@ namespace CKAN.App.Services
 
                 yield return MakeListItem(context,
                                           displayMod,
-                                          installedModule: instMod.Module,
+                                          installedModule: instMod,
                                           hasUpdate: HasUpdate(registry, inst, identifier),
                                           incompatibleOverride: latestCompatible == null
                                                                 && !instMod.Module.IsCompatible(inst.VersionCriteria()));
@@ -207,10 +207,11 @@ namespace CKAN.App.Services
 
         private ModListItem MakeListItem(CatalogContext context,
                                          CkanModule      displayMod,
-                                         CkanModule?     installedModule,
+                                         InstalledModule? installedModule,
                                          bool            hasUpdate,
                                          bool            incompatibleOverride)
         {
+            var installedCkanModule = installedModule?.Module;
             int? downloadCount = gameInstanceService.RepositoryData.GetDownloadCount(
                 context.Registry.Repositories.Values,
                 displayMod.identifier);
@@ -221,8 +222,8 @@ namespace CKAN.App.Services
                                                                   context.Instance.StabilityToleranceConfig,
                                                                   context.Instance.VersionCriteria()) != null;
             bool hasVersionUpdate = hasUpdate
-                                    && installedModule != null
-                                    && displayMod.version.CompareTo(installedModule.version) > 0;
+                                    && installedCkanModule != null
+                                    && displayMod.version.CompareTo(installedCkanModule.version) > 0;
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
                                                                isAutodetected,
                                                                hasVersionUpdate,
@@ -263,9 +264,12 @@ namespace CKAN.App.Services
                                                                           .OrderBy(name => name,
                                                                                    StringComparer.CurrentCultureIgnoreCase)),
                 LatestVersion     = displayMod.version.ToString(),
-                InstalledVersion  = installedModule?.version.ToString() ?? "",
+                InstalledVersion  = installedCkanModule?.version.ToString() ?? "",
                 ReleaseDate       = displayMod.release_date?.ToString("yyyy-MM-dd") ?? "Unknown",
                 ReleaseDateValue  = displayMod.release_date?.Date,
+                InstallDate       = installedModule?.InstallTime.ToString("yyyy-MM-dd")
+                                    ?? (isAutodetected ? "External" : "-"),
+                InstallDateValue  = installedModule?.InstallTime.Date,
                 DownloadCount     = downloadCount,
                 DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
@@ -281,7 +285,6 @@ namespace CKAN.App.Services
                                                             isAutodetected,
                                                             hasVersionUpdate,
                                                             incompatibleOverride,
-                                                            isCached,
                                                             hasReplacement),
                 SecondaryStateLabel = secondaryStateLabel,
                 SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
@@ -313,7 +316,7 @@ namespace CKAN.App.Services
                    && MatchesTextFilter(item.Suggests, filter.SuggestsText)
                    && MatchesTextFilter(item.Conflicts, filter.ConflictsText)
                    && MatchesTextFilter(item.Supports, filter.SupportsText)
-                   && MatchesTextFilter(item.Tags, filter.TagText)
+                   && MatchesListFilter(item.Tags, filter.TagText)
                    && MatchesTextFilter(item.Labels, filter.LabelText)
                    && MatchesTextFilter(item.Compatibility, filter.CompatibilityText)
                    && MatchesBooleanFilter(item.IsInstalled,
@@ -405,6 +408,30 @@ namespace CKAN.App.Services
             => string.IsNullOrWhiteSpace(search)
                || Contains(text, search.Trim());
 
+        private static bool MatchesListFilter(string text, string search)
+        {
+            var requiredValues = SplitFilterValues(search).ToList();
+            if (requiredValues.Count == 0)
+            {
+                return true;
+            }
+
+            var itemValues = SplitListValues(text).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+            return requiredValues.All(itemValues.Contains);
+        }
+
+        private static IEnumerable<string> SplitFilterValues(string? text)
+            => (text ?? "").Split(new[] { ',', ';', '\n', '\r' },
+                                  StringSplitOptions.RemoveEmptyEntries
+                                  | StringSplitOptions.TrimEntries)
+                           .Where(value => !string.IsNullOrWhiteSpace(value));
+
+        private static IEnumerable<string> SplitListValues(string? text)
+            => (text ?? "").Split(',',
+                                  StringSplitOptions.RemoveEmptyEntries
+                                  | StringSplitOptions.TrimEntries)
+                           .Where(value => !string.IsNullOrWhiteSpace(value));
+
         private static bool MatchesBooleanFilter(bool value,
                                                  bool mustBeTrue,
                                                  bool mustBeFalse)
@@ -445,9 +472,16 @@ namespace CKAN.App.Services
             }
 
             var query = ParseSearchText(searchText);
-            return query.FreeTerms.All(term => MatchesAnySearchField(item, term))
+            return query.FreeTerms.All(term => MatchesPlainSearchField(item, term))
                    && query.FieldTerms.All(term => MatchesFieldSearch(item, term.Field, term.Value));
         }
+
+        private static bool MatchesPlainSearchField(ModListItem item, string search)
+            => Contains(item.Name, search)
+               || Contains(item.Identifier, search)
+               || Contains(item.Author, search)
+               || Contains(item.Summary, search)
+               || Contains(item.Description, search);
 
         private static bool MatchesAnySearchField(ModListItem item, string search)
             => Contains(item.Name, search)
@@ -648,7 +682,6 @@ namespace CKAN.App.Services
                                                       bool isAutodetected,
                                                       bool hasUpdate,
                                                       bool isIncompatible,
-                                                      bool isCached,
                                                       bool hasReplacement)
             => isIncompatible && !isAutodetected
                 ? "#9A485C"
@@ -740,6 +773,16 @@ namespace CKAN.App.Services
                                .ThenBy(item => item.ReleaseDateValue)
                                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
+                ModSortOption.InstallDate
+                    => descending
+                        ? items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenByDescending(item => item.InstallDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                        : items.OrderByDescending(item => item.InstallDateValue.HasValue)
+                               .ThenBy(item => item.InstallDateValue)
+                               .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase),
                 ModSortOption.Version
                     => descending
                         ? items.OrderByDescending(item => item.LatestVersion, StringComparer.CurrentCultureIgnoreCase)
@@ -779,6 +822,7 @@ namespace CKAN.App.Services
         private static bool DefaultSortDescending(ModSortOption sortOption)
             => sortOption == ModSortOption.Popularity
                || sortOption == ModSortOption.ReleaseDate
+               || sortOption == ModSortOption.InstallDate
                || sortOption == ModSortOption.InstalledFirst
                || sortOption == ModSortOption.UpdatesFirst;
 
@@ -845,6 +889,22 @@ namespace CKAN.App.Services
             catch
             {
                 return null;
+            }
+        }
+
+        private static bool IdentifierCompatible(IRegistryQuerier registry,
+                                                 string           identifier,
+                                                 GameInstance     instance)
+        {
+            try
+            {
+                return registry.IdentifierCompatible(identifier,
+                                                     instance.StabilityToleranceConfig,
+                                                     instance.VersionCriteria());
+            }
+            catch
+            {
+                return false;
             }
         }
 

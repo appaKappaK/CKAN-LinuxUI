@@ -63,21 +63,9 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto"
+  <Grid RowDefinitions="*,Auto"
         Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="Installation Filters" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="{Binding SummaryText}" />
-    </StackPanel>
-
-    <ScrollViewer Grid.Row="1"
-                  Margin="0,18,0,0"
-                  HorizontalScrollBarVisibility="Disabled"
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="16">
         <Border Background="#161B21"
@@ -147,7 +135,7 @@
       </StackPanel>
     </ScrollViewer>
 
-    <StackPanel Grid.Row="2"
+    <StackPanel Grid.Row="1"
                 Margin="0,18,0,0"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"

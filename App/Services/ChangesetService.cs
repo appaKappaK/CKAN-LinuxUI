@@ -35,53 +35,60 @@ namespace CKAN.App.Services
             => FindQueued(identifier, item => item.ActionKind == QueuedActionKind.Download);
 
         public void QueueDownload(ModListItem mod)
-            => Upsert(new QueuedActionModel
+        {
+            var targetVersion = QueueTargetVersion(mod, null);
+            Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
-                TargetVersion = "",
+                TargetVersion = targetVersion,
                 ActionKind = QueuedActionKind.Download,
                 ActionText = "Add to Cache",
                 DetailText = mod.IsInstalled
-                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
+                    ? string.IsNullOrWhiteSpace(targetVersion)
                         ? "Cache the latest available version locally"
-                        : $"Cache {mod.LatestVersion} locally"
-                    : string.IsNullOrWhiteSpace(mod.LatestVersion)
+                        : $"Cache {targetVersion} locally"
+                    : string.IsNullOrWhiteSpace(targetVersion)
                         ? "Cache latest available version for later install"
-                        : $"Cache {mod.LatestVersion} for later install",
+                        : $"Cache {targetVersion} for later install",
             });
+        }
 
         public void QueueInstall(ModListItem mod, string? targetVersion = null)
-            => Upsert(new QueuedActionModel
+        {
+            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
-                TargetVersion = targetVersion ?? "",
+                TargetVersion = resolvedTargetVersion,
                 ActionKind = QueuedActionKind.Install,
                 ActionText = "Install",
-                DetailText = string.IsNullOrWhiteSpace(targetVersion)
-                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
-                        ? "Install latest available version"
-                        : $"Install {mod.LatestVersion}"
-                    : $"Install {targetVersion}",
+                DetailText = string.IsNullOrWhiteSpace(resolvedTargetVersion)
+                    ? "Install latest available version"
+                    : $"Install {resolvedTargetVersion}",
             });
+        }
 
         public void QueueUpdate(ModListItem mod, string? targetVersion = null)
-            => Upsert(new QueuedActionModel
+        {
+            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
-                TargetVersion = targetVersion ?? "",
+                TargetVersion = resolvedTargetVersion,
                 ActionKind = QueuedActionKind.Update,
-                ActionText = UpdateActionText(mod.InstalledVersion, targetVersion),
-                DetailText = string.IsNullOrWhiteSpace(targetVersion)
+                ActionText = UpdateActionText(mod.InstalledVersion, resolvedTargetVersion),
+                DetailText = string.IsNullOrWhiteSpace(resolvedTargetVersion)
                     ? string.IsNullOrWhiteSpace(mod.InstalledVersion)
                         ? $"Update to {mod.LatestVersion}"
                         : $"{mod.InstalledVersion} -> {mod.LatestVersion}"
                     : string.IsNullOrWhiteSpace(mod.InstalledVersion)
-                        ? $"Switch to {targetVersion}"
-                        : $"{mod.InstalledVersion} -> {targetVersion}",
+                        ? $"Switch to {resolvedTargetVersion}"
+                        : $"{mod.InstalledVersion} -> {resolvedTargetVersion}",
             });
+        }
 
         public void QueueRemove(ModListItem mod)
             => Upsert(new QueuedActionModel
@@ -95,6 +102,22 @@ namespace CKAN.App.Services
                     ? "Remove installed module"
                     : $"Remove {mod.InstalledVersion}",
             });
+
+        public void Restore(IReadOnlyList<QueuedActionModel> actions)
+        {
+            queue.Clear();
+            foreach (var action in actions ?? Array.Empty<QueuedActionModel>())
+            {
+                if (string.IsNullOrWhiteSpace(action.Identifier))
+                {
+                    continue;
+                }
+
+                queue[action.Identifier] = action;
+            }
+
+            QueueChanged?.Invoke();
+        }
 
         public bool Remove(string identifier)
         {
@@ -147,6 +170,12 @@ namespace CKAN.App.Services
                 return "Change Version";
             }
         }
+
+        private static string QueueTargetVersion(ModListItem mod,
+                                                 string?     targetVersion)
+            => !string.IsNullOrWhiteSpace(targetVersion)
+                ? targetVersion.Trim()
+                : mod.LatestVersion?.Trim() ?? "";
 
         private void Upsert(QueuedActionModel action)
         {

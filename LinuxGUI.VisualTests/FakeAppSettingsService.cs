@@ -21,8 +21,12 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public bool PreselectRecommendedMods { get; private set; }
 
+        public ModBrowserColumnLayout ModBrowserColumnLayout { get; private set; } = new ModBrowserColumnLayout();
+
         public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; private set; }
             = new List<CatalogSkeletonSnapshotRow>();
+
+        public QueuedActionSnapshot QueuedActionSnapshot { get; private set; } = new QueuedActionSnapshot();
 
         public void SaveLastInstanceName(string? instanceName)
             => LastInstanceName = instanceName;
@@ -43,7 +47,13 @@ namespace CKAN.LinuxGUI.VisualTests
         public void SavePreselectRecommendedMods(bool preselectRecommendedMods)
             => PreselectRecommendedMods = preselectRecommendedMods;
 
+        public void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout)
+            => ModBrowserColumnLayout = layout?.Clone() ?? new ModBrowserColumnLayout();
+
         public void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows)
             => CatalogSkeletonRows = rows ?? new List<CatalogSkeletonSnapshotRow>();
+
+        public void SaveQueuedActionSnapshot(QueuedActionSnapshot snapshot)
+            => QueuedActionSnapshot = snapshot?.Clone() ?? new QueuedActionSnapshot();
     }
 }

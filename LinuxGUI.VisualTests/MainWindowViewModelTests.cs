@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 
 using NUnit.Framework;
@@ -108,6 +109,57 @@ namespace CKAN.LinuxGUI.VisualTests
             finally
             {
                 service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task QueuedActions_RestoreAfterViewModelRecreatedForSameInstance()
+        {
+            var settings = new FakeAppSettingsService();
+            using (var service = new FakeGameInstanceService(VisualScenario.Ready))
+            {
+                var changes = new ChangesetService();
+                var viewModel = new MainWindowViewModel(
+                    settings,
+                    service,
+                    new FakeModCatalogService(),
+                    new ModSearchService(settings),
+                    changes,
+                    new FakeModActionService(changes),
+                    new AvaloniaUser());
+
+                await WaitForAsync(() => viewModel.Mods.Count > 0);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+
+                await WaitForAsync(() => settings.QueuedActionSnapshot.Actions.Count == 1);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(settings.QueuedActionSnapshot.InstanceName, Is.EqualTo("Career Save"));
+                    Assert.That(settings.QueuedActionSnapshot.Actions.Single().Identifier, Is.EqualTo("restock"));
+                });
+            }
+
+            using (var service = new FakeGameInstanceService(VisualScenario.Ready))
+            {
+                var changes = new ChangesetService();
+                var viewModel = new MainWindowViewModel(
+                    settings,
+                    service,
+                    new FakeModCatalogService(),
+                    new ModSearchService(settings),
+                    changes,
+                    new FakeModActionService(changes),
+                    new AvaloniaUser());
+
+                await WaitForAsync(() => viewModel.HasQueuedActions);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.QueuedActions, Has.Count.EqualTo(1));
+                    Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("restock"));
+                    Assert.That(viewModel.PreviewSurfaceButtonLabel, Is.EqualTo("Preview (1)"));
+                });
             }
         }
 
@@ -926,6 +978,42 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.That(optOutItem.IsSelected, Is.False);
                 Assert.That(preselectedItem.IsSelected, Is.True);
             });
+        }
+
+        [AvaloniaTest]
+        public async Task RecommendationAuditWindow_PrimaryActionLabel_FollowsSelectionCount()
+        {
+            var module = CreateRecommendationModule("optional-pack", "Optional Pack");
+            var item = new RecommendationAuditItem(module,
+                                                   "Recommendation",
+                                                   "Recommended by: Test Mod",
+                                                   false,
+                                                   12345);
+            var window = new RecommendationAuditWindow(new[] { item }, "test instance");
+
+            window.Show();
+            await Task.Delay(50);
+
+            try
+            {
+                var button = window.FindControl<Button>("PrimaryActionButton");
+                Assert.That(button, Is.Not.Null);
+                Assert.That(button!.Content, Is.EqualTo("Continue"));
+
+                item.IsSelected = true;
+                await Task.Delay(50);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(button.Content, Is.EqualTo("Queue Selected"));
+                    Assert.That(item.DownloadSizeText, Is.EqualTo("Unknown"));
+                    Assert.That(item.DownloadCountText, Is.EqualTo("12,345"));
+                });
+            }
+            finally
+            {
+                window.Close();
+            }
         }
 
         private static (MainWindowViewModel ViewModel, FakeGameInstanceService Service) CreateViewModel(ApplyChangesResult? applyResult = null,

@@ -63,6 +63,19 @@ BUILD_STAMP_PATTERNS=(
 : "${CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS:=5}"  # Keep last N session logs (default: 5)
 : "${CKAN_LINUX_DEV_DEBUG_MODE:=0}"           # Enable verbose debug logging if 1
 : "${CKAN_LINUX_DEV_NO_REGISTRY_LOCK:=1}"     # Browse without holding the registry lock if 1
+: "${CKAN_LINUX_DEV_QUEUE_SMOKE:=0}"          # Preload mixed queued actions for preview UI smoke testing if 1
+
+APP_ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        --queue-smoke|--dev-queue-smoke)
+            CKAN_LINUX_DEV_QUEUE_SMOKE=1
+            ;;
+        *)
+            APP_ARGS+=("$arg")
+            ;;
+    esac
+done
 
 # ============================================================================
 # Utility Functions
@@ -243,7 +256,7 @@ log_session_line "==== CKAN Linux Dev Session ===="
 log_session_line "timestamp: $(date --iso-8601=seconds)"
 log_session_line "repo_root: $REPO_ROOT"
 log_session_line "cwd: $RUN_DIR"
-log_session_line "app_cmd: ${APP_CMD[*]} $*"
+log_session_line "app_cmd: ${APP_CMD[*]} ${APP_ARGS[*]}"
 log_session_line "build_bin: $BUILD_BIN"
 log_session_line "publish_bin: $PUBLISH_BIN"
 log_session_line "package_bin: $PACKAGE_BIN"
@@ -269,6 +282,7 @@ log_session_line "debug_log: $RUN_DIR/ckan-linux-debug.log"
 log_session_line "latest_debug_log: $LATEST_DEBUG_LOG"
 log_session_line "stream_stdio_to_terminal: $CKAN_LINUX_DEV_STREAM_STDIO"
 log_session_line "no_registry_lock: $CKAN_LINUX_DEV_NO_REGISTRY_LOCK"
+log_session_line "queue_smoke: $CKAN_LINUX_DEV_QUEUE_SMOKE"
 log_session_line "==============================="
 
 # Redirect output based on configuration
@@ -279,5 +293,6 @@ else
 fi
 
 export CKAN_LINUX_DEV_NO_REGISTRY_LOCK
+export CKAN_LINUX_DEV_QUEUE_SMOKE
 
-exec "${APP_CMD[@]}" "$@"
+exec "${APP_CMD[@]}" "${APP_ARGS[@]}"

@@ -37,27 +37,18 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
     <Style Selector="CheckBox.compat-option">
-      <Setter Property="Margin" Value="0,0,12,10" />
-      <Setter Property="MinWidth" Value="72" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto"
+  <Grid RowDefinitions="Auto,*,Auto"
         Margin="20">
-    <StackPanel Spacing="6">
-      <TextBlock FontSize="22"
-                 FontWeight="SemiBold"
-                 Text="Compatible Game Versions" />
-      <TextBlock FontSize="13"
-                 Opacity="0.74"
-                 TextWrapping="Wrap"
-                 Text="Additionally install mods compatible with the following game versions." />
-    </StackPanel>
-
-    <Grid Grid.Row="1"
+    <Grid Grid.Row="0"
           ColumnDefinitions="Auto,*"
           RowDefinitions="Auto,Auto"
-          Margin="0,18,0,0">
+          Margin="0,0,0,0">
       <TextBlock Opacity="0.72"
                  Margin="0,0,14,8"
                  Text="Installation:" />
@@ -76,7 +67,7 @@
                  Text="{Binding CurrentGameVersionLabel}" />
     </Grid>
 
-    <Grid Grid.Row="2"
+    <Grid Grid.Row="1"
           RowDefinitions="Auto,*,Auto,Auto,Auto,Auto"
           Margin="0,18,0,0">
       <TextBlock Text="Additionally install mods compatible with following game versions:" />
@@ -88,19 +79,21 @@
               CornerRadius="8"
               Margin="0,12,0,0"
               Padding="12">
-        <ScrollViewer VerticalScrollBarVisibility="Disabled"
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding Options}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
+                <UniformGrid Columns="6" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <CheckBox Classes="compat-option"
-                          Content="{Binding Label}"
-                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                <Border Padding="0,0,8,6">
+                  <CheckBox Classes="compat-option"
+                            Content="{Binding Label}"
+                            IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -164,7 +157,7 @@
       </StackPanel>
     </Grid>
 
-    <StackPanel Grid.Row="3"
+    <StackPanel Grid.Row="2"
                 Margin="0,18,0,0"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"

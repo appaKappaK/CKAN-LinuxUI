@@ -22,6 +22,22 @@
       <Setter Property="Background" Value="#1B2631" />
       <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
+    <Style Selector="TextBox /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="BorderBrush" Value="#3D4E60" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#4B5D70" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#61758B" />
+    </Style>
+    <Style Selector="TextBox:focus-within /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="BorderBrush" Value="#61758B" />
+    </Style>
     <Style Selector="ListBox.utility-list">
       <Setter Property="Background" Value="#111820" />
       <Setter Property="BorderBrush" Value="#252F3A" />

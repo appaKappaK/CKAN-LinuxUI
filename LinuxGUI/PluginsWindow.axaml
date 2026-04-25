@@ -123,6 +123,12 @@
                       HorizontalAlignment="Right"
                       Spacing="10">
             <Button Classes="dialog-action"
+                    Background="#355779"
+                    BorderBrush="#5A86B4"
+                    Foreground="#F4F6F8"
+                    Click="AddPluginButton_OnClick"
+                    Content="Add Plugin" />
+            <Button Classes="dialog-action"
                     Background="#5B4020"
                     BorderBrush="#8A6837"
                     Foreground="#F4F6F8"
@@ -194,12 +200,6 @@
                     Click="UnloadButton_OnClick"
                     IsEnabled="{Binding HasSelectedDormantPlugin}"
                     Content="Unload" />
-            <Button Classes="dialog-action"
-                    Background="#355779"
-                    BorderBrush="#5A86B4"
-                    Foreground="#F4F6F8"
-                    Click="AddPluginButton_OnClick"
-                    Content="Add Plugin" />
           </StackPanel>
         </Grid>
       </Border>

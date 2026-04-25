@@ -323,8 +323,8 @@ namespace CKAN.App.Services
                             : ApplyResultKind.Success,
                         Success = true,
                         Title = leftoverConfigDirs.Count > 0
-                            ? "Apply Completed with Follow-Up"
-                            : "Apply Completed",
+                            ? "Changes Applied - Review Needed"
+                            : "Changes Applied",
                         Message = leftoverConfigDirs.Count > 0
                             ? $"Applied {plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)}. Kept {leftoverConfigDirs.Count} config-only director{(leftoverConfigDirs.Count == 1 ? "y" : "ies")} for manual review."
                             : $"Applied {plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)} successfully.",
@@ -640,14 +640,23 @@ namespace CKAN.App.Services
         {
             try
             {
-                return registry.LatestAvailable(identifier,
-                                                instance.StabilityToleranceConfig,
-                                                instance.VersionCriteria());
+                var latest = registry.LatestAvailable(identifier,
+                                                       instance.StabilityToleranceConfig,
+                                                       instance.VersionCriteria());
+                if (latest != null)
+                {
+                    return latest;
+                }
             }
             catch
             {
-                return null;
             }
+
+            var versionCriteria = instance.VersionCriteria();
+            return Utilities.DefaultIfThrows(() => registry.AvailableByIdentifier(identifier)
+                .Where(module => module.IsCompatible(versionCriteria))
+                .OrderByDescending(module => module.version)
+                .FirstOrDefault());
         }
 
         private static string BuildSummary(int requestedCount,
@@ -857,19 +866,20 @@ namespace CKAN.App.Services
 
         private static QueuedActionModel CreateInstallAction(ModListItem mod,
                                                              string?     targetVersion = null)
-            => new QueuedActionModel
+        {
+            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            return new QueuedActionModel
             {
                 Identifier = mod.Identifier,
                 Name       = mod.Name,
-                TargetVersion = targetVersion ?? "",
+                TargetVersion = resolvedTargetVersion,
                 ActionKind = QueuedActionKind.Install,
                 ActionText = "Install",
-                DetailText = string.IsNullOrWhiteSpace(targetVersion)
-                    ? string.IsNullOrWhiteSpace(mod.LatestVersion)
-                        ? "Install latest available version"
-                        : $"Install {mod.LatestVersion}"
-                    : $"Install {targetVersion}",
+                DetailText = string.IsNullOrWhiteSpace(resolvedTargetVersion)
+                    ? "Install latest available version"
+                    : $"Install {resolvedTargetVersion}",
             };
+        }
 
         private static QueuedActionModel CreateRemoveAction(ModListItem mod)
             => new QueuedActionModel
@@ -890,16 +900,10 @@ namespace CKAN.App.Services
         {
             if (!string.IsNullOrWhiteSpace(action.TargetVersion))
             {
-                var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier, action.TargetVersion));
+                var exact = TryRequestedVersion(registry, action);
                 if (exact != null)
                 {
                     return exact;
-                }
-
-                if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
-                    && string.Equals(installed.version.ToString(), action.TargetVersion, StringComparison.Ordinal))
-                {
-                    return installed;
                 }
 
                 return null;
@@ -907,6 +911,42 @@ namespace CKAN.App.Services
 
             return TryLatestCompatible(registry, instance, action.Identifier);
         }
+
+        private static string QueueTargetVersion(ModListItem mod,
+                                                 string?     targetVersion)
+            => !string.IsNullOrWhiteSpace(targetVersion)
+                ? targetVersion.Trim()
+                : mod.LatestVersion?.Trim() ?? "";
+
+        private static CkanModule? TryRequestedVersion(IRegistryQuerier  registry,
+                                                       QueuedActionModel action)
+        {
+            var targetVersion = action.TargetVersion.Trim();
+            var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier,
+                                                                                    targetVersion));
+            if (exact != null)
+            {
+                return exact;
+            }
+
+            if (registry.InstalledModule(action.Identifier)?.Module is CkanModule installed
+                && VersionTextMatches(installed.version.ToString(), targetVersion))
+            {
+                return installed;
+            }
+
+            return Utilities.DefaultIfThrows(() => registry.AvailableByIdentifier(action.Identifier)
+                .FirstOrDefault(module => VersionTextMatches(module.version.ToString(), targetVersion)));
+        }
+
+        private static bool VersionTextMatches(string left, string right)
+            => string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase)
+               || string.Equals(NormalizeVersionText(left),
+                                NormalizeVersionText(right),
+                                StringComparison.OrdinalIgnoreCase);
+
+        private static string NormalizeVersionText(string version)
+            => version.Trim().TrimStart('v', 'V');
 
         private static ApplyChangesResult RewordInstallNowResult(ModListItem mod,
                                                                  ApplyChangesResult result)

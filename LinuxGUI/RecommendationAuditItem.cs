@@ -13,12 +13,14 @@ namespace CKAN.LinuxGUI
         public RecommendationAuditItem(CkanModule module,
                                        string     kind,
                                        string     source,
-                                       bool       isSelected)
+                                       bool       isSelected,
+                                       int?       downloadCount = null)
         {
             Module = module;
             Kind = kind;
             Source = string.IsNullOrWhiteSpace(source) ? "No source recorded" : source;
             this.isSelected = isSelected && !module.IsDLC;
+            DownloadCount = downloadCount;
         }
 
         public CkanModule Module { get; }
@@ -53,6 +55,11 @@ namespace CKAN.LinuxGUI
             => Module.download_size > 0
                 ? CkanModule.FmtSize(Module.download_size)
                 : "Unknown";
+
+        public int? DownloadCount { get; }
+
+        public string DownloadCountText
+            => DownloadCount?.ToString("N0", CultureInfo.InvariantCulture) ?? "Unknown";
 
         public string ReleaseDateText
             => Module.release_date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)

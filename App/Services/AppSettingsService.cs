@@ -95,6 +95,17 @@ namespace CKAN.App.Services
             }
         }
 
+        public ModBrowserColumnLayout ModBrowserColumnLayout
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return (settings.ModBrowserColumnLayout ?? new ModBrowserColumnLayout()).Clone();
+                }
+            }
+        }
+
         public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows
         {
             get
@@ -104,6 +115,17 @@ namespace CKAN.App.Services
                     return (settings.CatalogSkeletonRows ?? new List<CatalogSkeletonSnapshotRow>())
                         .Select(CloneCatalogSkeletonRow)
                         .ToList();
+                }
+            }
+        }
+
+        public QueuedActionSnapshot QueuedActionSnapshot
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return CloneQueuedActionSnapshot(settings.QueuedActionSnapshot);
                 }
             }
         }
@@ -183,6 +205,21 @@ namespace CKAN.App.Services
             }
         }
 
+        public void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout)
+        {
+            lock (sync)
+            {
+                var normalized = (layout ?? new ModBrowserColumnLayout()).Clone();
+                if (ModBrowserColumnLayoutsEqual(settings.ModBrowserColumnLayout, normalized))
+                {
+                    return;
+                }
+
+                settings.ModBrowserColumnLayout = normalized;
+                SaveSettings();
+            }
+        }
+
         public void SaveCatalogSkeletonRows(IReadOnlyList<CatalogSkeletonSnapshotRow> rows)
         {
             lock (sync)
@@ -197,6 +234,21 @@ namespace CKAN.App.Services
                 }
 
                 settings.CatalogSkeletonRows = normalized;
+                SaveSettings();
+            }
+        }
+
+        public void SaveQueuedActionSnapshot(QueuedActionSnapshot snapshot)
+        {
+            lock (sync)
+            {
+                var normalized = CloneQueuedActionSnapshot(snapshot);
+                if (QueuedActionSnapshotsEqual(settings.QueuedActionSnapshot, normalized))
+                {
+                    return;
+                }
+
+                settings.QueuedActionSnapshot = normalized;
                 SaveSettings();
             }
         }
@@ -267,6 +319,13 @@ namespace CKAN.App.Services
                && left?.PositionY == right?.PositionY
                && (left?.IsMaximized ?? false) == (right?.IsMaximized ?? false);
 
+        private static bool ModBrowserColumnLayoutsEqual(ModBrowserColumnLayout? left,
+                                                         ModBrowserColumnLayout? right)
+            => left?.MetadataColumnWidth == right?.MetadataColumnWidth
+               && left?.DownloadsColumnWidth == right?.DownloadsColumnWidth
+               && left?.ReleasedColumnWidth == right?.ReleasedColumnWidth
+               && left?.InstalledColumnWidth == right?.InstalledColumnWidth;
+
         private static bool CatalogSkeletonRowsEqual(IReadOnlyList<CatalogSkeletonSnapshotRow>? left,
                                                      IReadOnlyList<CatalogSkeletonSnapshotRow>? right)
         {
@@ -311,6 +370,39 @@ namespace CKAN.App.Services
             return true;
         }
 
+        private static bool QueuedActionSnapshotsEqual(QueuedActionSnapshot? left,
+                                                       QueuedActionSnapshot? right)
+        {
+            var safeLeft = left ?? new QueuedActionSnapshot();
+            var safeRight = right ?? new QueuedActionSnapshot();
+            if (!string.Equals(safeLeft.InstanceName ?? "",
+                               safeRight.InstanceName ?? "",
+                               StringComparison.Ordinal)
+                || (safeLeft.Actions?.Count ?? 0) != (safeRight.Actions?.Count ?? 0))
+            {
+                return false;
+            }
+
+            var leftActions = safeLeft.Actions ?? new List<QueuedActionSnapshotItem>();
+            var rightActions = safeRight.Actions ?? new List<QueuedActionSnapshotItem>();
+            for (int index = 0; index < leftActions.Count; index++)
+            {
+                var a = leftActions[index];
+                var b = rightActions[index];
+                if (!string.Equals(a.Identifier ?? "", b.Identifier ?? "", StringComparison.Ordinal)
+                    || !string.Equals(a.Name ?? "", b.Name ?? "", StringComparison.Ordinal)
+                    || !string.Equals(a.TargetVersion ?? "", b.TargetVersion ?? "", StringComparison.Ordinal)
+                    || a.ActionKind != b.ActionKind
+                    || !string.Equals(a.ActionText ?? "", b.ActionText ?? "", StringComparison.Ordinal)
+                    || !string.Equals(a.DetailText ?? "", b.DetailText ?? "", StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static CatalogSkeletonSnapshotRow CloneCatalogSkeletonRow(CatalogSkeletonSnapshotRow row)
             => new CatalogSkeletonSnapshotRow
             {
@@ -338,6 +430,24 @@ namespace CKAN.App.Services
                 QueueBadgeBorderBrush   = row.QueueBadgeBorderBrush,
             };
 
+        private static QueuedActionSnapshot CloneQueuedActionSnapshot(QueuedActionSnapshot? snapshot)
+            => new QueuedActionSnapshot
+            {
+                InstanceName = snapshot?.InstanceName ?? "",
+                Actions = (snapshot?.Actions ?? new List<QueuedActionSnapshotItem>())
+                    .Where(action => !string.IsNullOrWhiteSpace(action.Identifier))
+                    .Select(action => new QueuedActionSnapshotItem
+                    {
+                        Identifier    = action.Identifier ?? "",
+                        Name          = action.Name ?? "",
+                        TargetVersion = action.TargetVersion ?? "",
+                        ActionKind    = action.ActionKind,
+                        ActionText    = action.ActionText ?? "",
+                        DetailText    = action.DetailText ?? "",
+                    })
+                    .ToList(),
+            };
+
         private sealed class StoredSettings
         {
             public string? LastInstanceName { get; set; }
@@ -352,7 +462,11 @@ namespace CKAN.App.Services
 
             public bool PreselectRecommendedMods { get; set; }
 
+            public ModBrowserColumnLayout ModBrowserColumnLayout { get; set; } = new ModBrowserColumnLayout();
+
             public List<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; set; } = new List<CatalogSkeletonSnapshotRow>();
+
+            public QueuedActionSnapshot QueuedActionSnapshot { get; set; } = new QueuedActionSnapshot();
         }
     }
 }
