@@ -1,12 +1,13 @@
 # CKAN LinuxGUI
 
-Linux-first Avalonia desktop shell for the Comprehensive Kerbal Archive Network
-(CKAN), focused on making CKAN feel native and maintainable on Linux while
-continuing to use the existing CKAN core, metadata, and install logic.
+CKAN LinuxGUI is a Linux-first desktop shell for the Comprehensive Kerbal
+Archive Network (CKAN). It replaces the old WinForms-on-Mono experience with a
+native Avalonia front end while continuing to use the existing CKAN core,
+metadata, and install logic.
 
-This is a LinuxGUI-focused fork. Upstream CKAN downloads still install the
-legacy CKAN launcher at `/usr/bin/ckan`, which starts the WinForms GUI through
-Mono. Clone this repository directly to build and run the Linux shell.
+This repository is a LinuxGUI-focused fork. Upstream CKAN downloads still ship
+the legacy `/usr/bin/ckan` launcher, which starts the WinForms UI through Mono.
+To use the LinuxGUI version, build and run it from this repository.
 
 ## Quick Start
 
@@ -17,21 +18,19 @@ cd CKAN-LinuxUI
 ckan-linux
 ```
 
-You do not need a separate upstream CKAN checkout. This fork contains the CKAN
-core plus the Avalonia Linux shell.
+You do not need a separate upstream CKAN checkout. This fork already contains
+the CKAN core alongside the LinuxGUI shell.
 
 ## What This Fork Provides
 
 - A native Linux desktop app built with Avalonia in `LinuxGUI/`.
-- A local installer that builds the LinuxGUI and installs `ckan-linux` under
+- A local installer that builds LinuxGUI and installs `ckan-linux` under
   `~/.local` by default.
-- A LinuxGUI package layout under `_build/package/ckan-linux/linux-x64/`,
-  including `usr/bin/ckan-linux`, `usr/lib/ckan-linux/`, icons, and a desktop
-  entry.
-- Debian packaging changes so the installed desktop launch path opens
-  `ckan-linux` while command-line `ckan` invocations with arguments still route
-  to legacy CKAN command/console behavior.
-- Visual test coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
+- A package layout under `_build/package/ckan-linux/linux-x64/` with the
+  launcher, runtime files, icons, and desktop entry.
+- Debian packaging that opens `ckan-linux` for normal desktop use while keeping
+  `ckan` argument-driven command and console behavior intact.
+- Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Build Targets
 
@@ -47,7 +46,7 @@ Run the LinuxGUI visual tests:
 ./build.sh LinuxGUIVisualTests
 ```
 
-See [`LinuxGUI/README.md`](LinuxGUI/README.md) for the full Linux GUI build,
+See [`LinuxGUI/README.md`](LinuxGUI/README.md) for the full LinuxGUI build,
 packaging, development, logging, and visual-test workflow.
 
 ## Upstream CKAN Context
