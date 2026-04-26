@@ -2,6 +2,21 @@
 
 This directory contains the Fedora/Linux-first Avalonia shell for CKAN.
 
+## Entry Points
+
+The installed desktop command is `ckan-linux`. The package launcher lives at
+`usr/bin/ckan-linux` and execs the self-contained Avalonia binary at
+`usr/lib/ckan-linux/CKAN-LinuxGUI`.
+
+The app binary starts in `LinuxGUI/Program.cs`, which initializes LinuxGUI
+logging and starts Avalonia with the classic desktop lifetime. `App.axaml.cs`
+then registers the app services and opens `MainWindow`.
+
+When this repository's Debian package installs `/usr/bin/ckan-linux`, the
+`/usr/bin/ckan` wrapper uses it as the replacement UI for graphical no-argument
+launches. Command line arguments still run through the existing Mono `ckan.exe`
+path, and no-display launches continue to use `ckan consoleui`.
+
 ## Build
 
 Build and publish the self-contained desktop shell:
@@ -38,42 +53,18 @@ The staged layout includes:
 ## Local Install
 
 Install the Linux GUI into a local prefix so it can be launched as
-`ckan-linux` without typing the staged package path:
+`~/.local/bin/ckan-linux` without typing the staged package path:
 
 ```bash
 ./scripts/install-linuxgui-local.sh
-ckan-linux
+~/.local/bin/ckan-linux
 ```
 
 By default this installs under `~/.local`, keeping it separate from the upstream
-`ckan` command. Use `--prefix /usr/local` to install somewhere else.
+`ckan` command. If `~/.local/bin` is already on your `PATH`, you can launch it
+as `ckan-linux`. Use `--prefix /usr/local` to install somewhere else.
 
-## Visual Review
-
-Run deterministic visual tests and refresh the optional Gemini review bundle:
-
-```bash
-./build.sh LinuxGUIVisualTests
-```
-
-Outputs:
-
-- `.gemini-review/`
-- `_build/visual-tests/actual/`
-
-Generate implementation-oriented Gemini output from the curated screenshots and
-focused code bundle:
-
-```bash
-python3 scripts/gemini_ui_work.py --force
-```
-
-Output:
-
-- `.gemini-review/work/latest.md`
-- `.gemini-review/work/request.md`
-
-## Isolated Dev Run
+## Development
 
 Launch the Linux shell with an isolated XDG home so it does not share config,
 cache, or app-data state with your normal CKAN setup:
@@ -105,6 +96,16 @@ artifacts as-is:
 ```bash
 CKAN_LINUX_DEV_SKIP_BUILD=1 ./scripts/run-linuxgui-dev.sh
 ```
+
+Run deterministic visual tests:
+
+```bash
+./build.sh LinuxGUIVisualTests
+```
+
+Output:
+
+- `_build/visual-tests/actual/`
 
 ## Settings and Logs
 

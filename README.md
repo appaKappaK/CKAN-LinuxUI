@@ -1,14 +1,16 @@
 # CKAN LinuxGUI
 
-CKAN LinuxGUI is a Linux desktop app for the Comprehensive Kerbal Archive
-Network (CKAN). It replaces the old WinForms-on-Mono experience with a native
-Avalonia front end while continuing to use the existing CKAN core, metadata,
-and install logic.
+CKAN LinuxGUI is the Linux desktop app for the Comprehensive Kerbal Archive
+Network (CKAN). Its desktop entry point is `ckan-linux`, which launches the
+self-contained `CKAN-LinuxGUI` Avalonia app and uses the existing CKAN core,
+metadata, and install logic.
 
-This repository is centered on the desktop app version. Upstream CKAN downloads
-still ship the legacy `/usr/bin/ckan` launcher, which starts the older
-WinForms UI through Mono. To use the LinuxGUI desktop app, build and run it
-from this repository.
+This repository is centered on the desktop app version that replaces the old
+WinForms-on-Mono GUI path. In the Debian package built from this fork,
+`/usr/bin/ckan` opens the LinuxGUI replacement when it is launched with no
+arguments in a graphical session. Argument-driven command usage still goes to
+the existing CKAN command line app, and headless no-argument launches still use
+the console UI.
 
 ## Desktop App Quick Start
 
@@ -16,20 +18,48 @@ from this repository.
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
 ./scripts/install-linuxgui-local.sh
-ckan-linux
+~/.local/bin/ckan-linux
 ```
 
 You do not need a separate upstream CKAN checkout. This fork already contains
-the CKAN core alongside the LinuxGUI shell.
+the CKAN core alongside the LinuxGUI shell. If `~/.local/bin` is already on your
+`PATH`, you can also launch the app as `ckan-linux`.
+
+## Entry Point
+
+The explicit desktop command is:
+
+```bash
+ckan-linux
+```
+
+That command is installed from `LinuxGUI/packaging/ckan-linux`. It resolves the
+installed app directory and execs:
+
+```text
+usr/lib/ckan-linux/CKAN-LinuxGUI
+```
+
+The .NET entry point for that binary is `LinuxGUI/Program.cs`; it initializes
+logging and starts the Avalonia desktop lifetime. `LinuxGUI/App.axaml.cs` then
+builds the app services and opens `MainWindow`.
+
+For Debian packages produced by this fork, `/usr/bin/ckan` is also wired to use
+this replacement desktop UI when no command line arguments are supplied and a
+Wayland or X11 display is available:
+
+- `ckan` with no args and a display: opens `/usr/bin/ckan-linux`.
+- `ckan` with args: runs the existing Mono `ckan.exe` command path.
+- `ckan` with no display: runs `ckan consoleui`.
 
 ## Desktop App Paths
 
 For normal local use, install the desktop app into `~/.local` and launch it as
-`ckan-linux`:
+`~/.local/bin/ckan-linux`:
 
 ```bash
 ./scripts/install-linuxgui-local.sh
-ckan-linux
+~/.local/bin/ckan-linux
 ```
 
 For package-oriented builds, generate the staged Linux desktop layout:
@@ -52,8 +82,9 @@ That produces `_build/package/ckan-linux/linux-x64/`, including:
   `~/.local` by default.
 - A package layout under `_build/package/ckan-linux/linux-x64/` with the
   launcher, runtime files, icons, and desktop entry.
-- Debian packaging that opens `ckan-linux` for normal desktop use while keeping
-  `ckan` argument-driven command and console behavior intact.
+- Debian packaging that routes graphical no-argument `ckan` launches to
+  `ckan-linux` while keeping argument-driven command and console behavior
+  intact.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Desktop App Development
