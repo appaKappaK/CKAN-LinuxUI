@@ -5,12 +5,14 @@ Network (CKAN). Its desktop entry point is `ckan-linux`, which launches the
 self-contained `CKAN-LinuxGUI` Avalonia app and uses the existing CKAN core,
 metadata, and install logic.
 
-This repository is centered on the desktop app version that replaces the old
-WinForms-on-Mono GUI path. In the Debian package built from this fork,
-`/usr/bin/ckan` opens the LinuxGUI replacement when it is launched with no
-arguments in a graphical session. Argument-driven command usage still goes to
-the existing CKAN command line app, and headless no-argument launches still use
-the console UI.
+This fork uses the Avalonia LinuxGUI as the default desktop experience for CKAN
+on Linux. In Debian packages built from this fork, launching `/usr/bin/ckan`
+with no arguments from a graphical session opens `/usr/bin/ckan-linux`.
+Command-style usage, such as `ckan install`, `ckan remove`, or any other
+invocation with arguments, still runs through the existing Mono `ckan.exe`
+command-line path. If no graphical display is available, a no-argument launch
+opens the console UI instead. If `ckan-linux` is unavailable, the wrapper falls
+back to the legacy `ckan.exe gui` path.
 
 ## Desktop App Quick Start
 
@@ -49,8 +51,10 @@ this replacement desktop UI when no command line arguments are supplied and a
 Wayland or X11 display is available:
 
 - `ckan` with no args and a display: opens `/usr/bin/ckan-linux`.
+- `ckan` with no args and a display but no `ckan-linux`: falls back to
+  `ckan.exe gui`.
 - `ckan` with args: runs the existing Mono `ckan.exe` command path.
-- `ckan` with no display: runs `ckan consoleui`.
+- `ckan` with no args and no display: runs `ckan consoleui`.
 
 ## Desktop App Paths
 
