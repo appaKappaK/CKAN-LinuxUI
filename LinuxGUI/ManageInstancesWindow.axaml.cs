@@ -362,6 +362,7 @@ namespace CKAN.LinuxGUI
             {
                 statusMessage = message;
                 this.RaisePropertyChanged(nameof(FooterText));
+                this.RaisePropertyChanged(nameof(ShowFooterText));
             }
 
             public bool CanUseSelection => SelectedInstance != null && !SelectedInstance.IsCurrent;
@@ -398,13 +399,10 @@ namespace CKAN.LinuxGUI
                         : "Switching instances reloads the mod catalog for the selected install.";
 
             public string FooterText
-                => !string.IsNullOrWhiteSpace(statusMessage)
-                    ? statusMessage
-                    : SelectedInstance == null
-                    ? "No instance selected."
-                    : SelectedInstance.IsCurrent
-                        ? "The selected instance is already active."
-                        : $"Ready to switch to {SelectedInstance.Name}.";
+                => statusMessage ?? "";
+
+            public bool ShowFooterText
+                => !string.IsNullOrWhiteSpace(statusMessage);
 
             public string SummaryText
                 => Instances.Count switch
@@ -426,6 +424,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(SelectedStatusBorderBrush));
                 this.RaisePropertyChanged(nameof(DetailText));
                 this.RaisePropertyChanged(nameof(FooterText));
+                this.RaisePropertyChanged(nameof(ShowFooterText));
             }
         }
     }
