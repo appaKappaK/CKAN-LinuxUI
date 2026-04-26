@@ -4087,7 +4087,7 @@
                                   Background="#14191F"
                                   BorderBrush="#27323C"
                                   BorderThickness="0,0,0,1"
-                                  Margin="0,0,12,0"
+                                  Margin="12,0,12,0"
                                   Padding="0">
                             <Grid ColumnDefinitions="4,*,116,92">
                               <Border Background="Transparent"
@@ -4120,7 +4120,7 @@
 
                           <ListBox x:Name="PreviewQueueList"
                                    Grid.Row="2"
-                                   Margin="0,0,12,0"
+                                   Margin="12,0,12,0"
                                    MinHeight="0"
                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                                    PointerWheelChanged="PreviewQueueList_OnPointerWheelChanged"
@@ -4195,7 +4195,7 @@
 
                           <Border Background="#12171D"
                                   Grid.Row="2"
-                                  Margin="0,0,12,0"
+                                  Margin="12,0,12,0"
                                   CornerRadius="0"
                                   Padding="18"
                                   IsVisible="{Binding ShowEmptyQueueState}">
