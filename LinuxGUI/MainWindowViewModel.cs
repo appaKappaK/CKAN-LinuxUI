@@ -5009,6 +5009,7 @@ namespace CKAN.LinuxGUI
 
                         ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
+                        ClearDefaultInstalledFilterWhenEmpty(items);
                         ApplyCatalogFilterToLoadedItems(previousSelection);
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
@@ -5284,6 +5285,58 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(SortDescending));
             PublishFilterStateLabels();
         }
+
+        private void ClearDefaultInstalledFilterWhenEmpty(IReadOnlyList<ModListItem> items)
+        {
+            if (!IsInstalledOnlyFilter(CurrentFilter())
+                || items.Any(item => item.IsInstalled))
+            {
+                return;
+            }
+
+            suppressFilterAutoRefresh = true;
+            try
+            {
+                SetFilterBackingField(ref filterInstalledOnly, false, nameof(FilterInstalledOnly));
+            }
+            finally
+            {
+                suppressFilterAutoRefresh = false;
+            }
+
+            modSearchService.SetCurrent(CurrentFilter());
+            PublishFilterStateLabels();
+            StatusMessage = "No installed mods were detected; showing all available mods.";
+        }
+
+        private static bool IsInstalledOnlyFilter(FilterState filter)
+            => string.IsNullOrWhiteSpace(filter.SearchText)
+               && string.IsNullOrWhiteSpace(filter.NameText)
+               && string.IsNullOrWhiteSpace(filter.IdentifierText)
+               && string.IsNullOrWhiteSpace(filter.AuthorText)
+               && string.IsNullOrWhiteSpace(filter.SummaryText)
+               && string.IsNullOrWhiteSpace(filter.DescriptionText)
+               && string.IsNullOrWhiteSpace(filter.LicenseText)
+               && string.IsNullOrWhiteSpace(filter.LanguageText)
+               && string.IsNullOrWhiteSpace(filter.DependsText)
+               && string.IsNullOrWhiteSpace(filter.RecommendsText)
+               && string.IsNullOrWhiteSpace(filter.SuggestsText)
+               && string.IsNullOrWhiteSpace(filter.ConflictsText)
+               && string.IsNullOrWhiteSpace(filter.SupportsText)
+               && string.IsNullOrWhiteSpace(filter.TagText)
+               && string.IsNullOrWhiteSpace(filter.LabelText)
+               && string.IsNullOrWhiteSpace(filter.CompatibilityText)
+               && filter.InstalledOnly
+               && !filter.NotInstalledOnly
+               && !filter.UpdatableOnly
+               && !filter.NotUpdatableOnly
+               && !filter.NewOnly
+               && !filter.CompatibleOnly
+               && !filter.CachedOnly
+               && !filter.UncachedOnly
+               && !filter.IncompatibleOnly
+               && !filter.HasReplacementOnly
+               && !filter.NoReplacementOnly;
 
         private void UpdateSelectedInstanceSummary(InstanceSummary? instance)
         {

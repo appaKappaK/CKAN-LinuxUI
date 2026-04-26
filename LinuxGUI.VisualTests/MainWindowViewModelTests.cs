@@ -242,6 +242,34 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task EmptyInstalledDefault_StartsOnAllMods()
+        {
+            var settings = new FakeAppSettingsService();
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var search = new ModSearchService(settings);
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new NoInstalledCatalogService(),
+                search,
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+
+            await WaitForAsync(() => viewModel.Mods.Count == 2 && !viewModel.IsCatalogLoading);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.FilterInstalledOnly, Is.False);
+                Assert.That(viewModel.ActiveFilterState.InstalledOnly, Is.False);
+                Assert.That(viewModel.AdvancedFilterSummary, Is.EqualTo("All mods are shown."));
+                Assert.That(viewModel.Mods.All(mod => !mod.IsInstalled), Is.True);
+                Assert.That(viewModel.StatusMessage, Does.Contain("No installed mods were detected"));
+            });
+        }
+
+        [AvaloniaTest]
         public async Task SavedAdvancedFilter_IsRestoredInsteadOfHidden()
         {
             var settings = new FakeAppSettingsService();
@@ -1507,6 +1535,103 @@ namespace CKAN.LinuxGUI.VisualTests
                     IsIncompatible   = item.IsIncompatible,
                     HasReplacement   = item.HasReplacement,
                 });
+            }
+        }
+
+        private sealed class NoInstalledCatalogService : IModCatalogService
+        {
+            private static readonly IReadOnlyList<ModListItem> items = new[]
+            {
+                new ModListItem
+                {
+                    Identifier         = "parallax",
+                    Name               = "Parallax",
+                    Author             = "Gameslinx",
+                    Summary            = "Procedural surface scattering and planet terrain shading.",
+                    LatestVersion      = "2.1.0",
+                    InstalledVersion   = "",
+                    DownloadCount      = 1863579,
+                    DownloadCountLabel = "1,863,579",
+                    IsInstalled        = false,
+                    HasUpdate          = false,
+                    IsCached           = true,
+                    IsIncompatible     = false,
+                    HasReplacement     = false,
+                    Compatibility      = "KSP 1.12.5",
+                },
+                new ModListItem
+                {
+                    Identifier         = "planetshine",
+                    Name               = "PlanetShine",
+                    Author             = "Valerian",
+                    Summary            = "Adds bounced planetary light to vessels and IVA scenes.",
+                    LatestVersion      = "0.2.7.5",
+                    InstalledVersion   = "",
+                    DownloadCount      = 625183,
+                    DownloadCountLabel = "625,183",
+                    IsInstalled        = false,
+                    HasUpdate          = false,
+                    IsCached           = true,
+                    IsIncompatible     = false,
+                    HasReplacement     = false,
+                    Compatibility      = "KSP 1.12.5",
+                },
+            };
+
+            public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(System.Threading.CancellationToken cancellationToken)
+                => StaticModListAsync(items, cancellationToken);
+
+            public Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
+                                                                    System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(ApplyFilter(items, filter));
+            }
+
+            public Task<FilterOptionCounts> GetFilterOptionCountsAsync(FilterState filter,
+                                                                       System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(GetFilterOptionCounts(items, filter));
+            }
+
+            public IReadOnlyList<ModListItem> ApplyFilter(IReadOnlyList<ModListItem> sourceItems,
+                                                          FilterState                 filter)
+                => sourceItems.Where(item => !filter.InstalledOnly || item.IsInstalled)
+                              .Where(item => !filter.NotInstalledOnly || !item.IsInstalled)
+                              .ToList();
+
+            public FilterOptionCounts GetFilterOptionCounts(IReadOnlyCollection<ModListItem> sourceItems,
+                                                            FilterState                       filter)
+                => StaticFilterOptionCounts(sourceItems, filter);
+
+            public Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
+                                                             System.Threading.CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var item = items.FirstOrDefault(mod => mod.Identifier == identifier);
+                return Task.FromResult(item == null
+                    ? null
+                    : new ModDetailsModel
+                    {
+                        Identifier       = item.Identifier,
+                        Title            = item.Name,
+                        Summary          = item.Summary,
+                        Description      = item.Summary,
+                        Authors          = item.Author,
+                        LatestVersion    = item.LatestVersion,
+                        InstalledVersion = "Not installed",
+                        Compatibility    = item.Compatibility,
+                        ModuleKind       = "Package",
+                        License          = "Unknown",
+                        ReleaseDate      = "Unknown",
+                        DownloadSize     = "Unknown",
+                        DownloadCount    = item.DownloadCount,
+                        IsInstalled      = false,
+                        IsCached         = item.IsCached,
+                        IsIncompatible   = item.IsIncompatible,
+                        HasReplacement   = item.HasReplacement,
+                    });
             }
         }
 

@@ -21,7 +21,8 @@ path, and no-display launches continue to use `ckan consoleui`.
 
 The app starts on the mod browser for the current instance. When no saved
 browser filter is active, the default mod list is `Installed`, so cleanup and
-updates are the first view instead of the full catalog.
+updates are the first view instead of the full catalog. If no installed mods are
+detected, the browser falls back to `All`.
 
 Actions are queued before they are applied. Use the `Preview` surface to inspect
 what CKAN Linux is about to do:
