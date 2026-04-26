@@ -3,21 +3,23 @@
 ## Linux GUI fork quick start
 
 This fork includes a Linux-first Avalonia shell in `LinuxGUI/`. The upstream
-Debian/RPM packaging still installs the legacy CKAN launcher at `/usr/bin/ckan`,
-which starts the WinForms GUI through Mono. To run the new Linux shell from this
-tree, build the Linux GUI package target:
+CKAN downloads and the upstream Debian/RPM packaging still install the legacy
+CKAN launcher at `/usr/bin/ckan`, which starts the WinForms GUI through Mono.
+Clone this fork directly to build and run the Linux shell:
 
 ```bash
+git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
+cd CKAN-LinuxUI
 ./build.sh LinuxGUIPackage --configuration=Release
-```
-
-That stages files under `_build/package/ckan-linux/linux-x64/`, including
-`usr/bin/ckan-linux` and `usr/share/applications/ckan-linux.desktop`. Launch the
-staged shell with:
-
-```bash
 ./_build/package/ckan-linux/linux-x64/usr/bin/ckan-linux
 ```
+
+You do not need a separate upstream CKAN checkout. This fork contains the CKAN
+core plus the Avalonia Linux shell.
+
+The Linux GUI package target stages an install-shaped layout under
+`_build/package/ckan-linux/linux-x64/`, including `usr/bin/ckan-linux` and
+`usr/share/applications/ckan-linux.desktop`.
 
 See [`LinuxGUI/README.md`](LinuxGUI/README.md) for the full Linux GUI build,
 packaging, development, logging, and visual-test workflow.
