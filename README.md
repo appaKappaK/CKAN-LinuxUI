@@ -10,14 +10,16 @@ Clone this fork directly to build and run the Linux shell:
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
-./build.sh LinuxGUIPackage --configuration=Release
-./_build/package/ckan-linux/linux-x64/usr/bin/ckan-linux
+./scripts/install-linuxgui-local.sh
+ckan-linux
 ```
 
 You do not need a separate upstream CKAN checkout. This fork contains the CKAN
 core plus the Avalonia Linux shell.
 
-The Linux GUI package target stages an install-shaped layout under
+The installer builds the Linux GUI package target and installs it under
+`~/.local` by default, keeping it separate from the upstream `ckan` command. The
+Linux GUI package target stages an install-shaped layout under
 `_build/package/ckan-linux/linux-x64/`, including `usr/bin/ckan-linux` and
 `usr/share/applications/ckan-linux.desktop`.
 

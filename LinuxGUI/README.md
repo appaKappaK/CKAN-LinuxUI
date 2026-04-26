@@ -35,6 +35,19 @@ The staged layout includes:
 - `usr/share/icons/hicolor/*/apps/ckan-linux.png`
 - `usr/share/doc/ckan-linux/README.md`
 
+## Local Install
+
+Install the Linux GUI into a local prefix so it can be launched as
+`ckan-linux` without typing the staged package path:
+
+```bash
+./scripts/install-linuxgui-local.sh
+ckan-linux
+```
+
+By default this installs under `~/.local`, keeping it separate from the upstream
+`ckan` command. Use `--prefix /usr/local` to install somewhere else.
+
 ## Visual Review
 
 Run deterministic visual tests and refresh the optional Gemini review bundle:
