@@ -1,6 +1,6 @@
 Package: ckan
 Version: @VERSION@
-Architecture: all
+Architecture: amd64
 Section: utils
 Priority: optional
 Depends: mono-runtime (>=5.0), ca-certificates-mono, libmono-microsoft-csharp4.0-cil, libmono-system-net-http-webrequest4.0-cil, libmono-system-servicemodel4.0a-cil

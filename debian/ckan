@@ -8,8 +8,13 @@ else
     # No command line arguments
     if [ -n "$WAYLAND_DISPLAY" -o -n "$DISPLAY" ]
     then
-        # Default to GUI if there's an X11 display or a Wayland display
-        exec mono /usr/lib/ckan/ckan.exe gui
+        # Default to the native Linux GUI if available
+        if [ -x /usr/bin/ckan-linux ]
+        then
+            exec /usr/bin/ckan-linux
+        else
+            exec mono /usr/lib/ckan/ckan.exe gui
+        fi
     else
         # Run the retro text UI if graphics aren't available
         exec mono /usr/lib/ckan/ckan.exe consoleui

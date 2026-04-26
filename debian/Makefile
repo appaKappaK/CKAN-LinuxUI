@@ -1,4 +1,4 @@
-.PHONY: clean test repo sign
+.PHONY: clean linuxgui-package test repo sign
 
 DESTDIR:=../_build/deb/fakeroot
 CONFIGURATION?=Release
@@ -6,6 +6,9 @@ EXESRC:=../_build/repack/$(CONFIGURATION)/ckan.exe
 EXEDEST:=$(DESTDIR)/usr/lib/ckan/ckan.exe
 SCRIPTSRC:=ckan
 SCRIPTDEST:=$(DESTDIR)/usr/bin/ckan
+LINUXGUISTAGE:=../_build/package/ckan-linux/linux-x64/usr
+LINUXGUISCRIPTDEST:=$(DESTDIR)/usr/bin/ckan-linux
+LINUXGUILIBSTAMP:=$(DESTDIR)/usr/lib/ckan-linux/.installed
 CONTROLSRC:=control.in
 CONTROLDEST:=$(DESTDIR)/DEBIAN/control
 CHANGELOGSRC:=../CHANGELOG.md
@@ -16,20 +19,22 @@ MANSRC:=ckan.1
 MANDEST:=$(DESTDIR)/usr/share/man/man1/ckan.1.gz
 ICONSIZES=16 32 48 64 96 128 256
 ICONDEST:=$(foreach size,$(ICONSIZES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/ckan.png)
+LINUXGUIICONDEST:=$(foreach size,$(ICONSIZES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/ckan-linux.png)
 COPYRIGHTSRC:=copyright
 COPYRIGHTDEST:=$(DESTDIR)/usr/share/doc/ckan/copyright
 DESKTOPSRC:=ckan.desktop
 DESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan.desktop
+LINUXGUIDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-linux.desktop
 CONSOLEUIDESKTOPSRC:=ckan-consoleui.desktop
 CONSOLEUIDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-consoleui.desktop
 CMDPROMPTDESKTOPSRC:=ckan-cmdprompt.desktop
 CMDPROMPTDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-cmdprompt.desktop
 VERSION:=$(shell egrep '^\s*\#\#\s+v.*$$' $(CHANGELOGSRC) | head -1 | sed -e 's/^\s*\#\#\s\+v//' ).$(shell git show -s --format='%cd' --date=format:'%y%j')
-DEB:=../_build/deb/ckan_$(VERSION)_all.deb
+DEB:=../_build/deb/ckan_$(VERSION)_amd64.deb
 
 # Files for /deb/ (the .deb file)
 APT_REPO_ROOT:=../_build/deb/apt-repo-root
-REPODEB:=$(APT_REPO_ROOT)/pool/ckan_$(VERSION)_all.deb
+REPODEB:=$(APT_REPO_ROOT)/pool/ckan_$(VERSION)_amd64.deb
 
 # Files for /deb/dists/{stable,nightly}/
 # (Release, main/binary-amd64/Release, main/binary-amd64/Packages.gz,
@@ -82,7 +87,7 @@ $(INRELEASE): $(DISTRELEASEDEST)
 $(SIGNEDDISTRELEASEDEST): $(DISTRELEASEDEST)
 	gpg -abs -o $@ $<
 
-$(DEB): $(EXEDEST) $(SCRIPTDEST) $(CONTROLDEST) $(CHANGELOGDEST) $(DEBCHANGEDEST) $(MANDEST) $(ICONDEST) $(COPYRIGHTDEST) $(DESKTOPDEST) $(CONSOLEUIDESKTOPDEST) $(CMDPROMPTDESKTOPDEST)
+$(DEB): $(EXEDEST) $(SCRIPTDEST) $(LINUXGUISCRIPTDEST) $(LINUXGUILIBSTAMP) $(CONTROLDEST) $(CHANGELOGDEST) $(DEBCHANGEDEST) $(MANDEST) $(ICONDEST) $(LINUXGUIICONDEST) $(COPYRIGHTDEST) $(DESKTOPDEST) $(LINUXGUIDESKTOPDEST) $(CONSOLEUIDESKTOPDEST) $(CMDPROMPTDESKTOPDEST)
 	umask 0022 && mkdir -p $(shell dirname $@)
 	fakeroot dpkg-deb --build $(DESTDIR)/ $@
 
@@ -96,6 +101,25 @@ $(EXEDEST): $(EXESRC)
 
 $(EXESRC):
 	cd .. && ./build.sh --configuration=$(CONFIGURATION)
+
+linuxgui-package:
+	cd .. && ./build.sh LinuxGUIPackage --configuration=$(CONFIGURATION)
+
+$(LINUXGUISTAGE)/bin/ckan-linux: linuxgui-package
+
+$(LINUXGUISTAGE)/lib/ckan-linux/CKAN-LinuxGUI: $(LINUXGUISTAGE)/bin/ckan-linux
+
+$(LINUXGUISTAGE)/share/applications/ckan-linux.desktop: $(LINUXGUISTAGE)/bin/ckan-linux
+
+$(LINUXGUISCRIPTDEST): $(LINUXGUISTAGE)/bin/ckan-linux
+	umask 0022 && mkdir -p $(shell dirname $@)
+	umask 0022 && cp $< $@
+
+$(LINUXGUILIBSTAMP): $(LINUXGUISTAGE)/lib/ckan-linux/CKAN-LinuxGUI
+	umask 0022 && mkdir -p $(DESTDIR)/usr/lib
+	rm -rf $(DESTDIR)/usr/lib/ckan-linux
+	umask 0022 && cp -a $(LINUXGUISTAGE)/lib/ckan-linux $(DESTDIR)/usr/lib/
+	touch $@
 
 $(CONTROLDEST): $(CONTROLSRC) $(CHANGELOGSRC)
 	umask 0022 && mkdir -p $(shell dirname $@)
@@ -120,11 +144,24 @@ $$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/ckan.png: ../assets/ckan-$(1)
 endef
 $(foreach size,$(ICONSIZES),$(eval $(call icon_rule_template,$(size))))
 
+define linuxgui_icon_rule_template =
+$$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png: $$(LINUXGUISTAGE)/bin/ckan-linux
+
+$$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png: $$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png
+	umask 0022 && mkdir -p $$(shell dirname $$@)
+	umask 0022 && cp $$< $$@
+endef
+$(foreach size,$(ICONSIZES),$(eval $(call linuxgui_icon_rule_template,$(size))))
+
 $(COPYRIGHTDEST): $(COPYRIGHTSRC)
 	umask 0022 && mkdir -p $(shell dirname $@)
 	umask 0022 && cp $< $@
 
 $(DESKTOPDEST): $(DESKTOPSRC)
+	umask 0022 && mkdir -p $(shell dirname $@)
+	umask 0022 && cp $< $@
+
+$(LINUXGUIDESKTOPDEST): $(LINUXGUISTAGE)/share/applications/ckan-linux.desktop
 	umask 0022 && mkdir -p $(shell dirname $@)
 	umask 0022 && cp $< $@
 

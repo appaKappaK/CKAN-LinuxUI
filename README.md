@@ -23,6 +23,10 @@ Linux GUI package target stages an install-shaped layout under
 `_build/package/ckan-linux/linux-x64/`, including `usr/bin/ckan-linux` and
 `usr/share/applications/ckan-linux.desktop`.
 
+The Debian package built from this fork also includes the Linux GUI. Its normal
+desktop launch path opens `ckan-linux`; command-line invocations of `ckan` with
+arguments still route to the legacy CKAN command/console behavior.
+
 See [`LinuxGUI/README.md`](LinuxGUI/README.md) for the full Linux GUI build,
 packaging, development, logging, and visual-test workflow.
 
