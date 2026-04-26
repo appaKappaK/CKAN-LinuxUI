@@ -2,7 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CKAN.LinuxGUI.SimplePromptWindow"
         x:CompileBindings="False"
-        Width="440"
+        Width="620"
+        MaxHeight="720"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
@@ -39,12 +40,43 @@
   <Grid RowDefinitions="Auto,Auto"
         Margin="20">
     <StackPanel Spacing="12">
-      <TextBlock TextWrapping="Wrap"
+      <TextBlock FontSize="15"
+                 FontWeight="SemiBold"
+                 Foreground="#F4F6F8"
+                 TextWrapping="Wrap"
                  Text="{Binding Prompt}" />
 
-      <ListBox ItemsSource="{Binding Options}"
+      <TextBlock FontSize="12"
+                 Foreground="#AAB6C4"
+                 IsVisible="{Binding HasOptions}"
+                 Text="{Binding OptionsSummary}" />
+
+      <ListBox Classes="utility-list"
+               MaxHeight="420"
+               ItemsSource="{Binding Options}"
                SelectedIndex="{Binding SelectedIndex}"
-               IsVisible="{Binding HasOptions}" />
+               IsVisible="{Binding HasOptions}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="utility-list-row">
+              <Grid RowDefinitions="Auto,Auto">
+                <TextBlock FontWeight="SemiBold"
+                           Foreground="#F4F6F8"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding Primary}" />
+                <TextBlock Grid.Row="1"
+                           Margin="0,3,0,0"
+                           FontSize="12"
+                           Foreground="#AAB6C4"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding HasSecondary}"
+                           Text="{Binding Secondary}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </StackPanel>
 
     <StackPanel Grid.Row="1"

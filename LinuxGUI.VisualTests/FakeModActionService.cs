@@ -12,10 +12,14 @@ namespace CKAN.LinuxGUI.VisualTests
         private readonly IChangesetService changesetService;
         private readonly ApplyChangesResult applyResult;
         private readonly int applyDelayMs;
+        private readonly string[] updateRecommendations;
+        private readonly string[] updateSupporters;
 
         public FakeModActionService(IChangesetService changesetService,
                                     ApplyChangesResult? applyResult = null,
-                                    int applyDelayMs = 0)
+                                    int applyDelayMs = 0,
+                                    string[]? updateRecommendations = null,
+                                    string[]? updateSupporters = null)
         {
             this.changesetService = changesetService;
             this.applyResult = applyResult ?? new ApplyChangesResult
@@ -26,6 +30,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 Message = "Fake visual test apply result.",
             };
             this.applyDelayMs = applyDelayMs;
+            this.updateRecommendations = updateRecommendations ?? new[] { "Module Manager recommended by restock" };
+            this.updateSupporters = updateSupporters ?? System.Array.Empty<string>();
         }
 
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
@@ -50,7 +56,10 @@ namespace CKAN.LinuxGUI.VisualTests
                 .ToList();
 
             var recommendations = queue.Any(action => action.ActionKind == QueuedActionKind.Update)
-                ? new[] { "Module Manager recommended by restock" }
+                ? updateRecommendations
+                : System.Array.Empty<string>();
+            var supporters = queue.Any(action => action.ActionKind == QueuedActionKind.Update)
+                ? updateSupporters
                 : System.Array.Empty<string>();
             var downloadsRequired = queue
                 .Where(action => action.ActionKind != QueuedActionKind.Remove)
@@ -70,6 +79,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     : System.Array.Empty<string>(),
                 Recommendations    = recommendations,
                 Suggestions        = System.Array.Empty<string>(),
+                Supporters         = supporters,
                 Conflicts          = System.Array.Empty<string>(),
             });
         }

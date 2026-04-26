@@ -1216,6 +1216,20 @@ namespace CKAN.LinuxGUI
                                            allowPageScrollUp: true,
                                            allowPageScrollDown: true);
 
+        private void PreviewSupportersScrollViewer_OnPointerWheelChanged(object? sender,
+                                                                         PointerWheelEventArgs e)
+            => ScrollPreviewSectionByWheel(sender as ScrollViewer,
+                                           e,
+                                           allowPageScrollUp: true,
+                                           allowPageScrollDown: true);
+
+        private void ApplyResultFollowUpScrollViewer_OnPointerWheelChanged(object? sender,
+                                                                           PointerWheelEventArgs e)
+            => ScrollPreviewSectionByWheel(sender as ScrollViewer,
+                                           e,
+                                           allowPageScrollUp: true,
+                                           allowPageScrollDown: true);
+
         private static void ScrollPreviewSectionByWheel(ScrollViewer?         scrollViewer,
                                                         PointerWheelEventArgs e,
                                                         bool                  allowPageScrollUp,
@@ -1410,6 +1424,8 @@ namespace CKAN.LinuxGUI
                 observedViewModel.RecommendationSelectionPromptAsync = null;
                 observedViewModel.ConfirmIncompatibleLaunchAsync = null;
                 observedViewModel.ConfirmClearQueueAsync = null;
+                observedViewModel.ConfirmQueueRemoveAllInstalledModsAsync = null;
+                observedViewModel.ConfirmQueueRemoveMissingInstalledModsAsync = null;
                 observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             }
 
@@ -1420,6 +1436,8 @@ namespace CKAN.LinuxGUI
                 observedViewModel.RecommendationSelectionPromptAsync = ShowRecommendationSelectionAsync;
                 observedViewModel.ConfirmIncompatibleLaunchAsync = ConfirmIncompatibleLaunchAsync;
                 observedViewModel.ConfirmClearQueueAsync = ConfirmClearQueueAsync;
+                observedViewModel.ConfirmQueueRemoveAllInstalledModsAsync = ConfirmQueueRemoveAllInstalledModsAsync;
+                observedViewModel.ConfirmQueueRemoveMissingInstalledModsAsync = ConfirmQueueRemoveMissingInstalledModsAsync;
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
                 CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
                                           observedViewModel.CurrentUser);
@@ -1467,6 +1485,18 @@ namespace CKAN.LinuxGUI
                                                 "Cancel");
             return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }
+
+        private async Task<bool> ConfirmQueueRemoveAllInstalledModsAsync(string prompt)
+        {
+            var dialog = new SimplePromptWindow(prompt,
+                                                Array.Empty<string>(),
+                                                "Queue Removals",
+                                                "Cancel");
+            return await ShowOwnedDialogAsync<int>(dialog) == 0;
+        }
+
+        private Task<bool> ConfirmQueueRemoveMissingInstalledModsAsync(string prompt)
+            => ConfirmQueueRemoveAllInstalledModsAsync(prompt);
 
         private void ViewModel_OnPropertyChanged(object? sender,
                                                  PropertyChangedEventArgs e)

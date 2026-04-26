@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
@@ -11,6 +13,8 @@ using NUnit.Framework;
 using CKAN.Versioning;
 using CKAN.App.Models;
 using CKAN.App.Services;
+using CKAN.Configuration;
+using CKAN.Games.KerbalSpaceProgram;
 
 namespace CKAN.LinuxGUI.VisualTests
 {
@@ -164,6 +168,82 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task QueueRemoveAllInstalledMods_ReplacesQueueWithInstalledRemovals()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+                viewModel.QueueInstallCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.QueuedActions.Count == 1);
+
+                string prompt = "";
+                viewModel.ConfirmQueueRemoveAllInstalledModsAsync = message =>
+                {
+                    prompt = message;
+                    return Task.FromResult(true);
+                };
+
+                viewModel.QueueRemoveAllInstalledModsCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.QueuedActions.Count == 2
+                                          && viewModel.QueuedActions.All(action => action.ActionKind == QueuedActionKind.Remove));
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(prompt, Does.Contain("2 CKAN-managed installed mods"));
+                    Assert.That(prompt, Does.Contain("current 1 queued item"));
+                    Assert.That(viewModel.QueuedActions.Select(action => action.Identifier),
+                                Is.EquivalentTo(new[] { "restock", "mechjeb2" }));
+                    Assert.That(viewModel.ShowPreviewSurface, Is.True);
+                    Assert.That(viewModel.IsQueueDrawerExpanded, Is.True);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task QueueRemoveMissingInstalledMods_QueuesOnlyModsWithNoRegisteredFiles()
+        {
+            using var service = new MissingInstalledRegistryService();
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                new ModSearchService(settings),
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+
+            await WaitForAsync(() => viewModel.IsReady && !viewModel.IsCatalogLoading);
+
+            string prompt = "";
+            viewModel.ConfirmQueueRemoveMissingInstalledModsAsync = message =>
+            {
+                prompt = message;
+                return Task.FromResult(true);
+            };
+
+            viewModel.QueueRemoveMissingInstalledModsCommand.Execute().Subscribe(_ => { });
+            await WaitForAsync(() => viewModel.QueuedActions.Count == 1);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(prompt, Does.Contain("1 CKAN-managed installed mod"));
+                Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("missing-mod"));
+                Assert.That(viewModel.QueuedActions.Single().ActionKind, Is.EqualTo(QueuedActionKind.Remove));
+                Assert.That(viewModel.ShowPreviewSurface, Is.True);
+                Assert.That(viewModel.IsQueueDrawerExpanded, Is.True);
+            });
+        }
+
+        [AvaloniaTest]
         public async Task SuccessfulApply_CollapsesToApplyResultStubAfterQueueClears()
         {
             var applyResult = new ApplyChangesResult
@@ -193,6 +273,63 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.IsQueueDrawerExpanded, Is.False);
                     Assert.That(viewModel.ShowExecutionResultOverlay, Is.True);
                     Assert.That(viewModel.ShowCollapsedApplyResultStub, Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ApplyChanges_WithPreviewExtrasShowsGuidanceWithoutBlocking()
+        {
+            var applyResult = new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Apply Completed",
+                Message = "Applied queued changes.",
+            };
+            var (viewModel, service) = CreateViewModel(
+                applyResult,
+                updateRecommendations: new[] { "PlanetShine recommended by restock" },
+                updateSupporters: new[] { "Parallax supports restock" });
+
+            try
+            {
+                var promptCalls = 0;
+                viewModel.RecommendationSelectionPromptAsync = _ =>
+                {
+                    promptCalls++;
+                    return Task.FromResult<IReadOnlyList<RecommendationAuditItem>?>(Array.Empty<RecommendationAuditItem>());
+                };
+
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe(_ => { });
+
+                await WaitForAsync(() => viewModel.HasPreviewRecommendations
+                                          && viewModel.HasPreviewSupporters
+                                          && viewModel.ApplyChangesButtonLabel == "Apply Changes");
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowPreviewExtrasActionNotice, Is.True);
+                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("View button"));
+                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("Required dependencies are automatic"));
+                    Assert.That(viewModel.ShowPreviewSurface, Is.True);
+                });
+
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.HasApplyResult && !viewModel.HasQueuedChangeActions);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Apply Completed"));
+                    Assert.That(viewModel.ShowRelationshipBrowserScope, Is.False);
+                    Assert.That(promptCalls, Is.Zero);
                 });
             }
             finally
@@ -1017,13 +1154,18 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         private static (MainWindowViewModel ViewModel, FakeGameInstanceService Service) CreateViewModel(ApplyChangesResult? applyResult = null,
-                                                                                                        IModCatalogService?  catalog = null)
+                                                                                                        IModCatalogService?  catalog = null,
+                                                                                                        string[]?           updateRecommendations = null,
+                                                                                                        string[]?           updateSupporters = null)
         {
             var service = new FakeGameInstanceService(VisualScenario.Ready);
             var settings = new FakeAppSettingsService();
             var search = new ModSearchService(settings);
             var changes = new ChangesetService();
-            var actions = new FakeModActionService(changes, applyResult);
+            var actions = new FakeModActionService(changes,
+                                                   applyResult,
+                                                   updateRecommendations: updateRecommendations,
+                                                   updateSupporters: updateSupporters);
             var user = new AvaloniaUser();
             var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
             return (viewModel, service);
@@ -1054,6 +1196,96 @@ namespace CKAN.LinuxGUI.VisualTests
                               new List<License> { License.UnknownLicense },
                               new ModuleVersion("1.0.0"),
                               new List<Uri> { new Uri("https://example.invalid/") });
+
+        private sealed class MissingInstalledRegistryService : IGameInstanceService
+        {
+            private readonly string tempDir;
+
+            public MissingInstalledRegistryService()
+            {
+                tempDir = Path.Combine(Path.GetTempPath(), $"ckan-linux-missing-registry-{Guid.NewGuid():N}");
+                var gameDir = Path.Combine(tempDir, "game");
+                Directory.CreateDirectory(Path.Combine(gameDir, "GameData", "Present"));
+                File.WriteAllText(Path.Combine(gameDir, "GameData", "Present", "present.cfg"), "present");
+                File.WriteAllText(Path.Combine(gameDir, "KSP.x86_64"), string.Empty);
+                File.WriteAllText(Path.Combine(gameDir, "buildID64.txt"), "3190");
+                File.WriteAllText(Path.Combine(gameDir, "readme.txt"), "Kerbal Space Program");
+
+                Configuration = new JsonConfiguration();
+                RepositoryData = new RepositoryDataManager(Path.Combine(tempDir, "repos"));
+                Manager = new GameInstanceManager(new NullUser(), Configuration);
+                CurrentInstance = new GameInstance(new KerbalSpaceProgram(),
+                                                   gameDir,
+                                                   "Missing Registry Test",
+                                                   new NullUser());
+                CurrentRegistry = Registry.Empty(RepositoryData);
+                CurrentRegistry.RegisterModule(CreateRecommendationModule("missing-mod", "Missing Mod"),
+                                               new[] { Path.Combine(gameDir, "GameData", "Missing", "missing.cfg") },
+                                               CurrentInstance,
+                                               false);
+                CurrentRegistry.RegisterModule(CreateRecommendationModule("present-mod", "Present Mod"),
+                                               new[] { Path.Combine(gameDir, "GameData", "Present", "present.cfg") },
+                                               CurrentInstance,
+                                               false);
+                CurrentRegistry.RegisterModule(CreateRecommendationModule("empty-mod", "Empty Mod"),
+                                               Array.Empty<string>(),
+                                               CurrentInstance,
+                                               false);
+                Instances = new[]
+                {
+                    InstanceSummary.From(CurrentInstance, CurrentInstance.Name, CurrentInstance.Name),
+                };
+            }
+
+            public Registry? CurrentRegistry { get; }
+
+            public GameInstanceManager Manager { get; }
+
+            public RepositoryDataManager RepositoryData { get; }
+
+            public IConfiguration Configuration { get; }
+
+            public GameInstance? CurrentInstance { get; }
+
+            public RegistryManager? CurrentRegistryManager => null;
+
+            public IReadOnlyList<InstanceSummary> Instances { get; }
+
+            public event Action<GameInstance?>? CurrentInstanceChanged
+            {
+                add { }
+                remove { }
+            }
+
+            public Task InitializeAsync(CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.CompletedTask;
+            }
+
+            public Task SetCurrentInstanceAsync(string name, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.CompletedTask;
+            }
+
+            public RegistryManager? AcquireWriteRegistryManager()
+                => null;
+
+            public void RefreshCurrentRegistry()
+            {
+            }
+
+            public void Dispose()
+            {
+                RegistryManager.DisposeAll();
+                Manager.Dispose();
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
 
         private static async Task WaitForAsync(Func<bool> condition,
                                                int        timeoutMs = 1000)

@@ -199,6 +199,8 @@ namespace CKAN.LinuxGUI
         private string  dismissedPreviewConflictKey = "";
         private int     selectedPreviewConflictCount;
         private string? selectedPreviewConflict;
+        private Func<IReadOnlyList<RecommendationAuditItem>, Task<IReadOnlyList<RecommendationAuditItem>?>>?
+            recommendationSelectionPromptAsync;
         private readonly HashSet<string> selectedPreviewConflicts = new(StringComparer.Ordinal);
         private IReadOnlyList<QueuedActionModel> lastRemovedQueuedActions = Array.Empty<QueuedActionModel>();
         private IReadOnlyList<ModListItem> allCatalogItems = Array.Empty<ModListItem>();
@@ -247,6 +249,7 @@ namespace CKAN.LinuxGUI
             PreviewAttentionNotes = new ObservableCollection<string>();
             PreviewRecommendations = new ObservableCollection<string>();
             PreviewSuggestions = new ObservableCollection<string>();
+            PreviewSupporters = new ObservableCollection<string>();
             PreviewConflicts = new ObservableCollection<string>();
             PreviewConflictChoices = new ObservableCollection<PreviewConflictChoiceItem>();
             ApplyResultSummaryLines = new ObservableCollection<string>();
@@ -304,6 +307,11 @@ namespace CKAN.LinuxGUI
             var canClearQueue = this.WhenAnyValue(vm => vm.HasQueuedActions,
                                                   vm => vm.IsApplyingChanges,
                                                   (hasActions, applying) => hasActions && !applying);
+            var canQueueRemoveAllInstalled = this.WhenAnyValue(vm => vm.HasCurrentInstance,
+                                                               vm => vm.IsApplyingChanges,
+                                                               vm => vm.IsCatalogLoading,
+                                                               (hasCurrent, applying, loading)
+                                                                   => hasCurrent && !applying && !loading);
             var canUndoQueuedActionRemoval = this.WhenAnyValue(vm => vm.HasQueuedActionUndo,
                                                                vm => vm.IsApplyingChanges,
                                                                (hasUndo, applying) => hasUndo && !applying);
@@ -343,6 +351,10 @@ namespace CKAN.LinuxGUI
             RemoveSelectedPreviewConflictCommand = ReactiveCommand.Create(RemoveSelectedPreviewConflict,
                                                                           canRemoveSelectedPreviewConflict);
             ClearQueueCommand = ReactiveCommand.CreateFromTask(ClearQueuedActionsAsync, canClearQueue);
+            QueueRemoveAllInstalledModsCommand = ReactiveCommand.CreateFromTask(QueueRemoveAllInstalledModsAsync,
+                                                                                canQueueRemoveAllInstalled);
+            QueueRemoveMissingInstalledModsCommand = ReactiveCommand.CreateFromTask(QueueRemoveMissingInstalledModsAsync,
+                                                                                    canQueueRemoveAllInstalled);
             UndoQueuedActionRemovalCommand = ReactiveCommand.Create(UndoQueuedActionRemoval, canUndoQueuedActionRemoval);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
             ToggleAdvancedFilterEditorCommand = ReactiveCommand.Create(ToggleAdvancedFilterEditor);
@@ -365,7 +377,7 @@ namespace CKAN.LinuxGUI
             DismissUiScaleRestartStripCommand = ReactiveCommand.Create(DismissUiScaleRestartStrip);
             RestartToApplyUiScaleCommand = ReactiveCommand.CreateFromTask(RestartToApplyUiScaleAsync,
                                                                           canRestartForUiScale);
-            ApplyChangesCommand = ReactiveCommand.CreateFromTask(() => ApplyQueuedChangesAsync(),
+            ApplyChangesCommand = ReactiveCommand.CreateFromTask(ContinuePreviewApplyFlowAsync,
                                                                  canApplyChanges);
             DownloadQueuedCommand = ReactiveCommand.CreateFromTask(DownloadQueuedAsync, canDownloadQueued);
             ToggleQueueDrawerCommand = ReactiveCommand.Create(ToggleQueueDrawer);
@@ -409,6 +421,7 @@ namespace CKAN.LinuxGUI
             ViewPreviewDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependencies", PreviewDependencies));
             ViewPreviewRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("recommendations", PreviewRecommendations));
             ViewPreviewSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("suggestions", PreviewSuggestions));
+            ViewPreviewSupportersInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("supporters", PreviewSupporters));
             ClearRelationshipBrowserScopeCommand = ReactiveCommand.Create(ClearRelationshipBrowserScope);
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
@@ -548,6 +561,8 @@ namespace CKAN.LinuxGUI
         public ObservableCollection<string> PreviewRecommendations { get; }
 
         public ObservableCollection<string> PreviewSuggestions { get; }
+
+        public ObservableCollection<string> PreviewSupporters { get; }
 
         public ObservableCollection<string> PreviewConflicts { get; }
 
@@ -1096,6 +1111,10 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ClearQueueCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> QueueRemoveAllInstalledModsCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> QueueRemoveMissingInstalledModsCommand { get; }
+
         public ReactiveCommand<Unit, Unit> UndoQueuedActionRemovalCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ToggleAdvancedFiltersCommand { get; }
@@ -1191,6 +1210,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> ViewPreviewRecommendationsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewSuggestionsInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewPreviewSupportersInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearRelationshipBrowserScopeCommand { get; }
 
@@ -1804,11 +1825,28 @@ namespace CKAN.LinuxGUI
             => gameInstanceService.AcquireWriteRegistryManager();
 
         public Func<IReadOnlyList<RecommendationAuditItem>, Task<IReadOnlyList<RecommendationAuditItem>?>>?
-            RecommendationSelectionPromptAsync { get; set; }
+            RecommendationSelectionPromptAsync
+        {
+            get => recommendationSelectionPromptAsync;
+            set
+            {
+                if (recommendationSelectionPromptAsync == value)
+                {
+                    return;
+                }
+
+                recommendationSelectionPromptAsync = value;
+                PublishPreviewActionStateLabels();
+            }
+        }
 
         public Func<string, Task<bool>>? ConfirmIncompatibleLaunchAsync { get; set; }
 
         public Func<string, Task<bool>>? ConfirmClearQueueAsync { get; set; }
+
+        public Func<string, Task<bool>>? ConfirmQueueRemoveAllInstalledModsAsync { get; set; }
+
+        public Func<string, Task<bool>>? ConfirmQueueRemoveMissingInstalledModsAsync { get; set; }
 
         public bool CanPlayDirect => FindLaunchCommand(GameLaunchMode.Direct) != null;
 
@@ -2691,15 +2729,23 @@ namespace CKAN.LinuxGUI
         public int QueuedSuggestionActionCount
             => QueuedActions.Count(action => action.SourceText.StartsWith("Suggested", StringComparison.OrdinalIgnoreCase));
 
+        public int QueuedSupporterActionCount
+            => QueuedActions.Count(action => action.SourceText.StartsWith("Supported", StringComparison.OrdinalIgnoreCase));
+
         public bool HasQueuedRecommendationActions => QueuedRecommendationActionCount > 0;
 
         public bool HasQueuedSuggestionActions => QueuedSuggestionActionCount > 0;
+
+        public bool HasQueuedSupporterActions => QueuedSupporterActionCount > 0;
 
         public string QueuedRecommendationCountLabel
             => CountLabel(QueuedRecommendationActionCount, "queued", "queued");
 
         public string QueuedSuggestionCountLabel
             => CountLabel(QueuedSuggestionActionCount, "queued", "queued");
+
+        public string QueuedSupporterCountLabel
+            => CountLabel(QueuedSupporterActionCount, "queued", "queued");
 
         public bool HasQueuedChangeActions => QueuedChangeActionCount > 0;
 
@@ -2736,11 +2782,28 @@ namespace CKAN.LinuxGUI
 
         public bool HasPreviewSuggestions => PreviewSuggestions.Count > 0;
 
+        public bool HasPreviewSupporters => PreviewSupporters.Count > 0;
+
         public bool HasPreviewRecommendationsOrSuggestions
             => HasPreviewRecommendations || HasPreviewSuggestions;
 
+        public bool HasPreviewOptionalExtras
+            => HasPreviewRecommendations || HasPreviewSuggestions || HasPreviewSupporters;
+
+        public bool PreviewExtrasSelectionAvailable
+            => HasQueuedChangeActions
+               && PreviewCanApply
+               && !IsPreviewLoading
+               && !IsApplyingChanges
+               && HasPreviewOptionalExtras;
+
+        public bool ShowPreviewExtrasActionNotice => PreviewExtrasSelectionAvailable;
+
+        public string PreviewExtrasActionNotice
+            => "Optional recommendations, suggestions, and supported mods are listed in Preview. Use each section's View button to inspect and queue extras before applying. Required dependencies are automatic.";
+
         public bool HasPreviewDependenciesOrOptional
-            => HasPreviewDependencies || HasPreviewRecommendationsOrSuggestions;
+            => HasPreviewDependencies || HasPreviewOptionalExtras;
 
         public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
 
@@ -3519,13 +3582,23 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(ShowPreviewConflictPopup));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
+                this.RaisePropertyChanged(nameof(ApplyChangesButtonLabel));
+                this.RaisePropertyChanged(nameof(PreviewExtrasSelectionAvailable));
+                this.RaisePropertyChanged(nameof(ShowPreviewExtrasActionNotice));
+                this.RaisePropertyChanged(nameof(PreviewExtrasActionNotice));
             }
         }
 
         public bool PreviewCanApply
         {
             get => previewCanApply;
-            private set => this.RaiseAndSetIfChanged(ref previewCanApply, value);
+            private set
+            {
+                if (this.RaiseAndSetIfChanged(ref previewCanApply, value))
+                {
+                    PublishPreviewActionStateLabels();
+                }
+            }
         }
 
         public bool IsApplyingChanges
@@ -3541,6 +3614,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(CanSwitchInstances));
+                PublishPreviewActionStateLabels();
                 PublishExecutionOverlayState();
             }
         }
@@ -3614,8 +3688,18 @@ namespace CKAN.LinuxGUI
 
                 if (PreviewShowsReadyCard)
                 {
-                    return HasPreviewDependencies
-                        ? "Direct actions are shown on the left. Required dependency installs are handled automatically during Apply."
+                    if (HasPreviewDependencies && HasPreviewAutoRemovals)
+                    {
+                        return "Direct actions are shown on the left. CKAN will install required dependencies and remove unused auto-installed dependencies during Apply.";
+                    }
+
+                    if (HasPreviewDependencies)
+                    {
+                        return "Direct actions are shown on the left. Required dependency installs are handled automatically during Apply.";
+                    }
+
+                    return HasPreviewAutoRemovals
+                        ? "Direct actions are shown on the left. Unused auto-installed dependencies listed below will be removed during Apply."
                         : "The queued actions are ready to apply as shown.";
                 }
 
@@ -3635,7 +3719,9 @@ namespace CKAN.LinuxGUI
                         : PreviewCanApply
                             ? HasPreviewAttentionNotes
                                 ? "Apply changes is ready. You may still need to confirm prompts during install."
-                                : "Apply changes will update GameData after the required downloads finish."
+                                : HasPreviewAutoRemovals
+                                    ? "Apply changes will update GameData and remove unused auto-installed dependencies."
+                                    : "Apply changes will update GameData after the required downloads finish."
                             : HasPreviewConflicts
                                 ? "Apply stays disabled until the conflicts above are resolved."
                                 : "Apply stays disabled until the required setup steps above are cleared.";
@@ -3715,9 +3801,13 @@ namespace CKAN.LinuxGUI
             => HasQueuedChangeActions && HasQueuedDownloadActions
                 ? "Install, update, and remove actions are listed together with queued downloads. Download Files runs separately and does not change GameData."
                 : HasQueuedChangeActions
-                    ? HasPreviewDependencies
-                        ? "These are the direct install/update/remove actions you selected. CKAN will also install the required mods listed below."
-                        : "These are the direct install/update/remove actions you selected."
+                    ? HasPreviewDependencies && HasPreviewAutoRemovals
+                        ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove unused auto-installed dependencies listed below."
+                        : HasPreviewDependencies
+                            ? "These are the direct install/update/remove actions you selected. CKAN will also install the required mods listed below."
+                            : HasPreviewAutoRemovals
+                                ? "These are the direct install/update/remove actions you selected. CKAN will also remove unused auto-installed dependencies listed below."
+                                : "These are the direct install/update/remove actions you selected."
                     : "These items will be downloaded into the cache for later use. They do not change GameData.";
 
         public bool ShowPreviewDownloadQueueGuidance
@@ -3764,6 +3854,9 @@ namespace CKAN.LinuxGUI
                     : "#39424E";
 
         public string ApplyChangesButtonBorderBrush => ApplyChangesButtonBackground;
+
+        public string ApplyChangesButtonLabel
+            => "Apply Changes";
 
         public string DownloadQueuedButtonBackground
             => !HasQueuedDownloadActions || IsApplyingChanges
@@ -5480,7 +5573,7 @@ namespace CKAN.LinuxGUI
             queueDrawerStickyCollapsed = false;
             IsQueueDrawerExpanded = true;
             PublishQueueStateLabels();
-            await ApplyQueuedChangesAsync();
+            await ContinuePreviewApplyFlowAsync();
         }
 
         private void DismissApplyResult()
@@ -6191,6 +6284,156 @@ namespace CKAN.LinuxGUI
             changesetService.QueueRemove(SelectedMod);
             StatusMessage = $"Queued removal for {SelectedMod.Name}.";
         }
+
+        private async Task QueueRemoveAllInstalledModsAsync()
+        {
+            var targets = BuildRemoveAllInstalledTargets();
+            if (targets.Count == 0)
+            {
+                StatusMessage = "No CKAN-managed installed mods are available to queue for removal.";
+                return;
+            }
+
+            var existingCount = changesetService.CurrentQueue.Count;
+            var prompt = $"Queue removal for all {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)} in {CurrentInstanceName}? This does not apply immediately; it replaces the current queue and opens the preview so you can review everything before applying.";
+            if (existingCount > 0)
+            {
+                prompt += $" The current {existingCount} queued item{Pluralize(existingCount)} will be replaced.";
+            }
+
+            if (ConfirmQueueRemoveAllInstalledModsAsync != null
+                && !await ConfirmQueueRemoveAllInstalledModsAsync(prompt))
+            {
+                StatusMessage = "Canceled queue removal for all installed mods.";
+                return;
+            }
+
+            ClearApplyResult();
+            lastRemovedQueuedActions = Array.Empty<QueuedActionModel>();
+            changesetService.Restore(targets.Select(CreateRemoveQueuedAction).ToList());
+            queueDrawerStickyCollapsed = false;
+            IsQueueDrawerExpanded = true;
+            ShowPreviewSurfaceTab();
+            StatusMessage = $"Queued removal for {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)}.";
+            PublishQueueStateLabels();
+        }
+
+        private async Task QueueRemoveMissingInstalledModsAsync()
+        {
+            var targets = BuildRemoveMissingInstalledTargets();
+            if (targets.Count == 0)
+            {
+                StatusMessage = "No CKAN-managed installed mods with missing registered files were detected.";
+                return;
+            }
+
+            var existingCount = changesetService.CurrentQueue.Count;
+            var prompt = $"Queue removal for {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)} whose registered files are missing from {CurrentInstanceName}? This does not apply immediately; it replaces the current queue and opens the preview so you can review everything before applying.";
+            if (existingCount > 0)
+            {
+                prompt += $" The current {existingCount} queued item{Pluralize(existingCount)} will be replaced.";
+            }
+
+            if (ConfirmQueueRemoveMissingInstalledModsAsync != null
+                && !await ConfirmQueueRemoveMissingInstalledModsAsync(prompt))
+            {
+                StatusMessage = "Canceled queue removal for missing installed mods.";
+                return;
+            }
+
+            ClearApplyResult();
+            lastRemovedQueuedActions = Array.Empty<QueuedActionModel>();
+            changesetService.Restore(targets.Select(CreateRemoveQueuedAction).ToList());
+            queueDrawerStickyCollapsed = false;
+            IsQueueDrawerExpanded = true;
+            ShowPreviewSurfaceTab();
+            StatusMessage = $"Queued removal for {targets.Count} missing installed mod{Pluralize(targets.Count)}.";
+            PublishQueueStateLabels();
+        }
+
+        private IReadOnlyList<ModListItem> BuildRemoveAllInstalledTargets()
+        {
+            if (gameInstanceService.CurrentRegistry is Registry registry)
+            {
+                var catalogByIdentifier = allCatalogItems
+                    .ToDictionary(item => item.Identifier,
+                                  item => item,
+                                  StringComparer.OrdinalIgnoreCase);
+
+                return registry.InstalledModules
+                               .Where(im => !im.Module.IsDLC
+                                            && !registry.IsAutodetected(im.identifier))
+                               .Select(im => catalogByIdentifier.TryGetValue(im.identifier, out var item)
+                                   ? item
+                                   : new ModListItem
+                                   {
+                                       Identifier       = im.identifier,
+                                       Name             = im.Module.name ?? im.identifier,
+                                       InstalledVersion = im.Module.version.ToString(),
+                                       IsInstalled      = true,
+                                   })
+                               .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                               .ToList();
+            }
+
+            return allCatalogItems
+                   .Where(item => item.IsInstalled && !item.IsAutodetected)
+                   .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                   .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                   .ToList();
+        }
+
+        private IReadOnlyList<ModListItem> BuildRemoveMissingInstalledTargets()
+        {
+            if (gameInstanceService.CurrentInstance is not GameInstance instance
+                || gameInstanceService.CurrentRegistry is not Registry registry)
+            {
+                return Array.Empty<ModListItem>();
+            }
+
+            var catalogByIdentifier = allCatalogItems
+                .ToDictionary(item => item.Identifier,
+                              item => item,
+                              StringComparer.OrdinalIgnoreCase);
+
+            return registry.InstalledModules
+                           .Where(im => !im.Module.IsDLC
+                                        && !registry.IsAutodetected(im.identifier)
+                                        && RegisteredFilesMissingFromDisk(instance, im))
+                           .Select(im => catalogByIdentifier.TryGetValue(im.identifier, out var item)
+                               ? item
+                               : new ModListItem
+                               {
+                                   Identifier       = im.identifier,
+                                   Name             = im.Module.name ?? im.identifier,
+                                   InstalledVersion = im.Module.version.ToString(),
+                                   IsInstalled      = true,
+                               })
+                           .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                           .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                           .ToList();
+        }
+
+        private static bool RegisteredFilesMissingFromDisk(GameInstance instance, InstalledModule module)
+        {
+            var registeredFiles = module.Files.ToList();
+            return registeredFiles.Count > 0
+                   && registeredFiles.All(relPath => !File.Exists(instance.ToAbsoluteGameDir(relPath)));
+        }
+
+        private static QueuedActionModel CreateRemoveQueuedAction(ModListItem mod)
+            => new QueuedActionModel
+            {
+                Identifier    = mod.Identifier,
+                Name          = mod.Name,
+                TargetVersion = "",
+                ActionKind    = QueuedActionKind.Remove,
+                ActionText    = "Remove",
+                DetailText    = string.IsNullOrWhiteSpace(mod.InstalledVersion)
+                    ? "Remove installed module"
+                    : $"Remove {mod.InstalledVersion}",
+            };
 
         private void SeedDevQueueSmoke(IReadOnlyList<ModListItem> catalogItems)
         {
@@ -6965,6 +7208,16 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private void PublishPreviewActionStateLabels()
+        {
+            this.RaisePropertyChanged(nameof(PreviewExtrasSelectionAvailable));
+            this.RaisePropertyChanged(nameof(ShowPreviewExtrasActionNotice));
+            this.RaisePropertyChanged(nameof(PreviewExtrasActionNotice));
+            this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
+            this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(ApplyChangesButtonLabel));
+        }
+
         private void PublishModQueueState(ModListItem mod)
         {
             var queued = changesetService.FindQueuedApplyAction(mod.Identifier)
@@ -7022,6 +7275,7 @@ namespace CKAN.LinuxGUI
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewSupporters, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewConflicts, Array.Empty<string>());
                 PublishPreviewStateLabels();
                 return;
@@ -7049,6 +7303,7 @@ namespace CKAN.LinuxGUI
                 ReplacePreviewCollection(PreviewAttentionNotes, preview.AttentionNotes);
                 ReplacePreviewCollection(PreviewRecommendations, FilterPreviewOptionalEntries(preview.Recommendations));
                 ReplacePreviewCollection(PreviewSuggestions, FilterPreviewOptionalEntries(preview.Suggestions));
+                ReplacePreviewCollection(PreviewSupporters, FilterPreviewOptionalEntries(preview.Supporters));
                 ReplacePreviewCollection(PreviewConflicts, previewConflicts);
                 PublishPreviewStateLabels();
             }
@@ -7068,6 +7323,7 @@ namespace CKAN.LinuxGUI
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewSupporters, Array.Empty<string>());
                 PublishPreviewStateLabels();
             }
             finally
@@ -7122,6 +7378,11 @@ namespace CKAN.LinuxGUI
             {
                 ShowExecutionResultDialog(result.Success);
             }
+        }
+
+        private async Task ContinuePreviewApplyFlowAsync()
+        {
+            await ApplyQueuedChangesAsync(promptForRecommendations: false);
         }
 
         private async Task InstallNowSelectedModAsync()
@@ -7596,10 +7857,13 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(QueuedDownloadActionCount));
             this.RaisePropertyChanged(nameof(QueuedRecommendationActionCount));
             this.RaisePropertyChanged(nameof(QueuedSuggestionActionCount));
+            this.RaisePropertyChanged(nameof(QueuedSupporterActionCount));
             this.RaisePropertyChanged(nameof(HasQueuedRecommendationActions));
             this.RaisePropertyChanged(nameof(HasQueuedSuggestionActions));
+            this.RaisePropertyChanged(nameof(HasQueuedSupporterActions));
             this.RaisePropertyChanged(nameof(QueuedRecommendationCountLabel));
             this.RaisePropertyChanged(nameof(QueuedSuggestionCountLabel));
+            this.RaisePropertyChanged(nameof(QueuedSupporterCountLabel));
             this.RaisePropertyChanged(nameof(HasQueuedChangeActions));
             this.RaisePropertyChanged(nameof(HasQueuedDownloadActions));
             this.RaisePropertyChanged(nameof(IsQueueDrawerExpanded));
@@ -7642,6 +7906,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonBackground));
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonBorderBrush));
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonLabel));
+            PublishPreviewActionStateLabels();
         }
 
         private void PublishSelectedModActionState()
@@ -7682,7 +7947,9 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasPreviewAttentionNotes));
             this.RaisePropertyChanged(nameof(HasPreviewRecommendations));
             this.RaisePropertyChanged(nameof(HasPreviewSuggestions));
+            this.RaisePropertyChanged(nameof(HasPreviewSupporters));
             this.RaisePropertyChanged(nameof(HasPreviewRecommendationsOrSuggestions));
+            this.RaisePropertyChanged(nameof(HasPreviewOptionalExtras));
             this.RaisePropertyChanged(nameof(HasPreviewDependenciesOrOptional));
             this.RaisePropertyChanged(nameof(HasPreviewConflicts));
             this.RaisePropertyChanged(nameof(PreviewStatusLabel));
@@ -7725,6 +7992,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonBorderBrush));
             this.RaisePropertyChanged(nameof(DownloadQueuedButtonLabel));
             this.RaisePropertyChanged(nameof(CollapsedQueueStubSummary));
+            PublishPreviewActionStateLabels();
         }
 
         private void SetApplyResult(ApplyChangesResult result)
@@ -7819,6 +8087,7 @@ namespace CKAN.LinuxGUI
             ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
             ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
             ReplacePreviewCollection(PreviewSuggestions, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewSupporters, Array.Empty<string>());
             ReplacePreviewCollection(PreviewConflicts, Array.Empty<string>());
             PublishPreviewStateLabels();
         }
@@ -8113,10 +8382,7 @@ namespace CKAN.LinuxGUI
         {
             var identifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var queueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in entries)
-            {
-                AddPreviewEntryBrowserIdentifier(identifiers, queueSources, relationshipName, entry);
-            }
+            AddPreviewEntriesBrowserIdentifiers(identifiers, queueSources, relationshipName, entries);
 
             if (identifiers.Count == 0)
             {
@@ -8134,10 +8400,21 @@ namespace CKAN.LinuxGUI
             PublishRelationshipBrowserScopeState();
         }
 
-        private void AddPreviewEntryBrowserIdentifier(HashSet<string>         identifiers,
+        private void AddPreviewEntriesBrowserIdentifiers(HashSet<string>             identifiers,
+                                                         Dictionary<string, string> queueSources,
+                                                         string                     relationshipName,
+                                                         IEnumerable<string>        entries)
+        {
+            foreach (var entry in entries)
+            {
+                AddPreviewEntryBrowserIdentifier(identifiers, queueSources, relationshipName, entry);
+            }
+        }
+
+        private void AddPreviewEntryBrowserIdentifier(HashSet<string>             identifiers,
                                                       Dictionary<string, string> queueSources,
-                                                      string                  relationshipName,
-                                                      string                  entry)
+                                                      string                     relationshipName,
+                                                      string                     entry)
         {
             if (string.IsNullOrWhiteSpace(entry))
             {
@@ -8170,6 +8447,7 @@ namespace CKAN.LinuxGUI
                 {
                     "recommendations" => "Recommended from preview",
                     "suggestions"     => "Suggested from preview",
+                    "supporters"      => "Supported from preview",
                     "dependencies"    => "Required dependency from preview",
                     _                 => "",
                 };
@@ -8179,6 +8457,7 @@ namespace CKAN.LinuxGUI
             {
                 "recommendations" => $"Recommended by {sourceText}",
                 "suggestions"     => $"Suggested by {sourceText}",
+                "supporters"      => $"Supported by {sourceText}",
                 "dependencies"    => $"Required by {sourceText}",
                 _                 => sourceText,
             };
@@ -8589,5 +8868,8 @@ namespace CKAN.LinuxGUI
             => count == 1
                 ? $"1 {singular}"
                 : $"{count} {plural}";
+
+        private static string Pluralize(int count)
+            => count == 1 ? "" : "s";
     }
 }

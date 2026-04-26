@@ -1704,6 +1704,12 @@
               <MenuItem Classes="app-menu-item"
                         Header="Deduplicate installed files..."
                         Click="DeduplicateInstalledFilesMenuItem_OnClick" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Queue remove missing installed mods"
+                        Command="{Binding QueueRemoveMissingInstalledModsCommand}" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Queue remove all installed mods"
+                        Command="{Binding QueueRemoveAllInstalledModsCommand}" />
               <Separator />
               <MenuItem Classes="app-menu-item"
                         Header="Save installed mod list (cannot be re-imported)..."
@@ -1954,6 +1960,12 @@
                 <MenuItem Classes="app-menu-item"
                           Header="Deduplicate installed files..."
                           Click="DeduplicateInstalledFilesMenuItem_OnClick" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Queue remove missing installed mods"
+                          Command="{Binding QueueRemoveMissingInstalledModsCommand}" />
+                <MenuItem Classes="app-menu-item"
+                          Header="Queue remove all installed mods"
+                          Command="{Binding QueueRemoveAllInstalledModsCommand}" />
                 <Separator />
                 <MenuItem Classes="app-menu-item"
                           Header="Save installed mod list (cannot be re-imported)..."
@@ -4276,20 +4288,27 @@
                               <Border Background="#161B21"
                                       CornerRadius="8"
                                       Padding="10"
+                                      ClipToBounds="True"
                                       IsVisible="{Binding HasApplyResultFollowUpLines}">
                                 <StackPanel Spacing="6">
                                   <TextBlock FontWeight="SemiBold"
                                              Text="Follow-Up" />
-                                  <ItemsControl ItemsSource="{Binding ApplyResultFollowUpLines}">
-                                    <ItemsControl.ItemTemplate>
-                                      <DataTemplate>
-                                        <TextBlock Margin="0,0,0,4"
-                                                   Opacity="0.84"
-                                                   TextWrapping="Wrap"
-                                                   Text="{Binding}" />
-                                      </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                  </ItemsControl>
+                                  <ScrollViewer MaxHeight="180"
+                                                Classes="preview-section-scroll"
+                                                HorizontalScrollBarVisibility="Disabled"
+                                                VerticalScrollBarVisibility="Auto"
+                                                PointerWheelChanged="ApplyResultFollowUpScrollViewer_OnPointerWheelChanged">
+                                    <ItemsControl ItemsSource="{Binding ApplyResultFollowUpLines}">
+                                      <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                          <TextBlock Margin="0,0,0,4"
+                                                     Opacity="0.84"
+                                                     TextWrapping="Wrap"
+                                                     Text="{Binding}" />
+                                        </DataTemplate>
+                                      </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                  </ScrollViewer>
                                 </StackPanel>
                               </Border>
                             </StackPanel>
@@ -4474,6 +4493,70 @@
                                   </Border>
                               </StackPanel>
                             </Border>
+
+                            <Border Background="#171B20"
+                                    BorderBrush="#D0A85A"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10"
+                                    BoxShadow="0 10 22 0 #22000000"
+                                    IsVisible="{Binding HasPreviewSupporters}">
+                              <StackPanel Spacing="7">
+                                  <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Text="Supported" />
+                                    <Border Grid.Column="1"
+                                            Background="#3B321F"
+                                            BorderBrush="#D0A85A"
+                                            BorderThickness="1"
+                                            CornerRadius="999"
+                                            Padding="7,2"
+                                            Margin="8,0,8,0"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding HasQueuedSupporterActions}">
+                                      <TextBlock FontSize="10"
+                                                 FontWeight="SemiBold"
+                                                 Foreground="#FFF1CE"
+                                                 Text="{Binding QueuedSupporterCountLabel}" />
+                                    </Border>
+                                    <Button Grid.Column="2"
+                                            Classes="detail-section-action"
+                                            Command="{Binding ViewPreviewSupportersInBrowserCommand}"
+                                            Content="View" />
+                                  </Grid>
+                                  <Border Background="#12171D"
+                                          BorderBrush="#D0A85A"
+                                          BorderThickness="1"
+                                          CornerRadius="6"
+                                          ClipToBounds="True">
+                                    <ScrollViewer Height="179"
+                                                  Classes="preview-section-scroll"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  PointerWheelChanged="PreviewSupportersScrollViewer_OnPointerWheelChanged">
+                                      <ItemsControl ItemsSource="{Binding PreviewSupporters}">
+                                        <ItemsControl.ItemTemplate>
+                                          <DataTemplate>
+                                            <Border Background="#181D23"
+                                                    BorderBrush="#202A33"
+                                                    BorderThickness="0,0,0,1">
+                                              <Grid ColumnDefinitions="4,*">
+                                                <Border Background="#D0A85A" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="8,6"
+                                                           FontSize="12"
+                                                           MaxLines="1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding}" />
+                                              </Grid>
+                                            </Border>
+                                          </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                      </ItemsControl>
+                                    </ScrollViewer>
+                                  </Border>
+                              </StackPanel>
+                            </Border>
                           </StackPanel>
 
                         </StackPanel>
@@ -4627,26 +4710,37 @@
                       </StackPanel>
                     </Border>
 
-                    <WrapPanel Grid.Column="1"
-                               HorizontalAlignment="Right"
-                               VerticalAlignment="Center"
-                               ItemHeight="38">
-                      <Button Classes="preview-action"
-                              Background="#4B535D"
-                              BorderBrush="#4B535D"
-                              Foreground="#F4F6F8"
-                              IsVisible="{Binding ShowInlineApplyResult}"
-                              Command="{Binding DismissApplyResultCommand}"
-                              Content="Dismiss Result" />
-                      <Button Classes="preview-action"
-                              MinWidth="144"
-                              Background="{Binding ApplyChangesButtonBackground}"
-                              BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
-                              Foreground="#F4F6F8"
-                              IsVisible="{Binding HasQueuedChangeActions}"
-                              Command="{Binding ApplyChangesCommand}"
-                              Content="Apply Changes" />
-                    </WrapPanel>
+                    <StackPanel Grid.Column="1"
+                                Spacing="6"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                      <TextBlock Width="360"
+                                 HorizontalAlignment="Right"
+                                 TextAlignment="Right"
+                                 TextWrapping="Wrap"
+                                 FontSize="12"
+                                 Opacity="0.62"
+                                 IsVisible="{Binding ShowPreviewExtrasActionNotice}"
+                                 Text="{Binding PreviewExtrasActionNotice}" />
+                      <WrapPanel HorizontalAlignment="Right"
+                                 ItemHeight="38">
+                        <Button Classes="preview-action"
+                                Background="#4B535D"
+                                BorderBrush="#4B535D"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding ShowInlineApplyResult}"
+                                Command="{Binding DismissApplyResultCommand}"
+                                Content="Dismiss Result" />
+                        <Button Classes="preview-action"
+                                MinWidth="144"
+                                Background="{Binding ApplyChangesButtonBackground}"
+                                BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
+                                Foreground="#F4F6F8"
+                                IsVisible="{Binding HasQueuedChangeActions}"
+                                Command="{Binding ApplyChangesCommand}"
+                                Content="{Binding ApplyChangesButtonLabel}" />
+                      </WrapPanel>
+                    </StackPanel>
                   </Grid>
                 </Grid>
               </Border>
@@ -4930,20 +5024,27 @@
             <Border Background="#161B21"
                     CornerRadius="10"
                     Padding="12"
+                    ClipToBounds="True"
                     IsVisible="{Binding HasApplyResultFollowUpLines}">
               <StackPanel Spacing="6">
                 <TextBlock FontWeight="SemiBold"
                            Text="Follow-Up" />
-                <ItemsControl ItemsSource="{Binding ApplyResultFollowUpLines}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Margin="0,0,0,4"
-                                 Opacity="0.84"
-                                 TextWrapping="Wrap"
-                                 Text="{Binding}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ScrollViewer MaxHeight="300"
+                              Classes="preview-section-scroll"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              PointerWheelChanged="ApplyResultFollowUpScrollViewer_OnPointerWheelChanged">
+                  <ItemsControl ItemsSource="{Binding ApplyResultFollowUpLines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Margin="0,0,0,4"
+                                   Opacity="0.84"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
               </StackPanel>
             </Border>
 

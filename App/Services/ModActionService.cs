@@ -40,6 +40,7 @@ namespace CKAN.App.Services
                     AttentionNotes     = plan.AttentionNotes,
                     Recommendations    = plan.Recommendations,
                     Suggestions        = plan.Suggestions,
+                    Supporters         = plan.Supporters,
                     Conflicts          = plan.Conflicts,
                 };
             }, cancellationToken);
@@ -507,6 +508,7 @@ namespace CKAN.App.Services
             var autoRemovals       = new List<string>();
             var recommendations    = new List<string>();
             var suggestions        = new List<string>();
+            var supporters         = new List<string>();
             var notices            = new List<string>();
             var conflicts          = new List<string>();
             var cache = gameInstanceService.Manager.Cache!;
@@ -516,6 +518,7 @@ namespace CKAN.App.Services
             var combinedInstalls = DistinctModules(requestedInstalls.Concat(requestedUpdates));
             var directDownloads = DistinctModules(
                 requestedDownloads.Where(mod => !ContainsIdentifier(combinedInstalls, mod.identifier)));
+            var autoRemovalModules = new List<InstalledModule>();
 
             downloadsRequired.AddRange(
                 directDownloads
@@ -524,16 +527,42 @@ namespace CKAN.App.Services
                     .Distinct()
                     .ToList());
 
+            if (conflicts.Count == 0 && (requestedRemovals.Count > 0 || combinedInstalls.Count > 0))
+            {
+                try
+                {
+                    var plannedRemovalIdentifiers = BuildPlannedRemovalIdentifiers(requestedRemovals,
+                                                                                   combinedInstalls,
+                                                                                   registry);
+                    if (plannedRemovalIdentifiers.Count > 0)
+                    {
+                        var autoRemovalRoots = BuildAutoRemovalRoots(requestedRemovals,
+                                                                     combinedInstalls,
+                                                                     registry);
+                        autoRemovalModules = registry.FindRemovableAutoInstalled(combinedInstalls,
+                                                                                  plannedRemovalIdentifiers,
+                                                                                  instance)
+                                                     .ToList();
+                        autoRemovals.AddRange(
+                            BuildAutoRemovalDescriptions(autoRemovalModules,
+                                                         autoRemovalRoots,
+                                                         registry));
+                    }
+                }
+                catch (Kraken ex)
+                {
+                    conflicts.Add(ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    conflicts.Add($"Auto-removal analysis failed: {ex.Message}");
+                }
+            }
+
             if (conflicts.Count == 0 && combinedInstalls.Count > 0)
             {
                 try
                 {
-                    var autoRemovalModules = registry.FindRemovableAutoInstalled(
-                                                     combinedInstalls,
-                                                     requestedRemovals.Select(im => im.identifier)
-                                                                     .ToHashSet(StringComparer.OrdinalIgnoreCase),
-                                                     instance)
-                                                 .ToList();
                     var allRemoving = DistinctModules(requestedRemovals.Select(im => im.Module)
                                                                       .Concat(autoRemovalModules.Select(im => im.Module)));
 
@@ -557,12 +586,6 @@ namespace CKAN.App.Services
                                                 combinedInstalls,
                                                 registry));
 
-                    autoRemovals.AddRange(
-                        autoRemovalModules
-                            .Select(im => FormatModule(im.Module))
-                            .Distinct()
-                            .ToList());
-
                     conflicts.AddRange(resolver.ConflictDescriptions);
 
                     try
@@ -576,12 +599,14 @@ namespace CKAN.App.Services
                                                                    registry,
                                                                    out var recs,
                                                                    out var suggs,
-                                                                   out _))
+                                                                   out var supps))
                         {
                             recommendations.AddRange(recs.Select(kvp
                                 => $"{FormatModule(kvp.Key)} recommended by {string.Join(", ", kvp.Value.Item2.OrderBy(v => v))}"));
                             suggestions.AddRange(suggs.Select(kvp
                                 => $"{FormatModule(kvp.Key)} suggested by {string.Join(", ", kvp.Value.OrderBy(v => v))}"));
+                            supporters.AddRange(supps.Select(kvp
+                                => $"{FormatModule(kvp.Key)} supports {string.Join(", ", kvp.Value.OrderBy(v => v))}"));
                         }
                     }
                     catch (Exception ex)
@@ -630,6 +655,7 @@ namespace CKAN.App.Services
                 AttentionNotes     = notices,
                 Recommendations    = recommendations.Distinct().ToList(),
                 Suggestions        = suggestions.Distinct().ToList(),
+                Supporters         = supporters.Distinct().ToList(),
                 Conflicts          = conflicts,
             };
         }
@@ -704,6 +730,55 @@ namespace CKAN.App.Services
         private static string FormatModule(CkanModule module)
             => $"{module.name} ({module.identifier} {module.version})";
 
+        private static HashSet<string> BuildPlannedRemovalIdentifiers(
+            IReadOnlyCollection<InstalledModule> requestedRemovals,
+            IReadOnlyCollection<CkanModule>      combinedInstalls,
+            Registry                             registry)
+        {
+            var installingIdentifiers = combinedInstalls
+                .Select(mod => mod.identifier)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var directRemovalIdentifiers = requestedRemovals
+                .Select(im => im.identifier)
+                .ToArray();
+            var removableRoots = directRemovalIdentifiers
+                .Union(registry.FindReverseDependencies(
+                    directRemovalIdentifiers.Except(installingIdentifiers).ToArray(),
+                    combinedInstalls))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var mod in combinedInstalls)
+            {
+                if (registry.InstalledModule(mod.identifier) != null)
+                {
+                    removableRoots.Add(mod.identifier);
+                }
+            }
+
+            return removableRoots;
+        }
+
+        private static IReadOnlyDictionary<string, CkanModule> BuildAutoRemovalRoots(
+            IReadOnlyCollection<InstalledModule> requestedRemovals,
+            IReadOnlyCollection<CkanModule>      combinedInstalls,
+            Registry                             registry)
+        {
+            var roots = requestedRemovals
+                .ToDictionary(im => im.identifier,
+                              im => im.Module,
+                              StringComparer.OrdinalIgnoreCase);
+
+            foreach (var mod in combinedInstalls)
+            {
+                if (registry.InstalledModule(mod.identifier) != null)
+                {
+                    roots[mod.identifier] = mod;
+                }
+            }
+
+            return roots;
+        }
+
         private static IReadOnlyList<string> BuildDependencyInstalls(IReadOnlyCollection<CkanModule> resolvedInstalls,
                                                                      IReadOnlyCollection<CkanModule> requestedInstalls,
                                                                      Registry                        registry)
@@ -724,6 +799,33 @@ namespace CKAN.App.Services
                        return requiredBy.Count > 0
                            ? $"{FormatModule(mod)} required by {string.Join(", ", requiredBy)}"
                            : FormatModule(mod);
+                   })
+                   .Distinct()
+                   .ToList();
+        }
+
+        private static IReadOnlyList<string> BuildAutoRemovalDescriptions(
+            IReadOnlyCollection<InstalledModule>      autoRemovalModules,
+            IReadOnlyDictionary<string, CkanModule> autoRemovalRoots,
+            Registry                                  registry)
+        {
+            if (autoRemovalModules.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var reverseDependencies = BuildReverseDependencyMap(
+                registry.InstalledModules.Select(im => im.Module).ToList());
+
+            return autoRemovalModules
+                   .Select(im =>
+                   {
+                       var changedRoots = FindRequestedDependencyRoots(im.identifier,
+                                                                       reverseDependencies,
+                                                                       autoRemovalRoots);
+                       return changedRoots.Count > 0
+                           ? $"{FormatModule(im.Module)} no longer required by {string.Join(", ", changedRoots)}"
+                           : $"{FormatModule(im.Module)} no longer required";
                    })
                    .Distinct()
                    .ToList();
@@ -812,7 +914,7 @@ namespace CKAN.App.Services
                                     .ThenBy(m => m.name, StringComparer.CurrentCultureIgnoreCase)
                                     .ToArray();
 
-            var selection = user.RaiseSelectionDialog(ex.Message,
+            var selection = user.RaiseSelectionDialog(ProviderChoicePrompt(ex),
                                                       choices.Select(m => $"{m.identifier} ({m.name})")
                                                              .ToArray());
 
@@ -820,6 +922,12 @@ namespace CKAN.App.Services
                 ? choices[selection]
                 : null;
         }
+
+        private static string ProviderChoicePrompt(TooManyModsProvideKraken ex)
+            => string.Join(Environment.NewLine,
+                           $"Choose a provider for required dependency: {ex.requested}",
+                           "",
+                           $"{ex.requester.name} needs this virtual dependency. Pick one compatible mod to install.");
 
         private static List<CkanModule> DistinctModules(IEnumerable<CkanModule> modules)
             => modules.GroupBy(mod => mod.identifier, StringComparer.OrdinalIgnoreCase)
@@ -1156,6 +1264,8 @@ namespace CKAN.App.Services
             public IReadOnlyList<string> Recommendations { get; init; } = Array.Empty<string>();
 
             public IReadOnlyList<string> Suggestions { get; init; } = Array.Empty<string>();
+
+            public IReadOnlyList<string> Supporters { get; init; } = Array.Empty<string>();
 
             public IReadOnlyList<string> Conflicts { get; init; } = Array.Empty<string>();
         }

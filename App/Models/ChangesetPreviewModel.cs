@@ -20,6 +20,8 @@ namespace CKAN.App.Models
 
         public IReadOnlyList<string> Suggestions { get; init; } = new List<string>();
 
+        public IReadOnlyList<string> Supporters { get; init; } = new List<string>();
+
         public IReadOnlyList<string> Conflicts { get; init; } = new List<string>();
     }
 }
