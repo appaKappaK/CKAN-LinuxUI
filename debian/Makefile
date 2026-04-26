@@ -19,7 +19,8 @@ MANSRC:=ckan.1
 MANDEST:=$(DESTDIR)/usr/share/man/man1/ckan.1.gz
 ICONSIZES=16 32 48 64 96 128 256
 ICONDEST:=$(foreach size,$(ICONSIZES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/ckan.png)
-LINUXGUIICONDEST:=$(foreach size,$(ICONSIZES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/ckan-linux.png)
+LINUXGUIICONNAMES=ckan-linux CKAN-LinuxGUI ckan-linuxgui
+LINUXGUIICONDEST:=$(foreach size,$(ICONSIZES),$(foreach name,$(LINUXGUIICONNAMES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/$(name).png))
 COPYRIGHTSRC:=copyright
 COPYRIGHTDEST:=$(DESTDIR)/usr/share/doc/ckan/copyright
 DESKTOPSRC:=ckan.desktop
@@ -145,13 +146,13 @@ endef
 $(foreach size,$(ICONSIZES),$(eval $(call icon_rule_template,$(size))))
 
 define linuxgui_icon_rule_template =
-$$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png: $$(LINUXGUISTAGE)/bin/ckan-linux
+$$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/$(2).png: $$(LINUXGUISTAGE)/bin/ckan-linux
 
-$$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png: $$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/ckan-linux.png
+$$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/$(2).png: $$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/$(2).png
 	umask 0022 && mkdir -p $$(shell dirname $$@)
 	umask 0022 && cp $$< $$@
 endef
-$(foreach size,$(ICONSIZES),$(eval $(call linuxgui_icon_rule_template,$(size))))
+$(foreach size,$(ICONSIZES),$(foreach name,$(LINUXGUIICONNAMES),$(eval $(call linuxgui_icon_rule_template,$(size),$(name)))))
 
 $(COPYRIGHTDEST): $(COPYRIGHTSRC)
 	umask 0022 && mkdir -p $(shell dirname $@)

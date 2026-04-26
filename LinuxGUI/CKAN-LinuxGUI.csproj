@@ -54,6 +54,9 @@
     <AvaloniaResource Include="..\assets\ckan-256.png">
       <Link>Assets\ckan-256.png</Link>
     </AvaloniaResource>
+    <AvaloniaResource Include="..\assets\ckan.ico">
+      <Link>Assets\ckan.ico</Link>
+    </AvaloniaResource>
     <Content Include="log4net.linuxgui.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

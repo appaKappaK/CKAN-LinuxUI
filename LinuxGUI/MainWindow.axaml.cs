@@ -9,6 +9,7 @@ using Avalonia;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -60,6 +61,7 @@ namespace CKAN.LinuxGUI
         public MainWindow()
         {
             InitializeComponent();
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://CKAN-LinuxGUI/Assets/ckan.ico")));
             AddHandler(InputElement.PointerWheelChangedEvent,
                        Window_OnPointerWheelChanged,
                        RoutingStrategies.Tunnel);

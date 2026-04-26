@@ -109,6 +109,7 @@ public sealed class LinuxGuiTask : FrostingTask<BuildContext>
 public sealed class LinuxGuiPackageTask : FrostingTask<BuildContext>
 {
     private static readonly int[] IconSizes = [16, 32, 48, 64, 96, 128, 256];
+    private static readonly string[] IconNames = ["ckan-linux", "CKAN-LinuxGUI", "ckan-linuxgui"];
 
     public override void Run(BuildContext context)
     {
@@ -165,7 +166,10 @@ public sealed class LinuxGuiPackageTask : FrostingTask<BuildContext>
             var iconSource = new FileInfo(context.Paths.RootDirectory.Combine("assets")
                                                  .CombineWithFilePath($"ckan-{size}.png")
                                                  .FullPath);
-            iconSource.CopyTo(System.IO.Path.Combine(iconDirectory.FullName, "ckan-linux.png"), true);
+            foreach (var iconName in IconNames)
+            {
+                iconSource.CopyTo(System.IO.Path.Combine(iconDirectory.FullName, $"{iconName}.png"), true);
+            }
         }
     }
 
