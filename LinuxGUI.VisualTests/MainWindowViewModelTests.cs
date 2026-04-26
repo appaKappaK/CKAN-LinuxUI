@@ -207,7 +207,7 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
-        public async Task QueueRemoveMissingInstalledMods_QueuesOnlyModsWithNoRegisteredFiles()
+        public async Task CleanupMissingInstalledMods_RemovesOnlyMissingRegistryEntries()
         {
             using var service = new MissingInstalledRegistryService();
             var settings = new FakeAppSettingsService();
@@ -224,22 +224,24 @@ namespace CKAN.LinuxGUI.VisualTests
             await WaitForAsync(() => viewModel.IsReady && !viewModel.IsCatalogLoading);
 
             string prompt = "";
-            viewModel.ConfirmQueueRemoveMissingInstalledModsAsync = message =>
+            viewModel.ConfirmCleanupMissingInstalledModsAsync = message =>
             {
                 prompt = message;
                 return Task.FromResult(true);
             };
 
-            viewModel.QueueRemoveMissingInstalledModsCommand.Execute().Subscribe(_ => { });
-            await WaitForAsync(() => viewModel.QueuedActions.Count == 1);
+            viewModel.CleanupMissingInstalledModsCommand.Execute().Subscribe(_ => { });
+            await WaitForAsync(() => viewModel.HasApplyResult && !viewModel.IsApplyingChanges);
 
             Assert.Multiple(() =>
             {
                 Assert.That(prompt, Does.Contain("1 CKAN-managed installed mod"));
-                Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("missing-mod"));
-                Assert.That(viewModel.QueuedActions.Single().ActionKind, Is.EqualTo(QueuedActionKind.Remove));
-                Assert.That(viewModel.ShowPreviewSurface, Is.True);
-                Assert.That(viewModel.IsQueueDrawerExpanded, Is.True);
+                Assert.That(prompt, Does.Contain("updates CKAN's registry immediately"));
+                Assert.That(viewModel.QueuedActions, Is.Empty);
+                Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Missing Mods Cleaned Up"));
+                Assert.That(service.CurrentRegistry?.InstalledModule("missing-mod"), Is.Null);
+                Assert.That(service.CurrentRegistry?.InstalledModule("present-mod"), Is.Not.Null);
+                Assert.That(service.CurrentRegistry?.InstalledModule("empty-mod"), Is.Not.Null);
             });
         }
 
@@ -1218,7 +1220,8 @@ namespace CKAN.LinuxGUI.VisualTests
                                                    gameDir,
                                                    "Missing Registry Test",
                                                    new NullUser());
-                CurrentRegistry = Registry.Empty(RepositoryData);
+                CurrentRegistryManager = RegistryManager.Instance(CurrentInstance, RepositoryData);
+                CurrentRegistry = CurrentRegistryManager.registry;
                 CurrentRegistry.RegisterModule(CreateRecommendationModule("missing-mod", "Missing Mod"),
                                                new[] { Path.Combine(gameDir, "GameData", "Missing", "missing.cfg") },
                                                CurrentInstance,
@@ -1237,7 +1240,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 };
             }
 
-            public Registry? CurrentRegistry { get; }
+            public Registry? CurrentRegistry { get; private set; }
 
             public GameInstanceManager Manager { get; }
 
@@ -1247,7 +1250,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
             public GameInstance? CurrentInstance { get; }
 
-            public RegistryManager? CurrentRegistryManager => null;
+            public RegistryManager? CurrentRegistryManager { get; }
 
             public IReadOnlyList<InstanceSummary> Instances { get; }
 
@@ -1270,10 +1273,11 @@ namespace CKAN.LinuxGUI.VisualTests
             }
 
             public RegistryManager? AcquireWriteRegistryManager()
-                => null;
+                => CurrentRegistryManager;
 
             public void RefreshCurrentRegistry()
             {
+                CurrentRegistry = CurrentRegistryManager?.registry;
             }
 
             public void Dispose()

@@ -1425,7 +1425,7 @@ namespace CKAN.LinuxGUI
                 observedViewModel.ConfirmIncompatibleLaunchAsync = null;
                 observedViewModel.ConfirmClearQueueAsync = null;
                 observedViewModel.ConfirmQueueRemoveAllInstalledModsAsync = null;
-                observedViewModel.ConfirmQueueRemoveMissingInstalledModsAsync = null;
+                observedViewModel.ConfirmCleanupMissingInstalledModsAsync = null;
                 observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             }
 
@@ -1437,7 +1437,7 @@ namespace CKAN.LinuxGUI
                 observedViewModel.ConfirmIncompatibleLaunchAsync = ConfirmIncompatibleLaunchAsync;
                 observedViewModel.ConfirmClearQueueAsync = ConfirmClearQueueAsync;
                 observedViewModel.ConfirmQueueRemoveAllInstalledModsAsync = ConfirmQueueRemoveAllInstalledModsAsync;
-                observedViewModel.ConfirmQueueRemoveMissingInstalledModsAsync = ConfirmQueueRemoveMissingInstalledModsAsync;
+                observedViewModel.ConfirmCleanupMissingInstalledModsAsync = ConfirmCleanupMissingInstalledModsAsync;
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
                 CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
                                           observedViewModel.CurrentUser);
@@ -1495,8 +1495,14 @@ namespace CKAN.LinuxGUI
             return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }
 
-        private Task<bool> ConfirmQueueRemoveMissingInstalledModsAsync(string prompt)
-            => ConfirmQueueRemoveAllInstalledModsAsync(prompt);
+        private async Task<bool> ConfirmCleanupMissingInstalledModsAsync(string prompt)
+        {
+            var dialog = new SimplePromptWindow(prompt,
+                                                Array.Empty<string>(),
+                                                "Clean Up",
+                                                "Cancel");
+            return await ShowOwnedDialogAsync<int>(dialog) == 0;
+        }
 
         private void ViewModel_OnPropertyChanged(object? sender,
                                                  PropertyChangedEventArgs e)

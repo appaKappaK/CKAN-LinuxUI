@@ -17,6 +17,41 @@ When this repository's Debian package installs `/usr/bin/ckan-linux`, the
 launches. Command line arguments still run through the existing Mono `ckan.exe`
 path, and no-display launches continue to use `ckan consoleui`.
 
+## Current Desktop Flow
+
+The app starts on the mod browser for the current instance. When no saved
+browser filter is active, the default mod list is `Installed`, so cleanup and
+updates are the first view instead of the full catalog.
+
+Actions are queued before they are applied. Use the `Preview` surface to inspect
+what CKAN Linux is about to do:
+
+- direct installs, updates, removals, and downloads
+- required dependency installs, which CKAN resolves automatically
+- removable auto-installed dependencies that are no longer needed
+- conflicts or provider choices that need user input
+- optional recommendations, suggestions, and supported integration mods
+
+Optional recommendations, suggestions, and supported mods are informational.
+Use the `View` button on each optional section to open Browse filtered to those
+mods, queue any extras you want, then return to Preview. The `Apply Changes`
+button does not require reviewing optional extras first.
+
+Required virtual dependencies are different. If several mods provide the same
+required dependency, apply opens a provider-choice dialog. The dialog is capped
+to a scrollable list and shows the provider identifier with its display name so
+large provider sets do not take over the screen.
+
+The `Mods` menu includes maintenance actions for large cleanup passes:
+
+- `Queue remove missing installed mods` queues CKAN-managed installed mods whose
+  registered files were manually deleted from `GameData`.
+- `Queue remove all installed mods` replaces the current apply queue with
+  removals for CKAN-managed installed mods.
+
+Removal previews also include auto-removable dependencies where the registry can
+prove they are no longer required by anything that will remain installed.
+
 ## Build
 
 Build and publish the self-contained desktop shell:

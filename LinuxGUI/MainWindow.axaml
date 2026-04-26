@@ -1705,8 +1705,8 @@
                         Header="Deduplicate installed files..."
                         Click="DeduplicateInstalledFilesMenuItem_OnClick" />
               <MenuItem Classes="app-menu-item"
-                        Header="Queue remove missing installed mods"
-                        Command="{Binding QueueRemoveMissingInstalledModsCommand}" />
+                        Header="Clean up missing installed mods"
+                        Command="{Binding CleanupMissingInstalledModsCommand}" />
               <MenuItem Classes="app-menu-item"
                         Header="Queue remove all installed mods"
                         Command="{Binding QueueRemoveAllInstalledModsCommand}" />
@@ -1961,8 +1961,8 @@
                           Header="Deduplicate installed files..."
                           Click="DeduplicateInstalledFilesMenuItem_OnClick" />
                 <MenuItem Classes="app-menu-item"
-                          Header="Queue remove missing installed mods"
-                          Command="{Binding QueueRemoveMissingInstalledModsCommand}" />
+                          Header="Clean up missing installed mods"
+                          Command="{Binding CleanupMissingInstalledModsCommand}" />
                 <MenuItem Classes="app-menu-item"
                           Header="Queue remove all installed mods"
                           Command="{Binding QueueRemoveAllInstalledModsCommand}" />

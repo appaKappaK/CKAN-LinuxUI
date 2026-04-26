@@ -353,8 +353,8 @@ namespace CKAN.LinuxGUI
             ClearQueueCommand = ReactiveCommand.CreateFromTask(ClearQueuedActionsAsync, canClearQueue);
             QueueRemoveAllInstalledModsCommand = ReactiveCommand.CreateFromTask(QueueRemoveAllInstalledModsAsync,
                                                                                 canQueueRemoveAllInstalled);
-            QueueRemoveMissingInstalledModsCommand = ReactiveCommand.CreateFromTask(QueueRemoveMissingInstalledModsAsync,
-                                                                                    canQueueRemoveAllInstalled);
+            CleanupMissingInstalledModsCommand = ReactiveCommand.CreateFromTask(CleanupMissingInstalledModsAsync,
+                                                                                canQueueRemoveAllInstalled);
             UndoQueuedActionRemovalCommand = ReactiveCommand.Create(UndoQueuedActionRemoval, canUndoQueuedActionRemoval);
             ToggleAdvancedFiltersCommand = ReactiveCommand.Create(ToggleAdvancedFilters, canToggleAdvancedFilters);
             ToggleAdvancedFilterEditorCommand = ReactiveCommand.Create(ToggleAdvancedFilterEditor);
@@ -1113,7 +1113,7 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> QueueRemoveAllInstalledModsCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> QueueRemoveMissingInstalledModsCommand { get; }
+        public ReactiveCommand<Unit, Unit> CleanupMissingInstalledModsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> UndoQueuedActionRemovalCommand { get; }
 
@@ -1846,7 +1846,7 @@ namespace CKAN.LinuxGUI
 
         public Func<string, Task<bool>>? ConfirmQueueRemoveAllInstalledModsAsync { get; set; }
 
-        public Func<string, Task<bool>>? ConfirmQueueRemoveMissingInstalledModsAsync { get; set; }
+        public Func<string, Task<bool>>? ConfirmCleanupMissingInstalledModsAsync { get; set; }
 
         public bool CanPlayDirect => FindLaunchCommand(GameLaunchMode.Direct) != null;
 
@@ -5188,7 +5188,21 @@ namespace CKAN.LinuxGUI
             => new FilterState
             {
                 SearchText          = ModSearchText,
+                NameText            = AdvancedNameFilter,
+                IdentifierText      = AdvancedIdentifierFilter,
+                AuthorText          = AdvancedAuthorFilter,
+                SummaryText         = AdvancedSummaryFilter,
+                DescriptionText     = AdvancedDescriptionFilter,
+                LicenseText         = AdvancedLicenseFilter,
+                LanguageText        = AdvancedLanguageFilter,
+                DependsText         = AdvancedDependsFilter,
+                RecommendsText      = AdvancedRecommendsFilter,
+                SuggestsText        = AdvancedSuggestsFilter,
+                ConflictsText       = AdvancedConflictsFilter,
+                SupportsText        = AdvancedSupportsFilter,
                 TagText             = AdvancedTagsFilter,
+                LabelText           = AdvancedLabelsFilter,
+                CompatibilityText   = AdvancedCompatibilityFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
                 SortDescending      = SortDescending,
                 InstalledOnly       = FilterInstalledOnly,
@@ -5237,21 +5251,21 @@ namespace CKAN.LinuxGUI
         private void ApplyStoredFilterState(FilterState filter)
         {
             modSearchText = filter.SearchText ?? "";
-            advancedNameFilter = "";
-            advancedIdentifierFilter = "";
-            advancedAuthorFilter = "";
-            advancedSummaryFilter = "";
-            advancedDescriptionFilter = "";
-            advancedLicenseFilter = "";
-            advancedLanguageFilter = "";
-            advancedDependsFilter = "";
-            advancedRecommendsFilter = "";
-            advancedSuggestsFilter = "";
-            advancedConflictsFilter = "";
-            advancedSupportsFilter = "";
+            advancedNameFilter = filter.NameText ?? "";
+            advancedIdentifierFilter = filter.IdentifierText ?? "";
+            advancedAuthorFilter = filter.AuthorText ?? "";
+            advancedSummaryFilter = filter.SummaryText ?? "";
+            advancedDescriptionFilter = filter.DescriptionText ?? "";
+            advancedLicenseFilter = filter.LicenseText ?? "";
+            advancedLanguageFilter = filter.LanguageText ?? "";
+            advancedDependsFilter = filter.DependsText ?? "";
+            advancedRecommendsFilter = filter.RecommendsText ?? "";
+            advancedSuggestsFilter = filter.SuggestsText ?? "";
+            advancedConflictsFilter = filter.ConflictsText ?? "";
+            advancedSupportsFilter = filter.SupportsText ?? "";
             advancedTagsFilter = SerializeFilterValues(SplitFilterValues(filter.TagText));
-            advancedLabelsFilter = "";
-            advancedCompatibilityFilter = "";
+            advancedLabelsFilter = SerializeFilterValues(SplitFilterValues(filter.LabelText));
+            advancedCompatibilityFilter = filter.CompatibilityText ?? "";
             filterInstalledOnly = filter.InstalledOnly;
             filterNotInstalledOnly = filter.NotInstalledOnly;
             filterUpdatableOnly = filter.UpdatableOnly;
@@ -6318,7 +6332,7 @@ namespace CKAN.LinuxGUI
             PublishQueueStateLabels();
         }
 
-        private async Task QueueRemoveMissingInstalledModsAsync()
+        private async Task CleanupMissingInstalledModsAsync()
         {
             var targets = BuildRemoveMissingInstalledTargets();
             if (targets.Count == 0)
@@ -6327,28 +6341,117 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            var existingCount = changesetService.CurrentQueue.Count;
-            var prompt = $"Queue removal for {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)} whose registered files are missing from {CurrentInstanceName}? This does not apply immediately; it replaces the current queue and opens the preview so you can review everything before applying.";
-            if (existingCount > 0)
-            {
-                prompt += $" The current {existingCount} queued item{Pluralize(existingCount)} will be replaced.";
-            }
+            var prompt = $"Clean up {targets.Count} CKAN-managed installed mod record{Pluralize(targets.Count)} whose registered files are missing from {CurrentInstanceName}? This updates CKAN's registry immediately and does not delete files.";
 
-            if (ConfirmQueueRemoveMissingInstalledModsAsync != null
-                && !await ConfirmQueueRemoveMissingInstalledModsAsync(prompt))
+            if (ConfirmCleanupMissingInstalledModsAsync != null
+                && !await ConfirmCleanupMissingInstalledModsAsync(prompt))
             {
-                StatusMessage = "Canceled queue removal for missing installed mods.";
+                StatusMessage = "Canceled cleanup for missing installed mods.";
                 return;
             }
 
             ClearApplyResult();
-            lastRemovedQueuedActions = Array.Empty<QueuedActionModel>();
-            changesetService.Restore(targets.Select(CreateRemoveQueuedAction).ToList());
-            queueDrawerStickyCollapsed = false;
-            IsQueueDrawerExpanded = true;
-            ShowPreviewSurfaceTab();
-            StatusMessage = $"Queued removal for {targets.Count} missing installed mod{Pluralize(targets.Count)}.";
-            PublishQueueStateLabels();
+            SetExecutionState("Cleaning Missing Mods",
+                              $"Cleaning {targets.Count} missing installed mod record{Pluralize(targets.Count)}...");
+            IsApplyingChanges = true;
+
+            ApplyChangesResult result;
+            try
+            {
+                var removed = await Task.Run(() => CleanupMissingInstalledRegistryEntries(
+                    targets.Select(target => target.Identifier).ToList()));
+
+                foreach (var target in targets)
+                {
+                    var queued = changesetService.FindQueuedApplyAction(target.Identifier);
+                    if (queued?.ActionKind == QueuedActionKind.Remove)
+                    {
+                        changesetService.Remove(target.Identifier);
+                    }
+                }
+
+                gameInstanceService.RefreshCurrentRegistry();
+
+                result = new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Success,
+                    Success = true,
+                    Title = "Missing Mods Cleaned Up",
+                    Message = removed.Count == 0
+                        ? "No missing installed mod records needed cleanup."
+                        : $"Cleaned up {removed.Count} missing installed mod record{Pluralize(removed.Count)}.",
+                    SummaryLines = removed.Count == 0
+                        ? Array.Empty<string>()
+                        : removed.Select(name => $"Removed registry entry: {name}").ToList(),
+                };
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+            }
+            catch (Exception ex)
+            {
+                result = new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = "Cleanup Failed",
+                    Message = ex.Message,
+                };
+                SetApplyResult(result);
+                Diagnostics = ex.Message;
+                StatusMessage = "Missing installed mod cleanup failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+
+            if (result.Success)
+            {
+                await LoadModCatalogAsync();
+            }
+
+            ShowExecutionResultDialog(result.Success);
+        }
+
+        private IReadOnlyList<string> CleanupMissingInstalledRegistryEntries(IReadOnlyCollection<string> identifiers)
+        {
+            if (gameInstanceService.CurrentInstance is not GameInstance instance)
+            {
+                throw new InvalidOperationException("No current instance is available.");
+            }
+
+            using var transientRegistryManager = gameInstanceService.CurrentRegistryManager == null
+                ? gameInstanceService.AcquireWriteRegistryManager()
+                : null;
+            var manager = transientRegistryManager ?? gameInstanceService.CurrentRegistryManager;
+            if (manager == null)
+            {
+                throw new InvalidOperationException("Could not open the current registry for cleanup.");
+            }
+
+            var requested = identifiers.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var removed = new List<string>();
+            using var transaction = CkanTransaction.CreateTransactionScope();
+            foreach (var installed in manager.registry.InstalledModules.ToList())
+            {
+                if (!requested.Contains(installed.identifier)
+                    || installed.Module.IsDLC
+                    || manager.registry.IsAutodetected(installed.identifier)
+                    || !RegisteredFilesMissingFromDisk(instance, installed))
+                {
+                    continue;
+                }
+
+                manager.registry.DeregisterModule(instance, installed.identifier);
+                removed.Add(installed.Module.name ?? installed.identifier);
+            }
+
+            if (removed.Count > 0)
+            {
+                manager.Save();
+            }
+            transaction.Complete();
+            return removed;
         }
 
         private IReadOnlyList<ModListItem> BuildRemoveAllInstalledTargets()
