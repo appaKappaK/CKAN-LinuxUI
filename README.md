@@ -1,15 +1,16 @@
 # CKAN LinuxGUI
 
-CKAN LinuxGUI is a Linux-first desktop shell for the Comprehensive Kerbal
-Archive Network (CKAN). It replaces the old WinForms-on-Mono experience with a
-native Avalonia front end while continuing to use the existing CKAN core,
-metadata, and install logic.
+CKAN LinuxGUI is a Linux desktop app for the Comprehensive Kerbal Archive
+Network (CKAN). It replaces the old WinForms-on-Mono experience with a native
+Avalonia front end while continuing to use the existing CKAN core, metadata,
+and install logic.
 
-This repository is a LinuxGUI-focused fork. Upstream CKAN downloads still ship
-the legacy `/usr/bin/ckan` launcher, which starts the WinForms UI through Mono.
-To use the LinuxGUI version, build and run it from this repository.
+This repository is centered on the desktop app version. Upstream CKAN downloads
+still ship the legacy `/usr/bin/ckan` launcher, which starts the older
+WinForms UI through Mono. To use the LinuxGUI desktop app, build and run it
+from this repository.
 
-## Quick Start
+## Desktop App Quick Start
 
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
@@ -20,6 +21,29 @@ ckan-linux
 
 You do not need a separate upstream CKAN checkout. This fork already contains
 the CKAN core alongside the LinuxGUI shell.
+
+## Desktop App Paths
+
+For normal local use, install the desktop app into `~/.local` and launch it as
+`ckan-linux`:
+
+```bash
+./scripts/install-linuxgui-local.sh
+ckan-linux
+```
+
+For package-oriented builds, generate the staged Linux desktop layout:
+
+```bash
+./build.sh LinuxGUIPackage --configuration=Release
+```
+
+That produces `_build/package/ckan-linux/linux-x64/`, including:
+
+- `usr/bin/ckan-linux`
+- `usr/lib/ckan-linux/`
+- `usr/share/applications/ckan-linux.desktop`
+- `usr/share/icons/hicolor/*/apps/ckan-linux.png`
 
 ## What This Fork Provides
 
@@ -32,9 +56,9 @@ the CKAN core alongside the LinuxGUI shell.
   `ckan` argument-driven command and console behavior intact.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
-## Build Targets
+## Desktop App Development
 
-Build the self-contained LinuxGUI package layout:
+Build the self-contained desktop app package layout:
 
 ```bash
 ./build.sh LinuxGUIPackage --configuration=Release
