@@ -46,8 +46,8 @@ large provider sets do not take over the screen.
 The `Mods` menu includes maintenance actions for large cleanup passes:
 
 - `Clean up missing installed mods` immediately removes stale CKAN registry
-  entries for CKAN-managed mods whose registered files were manually deleted
-  from `GameData`, then reloads the browser.
+  entries for CKAN-managed mods whose registered files were manually deleted,
+  prunes stale autodetected DLL records, then reloads the browser.
 - `Queue remove all installed mods` replaces the current apply queue with
   removals for CKAN-managed installed mods.
 

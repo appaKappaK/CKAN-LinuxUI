@@ -305,12 +305,16 @@ namespace CKAN.LinuxGUI.VisualTests
             Assert.Multiple(() =>
             {
                 Assert.That(prompt, Does.Contain("1 CKAN-managed installed mod"));
+                Assert.That(prompt, Does.Contain("1 stale autodetected DLL record"));
                 Assert.That(prompt, Does.Contain("updates CKAN's registry immediately"));
                 Assert.That(viewModel.QueuedActions, Is.Empty);
                 Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Missing Mods Cleaned Up"), viewModel.Diagnostics);
                 Assert.That(service.CurrentRegistry?.InstalledModule("missing-mod"), Is.Null);
                 Assert.That(service.CurrentRegistry?.InstalledModule("present-mod"), Is.Not.Null);
                 Assert.That(service.CurrentRegistry?.InstalledModule("empty-mod"), Is.Not.Null);
+                Assert.That(service.CurrentRegistry?.IsAutodetected("StaleExternal"), Is.False);
+                Assert.That(service.CurrentRegistry?.IsAutodetected("PresentExternal"), Is.True);
+                Assert.That(viewModel.ApplyResultSummaryLines, Has.Some.Contains("Removed stale autodetected DLL record: StaleExternal"));
             });
         }
 
@@ -1293,7 +1297,9 @@ namespace CKAN.LinuxGUI.VisualTests
                 tempDir = Path.Combine(Path.GetTempPath(), $"ckan-linux-missing-registry-{Guid.NewGuid():N}");
                 var gameDir = Path.Combine(tempDir, "game");
                 Directory.CreateDirectory(Path.Combine(gameDir, "GameData", "Present"));
+                Directory.CreateDirectory(Path.Combine(gameDir, "GameData", "PresentExternal"));
                 File.WriteAllText(Path.Combine(gameDir, "GameData", "Present", "present.cfg"), "present");
+                File.WriteAllText(Path.Combine(gameDir, "GameData", "PresentExternal", "PresentExternal.dll"), "present");
                 File.WriteAllText(Path.Combine(gameDir, "KSP.x86_64"), string.Empty);
                 File.WriteAllText(Path.Combine(gameDir, "buildID64.txt"), "3190");
                 File.WriteAllText(Path.Combine(gameDir, "readme.txt"), "Kerbal Space Program");
@@ -1320,6 +1326,11 @@ namespace CKAN.LinuxGUI.VisualTests
                                                Array.Empty<string>(),
                                                CurrentInstance,
                                                false);
+                CurrentRegistry.SetDlls(new Dictionary<string, string>
+                {
+                    { "StaleExternal", "GameData/StaleExternal/StaleExternal.dll" },
+                    { "PresentExternal", "GameData/PresentExternal/PresentExternal.dll" },
+                });
                 Instances = new[]
                 {
                     InstanceSummary.From(CurrentInstance, CurrentInstance.Name, CurrentInstance.Name),
