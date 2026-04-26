@@ -6334,14 +6334,18 @@ namespace CKAN.LinuxGUI
 
         private async Task CleanupMissingInstalledModsAsync()
         {
-            var targets = BuildRemoveMissingInstalledTargets();
-            if (targets.Count == 0)
+            var managedTargets = BuildRemoveMissingInstalledTargets();
+            var autodetectedTargets = BuildMissingAutodetectedDllTargets();
+            if (managedTargets.Count == 0
+                && autodetectedTargets.Count == 0)
             {
-                StatusMessage = "No CKAN-managed installed mods with missing registered files were detected.";
+                StatusMessage = "No CKAN-managed installed mods or autodetected DLL records with missing files were detected.";
                 return;
             }
 
-            var prompt = $"Clean up {targets.Count} CKAN-managed installed mod record{Pluralize(targets.Count)} whose registered files are missing from {CurrentInstanceName}? This updates CKAN's registry immediately and does not delete files.";
+            var targetSummary = FormatMissingCleanupTargetSummary(managedTargets.Count,
+                                                                  autodetectedTargets.Count);
+            var prompt = $"Clean up {targetSummary} from {CurrentInstanceName}? This updates CKAN's registry immediately and does not delete files.";
 
             if (ConfirmCleanupMissingInstalledModsAsync != null
                 && !await ConfirmCleanupMissingInstalledModsAsync(prompt))
@@ -6352,16 +6356,17 @@ namespace CKAN.LinuxGUI
 
             ClearApplyResult();
             SetExecutionState("Cleaning Missing Mods",
-                              $"Cleaning {targets.Count} missing installed mod record{Pluralize(targets.Count)}...");
+                              $"Cleaning {targetSummary}...");
             IsApplyingChanges = true;
 
             ApplyChangesResult result;
             try
             {
-                var removed = await Task.Run(() => CleanupMissingInstalledRegistryEntries(
-                    targets.Select(target => target.Identifier).ToList()));
+                var cleanupResult = await Task.Run(() => CleanupMissingInstalledRegistryEntries(
+                    managedTargets.Select(target => target.Identifier).ToList(),
+                    cleanupAutodetectedDlls: autodetectedTargets.Count > 0));
 
-                foreach (var target in targets)
+                foreach (var target in managedTargets)
                 {
                     var queued = changesetService.FindQueuedApplyAction(target.Identifier);
                     if (queued?.ActionKind == QueuedActionKind.Remove)
@@ -6372,17 +6377,22 @@ namespace CKAN.LinuxGUI
 
                 gameInstanceService.RefreshCurrentRegistry();
 
+                var removedCount = cleanupResult.RemovedManagedModules.Count
+                                   + cleanupResult.RemovedAutodetectedModules.Count;
+                var summaryLines = cleanupResult.RemovedManagedModules
+                    .Select(name => $"Removed CKAN registry entry: {name}")
+                    .Concat(cleanupResult.RemovedAutodetectedModules
+                        .Select(name => $"Removed stale autodetected DLL record: {name}"))
+                    .ToList();
                 result = new ApplyChangesResult
                 {
                     Kind = ApplyResultKind.Success,
                     Success = true,
                     Title = "Missing Mods Cleaned Up",
-                    Message = removed.Count == 0
+                    Message = removedCount == 0
                         ? "No missing installed mod records needed cleanup."
-                        : $"Cleaned up {removed.Count} missing installed mod record{Pluralize(removed.Count)}.",
-                    SummaryLines = removed.Count == 0
-                        ? Array.Empty<string>()
-                        : removed.Select(name => $"Removed registry entry: {name}").ToList(),
+                        : $"Cleaned up {removedCount} missing installed mod record{Pluralize(removedCount)}.",
+                    SummaryLines = summaryLines,
                 };
                 SetApplyResult(result);
                 StatusMessage = result.Message;
@@ -6413,7 +6423,9 @@ namespace CKAN.LinuxGUI
             ShowExecutionResultDialog(result.Success);
         }
 
-        private IReadOnlyList<string> CleanupMissingInstalledRegistryEntries(IReadOnlyCollection<string> identifiers)
+        private MissingInstalledCleanupResult CleanupMissingInstalledRegistryEntries(
+            IReadOnlyCollection<string> identifiers,
+            bool                        cleanupAutodetectedDlls)
         {
             if (gameInstanceService.CurrentInstance is not GameInstance instance)
             {
@@ -6430,28 +6442,55 @@ namespace CKAN.LinuxGUI
             }
 
             var requested = identifiers.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var removed = new List<string>();
-            using var transaction = CkanTransaction.CreateTransactionScope();
-            foreach (var installed in manager.registry.InstalledModules.ToList())
+            var removedManaged = new List<string>();
+            if (requested.Count > 0)
             {
-                if (!requested.Contains(installed.identifier)
-                    || installed.Module.IsDLC
-                    || manager.registry.IsAutodetected(installed.identifier)
-                    || !RegisteredFilesMissingFromDisk(instance, installed))
+                using var transaction = CkanTransaction.CreateTransactionScope();
+                foreach (var installed in manager.registry.InstalledModules.ToList())
                 {
-                    continue;
+                    if (!requested.Contains(installed.identifier)
+                        || installed.Module.IsDLC
+                        || manager.registry.IsAutodetected(installed.identifier)
+                        || !RegisteredFilesMissingFromDisk(instance, installed))
+                    {
+                        continue;
+                    }
+
+                    manager.registry.DeregisterModule(instance, installed.identifier);
+                    removedManaged.Add(installed.Module.name ?? installed.identifier);
                 }
 
-                manager.registry.DeregisterModule(instance, installed.identifier);
-                removed.Add(installed.Module.name ?? installed.identifier);
+                if (removedManaged.Count > 0)
+                {
+                    manager.Save(false);
+                }
+                transaction.Complete();
             }
 
-            if (removed.Count > 0)
+            var removedAutodetected = new List<string>();
+            if (cleanupAutodetectedDlls)
             {
-                manager.Save(false);
+                var staleAutodetectedBefore = BuildMissingAutodetectedDllTargets(instance, manager.registry)
+                    .ToList();
+                if (staleAutodetectedBefore.Count > 0)
+                {
+                    var scanChanged = manager.ScanUnmanagedFiles();
+                    removedAutodetected.AddRange(staleAutodetectedBefore
+                        .Where(target => !manager.registry.IsAutodetected(target.Identifier))
+                        .Select(target => target.Identifier)
+                        .OrderBy(identifier => identifier, StringComparer.CurrentCultureIgnoreCase));
+                    if (scanChanged)
+                    {
+                        manager.Save(false);
+                    }
+                }
             }
-            transaction.Complete();
-            return removed;
+
+            return new MissingInstalledCleanupResult
+            {
+                RemovedManagedModules     = removedManaged,
+                RemovedAutodetectedModules = removedAutodetected,
+            };
         }
 
         private IReadOnlyList<ModListItem> BuildRemoveAllInstalledTargets()
@@ -6518,11 +6557,68 @@ namespace CKAN.LinuxGUI
                            .ToList();
         }
 
+        private IReadOnlyList<AutodetectedDllCleanupTarget> BuildMissingAutodetectedDllTargets()
+        {
+            if (gameInstanceService.CurrentInstance is not GameInstance instance
+                || gameInstanceService.CurrentRegistry is not Registry registry)
+            {
+                return Array.Empty<AutodetectedDllCleanupTarget>();
+            }
+
+            return BuildMissingAutodetectedDllTargets(instance, registry);
+        }
+
+        private static IReadOnlyList<AutodetectedDllCleanupTarget> BuildMissingAutodetectedDllTargets(
+            GameInstance instance,
+            Registry     registry)
+            => registry.InstalledDlls
+                       .Select(identifier => new AutodetectedDllCleanupTarget
+                       {
+                           Identifier  = identifier,
+                           RelativePath = registry.DllPath(identifier) ?? "",
+                       })
+                       .Where(target => target.RelativePath.Length > 0
+                                        && !File.Exists(instance.ToAbsoluteGameDir(target.RelativePath)))
+                       .OrderBy(target => target.Identifier, StringComparer.CurrentCultureIgnoreCase)
+                       .ToList();
+
+        private static string FormatMissingCleanupTargetSummary(int managedCount,
+                                                                int autodetectedCount)
+        {
+            var parts = new List<string>();
+            if (managedCount > 0)
+            {
+                parts.Add($"{managedCount} CKAN-managed installed mod record{Pluralize(managedCount)}");
+            }
+            if (autodetectedCount > 0)
+            {
+                parts.Add($"{autodetectedCount} stale autodetected DLL record{Pluralize(autodetectedCount)}");
+            }
+
+            return string.Join(" and ", parts);
+        }
+
         private static bool RegisteredFilesMissingFromDisk(GameInstance instance, InstalledModule module)
         {
             var registeredFiles = module.Files.ToList();
             return registeredFiles.Count > 0
                    && registeredFiles.All(relPath => !File.Exists(instance.ToAbsoluteGameDir(relPath)));
+        }
+
+        private sealed class MissingInstalledCleanupResult
+        {
+            public IReadOnlyList<string> RemovedManagedModules { get; init; }
+                = Array.Empty<string>();
+
+            public IReadOnlyList<string> RemovedAutodetectedModules { get; init; }
+                = Array.Empty<string>();
+        }
+
+        private sealed class AutodetectedDllCleanupTarget
+        {
+            public string Identifier { get; init; } = "";
+
+            public string RelativePath { get; init; } = "";
         }
 
         private static QueuedActionModel CreateRemoveQueuedAction(ModListItem mod)
