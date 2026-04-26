@@ -86,6 +86,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
             window.Show();
             await Task.Delay(300);
+            viewModel.FilterInstalledState = null;
+            await WaitForAsync(() => viewModel.Mods.Count == 5);
             viewModel.ShowAdvancedFilters = true;
             await Task.Delay(100);
 
@@ -144,7 +146,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
             await Task.Delay(150);
             viewModel.ShowDetailsPane = true;
-            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "kerbalism");
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
             await Task.Delay(400);
 
             VisualTestSupport.CaptureAndAssert(window, "browser-details-narrow");
@@ -203,6 +205,8 @@ namespace CKAN.LinuxGUI.VisualTests
             };
 
             await Task.Delay(150);
+            viewModel.FilterInstalledState = null;
+            await WaitForAsync(() => viewModel.Mods.Count == 5);
             viewModel.ModSearchText = "planet";
             viewModel.FilterCachedOnly = true;
             await Task.Delay(400);
@@ -253,6 +257,8 @@ namespace CKAN.LinuxGUI.VisualTests
             };
 
             await Task.Delay(150);
+            viewModel.FilterInstalledState = null;
+            await WaitForAsync(() => viewModel.Mods.Count == 5);
             viewModel.SelectedSortOption = viewModel.SortOptions.First(opt => opt.Value == CKAN.App.Models.ModSortOption.UpdatesFirst);
             await Task.Delay(400);
 
@@ -534,7 +540,7 @@ namespace CKAN.LinuxGUI.VisualTests
             };
 
             await Task.Delay(180);
-            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+            viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
             await WaitForAsync(() => viewModel.IsSelectedModLoading);
 
             VisualTestSupport.CaptureAndAssert(window, "browser-details-loading");

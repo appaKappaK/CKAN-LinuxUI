@@ -91,7 +91,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.ShowCollapsedQueuedActionsStub, Is.True);
                 });
 
-                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "mechjeb2");
                 viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
                 await Task.Delay(100);
 
@@ -549,6 +549,8 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await WaitForAsync(() => viewModel.Mods.Count > 0);
+                viewModel.FilterInstalledState = null;
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "kerbalism"));
                 viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "kerbalism");
                 await Task.Delay(200);
 
@@ -573,6 +575,8 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await WaitForAsync(() => viewModel.Mods.Count > 0);
+                viewModel.FilterInstalledState = null;
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "parallax"));
                 viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
                 await Task.Delay(200);
 
@@ -646,7 +650,11 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 await Task.Delay(150);
 
-                Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters ▾"));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(1));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Active Filters (1) ▾"));
+                });
 
                 viewModel.AdvancedAuthorFilter = "Nertea";
                 viewModel.AdvancedCompatibilityFilter = "1.12";
@@ -654,8 +662,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(3));
-                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Active Filters (3) ▾"));
+                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(4));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Active Filters (4) ▾"));
                 });
             }
             finally
@@ -678,10 +686,10 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.HasActiveFilters, Is.False);
-                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(0));
-                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Filters ▾"));
-                    Assert.That(viewModel.AdvancedFilterSummary, Is.EqualTo("All mods are shown."));
+                    Assert.That(viewModel.HasActiveFilters, Is.True);
+                    Assert.That(viewModel.ActiveFilterCount, Is.EqualTo(1));
+                    Assert.That(viewModel.MoreFiltersLabel, Is.EqualTo("Active Filters (1) ▾"));
+                    Assert.That(viewModel.AdvancedFilterSummary, Is.EqualTo("Installed: Yes"));
                     Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Popularity));
                 });
 
@@ -931,12 +939,12 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.CompatibleFilterLabel, Is.EqualTo("Compatible (4)"));
+                    Assert.That(viewModel.CompatibleFilterLabel, Is.EqualTo("Compatible (2)"));
                     Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (2)"));
                     Assert.That(viewModel.UpdatableFilterLabel, Is.EqualTo("Updatable (1)"));
-                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (2)"));
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (1)"));
                     Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (3)"));
-                    Assert.That(viewModel.IncompatibleFilterLabel, Is.EqualTo("Incompatible (1)"));
+                    Assert.That(viewModel.IncompatibleFilterLabel, Is.EqualTo("Incompatible (0)"));
                 });
 
                 viewModel.FilterCachedOnly = true;
@@ -944,7 +952,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (2)"));
+                    Assert.That(viewModel.CachedFilterLabel, Is.EqualTo("Cached (1)"));
                     Assert.That(viewModel.InstalledFilterLabel, Is.EqualTo("Installed (1)"));
                     Assert.That(viewModel.NotInstalledFilterLabel, Is.EqualTo("Not Installed (2)"));
                     Assert.That(viewModel.UncachedFilterLabel, Is.EqualTo("Not Cached (1)"));
@@ -964,6 +972,8 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await Task.Delay(150);
+                viewModel.FilterInstalledState = null;
+                await WaitForAsync(() => viewModel.Mods.Count == 5);
 
                 viewModel.ModSearchText = "tessellation";
                 await WaitForAsync(() => !viewModel.IsCatalogLoading
@@ -992,8 +1002,11 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading, timeoutMs: 1500);
+                viewModel.FilterInstalledState = null;
+                await WaitForAsync(() => viewModel.Mods.Count == 5 && !viewModel.IsCatalogLoading, timeoutMs: 1500);
                 Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
                 Assert.That(viewModel.Mods.First().Identifier, Is.EqualTo("kerbalism"));
+                var scrollResetRequestId = viewModel.ModListScrollResetRequestId;
 
                 viewModel.SelectPopularitySortCommand.Execute().Subscribe(_ => { });
                 await Task.Delay(100);
@@ -1003,7 +1016,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
                     Assert.That(viewModel.IsCatalogLoading, Is.False);
                     Assert.That(viewModel.ModCountLabel, Is.EqualTo("5 mods"));
-                    Assert.That(viewModel.ModListScrollResetRequestId, Is.EqualTo(0));
+                    Assert.That(viewModel.ModListScrollResetRequestId, Is.EqualTo(scrollResetRequestId));
                     Assert.That(viewModel.Mods.First().Identifier, Is.EqualTo("parallax"));
                 });
             }
@@ -1125,7 +1138,7 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await Task.Delay(150);
-                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
                 await Task.Delay(25);
 
                 Assert.Multiple(() =>
@@ -1142,7 +1155,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.IsSelectedModLoading, Is.False);
                     Assert.That(viewModel.ShowSelectedModLoadingState, Is.False);
                     Assert.That(viewModel.ShowSelectedModContent, Is.True);
-                    Assert.That(viewModel.SelectedModTitle, Is.EqualTo("Parallax"));
+                    Assert.That(viewModel.SelectedModTitle, Is.EqualTo("Restock"));
                 });
             }
             finally
