@@ -85,27 +85,39 @@
             Padding="12">
       <Grid RowDefinitions="Auto,*,Auto">
         <Grid ColumnDefinitions="34,2*,1.25*,0.8*,2.2*"
-              Margin="10,0,18,6">
+              Margin="10,0,10,6">
           <TextBlock Grid.Column="1"
                      FontSize="12"
                      FontWeight="SemiBold"
                      Foreground="#AEB9C5"
                      Text="Mod" />
-          <TextBlock Grid.Column="2"
-                     FontSize="12"
-                     FontWeight="SemiBold"
-                     Foreground="#AEB9C5"
-                     Text="Related mod" />
-          <TextBlock Grid.Column="3"
-                     FontSize="12"
-                     FontWeight="SemiBold"
-                     Foreground="#AEB9C5"
-                     Text="Downloads" />
-          <TextBlock Grid.Column="4"
-                     FontSize="12"
-                     FontWeight="SemiBold"
-                     Foreground="#AEB9C5"
-                     Text="Mod description" />
+          <Border Grid.Column="2"
+                  BorderBrush="#26323D"
+                  BorderThickness="1,0,0,0"
+                  Padding="12,0,0,0">
+            <TextBlock FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#AEB9C5"
+                       Text="Related mod" />
+          </Border>
+          <Border Grid.Column="3"
+                  BorderBrush="#26323D"
+                  BorderThickness="1,0,0,0"
+                  Padding="12,0,0,0">
+            <TextBlock FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#AEB9C5"
+                       Text="Downloads" />
+          </Border>
+          <Border Grid.Column="4"
+                  BorderBrush="#26323D"
+                  BorderThickness="1,0,0,0"
+                  Padding="12,0,0,0">
+            <TextBlock FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#AEB9C5"
+                       Text="Mod description" />
+          </Border>
         </Grid>
 
         <Border Grid.Row="1"
@@ -162,28 +174,38 @@
                                    Text="{Binding Identifier}" />
                       </StackPanel>
 
-                      <TextBlock Grid.Column="2"
-                                 Margin="0,0,14,0"
-                                 FontSize="12"
-                                 Opacity="0.78"
-                                 TextWrapping="Wrap"
-                                 Text="{Binding RelatedMods}" />
+                      <Border Grid.Column="2"
+                              BorderBrush="#26323D"
+                              BorderThickness="1,0,0,0"
+                              Padding="12,0,14,0">
+                        <TextBlock FontSize="12"
+                                   Opacity="0.78"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding RelatedMods}" />
+                      </Border>
 
-                      <TextBlock Grid.Column="3"
-                                 Margin="0,0,14,0"
-                                 FontSize="12"
-                                 FontWeight="SemiBold"
-                                 Opacity="0.86"
-                                 TextTrimming="CharacterEllipsis"
-                                 Text="{Binding DownloadCountText}" />
+                      <Border Grid.Column="3"
+                              BorderBrush="#26323D"
+                              BorderThickness="1,0,0,0"
+                              Padding="12,0,14,0">
+                        <TextBlock FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Opacity="0.86"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="{Binding DownloadCountText}" />
+                      </Border>
 
-                      <TextBlock Grid.Column="4"
-                                 FontSize="12"
-                                 Opacity="0.84"
-                                 TextWrapping="Wrap"
-                                 MaxLines="2"
-                                 TextTrimming="CharacterEllipsis"
-                                 Text="{Binding Summary}" />
+                      <Border Grid.Column="4"
+                              BorderBrush="#26323D"
+                              BorderThickness="1,0,0,0"
+                              Padding="12,0,0,0">
+                        <TextBlock FontSize="12"
+                                   Opacity="0.84"
+                                   TextWrapping="Wrap"
+                                   MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="{Binding Summary}" />
+                      </Border>
                     </Grid>
                   </Border>
                 </DataTemplate>

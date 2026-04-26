@@ -3057,7 +3057,7 @@
                                       Classes="detail-section-action"
                                       Margin="10,0,0,0"
                                       Command="{Binding ClearRelationshipBrowserScopeCommand}"
-                                      Content="Clear" />
+                                      Content="Close" />
                             </Grid>
                           </Border>
 
@@ -3070,7 +3070,7 @@
                                   IsVisible="{Binding ShowRelationshipBrowserScope}" />
 
                           <Grid Grid.Row="1"
-                                Margin="1,1,1,4">
+                                Margin="1,1,17,4">
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="4" />
                               <ColumnDefinition Width="*" />
@@ -3322,11 +3322,11 @@
                                               <TextBlock Classes="row-version-primary"
                                                          HorizontalAlignment="Left"
                                                          TextTrimming="CharacterEllipsis"
-                                                         Text="{Binding LatestVersion}" />
+                                                         Text="{Binding DisplayLatestVersion}" />
                                               <TextBlock Classes="row-version-secondary"
                                                          TextTrimming="CharacterEllipsis"
                                                          IsVisible="{Binding ShowInstalledVersionInList}"
-                                                         Text="{Binding InstalledVersion}" />
+                                                         Text="{Binding DisplayInstalledVersion}" />
                                             </StackPanel>
                                           </Border>
                                         </Grid>
@@ -4108,6 +4108,7 @@
 
                           <ListBox x:Name="PreviewQueueList"
                                    Grid.Row="2"
+                                   Margin="0,0,12,0"
                                    MinHeight="0"
                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                                    PointerWheelChanged="PreviewQueueList_OnPointerWheelChanged"
@@ -4120,7 +4121,8 @@
                                         BorderBrush="#202A33"
                                         BorderThickness="0,0,0,1"
                                         CornerRadius="5"
-                                        Padding="0">
+                                        Padding="0"
+                                        PointerPressed="PreviewQueueRow_OnPointerPressed">
                                   <Grid>
                                     <Grid ColumnDefinitions="4,*,116,92">
                                       <Border Background="{Binding AccentBrush}"
@@ -4179,8 +4181,9 @@
                             </ListBox.ItemTemplate>
                           </ListBox>
 
-                          <Border Background="#20262D"
+                          <Border Background="#12171D"
                                   Grid.Row="2"
+                                  Margin="0,0,12,0"
                                   CornerRadius="0"
                                   Padding="18"
                                   IsVisible="{Binding ShowEmptyQueueState}">

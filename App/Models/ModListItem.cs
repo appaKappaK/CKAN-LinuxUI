@@ -10,6 +10,8 @@ namespace CKAN.App.Models
         private string queueStateBackground  = "#00000000";
         private string queueStateBorderBrush = "#00000000";
         private string queueRowAccentBrush   = "#00000000";
+        private string displayLatestVersion = "";
+        private string displayInstalledVersion = "";
 
         public string Identifier { get; init; } = "";
 
@@ -42,6 +44,36 @@ namespace CKAN.App.Models
         public string LatestVersion { get; init; } = "";
 
         public string InstalledVersion { get; init; } = "";
+
+        public string DisplayLatestVersion
+        {
+            get => string.IsNullOrWhiteSpace(displayLatestVersion)
+                ? LatestVersion
+                : displayLatestVersion;
+            set
+            {
+                if (displayLatestVersion != value)
+                {
+                    displayLatestVersion = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string DisplayInstalledVersion
+        {
+            get => string.IsNullOrWhiteSpace(displayInstalledVersion)
+                ? InstalledVersion
+                : displayInstalledVersion;
+            set
+            {
+                if (displayInstalledVersion != value)
+                {
+                    displayInstalledVersion = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public bool ShowInstalledVersionInList
             => IsInstalled

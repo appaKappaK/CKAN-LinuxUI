@@ -40,6 +40,55 @@ namespace CKAN.LinuxGUI
 
         public bool RepositoryMoved => viewModel.RepositoryMoved;
 
+        public static bool CheckForUpdatesOnLaunchEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.CheckForUpdatesOnLaunch,
+                             false);
+
+        public static bool RefreshOnStartupEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.RefreshOnStartup,
+                             true);
+
+        public static bool RefreshPausedEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.RefreshPaused,
+                             false);
+
+        public static bool HideEpochsEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.HideEpochs,
+                             true);
+
+        public static bool HideVEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.HideV,
+                             false);
+
+        public static bool AutoSortByUpdateEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.AutoSortByUpdate,
+                             true);
+
+        private static bool GetGuiSetting(GameInstance? instance,
+                                          Func<LinuxGuiConfiguration, bool> getValue,
+                                          bool defaultValue)
+        {
+            if (instance == null)
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return getValue(LinuxGuiConfiguration.LoadOrCreate(instance));
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
         private async void CheckForUpdatesButton_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
             => await viewModel.CheckForUpdatesAsync();

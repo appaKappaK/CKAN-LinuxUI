@@ -193,6 +193,7 @@ namespace CKAN.LinuxGUI
         private bool    suppressQueueSnapshotPersistence;
         private bool    suppressQueueChangedRefresh;
         private bool    pendingQueueChangedRefresh;
+        private bool    hasRunStartupRepositoryRefresh;
         private bool    previewConflictPopupDismissed;
         private bool    lastSolverPreviewCanApply;
         private string  dismissedPreviewConflictKey = "";
@@ -204,6 +205,7 @@ namespace CKAN.LinuxGUI
         private IReadOnlyList<CatalogSkeletonRow> catalogSkeletonRows = Array.Empty<CatalogSkeletonRow>();
         private IReadOnlySet<string> relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private IReadOnlyDictionary<string, string> relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private bool relationshipBrowserScopeReturnsToPreview;
         private ModDetailsModel? selectedModDetails;
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
@@ -1845,6 +1847,30 @@ namespace CKAN.LinuxGUI
 
         public Task RefreshCurrentStateAsync()
             => RefreshAsync();
+
+        public async Task RefreshRepositoriesAndCatalogAsync(bool forceFullRefresh = false)
+        {
+            if (!IsReady || IsRefreshing || IsApplyingChanges || IsCatalogLoading)
+            {
+                return;
+            }
+
+            IsRefreshing = true;
+            ClearApplyResult();
+            try
+            {
+                await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh);
+                RefreshCurrentRegistryReference();
+                await LoadModCatalogAsync();
+            }
+            finally
+            {
+                IsRefreshing = false;
+            }
+        }
+
+        public void RefreshVisibleVersionDisplaySettings()
+            => ApplyVersionDisplaySettings(allCatalogItems);
 
         public async Task InstallFromCkanFilesAsync(IEnumerable<string> paths)
         {
@@ -4413,6 +4439,7 @@ namespace CKAN.LinuxGUI
 
             relationshipBrowserScopeIdentifiers = identifiers;
             relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = true;
             RelationshipBrowserScopeText = $"Conflict: {DisplayConflictTarget(leftSide)} vs {DisplayConflictTarget(rightSide)}";
             pendingModListScrollReset = true;
             ShowBrowseSurfaceTab();
@@ -4659,6 +4686,14 @@ namespace CKAN.LinuxGUI
                 ReloadInstances(loadCatalog: false, updateReadyStatus: !wasReady);
                 if (IsReady)
                 {
+                    if (!wasReady
+                        && !hasRunStartupRepositoryRefresh
+                        && SettingsWindow.RefreshOnStartupEnabled(CurrentInstance))
+                    {
+                        hasRunStartupRepositoryRefresh = true;
+                        await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
+                        RefreshCurrentRegistryReference();
+                    }
                     await LoadModCatalogAsync();
                 }
                 else if (wasReady)
@@ -4681,6 +4716,47 @@ namespace CKAN.LinuxGUI
             finally
             {
                 IsRefreshing = false;
+            }
+        }
+
+        private async Task UpdateRepositoriesForCurrentInstanceAsync(bool forceFullRefresh)
+        {
+            var instance = CurrentInstance;
+            var registry = CurrentRegistry;
+            if (instance == null || registry == null)
+            {
+                return;
+            }
+
+            var repositories = registry.Repositories.Values.ToArray();
+            if (repositories.Length == 0)
+            {
+                return;
+            }
+
+            StatusMessage = "Updating metadata repositories...";
+            CatalogStatusMessage = "Checking repository metadata for updates...";
+            try
+            {
+                var result = await Task.Run(() =>
+                {
+                    var downloader = new NetAsyncDownloader(user, () => null, Net.UserAgentString);
+                    return gameInstanceService.RepositoryData.Update(repositories,
+                                                                     instance.Game,
+                                                                     forceFullRefresh,
+                                                                     downloader,
+                                                                     user,
+                                                                     Net.UserAgentString);
+                });
+
+                StatusMessage = result == RepositoryDataManager.UpdateResult.Updated
+                    ? "Metadata repositories updated."
+                    : "Metadata repositories are already current.";
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Repository update failed; using cached metadata.";
             }
         }
 
@@ -4838,6 +4914,7 @@ namespace CKAN.LinuxGUI
                             continue;
                         }
 
+                        ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
                         ApplyCatalogFilterToLoadedItems(previousSelection);
                         PruneQueuedAutodetectedRemovals(items);
@@ -4988,6 +5065,9 @@ namespace CKAN.LinuxGUI
                 ClearApplyResult();
                 CurrentInstanceName = current?.Name ?? "No instance selected";
                 ReloadInstances();
+                this.RaisePropertyChanged(nameof(CurrentInstance));
+                this.RaisePropertyChanged(nameof(CurrentRegistry));
+                this.RaisePropertyChanged(nameof(CurrentRegistryManager));
             });
         }
 
@@ -5668,6 +5748,36 @@ namespace CKAN.LinuxGUI
                     : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
             PublishCatalogStateLabels();
             PublishFilterOptionCountLabels();
+        }
+
+        private void ApplyVersionDisplaySettings(IEnumerable<ModListItem> items)
+        {
+            bool hideEpochs = SettingsWindow.HideEpochsEnabled(CurrentInstance);
+            bool hideV = SettingsWindow.HideVEnabled(CurrentInstance);
+            foreach (var item in items)
+            {
+                item.DisplayLatestVersion = FormatVersionForList(item.LatestVersion, hideEpochs, hideV);
+                item.DisplayInstalledVersion = FormatVersionForList(item.InstalledVersion, hideEpochs, hideV);
+            }
+        }
+
+        private static string FormatVersionForList(string version,
+                                                   bool hideEpochs,
+                                                   bool hideV)
+        {
+            if (string.IsNullOrWhiteSpace(version) || (!hideEpochs && !hideV))
+            {
+                return version;
+            }
+
+            try
+            {
+                return new ModuleVersion(version).ToString(hideEpochs, hideV);
+            }
+            catch
+            {
+                return version;
+            }
         }
 
         private void ReplaceVisibleMods(IEnumerable<ModListItem> items)
@@ -6452,13 +6562,39 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            ClearApplyResult();
-            var removedAction = SelectedQueuedAction;
-            if (changesetService.Remove(SelectedQueuedAction.Identifier))
+            RemoveQueuedAction(SelectedQueuedAction);
+        }
+
+        public bool ShowRemoveQueuedActionContextAction(QueuedActionModel action)
+            => !IsApplyingChanges
+               && !IsRequiredDependencyQueuedAction(action);
+
+        public void RemoveQueuedActionFromPreview(QueuedActionModel action)
+        {
+            if (!ShowRemoveQueuedActionContextAction(action))
             {
-                RememberRemovedQueuedActions(new[] { removedAction });
-                StatusMessage = $"Removed queued action for {removedAction.Name}.";
+                return;
             }
+
+            SelectedQueuedAction = action;
+            RemoveQueuedAction(action);
+        }
+
+        private void RemoveQueuedAction(QueuedActionModel action)
+        {
+            ClearApplyResult();
+            if (changesetService.Remove(action.Identifier))
+            {
+                RememberRemovedQueuedActions(new[] { action });
+                StatusMessage = $"Removed queued action for {action.Name}.";
+            }
+        }
+
+        private static bool IsRequiredDependencyQueuedAction(QueuedActionModel action)
+        {
+            var sourceText = action.SourceText.Trim();
+            return sourceText.StartsWith("Required by", StringComparison.OrdinalIgnoreCase)
+                   || sourceText.StartsWith("Required dependency", StringComparison.OrdinalIgnoreCase);
         }
 
         private void RemoveSelectedPreviewConflict()
@@ -7965,6 +8101,7 @@ namespace CKAN.LinuxGUI
 
             relationshipBrowserScopeIdentifiers = identifiers;
             relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
             RelationshipBrowserScopeText = $"{relationshipName} for {SelectedModTitle}";
             pendingModListScrollReset = true;
             ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
@@ -7989,6 +8126,7 @@ namespace CKAN.LinuxGUI
 
             relationshipBrowserScopeIdentifiers = identifiers;
             relationshipBrowserScopeQueueSources = queueSources;
+            relationshipBrowserScopeReturnsToPreview = true;
             RelationshipBrowserScopeText = $"Preview {relationshipName}";
             pendingModListScrollReset = true;
             ShowBrowseSurfaceTab();
@@ -8170,8 +8308,10 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            var returnToPreview = relationshipBrowserScopeReturnsToPreview;
             relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
             RelationshipBrowserScopeText = "";
             pendingModListScrollReset = true;
             if (IsReady && allCatalogItems.Count > 0)
@@ -8179,12 +8319,17 @@ namespace CKAN.LinuxGUI
                 ApplyCatalogFilterToLoadedItems();
             }
             PublishRelationshipBrowserScopeState();
+            if (returnToPreview)
+            {
+                ShowPreviewSurfaceTab();
+            }
         }
 
         private async Task ReturnToPreviewAfterConflictQueueChangeAsync()
         {
             relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
             RelationshipBrowserScopeText = "";
             ShowPreviewSurface = true;
             IsPreviewLoading = true;

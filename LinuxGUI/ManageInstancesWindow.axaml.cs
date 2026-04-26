@@ -390,9 +390,6 @@ namespace CKAN.LinuxGUI
                 => SelectedInstance?.IsCurrent == true ? "#3E7A58" :
                    SelectedInstance?.IsDefault == true ? "#654E91" : "#40648B";
 
-            public string PrimaryActionText
-                => SelectedInstance?.IsCurrent == true ? "Already Active" : "Use Selected";
-
             public string DetailText
                 => SelectedInstance == null
                     ? "Select a registered install to review it."
@@ -427,7 +424,6 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(SelectedStatusText));
                 this.RaisePropertyChanged(nameof(SelectedStatusBackground));
                 this.RaisePropertyChanged(nameof(SelectedStatusBorderBrush));
-                this.RaisePropertyChanged(nameof(PrimaryActionText));
                 this.RaisePropertyChanged(nameof(DetailText));
                 this.RaisePropertyChanged(nameof(FooterText));
             }

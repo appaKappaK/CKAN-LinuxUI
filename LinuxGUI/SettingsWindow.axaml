@@ -6,7 +6,7 @@
         x:CompileBindings="False"
         mc:Ignorable="d"
         Width="900"
-        Height="700"
+        SizeToContent="Height"
         MinWidth="860"
         MinHeight="680"
         WindowStartupLocation="CenterOwner"
@@ -153,9 +153,9 @@
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-  <Grid Margin="14">
-    <Grid ColumnDefinitions="27*,25*,25*"
-          RowDefinitions="164,230,Auto">
+    <Grid Margin="14">
+      <Grid ColumnDefinitions="27*,25*,25*"
+          RowDefinitions="194,230,Auto">
       <Border Classes="settings-group"
               Grid.ColumnSpan="2"
               Margin="0,0,14,14">
@@ -398,16 +398,17 @@
       <Border Grid.Row="2"
               Classes="settings-group"
               Margin="0,0,14,0">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Behavior" />
           <CheckBox Grid.Row="1"
                     Classes="settings-check"
+                    IsEnabled="False"
                     IsChecked="{Binding EnableTrayIcon}"
                     Content="Enable tray icon" />
           <CheckBox Grid.Row="2"
                     Classes="settings-check"
-                    IsEnabled="{Binding EnableTrayIcon}"
+                    IsEnabled="False"
                     IsChecked="{Binding MinimizeToTray}"
                     Content="Minimize to tray" />
           <Grid Grid.Row="3"
@@ -430,6 +431,19 @@
                     IsEnabled="{Binding CanPauseRefresh}"
                     IsChecked="{Binding RefreshPaused}"
                     Content="Pause refreshing" />
+          <Grid Grid.Row="5"
+                Margin="0,4,0,0"
+                ColumnDefinitions="140,*">
+            <TextBlock Classes="settings-label"
+                       VerticalAlignment="Center"
+                       Text="Stability tolerance:" />
+            <ComboBox Grid.Column="1"
+                      x:Name="StabilityToleranceComboBox"
+                      Classes="settings-combo"
+                      IsEnabled="{Binding CanEditStabilityTolerance}"
+                      ItemsSource="{Binding StabilityToleranceOptions}"
+                      SelectedItem="{Binding SelectedStabilityTolerance}" />
+          </Grid>
         </Grid>
       </Border>
 
@@ -437,7 +451,7 @@
               Grid.Column="1"
               Grid.ColumnSpan="2"
               Classes="settings-group">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="More Settings" />
           <Grid Grid.Row="1"
@@ -458,32 +472,20 @@
           <CheckBox Grid.Row="3"
                     Classes="settings-check"
                     IsChecked="{Binding HideEpochs}"
-                    Content="Hide epoch numbers in mod list (requires restart)" />
+                    Content="Hide epoch numbers in mod list" />
           <CheckBox Grid.Row="4"
                     Classes="settings-check"
                     IsChecked="{Binding HideV}"
-                    Content="Hide &quot;v&quot; in mod list (requires restart)" />
+                    Content="Hide &quot;v&quot; in mod list" />
           <CheckBox Grid.Row="5"
                     Classes="settings-check"
+                    IsEnabled="False"
                     IsChecked="{Binding AutoSortByUpdate}"
                     Content="Automatically sort by &quot;Update&quot; column when clicking &quot;Add available updates&quot;" />
           <CheckBox Grid.Row="6"
                     Classes="settings-check"
                     IsChecked="{Binding PreselectRecommendedMods}"
                     Content="Preselect recommended mods when prompted" />
-          <Grid Grid.Row="7"
-                Margin="0,4,0,0"
-                ColumnDefinitions="270,*">
-            <TextBlock Classes="settings-label"
-                       VerticalAlignment="Center"
-                       Text="Stability tolerance:" />
-            <ComboBox Grid.Column="1"
-                      x:Name="StabilityToleranceComboBox"
-                      Classes="settings-combo"
-                      IsEnabled="{Binding CanEditStabilityTolerance}"
-                      ItemsSource="{Binding StabilityToleranceOptions}"
-                      SelectedItem="{Binding SelectedStabilityTolerance}" />
-          </Grid>
         </Grid>
       </Border>
     </Grid>

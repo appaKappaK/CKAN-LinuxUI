@@ -16,6 +16,7 @@ using Avalonia.VisualTree;
 using CKAN.App.Models;
 using CKAN.App.Services;
 using CKAN.Types;
+using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
 {
@@ -35,6 +36,7 @@ namespace CKAN.LinuxGUI
         private MainWindowViewModel? observedViewModel;
         private ContextMenu? activeModRowMenu;
         private Window? activeOwnedDialog;
+        private DispatcherTimer? repositoryRefreshTimer;
         private LinuxGuiPluginController? pluginController;
         private string? pluginControllerInstanceDir;
         private BrowserColumnResizeTarget activeBrowserColumnResizeTarget;
@@ -44,10 +46,12 @@ namespace CKAN.LinuxGUI
         private double browserColumnResizeStartReleasedWidth;
         private double browserColumnResizeStartInstalledWidth;
         private double browserColumnResizeMaxMetadataWidth;
+        private bool launchUpdateCheckStarted;
         private const double OverlayWheelScrollPixels = 48;
         private const double BrowserWheelScrollPixels = 112;
         private const double QueueWheelScrollPixels = 120;
         private const double PreviewSectionWheelScrollPixels = 96;
+        private const string CkanReleasesUrl = "https://github.com/KSP-CKAN/CKAN/releases";
         private static readonly IBrush PreviewConflictRowBackground = Brush.Parse("#2A1820");
         private static readonly IBrush PreviewConflictRowBorder = Brush.Parse("#3C212B");
         private static readonly IBrush PreviewConflictSelectedRowBackground = Brush.Parse("#361B24");
@@ -85,6 +89,8 @@ namespace CKAN.LinuxGUI
                               EventArgs e)
         {
             ObserveViewModel(DataContext as MainWindowViewModel);
+            StartLaunchUpdateCheck();
+            ConfigureRepositoryRefreshTimer();
 
             if (appSettings == null)
             {
@@ -115,6 +121,7 @@ namespace CKAN.LinuxGUI
         {
             ObserveViewModel(null);
             CloseActiveModRowMenu();
+            StopRepositoryRefreshTimer();
             DisposePluginController();
 
             if (appSettings == null)
@@ -133,6 +140,116 @@ namespace CKAN.LinuxGUI
         private void OnActivated(object? sender,
                                  EventArgs e)
             => ActivateOwnedDialog();
+
+        private void StartLaunchUpdateCheck()
+        {
+            if (launchUpdateCheckStarted)
+            {
+                return;
+            }
+
+            launchUpdateCheckStarted = true;
+            _ = CheckForUpdatesOnLaunchAsync();
+        }
+
+        private async Task CheckForUpdatesOnLaunchAsync()
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            await Task.Delay(750);
+            for (var attempt = 0; attempt < 24 && viewModel.CurrentInstance == null; ++attempt)
+            {
+                await Task.Delay(250);
+            }
+
+            var instance = viewModel.CurrentInstance;
+            if (!SettingsWindow.CheckForUpdatesOnLaunchEnabled(instance))
+            {
+                return;
+            }
+
+            try
+            {
+                var useDevBuilds = viewModel.CurrentConfiguration?.DevBuilds ?? false;
+                var update = await Task.Run(() => new AutoUpdate().GetUpdate(useDevBuilds));
+                if (update.Version is not CkanModuleVersion latestVersion
+                    || latestVersion.SameClientVersion(Meta.ReleaseVersion))
+                {
+                    return;
+                }
+
+                var channel = useDevBuilds ? "dev build" : "release";
+                var choice = await ShowOwnedDialogAsync<int>(
+                    new SimplePromptWindow(
+                        $"A newer CKAN {channel} is available.\n\nCurrent version: {Meta.ReleaseVersion}\nLatest version: {latestVersion}\n\nThis Linux GUI build will not install updates automatically. Use your package/source workflow for this build, or open the CKAN releases page.",
+                        Array.Empty<string>(),
+                        "Open Releases",
+                        "Dismiss"));
+
+                if (choice == 0)
+                {
+                    Utilities.ProcessStartURL(CkanReleasesUrl);
+                }
+            }
+            catch
+            {
+                // Launch update checks are opportunistic; failures should not interrupt startup.
+            }
+        }
+
+        private void ConfigureRepositoryRefreshTimer()
+        {
+            if (DataContext is not MainWindowViewModel viewModel)
+            {
+                StopRepositoryRefreshTimer();
+                return;
+            }
+
+            var minutes = viewModel.CurrentConfiguration.RefreshRate;
+            if (minutes <= 0)
+            {
+                StopRepositoryRefreshTimer();
+                return;
+            }
+
+            repositoryRefreshTimer ??= new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMinutes(minutes),
+            };
+            repositoryRefreshTimer.Tick -= RepositoryRefreshTimer_OnTick;
+            repositoryRefreshTimer.Tick += RepositoryRefreshTimer_OnTick;
+            repositoryRefreshTimer.Interval = TimeSpan.FromMinutes(minutes);
+            repositoryRefreshTimer.Start();
+        }
+
+        private void StopRepositoryRefreshTimer()
+        {
+            if (repositoryRefreshTimer == null)
+            {
+                return;
+            }
+
+            repositoryRefreshTimer.Stop();
+            repositoryRefreshTimer.Tick -= RepositoryRefreshTimer_OnTick;
+        }
+
+        private async void RepositoryRefreshTimer_OnTick(object? sender,
+                                                         EventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || viewModel.IsRefreshing
+                || viewModel.IsApplyingChanges
+                || viewModel.IsCatalogLoading
+                || SettingsWindow.RefreshPausedEnabled(viewModel.CurrentInstance))
+            {
+                return;
+            }
+
+            await viewModel.RefreshRepositoriesAndCatalogAsync();
+        }
 
         private void ActivateOwnedDialog()
         {
@@ -341,6 +458,8 @@ namespace CKAN.LinuxGUI
             var dialog = new SettingsWindow(viewModel);
 
             await ShowOwnedDialogAsync(dialog);
+            viewModel.RefreshVisibleVersionDisplaySettings();
+            ConfigureRepositoryRefreshTimer();
             if (dialog.RepositoryAdded || dialog.RepositoryRemoved || dialog.RepositoryMoved)
             {
                 await viewModel.RefreshCurrentStateAsync();
@@ -854,6 +973,51 @@ namespace CKAN.LinuxGUI
             viewModel.SelectedMod = null;
             ModsListBox.Focus();
             e.Handled = true;
+        }
+
+        private void PreviewQueueRow_OnPointerPressed(object? sender,
+                                                      PointerPressedEventArgs e)
+        {
+            if (sender is not Control control
+                || control.DataContext is not QueuedActionModel action
+                || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var updateKind = e.GetCurrentPoint(control).Properties.PointerUpdateKind;
+            if (updateKind != PointerUpdateKind.RightButtonPressed)
+            {
+                return;
+            }
+
+            viewModel.SelectedQueuedAction = action;
+            PreviewQueueList.Focus();
+            CloseActiveModRowMenu();
+            e.Handled = true;
+
+            if (!viewModel.ShowRemoveQueuedActionContextAction(action))
+            {
+                return;
+            }
+
+            var menu = new ContextMenu
+            {
+                Placement = PlacementMode.Pointer,
+            };
+            menu.Classes.Add("mod-row-menu");
+            menu.Closed += ModRowMenu_OnClosed;
+
+            var removeItem = new MenuItem
+            {
+                Header = "Remove from Queue",
+            };
+            removeItem.Click += (_, _) => viewModel.RemoveQueuedActionFromPreview(action);
+            removeItem.Classes.Add("mod-row-menu-item");
+            menu.Items.Add(removeItem);
+
+            activeModRowMenu = menu;
+            menu.Open(control);
         }
 
         private void SurfaceViewToggle_OnPointerPressed(object? sender,
