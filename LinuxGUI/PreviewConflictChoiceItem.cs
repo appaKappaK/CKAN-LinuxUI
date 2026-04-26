@@ -7,5 +7,7 @@ namespace CKAN.LinuxGUI
         public string ActionText { get; init; } = "";
 
         public string DetailText { get; init; } = "";
+
+        public string ActionButtonText { get; init; } = "Review";
     }
 }

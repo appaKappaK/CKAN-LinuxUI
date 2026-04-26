@@ -45,6 +45,9 @@ namespace CKAN.LinuxGUI
         private double browserColumnResizeStartInstalledWidth;
         private double browserColumnResizeMaxMetadataWidth;
         private const double OverlayWheelScrollPixels = 48;
+        private const double BrowserWheelScrollPixels = 112;
+        private const double QueueWheelScrollPixels = 120;
+        private const double PreviewSectionWheelScrollPixels = 96;
         private static readonly IBrush PreviewConflictRowBackground = Brush.Parse("#2A1820");
         private static readonly IBrush PreviewConflictRowBorder = Brush.Parse("#3C212B");
         private static readonly IBrush PreviewConflictSelectedRowBackground = Brush.Parse("#361B24");
@@ -1018,6 +1021,99 @@ namespace CKAN.LinuxGUI
             e.Handled = true;
         }
 
+        private void ModsListBox_OnPointerWheelChanged(object? sender,
+                                                       PointerWheelEventArgs e)
+            => ScrollListBoxByWheel(ModsListBox, e, BrowserWheelScrollPixels);
+
+        private void PreviewQueueList_OnPointerWheelChanged(object? sender,
+                                                            PointerWheelEventArgs e)
+            => ScrollListBoxByWheel(PreviewQueueList, e, QueueWheelScrollPixels);
+
+        private void PreviewDependenciesScrollViewer_OnPointerWheelChanged(object? sender,
+                                                                           PointerWheelEventArgs e)
+            => ScrollPreviewSectionByWheel(sender as ScrollViewer,
+                                           e,
+                                           allowPageScrollUp: true,
+                                           allowPageScrollDown: true);
+
+        private void PreviewRecommendationsScrollViewer_OnPointerWheelChanged(object? sender,
+                                                                              PointerWheelEventArgs e)
+            => ScrollPreviewSectionByWheel(sender as ScrollViewer,
+                                           e,
+                                           allowPageScrollUp: false,
+                                           allowPageScrollDown: false);
+
+        private void PreviewSuggestionsScrollViewer_OnPointerWheelChanged(object? sender,
+                                                                          PointerWheelEventArgs e)
+            => ScrollPreviewSectionByWheel(sender as ScrollViewer,
+                                           e,
+                                           allowPageScrollUp: true,
+                                           allowPageScrollDown: true);
+
+        private static void ScrollPreviewSectionByWheel(ScrollViewer?         scrollViewer,
+                                                        PointerWheelEventArgs e,
+                                                        bool                  allowPageScrollUp,
+                                                        bool                  allowPageScrollDown)
+        {
+            if (scrollViewer == null)
+            {
+                return;
+            }
+
+            double maxOffsetY = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+            bool scrollsUp = e.Delta.Y > 0;
+            bool allowPageScroll = scrollsUp ? allowPageScrollUp : allowPageScrollDown;
+            if (maxOffsetY <= 0)
+            {
+                e.Handled = !allowPageScroll;
+                return;
+            }
+
+            double offsetDelta = scrollsUp ? -PreviewSectionWheelScrollPixels : PreviewSectionWheelScrollPixels;
+            double offsetY = Math.Clamp(scrollViewer.Offset.Y + offsetDelta,
+                                        0,
+                                        maxOffsetY);
+            if (Math.Abs(offsetY - scrollViewer.Offset.Y) < 0.01)
+            {
+                e.Handled = !allowPageScroll;
+                return;
+            }
+
+            scrollViewer.Offset = new Vector(scrollViewer.Offset.X, offsetY);
+            e.Handled = true;
+        }
+
+        private static void ScrollListBoxByWheel(ListBox               listBox,
+                                                 PointerWheelEventArgs e,
+                                                 double                scrollPixels)
+        {
+            var scrollViewer = listBox.GetVisualDescendants()
+                                      .OfType<ScrollViewer>()
+                                      .FirstOrDefault();
+            if (scrollViewer == null)
+            {
+                return;
+            }
+
+            double maxOffsetY = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+            if (maxOffsetY <= 0)
+            {
+                return;
+            }
+
+            var direction = e.Delta.Y > 0 ? -1 : 1;
+            double offsetY = Math.Clamp(scrollViewer.Offset.Y + (direction * scrollPixels),
+                                        0,
+                                        maxOffsetY);
+            if (Math.Abs(offsetY - scrollViewer.Offset.Y) < 0.01)
+            {
+                return;
+            }
+
+            scrollViewer.Offset = new Vector(scrollViewer.Offset.X, offsetY);
+            e.Handled = true;
+        }
+
         private bool PointerIsInsideAdvancedFiltersPopup(PointerEventArgs e)
         {
             if (AdvancedFiltersPopup.Child is not Visual popupChild
@@ -1147,6 +1243,7 @@ namespace CKAN.LinuxGUI
             {
                 observedViewModel.RecommendationSelectionPromptAsync = null;
                 observedViewModel.ConfirmIncompatibleLaunchAsync = null;
+                observedViewModel.ConfirmClearQueueAsync = null;
                 observedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             }
 
@@ -1156,6 +1253,7 @@ namespace CKAN.LinuxGUI
             {
                 observedViewModel.RecommendationSelectionPromptAsync = ShowRecommendationSelectionAsync;
                 observedViewModel.ConfirmIncompatibleLaunchAsync = ConfirmIncompatibleLaunchAsync;
+                observedViewModel.ConfirmClearQueueAsync = ConfirmClearQueueAsync;
                 observedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
                 CKAN.GUI.Main.SetInstance(observedViewModel.CurrentManager,
                                           observedViewModel.CurrentUser);
@@ -1191,6 +1289,15 @@ namespace CKAN.LinuxGUI
             var dialog = new SimplePromptWindow(prompt,
                                                 new[] { "Launch anyway" },
                                                 "Launch",
+                                                "Cancel");
+            return await ShowOwnedDialogAsync<int>(dialog) == 0;
+        }
+
+        private async Task<bool> ConfirmClearQueueAsync(string prompt)
+        {
+            var dialog = new SimplePromptWindow(prompt,
+                                                Array.Empty<string>(),
+                                                "Clear Queue",
                                                 "Cancel");
             return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }

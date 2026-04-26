@@ -54,7 +54,7 @@ namespace CKAN.App.Services
             });
         }
 
-        public void QueueInstall(ModListItem mod, string? targetVersion = null)
+        public void QueueInstall(ModListItem mod, string? targetVersion = null, string? sourceText = null)
         {
             var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
             Upsert(new QueuedActionModel
@@ -67,6 +67,7 @@ namespace CKAN.App.Services
                 DetailText = string.IsNullOrWhiteSpace(resolvedTargetVersion)
                     ? "Install latest available version"
                     : $"Install {resolvedTargetVersion}",
+                SourceText = sourceText?.Trim() ?? "",
             });
         }
 

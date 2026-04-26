@@ -33,6 +33,8 @@ namespace CKAN.App.Models
 
         public string DetailText { get; set; } = "";
 
+        public string SourceText { get; set; } = "";
+
         public QueuedActionSnapshotItem Clone()
             => new QueuedActionSnapshotItem
             {
@@ -42,6 +44,7 @@ namespace CKAN.App.Models
                 ActionKind    = ActionKind,
                 ActionText    = ActionText,
                 DetailText    = DetailText,
+                SourceText    = SourceText,
             };
     }
 }

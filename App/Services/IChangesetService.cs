@@ -22,7 +22,7 @@ namespace CKAN.App.Services
 
         void QueueDownload(ModListItem mod);
 
-        void QueueInstall(ModListItem mod, string? targetVersion = null);
+        void QueueInstall(ModListItem mod, string? targetVersion = null, string? sourceText = null);
 
         void QueueUpdate(ModListItem mod, string? targetVersion = null);
 

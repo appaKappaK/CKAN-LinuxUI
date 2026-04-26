@@ -151,9 +151,11 @@
     </Style>
   </Window.Styles>
 
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
   <Grid Margin="14">
     <Grid ColumnDefinitions="27*,25*,25*"
-          RowDefinitions="164,230,*">
+          RowDefinitions="164,230,Auto">
       <Border Classes="settings-group"
               Grid.ColumnSpan="2"
               Margin="0,0,14,14">
@@ -476,6 +478,7 @@
                        VerticalAlignment="Center"
                        Text="Stability tolerance:" />
             <ComboBox Grid.Column="1"
+                      x:Name="StabilityToleranceComboBox"
                       Classes="settings-combo"
                       IsEnabled="{Binding CanEditStabilityTolerance}"
                       ItemsSource="{Binding StabilityToleranceOptions}"
@@ -485,4 +488,5 @@
       </Border>
     </Grid>
   </Grid>
+  </ScrollViewer>
 </Window>

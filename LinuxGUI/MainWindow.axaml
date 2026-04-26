@@ -790,7 +790,7 @@
     <Style Selector="Border.surface-view-toggle">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Height" Value="54" />
-      <Setter Property="Width" Value="232" />
+      <Setter Property="Width" Value="204" />
       <Setter Property="Margin" Value="0,0,0,-18" />
       <Setter Property="ClipToBounds" Value="False" />
     </Style>
@@ -801,7 +801,7 @@
       <Setter Property="CornerRadius" Value="16,16,21,21" />
       <Setter Property="Padding" Value="8,3,8,8" />
       <Setter Property="ClipToBounds" Value="True" />
-      <Setter Property="Width" Value="232" />
+      <Setter Property="Width" Value="204" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="Transitions">
@@ -816,7 +816,7 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Margin" Value="0,-138,0,-18" />
-      <Setter Property="Width" Value="232" />
+      <Setter Property="Width" Value="204" />
       <Setter Property="Opacity" Value="0" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
@@ -824,7 +824,7 @@
       <Setter Property="Background" Value="#212938" />
       <Setter Property="BorderBrush" Value="#394654" />
       <Setter Property="Margin" Value="0,0,0,-18" />
-      <Setter Property="Width" Value="232" />
+      <Setter Property="Width" Value="204" />
       <Setter Property="Opacity" Value="1" />
       <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
@@ -957,7 +957,7 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="StackPanel.surface-view-tab-content">
-      <Setter Property="Margin" Value="18,7,18,5" />
+      <Setter Property="Margin" Value="10,7,10,5" />
       <Setter Property="Spacing" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
@@ -1269,6 +1269,42 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0,0,4,0" />
+      <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
+    </Style>
+    <Style Selector="ListBox#PreviewConflictList ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ListBox#PreviewConflictList ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ScrollViewer.preview-section-scroll">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="AllowAutoHide" Value="False" />
+    </Style>
+    <Style Selector="ScrollViewer.preview-section-scroll ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ScrollViewer.preview-section-scroll ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ScrollViewer#PreviewRightPanelScrollViewer ScrollBar:vertical">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
+    </Style>
+    <Style Selector="ScrollViewer#PreviewRightPanelScrollViewer ScrollBar:vertical:pointerover">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="10" />
+      <Setter Property="Margin" Value="2,2,0,2" />
     </Style>
     <Style Selector="Button.preview-conflict-row-button">
       <Setter Property="Background" Value="Transparent" />
@@ -2244,8 +2280,8 @@
               Classes.compact="{Binding SurfaceViewToggleCompact}">
         <Grid>
           <Border Classes="surface-view-toggle-rim" />
-          <Grid ColumnDefinitions="*,*"
-                Margin="8,0"
+          <Grid ColumnDefinitions="76,*"
+                Margin="5,0"
                 VerticalAlignment="Center">
             <Button Classes="surface-view-tab"
                     Classes.active="{Binding ShowBrowseSurface}"
@@ -3004,12 +3040,12 @@
                               IsEnabled="{Binding CanInteractWithCatalog}"
                               IsVisible="{Binding ShowModList}"
                               MinHeight="0">
-                          <Border Background="#1A2530"
-                                  BorderBrush="#31516C"
+                          <Border Background="{Binding RelationshipBrowserScopeBackground}"
+                                  BorderBrush="{Binding RelationshipBrowserScopeBorderBrush}"
                                   BorderThickness="1"
                                   CornerRadius="8"
                                   Padding="10,6"
-                                  Margin="0,0,16,8"
+                                  Margin="0,0,0,8"
                                   IsVisible="{Binding ShowRelationshipBrowserScope}">
                             <Grid ColumnDefinitions="*,Auto">
                               <TextBlock FontSize="12"
@@ -3025,8 +3061,16 @@
                             </Grid>
                           </Border>
 
+                          <Border Grid.Row="1"
+                                  Grid.RowSpan="2"
+                                  BorderBrush="{Binding RelationshipBrowserScopeFrameBorderBrush}"
+                                  BorderThickness="1"
+                                  CornerRadius="8"
+                                  IsHitTestVisible="False"
+                                  IsVisible="{Binding ShowRelationshipBrowserScope}" />
+
                           <Grid Grid.Row="1"
-                                Margin="0,0,16,4">
+                                Margin="1,1,1,4">
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="4" />
                               <ColumnDefinition Width="*" />
@@ -3112,15 +3156,19 @@
 
                           <ListBox x:Name="ModsListBox"
                                    Grid.Row="2"
+                                   Margin="1,0,1,1"
                                    MinHeight="0"
                                    ItemsSource="{Binding Mods}"
                                    AutoScrollToSelectedItem="False"
                                    PointerPressed="ModsListBox_OnPointerPressed"
+                                   PointerWheelChanged="ModsListBox_OnPointerWheelChanged"
                                    SelectedItem="{Binding SelectedMod}">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:ModListItem"
                                             x:CompileBindings="False">
                                 <Border Background="#181D23"
+                                        BorderBrush="#202A33"
+                                        BorderThickness="0,0,0,1"
                                         CornerRadius="5"
                                         Margin="0,0,0,1"
                                         Padding="0"
@@ -3999,7 +4047,7 @@
                         Classes.conflict-popup-open="{Binding ShowPreviewConflictPopup}"
                         IsVisible="{Binding ShowPreviewActiveWorkspace}">
                     <Border Background="#1A2027"
-                            BorderBrush="#11171D"
+                            BorderBrush="#40648B"
                             BorderThickness="1"
                             CornerRadius="10"
                             Padding="16"
@@ -4008,21 +4056,29 @@
                       <Grid RowDefinitions="*,Auto">
                         <Border Grid.Row="0"
                                 Background="#12171D"
-                                BorderBrush="#26313B"
+                                BorderBrush="#40648B"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="0"
                                 ClipToBounds="True">
-                          <Grid RowDefinitions="Auto,*">
-                          <Border Background="#14191F"
+                          <Grid RowDefinitions="Auto,Auto,*">
+                          <Border Background="#12171D"
                                   BorderBrush="#27323C"
                                   BorderThickness="0,0,0,1"
                                   CornerRadius="7,7,0,0"
+                                  Padding="10,7">
+                            <TextBlock FontWeight="SemiBold"
+                                       Text="Queue" />
+                          </Border>
+
+                          <Border Grid.Row="1"
+                                  Background="#14191F"
+                                  BorderBrush="#27323C"
+                                  BorderThickness="0,0,0,1"
                                   Margin="0,0,12,0"
-                                  Padding="0"
-                                  IsVisible="{Binding HasQueuedActions}">
+                                  Padding="0">
                             <Grid ColumnDefinitions="4,*,116,92">
-                              <Border Background="#25313D"
+                              <Border Background="Transparent"
                                       CornerRadius="7,0,0,0" />
                               <TextBlock Grid.Column="1"
                                          Classes="row-meta"
@@ -4051,20 +4107,20 @@
                           </Border>
 
                           <ListBox x:Name="PreviewQueueList"
-                                   Grid.Row="1"
+                                   Grid.Row="2"
                                    MinHeight="0"
                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                   PointerWheelChanged="PreviewQueueList_OnPointerWheelChanged"
                                    ItemsSource="{Binding QueuedActions}"
                                    SelectedItem="{Binding SelectedQueuedAction}"
                                    IsVisible="{Binding HasQueuedActions}">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:QueuedActionModel">
                                 <Border Background="#181D23"
-                                        BorderBrush="#11161B"
+                                        BorderBrush="#202A33"
                                         BorderThickness="0,0,0,1"
                                         CornerRadius="5"
-                                        Padding="0"
-                                        BoxShadow="0 8 18 0 #26000000">
+                                        Padding="0">
                                   <Grid>
                                     <Grid ColumnDefinitions="4,*,116,92">
                                       <Border Background="{Binding AccentBrush}"
@@ -4079,6 +4135,12 @@
                                                      MaxLines="1"
                                                      TextTrimming="CharacterEllipsis"
                                                      Text="{Binding Identifier}" />
+                                          <TextBlock FontSize="9.5"
+                                                     Foreground="#7C8794"
+                                                     MaxLines="1"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     IsVisible="{Binding HasSourceText}"
+                                                     Text="{Binding SourceText}" />
                                         </StackPanel>
                                       </Border>
                                       <Border Grid.Column="2"
@@ -4090,7 +4152,7 @@
                                                 BorderThickness="1"
                                                 CornerRadius="999"
                                                 Padding="7,2"
-                                                HorizontalAlignment="Left"
+                                                HorizontalAlignment="Center"
                                                 VerticalAlignment="Center">
                                           <TextBlock FontSize="10"
                                                      FontWeight="SemiBold"
@@ -4118,8 +4180,8 @@
                           </ListBox>
 
                           <Border Background="#20262D"
-                                  Grid.RowSpan="2"
-                                  CornerRadius="10"
+                                  Grid.Row="2"
+                                  CornerRadius="0"
                                   Padding="18"
                                   IsVisible="{Binding ShowEmptyQueueState}">
                             <StackPanel Spacing="8"
@@ -4134,28 +4196,54 @@
                           </Grid>
                         </Border>
 
-                        <WrapPanel Grid.Row="1"
-                                   Margin="0,12,0,0"
-                                   HorizontalAlignment="Left"
-                                   ItemHeight="34"
-                                   IsVisible="{Binding HasQueuedActions}">
+                        <Grid Grid.Row="1"
+                              Margin="0,12,0,0"
+                              ColumnDefinitions="Auto,Auto,*,1,Auto"
+                              IsVisible="{Binding ShowQueueFooterActions}">
                           <Button Classes="browser-chip"
-                                  Margin="0,0,8,0"
                                   Background="#20262D"
                                   BorderBrush="#3C4754"
                                   Foreground="#E8EDF3"
+                                  IsVisible="{Binding HasQueuedActions}"
                                   Command="{Binding RemoveQueuedActionCommand}"
                                   Content="Remove Selected" />
-                        </WrapPanel>
+                          <Button Grid.Column="1"
+                                  Classes="browser-chip"
+                                  Margin="8,0,0,0"
+                                  Background="#20262D"
+                                  BorderBrush="#3C4754"
+                                  Foreground="#E8EDF3"
+                                  IsVisible="{Binding ShowQueueFooterActions}"
+                                  IsEnabled="{Binding HasQueuedActionUndo}"
+                                  Command="{Binding UndoQueuedActionRemovalCommand}"
+                                  Content="Undo Remove" />
+                          <Border Grid.Column="3"
+                                  Width="1"
+                                  Margin="12,4,12,4"
+                                  Background="#34404C"
+                                  Opacity="0.8"
+                                  IsVisible="{Binding HasQueuedActions}" />
+                          <Button Grid.Column="4"
+                                  Classes="browser-chip"
+                                  Background="#26191C"
+                                  BorderBrush="#6B2B2B"
+                                  Foreground="#F4F6F8"
+                                  IsVisible="{Binding HasQueuedActions}"
+                                  Command="{Binding ClearQueueCommand}"
+                                  Content="Clear Queue" />
+                        </Grid>
                       </Grid>
                     </Border>
 
                     <Border Grid.Column="1"
-                            Background="#1A2027"
+                            Background="Transparent"
                             CornerRadius="10"
-                            Padding="16"
+                            Padding="16,0,16,16"
                             Margin="12,0,0,0">
-                      <ScrollViewer VerticalScrollBarVisibility="Auto">
+                      <Grid>
+                      <ScrollViewer x:Name="PreviewRightPanelScrollViewer"
+                                    VerticalScrollBarVisibility="Hidden"
+                                    IsVisible="{Binding !IsPreviewLoading}">
                         <StackPanel Spacing="12">
                           <Border Background="{Binding ApplyResultBackground}"
                                   BorderBrush="{Binding ApplyResultBorderBrush}"
@@ -4204,31 +4292,215 @@
                             </StackPanel>
                           </Border>
 
-                          <ProgressBar Height="12"
-                                       IsIndeterminate="{Binding IsPreviewLoading}"
-                                       IsVisible="{Binding IsPreviewLoading}" />
+                          <StackPanel Spacing="10"
+                                      IsVisible="{Binding HasPreviewDependenciesOrOptional}">
+                            <Border Background="#171B20"
+                                    BorderBrush="#7F8995"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10"
+                                    BoxShadow="0 10 22 0 #22000000"
+                                    IsVisible="{Binding HasPreviewDependencies}">
+                              <StackPanel Spacing="7">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock FontWeight="SemiBold"
+                                             VerticalAlignment="Center"
+                                             Text="Dependencies" />
+                                  <Button Grid.Column="1"
+                                          Classes="detail-section-action"
+                                          Command="{Binding ViewPreviewDependenciesInBrowserCommand}"
+                                          Content="View" />
+                                </Grid>
+                                <Border Background="#12171D"
+                                        BorderBrush="#7F8995"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        ClipToBounds="True">
+                                  <ScrollViewer Height="179"
+                                                Classes="preview-section-scroll"
+                                                VerticalScrollBarVisibility="Auto"
+                                                PointerWheelChanged="PreviewDependenciesScrollViewer_OnPointerWheelChanged">
+                                    <ItemsControl ItemsSource="{Binding PreviewDependencies}">
+                                      <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                          <Border Background="#181D23"
+                                                  BorderBrush="#202A33"
+                                                  BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="4,*">
+                                              <Border Background="#7F8995" />
+                                              <TextBlock Grid.Column="1"
+                                                         Margin="8,6"
+                                                         FontSize="12"
+                                                         MaxLines="1"
+                                                         TextTrimming="CharacterEllipsis"
+                                                         Text="{Binding}" />
+                                            </Grid>
+                                          </Border>
+                                        </DataTemplate>
+                                      </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                  </ScrollViewer>
+                                </Border>
+                              </StackPanel>
+                            </Border>
 
-                          <Border Background="#161B21"
-                                  CornerRadius="8"
-                                  Padding="12"
-                                  IsVisible="{Binding HasPreviewAutoRemovals}">
-                            <StackPanel Spacing="6">
-                              <TextBlock FontWeight="SemiBold"
-                                         Text="Auto-Removals" />
-                              <ItemsControl ItemsSource="{Binding PreviewAutoRemovals}">
-                                <ItemsControl.ItemTemplate>
-                                  <DataTemplate>
-                                    <TextBlock Margin="0,0,0,4"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding}" />
-                                  </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                              </ItemsControl>
-                            </StackPanel>
-                          </Border>
+                            <Border Background="#171B20"
+                                    BorderBrush="#72B8FF"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10"
+                                    BoxShadow="0 10 22 0 #22000000"
+                                    IsVisible="{Binding HasPreviewRecommendations}">
+                              <StackPanel Spacing="7">
+                                  <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Text="Recommendations" />
+                                    <Border Grid.Column="1"
+                                            Background="#24384D"
+                                            BorderBrush="#72B8FF"
+                                            BorderThickness="1"
+                                            CornerRadius="999"
+                                            Padding="7,2"
+                                            Margin="8,0,8,0"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding HasQueuedRecommendationActions}">
+                                      <TextBlock FontSize="10"
+                                                 FontWeight="SemiBold"
+                                                 Foreground="#DDEEFF"
+                                                 Text="{Binding QueuedRecommendationCountLabel}" />
+                                    </Border>
+                                    <Button Grid.Column="2"
+                                            Classes="detail-section-action"
+                                            Command="{Binding ViewPreviewRecommendationsInBrowserCommand}"
+                                            Content="View" />
+                                  </Grid>
+                                  <Border Background="#12171D"
+                                          BorderBrush="#72B8FF"
+                                          BorderThickness="1"
+                                          CornerRadius="6"
+                                          ClipToBounds="True">
+                                    <ScrollViewer Height="179"
+                                                  Classes="preview-section-scroll"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  PointerWheelChanged="PreviewRecommendationsScrollViewer_OnPointerWheelChanged">
+                                      <ItemsControl ItemsSource="{Binding PreviewRecommendations}">
+                                        <ItemsControl.ItemTemplate>
+                                          <DataTemplate>
+                                            <Border Background="#181D23"
+                                                    BorderBrush="#202A33"
+                                                    BorderThickness="0,0,0,1">
+                                              <Grid ColumnDefinitions="4,*">
+                                                <Border Background="#72B8FF" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="8,6"
+                                                           FontSize="12"
+                                                           MaxLines="1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding}" />
+                                              </Grid>
+                                            </Border>
+                                          </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                      </ItemsControl>
+                                    </ScrollViewer>
+                                  </Border>
+                              </StackPanel>
+                            </Border>
+
+                            <Border Background="#171B20"
+                                    BorderBrush="#B18CFF"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10"
+                                    BoxShadow="0 10 22 0 #22000000"
+                                    IsVisible="{Binding HasPreviewSuggestions}">
+                              <StackPanel Spacing="7">
+                                  <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Text="Suggestions" />
+                                    <Border Grid.Column="1"
+                                            Background="#30284A"
+                                            BorderBrush="#B18CFF"
+                                            BorderThickness="1"
+                                            CornerRadius="999"
+                                            Padding="7,2"
+                                            Margin="8,0,8,0"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding HasQueuedSuggestionActions}">
+                                      <TextBlock FontSize="10"
+                                                 FontWeight="SemiBold"
+                                                 Foreground="#EFE7FF"
+                                                 Text="{Binding QueuedSuggestionCountLabel}" />
+                                    </Border>
+                                    <Button Grid.Column="2"
+                                            Classes="detail-section-action"
+                                            Command="{Binding ViewPreviewSuggestionsInBrowserCommand}"
+                                            Content="View" />
+                                  </Grid>
+                                  <Border Background="#12171D"
+                                          BorderBrush="#B18CFF"
+                                          BorderThickness="1"
+                                          CornerRadius="6"
+                                          ClipToBounds="True">
+                                    <ScrollViewer Height="179"
+                                                  Classes="preview-section-scroll"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  PointerWheelChanged="PreviewSuggestionsScrollViewer_OnPointerWheelChanged">
+                                      <ItemsControl ItemsSource="{Binding PreviewSuggestions}">
+                                        <ItemsControl.ItemTemplate>
+                                          <DataTemplate>
+                                            <Border Background="#181D23"
+                                                    BorderBrush="#202A33"
+                                                    BorderThickness="0,0,0,1">
+                                              <Grid ColumnDefinitions="4,*">
+                                                <Border Background="#B18CFF" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="8,6"
+                                                           FontSize="12"
+                                                           MaxLines="1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding}" />
+                                              </Grid>
+                                            </Border>
+                                          </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                      </ItemsControl>
+                                    </ScrollViewer>
+                                  </Border>
+                              </StackPanel>
+                            </Border>
+                          </StackPanel>
 
                         </StackPanel>
                       </ScrollViewer>
+                      <Border Width="320"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Background="#171D24"
+                              BorderBrush="#344354"
+                              BorderThickness="1"
+                              CornerRadius="10"
+                              Padding="16"
+                              BoxShadow="0 16 34 0 #44000000"
+                              IsVisible="{Binding IsPreviewLoading}">
+                        <StackPanel Spacing="9">
+                          <TextBlock FontWeight="SemiBold"
+                                     HorizontalAlignment="Center"
+                                     Text="{Binding PreviewOutcomeTitle}" />
+                          <ProgressBar Height="12"
+                                       Minimum="0"
+                                       Maximum="100"
+                                       IsIndeterminate="True" />
+                          <TextBlock FontSize="12"
+                                     Opacity="0.76"
+                                     TextAlignment="Center"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding PreviewPanelGuidance}" />
+                        </StackPanel>
+                      </Border>
+                      </Grid>
                     </Border>
                   </Grid>
 
@@ -4237,8 +4509,8 @@
                         IsVisible="{Binding ShowPreviewConflictPopup}">
                     <Border Background="#A80B0F14" />
 
-                    <Border Width="560"
-                            MaxHeight="460"
+                    <Border Width="700"
+                            MaxHeight="575"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Background="#221018"
@@ -4255,14 +4527,14 @@
                                        Text="{Binding PreviewConflictPopupTitle}" />
                             <TextBlock Opacity="0.84"
                                        TextWrapping="Wrap"
-                                       Text="Review each conflict in Browse, then choose which mod should stay installed." />
+                                       Text="Use Review to compare a conflict pair in Browse. Keep one mod, then remove the other from the queue or current install." />
                           </StackPanel>
                         </Grid>
 
                         <ListBox x:Name="PreviewConflictList"
                                  Grid.Row="1"
                                  Margin="0,14,0,12"
-                                 MaxHeight="250"
+                                 MaxHeight="360"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ItemsSource="{Binding PreviewConflictChoices}">
                           <ListBox.ItemTemplate>
@@ -4273,9 +4545,8 @@
                                         BorderBrush="#3C212B"
                                         BorderThickness="1"
                                         CornerRadius="7"
-                                        Padding="10"
-                                        MinHeight="58">
-                                  <StackPanel Spacing="4">
+                                        Padding="9,7">
+                                  <StackPanel Spacing="3">
                                     <TextBlock FontWeight="SemiBold"
                                                TextWrapping="Wrap"
                                                Text="{Binding ActionText}" />
@@ -4287,14 +4558,15 @@
                                 <Button Grid.Column="1"
                                         Classes="browser-chip"
                                         Margin="8,0,0,0"
-                                        VerticalAlignment="Stretch"
-                                        MinWidth="58"
+                                        VerticalAlignment="Center"
+                                        Height="34"
+                                        MinWidth="72"
                                         Padding="12,0"
                                         Background="#2A1820"
                                         BorderBrush="#5A3340"
                                         Foreground="#F4F6F8"
                                         Click="PreviewConflictViewButton_OnClick"
-                                        Content="View" />
+                                        Content="{Binding ActionButtonText}" />
                               </Grid>
                             </DataTemplate>
                           </ListBox.ItemTemplate>
@@ -4303,41 +4575,76 @@
                     </Border>
                   </Grid>
 
-                  <WrapPanel Grid.Row="1"
-                             Margin="0,14,0,0"
-                             HorizontalAlignment="Right"
-                             VerticalAlignment="Center"
-                             ItemHeight="38">
-                    <Button Classes="preview-action"
-                            Background="#4B535D"
-                            BorderBrush="#4B535D"
-                            Foreground="#F4F6F8"
-                            IsVisible="{Binding ShowInlineApplyResult}"
-                            Command="{Binding DismissApplyResultCommand}"
-                            Content="Dismiss Result" />
-                    <Button Classes="preview-action"
-                            Background="#26191C"
-                            BorderBrush="#6B2B2B"
-                            Foreground="#F4F6F8"
-                            IsVisible="{Binding HasQueuedActions}"
-                            Command="{Binding ClearQueueCommand}"
-                            Content="Clear Queue" />
-                    <Button Classes="preview-action"
-                            Background="{Binding DownloadQueuedButtonBackground}"
-                            BorderBrush="{Binding DownloadQueuedButtonBorderBrush}"
-                            Foreground="#F4F6F8"
-                            IsVisible="{Binding HasQueuedDownloadActions}"
-                            Command="{Binding DownloadQueuedCommand}"
-                            Content="{Binding DownloadQueuedButtonLabel}" />
-                    <Button Classes="preview-action"
-                            MinWidth="144"
-                            Background="{Binding ApplyChangesButtonBackground}"
-                            BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
-                            Foreground="#F4F6F8"
-                            IsVisible="{Binding HasQueuedChangeActions}"
-                            Command="{Binding ApplyChangesCommand}"
-                            Content="Apply Changes" />
-                  </WrapPanel>
+                  <Grid Grid.Row="1"
+                        Margin="0,14,0,0"
+                        ColumnDefinitions="1.08*,0.92*"
+                        VerticalAlignment="Center"
+                        Classes="preview-workspace-content"
+                        Classes.conflict-popup-open="{Binding ShowPreviewConflictPopup}">
+                    <Border Background="#161B21"
+                            BorderBrush="#9C6A72"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,12,0"
+                            HorizontalAlignment="Stretch"
+                            IsVisible="{Binding HasPreviewAutoRemovals}">
+                      <StackPanel Spacing="6">
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="Auto-Removals" />
+                        <Border Background="#12171D"
+                                BorderBrush="#9C6A72"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                ClipToBounds="True">
+                          <ScrollViewer Height="64"
+                                        Classes="preview-section-scroll"
+                                        VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding PreviewAutoRemovals}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                  <Border Background="#181D23"
+                                          BorderBrush="#202A33"
+                                          BorderThickness="0,0,0,1">
+                                    <Grid ColumnDefinitions="4,*">
+                                      <Border Background="#9C6A72" />
+                                      <TextBlock Grid.Column="1"
+                                                 Margin="8,6"
+                                                 FontSize="12"
+                                                 MaxLines="1"
+                                                 TextTrimming="CharacterEllipsis"
+                                                 Text="{Binding}" />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </ScrollViewer>
+                        </Border>
+                      </StackPanel>
+                    </Border>
+
+                    <WrapPanel Grid.Column="1"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               ItemHeight="38">
+                      <Button Classes="preview-action"
+                              Background="#4B535D"
+                              BorderBrush="#4B535D"
+                              Foreground="#F4F6F8"
+                              IsVisible="{Binding ShowInlineApplyResult}"
+                              Command="{Binding DismissApplyResultCommand}"
+                              Content="Dismiss Result" />
+                      <Button Classes="preview-action"
+                              MinWidth="144"
+                              Background="{Binding ApplyChangesButtonBackground}"
+                              BorderBrush="{Binding ApplyChangesButtonBorderBrush}"
+                              Foreground="#F4F6F8"
+                              IsVisible="{Binding HasQueuedChangeActions}"
+                              Command="{Binding ApplyChangesCommand}"
+                              Content="Apply Changes" />
+                    </WrapPanel>
+                  </Grid>
                 </Grid>
               </Border>
             </Grid>

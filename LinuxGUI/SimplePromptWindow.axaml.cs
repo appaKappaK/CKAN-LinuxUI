@@ -38,7 +38,7 @@ namespace CKAN.LinuxGUI
                                    string                cancelLabel)
             {
                 Prompt = prompt;
-                Options = options.Count > 0 ? options : new List<string> { "Yes", "No" };
+                Options = options;
                 ConfirmLabel = string.IsNullOrWhiteSpace(confirmLabel) ? "OK" : confirmLabel;
                 CancelLabel = string.IsNullOrWhiteSpace(cancelLabel) ? "Cancel" : cancelLabel;
             }
@@ -46,6 +46,8 @@ namespace CKAN.LinuxGUI
             public string Prompt { get; }
 
             public IReadOnlyList<string> Options { get; }
+
+            public bool HasOptions => Options.Count > 0;
 
             public string ConfirmLabel { get; }
 

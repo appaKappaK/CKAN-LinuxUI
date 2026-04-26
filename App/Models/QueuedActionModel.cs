@@ -22,6 +22,10 @@ namespace CKAN.App.Models
 
         public string DetailText { get; init; } = "";
 
+        public string SourceText { get; init; } = "";
+
+        public bool HasSourceText => !string.IsNullOrWhiteSpace(SourceText);
+
         public string VersionText
         {
             get

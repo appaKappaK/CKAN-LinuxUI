@@ -43,7 +43,8 @@
                  Text="{Binding Prompt}" />
 
       <ListBox ItemsSource="{Binding Options}"
-               SelectedIndex="{Binding SelectedIndex}" />
+               SelectedIndex="{Binding SelectedIndex}"
+               IsVisible="{Binding HasOptions}" />
     </StackPanel>
 
     <StackPanel Grid.Row="1"

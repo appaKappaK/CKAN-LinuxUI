@@ -394,7 +394,8 @@ namespace CKAN.App.Services
                     || !string.Equals(a.TargetVersion ?? "", b.TargetVersion ?? "", StringComparison.Ordinal)
                     || a.ActionKind != b.ActionKind
                     || !string.Equals(a.ActionText ?? "", b.ActionText ?? "", StringComparison.Ordinal)
-                    || !string.Equals(a.DetailText ?? "", b.DetailText ?? "", StringComparison.Ordinal))
+                    || !string.Equals(a.DetailText ?? "", b.DetailText ?? "", StringComparison.Ordinal)
+                    || !string.Equals(a.SourceText ?? "", b.SourceText ?? "", StringComparison.Ordinal))
                 {
                     return false;
                 }
@@ -444,6 +445,7 @@ namespace CKAN.App.Services
                         ActionKind    = action.ActionKind,
                         ActionText    = action.ActionText ?? "",
                         DetailText    = action.DetailText ?? "",
+                        SourceText    = action.SourceText ?? "",
                     })
                     .ToList(),
             };
