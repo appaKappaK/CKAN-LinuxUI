@@ -273,6 +273,7 @@ namespace CKAN.LinuxGUI
             appliedUiScalePercent = UiScaleSettings.NormalizePercent(appSettingsService.UiScalePercent);
             pendingUiScalePercent = appliedUiScalePercent;
             showDetailsPane = false;
+            ApplyStoredFilterState(modSearchService.Current);
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing,
                                                vm => vm.IsApplyingChanges,
@@ -523,7 +524,6 @@ namespace CKAN.LinuxGUI
             gameInstanceService.CurrentInstanceChanged += OnCurrentInstanceChanged;
             changesetService.QueueChanged += OnQueueChanged;
 
-            ApplyStoredFilterState(modSearchService.Current);
             RefreshQueuedActions();
             _ = RefreshAsync();
         }
@@ -2800,7 +2800,7 @@ namespace CKAN.LinuxGUI
         public bool ShowPreviewExtrasActionNotice => PreviewExtrasSelectionAvailable;
 
         public string PreviewExtrasActionNotice
-            => "Optional recommendations, suggestions, and supported mods are listed in Preview. Use each section's View button to inspect and queue extras before applying. Required dependencies are automatic.";
+            => "Optional extras are listed in Preview. Use each section's View button to inspect and queue extras. When Browse opens, click Close in the notice above the mod list to return to Preview. Required dependencies are automatic.";
 
         public bool HasPreviewDependenciesOrOptional
             => HasPreviewDependencies || HasPreviewOptionalExtras;
@@ -6448,7 +6448,7 @@ namespace CKAN.LinuxGUI
 
             if (removed.Count > 0)
             {
-                manager.Save();
+                manager.Save(false);
             }
             transaction.Complete();
             return removed;

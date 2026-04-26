@@ -34,8 +34,9 @@ what CKAN Linux is about to do:
 
 Optional recommendations, suggestions, and supported mods are informational.
 Use the `View` button on each optional section to open Browse filtered to those
-mods, queue any extras you want, then return to Preview. The `Apply Changes`
-button does not require reviewing optional extras first.
+mods, queue any extras you want, then use the `Close` button in the notice above
+the mod list to return to Preview. The `Apply Changes` button does not require
+reviewing optional extras first.
 
 Required virtual dependencies are different. If several mods provide the same
 required dependency, apply opens a provider-choice dialog. The dialog is capped
@@ -44,8 +45,9 @@ large provider sets do not take over the screen.
 
 The `Mods` menu includes maintenance actions for large cleanup passes:
 
-- `Queue remove missing installed mods` queues CKAN-managed installed mods whose
-  registered files were manually deleted from `GameData`.
+- `Clean up missing installed mods` immediately removes stale CKAN registry
+  entries for CKAN-managed mods whose registered files were manually deleted
+  from `GameData`, then reloads the browser.
 - `Queue remove all installed mods` replaces the current apply queue with
   removals for CKAN-managed installed mods.
 

@@ -175,8 +175,8 @@ namespace CKAN.LinuxGUI.VisualTests
             try
             {
                 await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
-                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "parallax");
-                viewModel.QueueInstallCommand.Execute().Subscribe(_ => { });
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.QueueUpdateCommand.Execute().Subscribe(_ => { });
                 await WaitForAsync(() => viewModel.QueuedActions.Count == 1);
 
                 string prompt = "";
@@ -204,6 +204,75 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 service.Dispose();
             }
+        }
+
+        [AvaloniaTest]
+        public async Task SavedClearAllFilter_StartsOnInstalledMods()
+        {
+            var settings = new FakeAppSettingsService();
+            settings.SaveBrowserState(new FilterState
+            {
+                InstalledOnly  = false,
+                SortOption     = ModSortOption.Popularity,
+                SortDescending = true,
+            }, false);
+
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var search = new ModSearchService(settings);
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                search,
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+            Assert.That(viewModel.FilterInstalledOnly, Is.True);
+
+            await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.FilterInstalledOnly, Is.True);
+                Assert.That(viewModel.ActiveFilterState.InstalledOnly, Is.True);
+                Assert.That(viewModel.Mods, Is.Not.Empty);
+                Assert.That(viewModel.Mods.All(mod => mod.IsInstalled), Is.True);
+            });
+        }
+
+        [AvaloniaTest]
+        public async Task SavedAdvancedFilter_IsRestoredInsteadOfHidden()
+        {
+            var settings = new FakeAppSettingsService();
+            settings.SaveBrowserState(new FilterState
+            {
+                InstalledOnly = false,
+                AuthorText    = "Gameslinx",
+                SortOption    = ModSortOption.Name,
+            }, false);
+
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var search = new ModSearchService(settings);
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                search,
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+            Assert.That(viewModel.AdvancedAuthorFilter, Is.EqualTo("Gameslinx"));
+
+            await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.FilterInstalledOnly, Is.False);
+                Assert.That(viewModel.AdvancedAuthorFilter, Is.EqualTo("Gameslinx"));
+                Assert.That(viewModel.Mods.Select(mod => mod.Identifier), Is.EqualTo(new[] { "parallax" }));
+            });
         }
 
         [AvaloniaTest]
@@ -238,7 +307,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.That(prompt, Does.Contain("1 CKAN-managed installed mod"));
                 Assert.That(prompt, Does.Contain("updates CKAN's registry immediately"));
                 Assert.That(viewModel.QueuedActions, Is.Empty);
-                Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Missing Mods Cleaned Up"));
+                Assert.That(viewModel.ApplyResultTitle, Is.EqualTo("Missing Mods Cleaned Up"), viewModel.Diagnostics);
                 Assert.That(service.CurrentRegistry?.InstalledModule("missing-mod"), Is.Null);
                 Assert.That(service.CurrentRegistry?.InstalledModule("present-mod"), Is.Not.Null);
                 Assert.That(service.CurrentRegistry?.InstalledModule("empty-mod"), Is.Not.Null);
@@ -320,6 +389,9 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(viewModel.ShowPreviewExtrasActionNotice, Is.True);
                     Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("View button"));
+                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("click Close"));
+                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("above the mod list"));
+                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("return to Preview"));
                     Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("Required dependencies are automatic"));
                     Assert.That(viewModel.ShowPreviewSurface, Is.True);
                 });
@@ -1220,6 +1292,7 @@ namespace CKAN.LinuxGUI.VisualTests
                                                    gameDir,
                                                    "Missing Registry Test",
                                                    new NullUser());
+                CurrentInstance.SetCompatibleVersions(new[] { new GameVersion(1, 12, 5) });
                 CurrentRegistryManager = RegistryManager.Instance(CurrentInstance, RepositoryData);
                 CurrentRegistry = CurrentRegistryManager.registry;
                 CurrentRegistry.RegisterModule(CreateRecommendationModule("missing-mod", "Missing Mod"),

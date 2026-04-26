@@ -123,9 +123,9 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 ### Mod Cleanup and Queue Management
 - Defaulted the browser to the `Installed` list when no saved filter state is active, making cleanup and updates the startup focus instead of the full catalog.
 - Added `Queue remove all installed mods` to the `Mods` menu as a confirmed bulk cleanup action for CKAN-managed installed mods.
-- Added `Queue remove missing installed mods` to recover from manually deleted `GameData` folders that still exist in CKAN's registry.
+- Added `Clean up missing installed mods` as a confirmed direct cleanup action for stale CKAN registry entries left behind by manually deleted `GameData` folders, followed by a browser reload.
 - Improved removal previews to include auto-removable dependencies that are no longer required by mods remaining installed.
-- Added tests covering remove-all queue replacement, missing-installed cleanup, remove-only dependency auto-removals, and default installed-list behavior.
+- Added tests covering remove-all queue replacement, direct missing-installed cleanup, remove-only dependency auto-removals, saved advanced filter restoration, and default installed-list behavior.
 
 ### Preview and Apply Flow
 - Added scroll containment for long apply follow-up lists so large cleanup runs do not create oversized warning dialogs.
