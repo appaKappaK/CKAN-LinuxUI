@@ -133,7 +133,7 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Changed optional recommendations, suggestions, and supported integration mods from a blocking chooser flow to an informational preview notice.
 - Added a `Supported` optional-extras preview section and per-section `View` actions so users can inspect optional extras in Browse before applying.
 - Kept required dependencies automatic, while provider choices for required virtual dependencies still prompt during apply.
-- Reformatted the provider-choice dialog with a capped scrollable list, clearer required-dependency prompt text, and two-line provider rows.
+- Reformatted the provider-choice dialog with a capped scrollable list, LinuxGUI dark surface, clearer required-dependency prompt text, and provider rows that include version, cache, download, and summary hints when CKAN metadata provides them.
 
 ### Documentation and Housekeeping
 - Updated `LinuxGUI/README.md` with the current desktop workflow, cleanup menu actions, optional-extras behavior, and provider-choice behavior.

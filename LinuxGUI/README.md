@@ -41,8 +41,9 @@ reviewing optional extras first.
 
 Required virtual dependencies are different. If several mods provide the same
 required dependency, apply opens a provider-choice dialog. The dialog is capped
-to a scrollable list and shows the provider identifier with its display name so
-large provider sets do not take over the screen.
+to a scrollable list and shows the provider identifier, display name, and any
+available CKAN hints such as version, cache state, download count, and summary
+so large provider sets do not take over the screen.
 
 The `Mods` menu includes maintenance actions for large cleanup passes:
 

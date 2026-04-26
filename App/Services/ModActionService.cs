@@ -915,7 +915,10 @@ namespace CKAN.App.Services
                                     .ToArray();
 
             var selection = user.RaiseSelectionDialog(ProviderChoicePrompt(ex),
-                                                      choices.Select(m => $"{m.identifier} ({m.name})")
+                                                      choices.Select(m => ProviderChoiceOption(registry,
+                                                                                               cache,
+                                                                                               ex,
+                                                                                               m))
                                                              .ToArray());
 
             return selection >= 0 && selection < choices.Length
@@ -925,9 +928,46 @@ namespace CKAN.App.Services
 
         private static string ProviderChoicePrompt(TooManyModsProvideKraken ex)
             => string.Join(Environment.NewLine,
-                           $"Choose a provider for required dependency: {ex.requested}",
+                           $"{ex.requester.name} requires dependency: {ex.requested}",
                            "",
-                           $"{ex.requester.name} needs this virtual dependency. Pick one compatible mod to install.");
+                           "Pick one compatible provider to install.");
+
+        private string ProviderChoiceOption(Registry              registry,
+                                            NetModuleCache        cache,
+                                            TooManyModsProvideKraken ex,
+                                            CkanModule            module)
+        {
+            var details = new List<string>
+            {
+                $"Version {module.version}",
+            };
+
+            details.Add(cache.IsCached(module)
+                ? "cached"
+                : module.download_size > 0
+                    ? CkanModule.FmtSize(module.download_size)
+                    : "not cached");
+
+            if (gameInstanceService.RepositoryData.GetDownloadCount(registry.Repositories.Values,
+                                                                    module.identifier) is int downloads)
+            {
+                details.Add($"{downloads:N0} downloads");
+            }
+
+            if (string.Equals(module.identifier, ex.requested, StringComparison.OrdinalIgnoreCase))
+            {
+                details.Add("direct identifier match");
+            }
+
+            var summary = module.@abstract?.Trim();
+            var detail = string.Join(" | ", details);
+            if (!string.IsNullOrWhiteSpace(summary))
+            {
+                detail = $"{detail}{Environment.NewLine}{summary}";
+            }
+
+            return $"{module.identifier} ({module.name}){Environment.NewLine}{detail}";
+        }
 
         private static List<CkanModule> DistinctModules(IEnumerable<CkanModule> modules)
             => modules.GroupBy(mod => mod.identifier, StringComparer.OrdinalIgnoreCase)

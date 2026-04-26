@@ -50,10 +50,11 @@ namespace CKAN.LinuxGUI
 
             public bool HasOptions => Options.Count > 0;
 
-            public string OptionsSummary
-                => Options.Count == 1
-                    ? "1 option available"
-                    : $"{Options.Count} options available";
+            public string SelectionHint
+                => Prompt.Contains("provider", StringComparison.OrdinalIgnoreCase)
+                   || Prompt.Contains("dependency", StringComparison.OrdinalIgnoreCase)
+                    ? "This dependency can be satisfied by more than one mod. Select the provider you want CKAN to install."
+                    : "Select one option, then confirm.";
 
             public string ConfirmLabel { get; }
 
@@ -65,31 +66,45 @@ namespace CKAN.LinuxGUI
         private sealed class PromptOption
         {
             private PromptOption(string primary,
-                                 string secondary)
+                                 string secondary,
+                                 string detail)
             {
                 Primary = primary;
                 Secondary = secondary;
+                Detail = detail;
             }
 
             public string Primary { get; }
 
             public string Secondary { get; }
 
+            public string Detail { get; }
+
             public bool HasSecondary => !string.IsNullOrWhiteSpace(Secondary);
+
+            public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 
             public static PromptOption FromText(string text)
             {
                 var value = text?.Trim() ?? "";
-                var nameStart = value.LastIndexOf(" (", StringComparison.Ordinal);
+                var lines = value.Split(new[] { '\r', '\n' },
+                                        StringSplitOptions.RemoveEmptyEntries
+                                        | StringSplitOptions.TrimEntries);
+                var firstLine = lines.FirstOrDefault() ?? "";
+                var detail = lines.Length > 1
+                    ? string.Join(Environment.NewLine, lines.Skip(1))
+                    : "";
+                var nameStart = firstLine.LastIndexOf(" (", StringComparison.Ordinal);
                 if (nameStart > 0
-                    && value.EndsWith(")", StringComparison.Ordinal)
-                    && nameStart + 2 < value.Length - 1)
+                    && firstLine.EndsWith(")", StringComparison.Ordinal)
+                    && nameStart + 2 < firstLine.Length - 1)
                 {
-                    return new PromptOption(value[..nameStart],
-                                            value[(nameStart + 2)..^1]);
+                    return new PromptOption(firstLine[..nameStart],
+                                            firstLine[(nameStart + 2)..^1],
+                                            detail);
                 }
 
-                return new PromptOption(value, "");
+                return new PromptOption(firstLine, "", detail);
             }
         }
     }

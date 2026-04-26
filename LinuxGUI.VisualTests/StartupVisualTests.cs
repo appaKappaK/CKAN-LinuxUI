@@ -32,6 +32,23 @@ namespace CKAN.LinuxGUI.VisualTests
             => RenderScenarioAsync(VisualScenario.SelectionRequired, "startup-selection-required");
 
         [AvaloniaTest]
+        public void ProviderChoicePrompt_RendersReadableSurface()
+        {
+            var window = new SimplePromptWindow(
+                "KSPBurst Compiler requires dependency: KSPBurst\n\nPick one compatible provider to install.",
+                new[]
+                {
+                    "KSPBurst (KSPBurst Compiler)\nVersion 1.5.5 | cached | 42,100 downloads | direct identifier match\nOptimized Burst compiler support for high-performance KSP mods.",
+                    "KSPBurst-Lite (KSPBurst Lite)\nVersion 1.5.5-lite | not cached | 9,875 downloads\nSmaller provider package for installs that only need the core runtime.",
+                })
+            {
+                Width = 660,
+            };
+
+            VisualTestSupport.CaptureAndAssert(window, "prompt-provider-choice");
+        }
+
+        [AvaloniaTest]
         public Task ReadyShell_Renders()
             => RenderScenarioAsync(VisualScenario.Ready, "startup-ready");
 

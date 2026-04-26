@@ -7,7 +7,8 @@
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        Title="CKAN Linux">
+        Title="CKAN Linux"
+        Background="#171C22">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -39,45 +40,60 @@
 
   <Grid RowDefinitions="Auto,Auto"
         Margin="20">
-    <StackPanel Spacing="12">
-      <TextBlock FontSize="15"
-                 FontWeight="SemiBold"
-                 Foreground="#F4F6F8"
-                 TextWrapping="Wrap"
-                 Text="{Binding Prompt}" />
+    <Border Background="#161B21"
+            BorderBrush="#2B3642"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="16">
+      <StackPanel Spacing="12">
+        <TextBlock FontSize="15"
+                   FontWeight="SemiBold"
+                   Foreground="#F4F6F8"
+                   TextWrapping="Wrap"
+                   Text="{Binding Prompt}" />
 
-      <TextBlock FontSize="12"
-                 Foreground="#AAB6C4"
-                 IsVisible="{Binding HasOptions}"
-                 Text="{Binding OptionsSummary}" />
+        <TextBlock FontSize="12"
+                   Foreground="#7F8D9B"
+                   IsVisible="{Binding HasOptions}"
+                   Text="{Binding SelectionHint}" />
 
-      <ListBox Classes="utility-list"
-               MaxHeight="420"
-               ItemsSource="{Binding Options}"
-               SelectedIndex="{Binding SelectedIndex}"
-               IsVisible="{Binding HasOptions}">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <Border Classes="utility-list-row">
-              <Grid RowDefinitions="Auto,Auto">
-                <TextBlock FontWeight="SemiBold"
-                           Foreground="#F4F6F8"
-                           TextTrimming="CharacterEllipsis"
-                           Text="{Binding Primary}" />
-                <TextBlock Grid.Row="1"
-                           Margin="0,3,0,0"
-                           FontSize="12"
-                           Foreground="#AAB6C4"
-                           MaxLines="1"
-                           TextTrimming="CharacterEllipsis"
-                           IsVisible="{Binding HasSecondary}"
-                           Text="{Binding Secondary}" />
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-    </StackPanel>
+        <ListBox Classes="utility-list"
+                 MaxHeight="420"
+                 ItemsSource="{Binding Options}"
+                 SelectedIndex="{Binding SelectedIndex}"
+                 IsVisible="{Binding HasOptions}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="utility-list-row">
+                <Grid RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock FontWeight="SemiBold"
+                             Foreground="#F4F6F8"
+                             TextTrimming="CharacterEllipsis"
+                             Text="{Binding Primary}" />
+                  <TextBlock Grid.Row="1"
+                             Margin="0,3,0,0"
+                             FontSize="12"
+                             Foreground="#AAB6C4"
+                             MaxLines="1"
+                             TextTrimming="CharacterEllipsis"
+                             IsVisible="{Binding HasSecondary}"
+                             Text="{Binding Secondary}" />
+                  <TextBlock Grid.Row="2"
+                             Margin="0,5,0,0"
+                             FontSize="12"
+                             Foreground="#8E9EAE"
+                             MaxLines="2"
+                             TextWrapping="Wrap"
+                             TextTrimming="CharacterEllipsis"
+                             IsVisible="{Binding HasDetail}"
+                             Text="{Binding Detail}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </Border>
 
     <StackPanel Grid.Row="1"
                 Orientation="Horizontal"
