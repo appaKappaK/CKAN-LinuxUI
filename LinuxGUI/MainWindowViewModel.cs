@@ -6553,7 +6553,7 @@ namespace CKAN.LinuxGUI
 
             if (result.Success)
             {
-                await LoadModCatalogAsync();
+                await LoadCatalogAfterAppliedChangesAsync();
             }
 
             ShowExecutionResultDialog(result.Success);
@@ -7688,7 +7688,7 @@ namespace CKAN.LinuxGUI
 
                 if (result.Success)
                 {
-                    await LoadModCatalogAsync();
+                    await LoadCatalogAfterAppliedChangesAsync();
                 }
             }
             catch (Exception ex)
@@ -7763,7 +7763,7 @@ namespace CKAN.LinuxGUI
                         changesetService.Remove(targetMod.Identifier);
                     }
 
-                    await LoadModCatalogAsync();
+                    await LoadCatalogAfterAppliedChangesAsync();
                 }
             }
             catch (Exception ex)
@@ -7815,7 +7815,7 @@ namespace CKAN.LinuxGUI
                         changesetService.Remove(targetMod.Identifier);
                     }
 
-                    await LoadModCatalogAsync();
+                    await LoadCatalogAfterAppliedChangesAsync();
                 }
             }
             catch (Exception ex)
@@ -7855,7 +7855,7 @@ namespace CKAN.LinuxGUI
 
                 if (result.Success)
                 {
-                    await LoadModCatalogAsync();
+                    await LoadCatalogAfterAppliedChangesAsync();
                 }
             }
             catch (Exception ex)
@@ -7880,6 +7880,27 @@ namespace CKAN.LinuxGUI
             {
                 ShowExecutionResultDialog(result.Success);
             }
+        }
+
+        private async Task LoadCatalogAfterAppliedChangesAsync()
+        {
+            ClearRelationshipBrowserScopeForCatalogReload();
+            await LoadModCatalogAsync();
+        }
+
+        private void ClearRelationshipBrowserScopeForCatalogReload()
+        {
+            if (!ShowRelationshipBrowserScope)
+            {
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
+            RelationshipBrowserScopeText = "";
+            pendingModListScrollReset = true;
+            PublishRelationshipBrowserScopeState();
         }
 
         private void SetExecutionState(string title,
