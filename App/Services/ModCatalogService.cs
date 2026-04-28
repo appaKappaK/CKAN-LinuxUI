@@ -266,21 +266,35 @@ namespace CKAN.App.Services
             int installedCount = 0;
 
             var installedWatch = Stopwatch.StartNew();
+            long installedLatestMs = 0;
+            long installedUpdateMs = 0;
+            long installedRowMs    = 0;
             foreach (var instMod in registry.InstalledModules
                                             .Where(im => !im.Module.IsDLC)
                                             .OrderBy(im => im.identifier, StringComparer.OrdinalIgnoreCase))
             {
                 var identifier = instMod.identifier;
+                var latestWatch = Stopwatch.StartNew();
                 var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
                 var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
                 var displayMod       = latestCompatible ?? latestAvailable ?? instMod.Module;
+                latestWatch.Stop();
+                installedLatestMs += latestWatch.ElapsedMilliseconds;
 
+                var updateWatch = Stopwatch.StartNew();
+                bool hasUpdate = HasUpdate(registry, inst, identifier, checkMissingFiles: false);
+                updateWatch.Stop();
+                installedUpdateMs += updateWatch.ElapsedMilliseconds;
+
+                var rowWatch = Stopwatch.StartNew();
                 items.Add(MakeListItem(context,
                                        displayMod,
                                        installedModule: instMod,
-                                       hasUpdate: HasUpdate(registry, inst, identifier),
+                                       hasUpdate: hasUpdate,
                                        incompatibleOverride: latestCompatible == null
                                                              && !instMod.Module.IsCompatible(inst.VersionCriteria())));
+                rowWatch.Stop();
+                installedRowMs += rowWatch.ElapsedMilliseconds;
                 installedCount++;
             }
             installedWatch.Stop();
@@ -319,7 +333,7 @@ namespace CKAN.App.Services
             totalWatch.Stop();
 
             Trace.TraceInformation(
-                $"Mod catalog index build modules={index.Modules.Count} candidates={identifiers.Count} installed={installedCount} resolved={resolvedCount} incompatible={incompatibleCount} skipped={skippedCount} items={items.Count} load_index_ms={indexWatch.ElapsedMilliseconds} installed_ms={installedWatch.ElapsedMilliseconds} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                $"Mod catalog index build modules={index.Modules.Count} candidates={identifiers.Count} installed={installedCount} resolved={resolvedCount} incompatible={incompatibleCount} skipped={skippedCount} items={items.Count} load_index_ms={indexWatch.ElapsedMilliseconds} installed_ms={installedWatch.ElapsedMilliseconds} installed_latest_ms={installedLatestMs} installed_update_ms={installedUpdateMs} installed_row_ms={installedRowMs} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
 
             return items.Count > 0 ? items : null;
         }
@@ -1027,7 +1041,10 @@ namespace CKAN.App.Services
             }
         }
 
-        private bool HasUpdate(IRegistryQuerier registry, GameInstance instance, string identifier)
+        private bool HasUpdate(IRegistryQuerier registry,
+                               GameInstance     instance,
+                               string           identifier,
+                               bool             checkMissingFiles = true)
         {
             var filters = gameInstanceService.Configuration.GetGlobalInstallFilters(instance.Game)
                                                            .Concat(instance.InstallFilters)
@@ -1036,7 +1053,7 @@ namespace CKAN.App.Services
                                       instance.StabilityToleranceConfig,
                                       instance,
                                       filters,
-                                      true,
+                                      checkMissingFiles,
                                       out _);
         }
 
