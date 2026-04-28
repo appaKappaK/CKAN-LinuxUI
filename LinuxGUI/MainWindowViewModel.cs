@@ -66,6 +66,8 @@ namespace CKAN.LinuxGUI
         private const int    DevQueueSmokePreviewConflictCount = 8;
         private const int    DevQueueSmokePreviewAutoRemovalCount = 6;
         private const int    CatalogLoadSettleDelayMs = 75;
+        private const int    CatalogLoadingIndicatorDelayMs = 175;
+        private const int    RecentCatalogReloadSuppressionMs = 500;
 
         private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
@@ -186,6 +188,7 @@ namespace CKAN.LinuxGUI
         private int     catalogLoadRequestId;
         private int     selectedModLoadRequestId;
         private int     modListScrollResetRequestId;
+        private DateTime lastCatalogLoadCompletedUtc = DateTime.MinValue;
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
         private bool    suppressFilterAutoRefresh;
@@ -4985,6 +4988,11 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            if (CanReuseRecentCatalogLoad())
+            {
+                return;
+            }
+
             Interlocked.Increment(ref catalogLoadRequestId);
             if (!await catalogLoadSemaphore.WaitAsync(0))
             {
@@ -5002,9 +5010,16 @@ namespace CKAN.LinuxGUI
                     }
 
                     int activeRequestId = catalogLoadRequestId;
-                    IsCatalogLoading = true;
-                    CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
                     var previousSelection = SelectedMod?.Identifier;
+
+                    if (CanReuseRecentCatalogLoad())
+                    {
+                        break;
+                    }
+
+                    using var loadingIndicatorCts = new CancellationTokenSource();
+                    var loadingIndicatorTask = ShowCatalogLoadingAfterDelayAsync(activeRequestId,
+                                                                                 loadingIndicatorCts.Token);
 
                     try
                     {
@@ -5017,6 +5032,7 @@ namespace CKAN.LinuxGUI
                             continue;
                         }
 
+                        loadingIndicatorCts.Cancel();
                         var uiWatch = Stopwatch.StartNew();
                         ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
@@ -5029,11 +5045,13 @@ namespace CKAN.LinuxGUI
                         totalWatch.Stop();
                         var summary = $"Last catalog load: {items.Count} mods in {totalWatch.ElapsedMilliseconds} ms (service {serviceWatch.ElapsedMilliseconds} ms, UI {uiWatch.ElapsedMilliseconds} ms).";
                         Diagnostics = summary;
+                        lastCatalogLoadCompletedUtc = DateTime.UtcNow;
                         Trace.TraceInformation(
                             $"LinuxGUI catalog load request={activeRequestId} items={items.Count} service_ms={serviceWatch.ElapsedMilliseconds} ui_ms={uiWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
                     }
                     catch (Exception ex)
                     {
+                        loadingIndicatorCts.Cancel();
                         Trace.TraceError($"Mod catalog load failed: {ex}");
                         if (activeRequestId != catalogLoadRequestId)
                         {
@@ -5045,6 +5063,15 @@ namespace CKAN.LinuxGUI
                     }
                     finally
                     {
+                        loadingIndicatorCts.Cancel();
+                        try
+                        {
+                            await loadingIndicatorTask;
+                        }
+                        catch (TaskCanceledException)
+                        {
+                        }
+
                         if (activeRequestId == catalogLoadRequestId)
                         {
                             IsCatalogLoading = false;
@@ -5061,6 +5088,25 @@ namespace CKAN.LinuxGUI
             finally
             {
                 catalogLoadSemaphore.Release();
+            }
+        }
+
+        private bool CanReuseRecentCatalogLoad()
+            => allCatalogItems.Count > 0
+               && !IsCatalogLoading
+               && DateTime.UtcNow - lastCatalogLoadCompletedUtc
+                    < TimeSpan.FromMilliseconds(RecentCatalogReloadSuppressionMs);
+
+        private async Task ShowCatalogLoadingAfterDelayAsync(int               requestId,
+                                                             CancellationToken cancellationToken)
+        {
+            await Task.Delay(CatalogLoadingIndicatorDelayMs, cancellationToken);
+            if (!cancellationToken.IsCancellationRequested
+                && requestId == catalogLoadRequestId)
+            {
+                IsCatalogLoading = true;
+                CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
+                PublishCatalogStateLabels();
             }
         }
 
