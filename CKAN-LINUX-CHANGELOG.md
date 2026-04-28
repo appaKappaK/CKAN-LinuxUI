@@ -141,6 +141,9 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## 2026-04-28
 
+### Status Chrome
+- Simplified the ready-state status pill so transient messages have more usable width and no longer compete with an embedded progress bar.
+
 ### Preview and Relationship Browser Fixes
 - Fixed preview dependency/recommendation/suggestion `View` actions so Browse opens the relationship target mods instead of matching the source mod from text such as `recommended by`.
 - Kept already-planned installs out of optional recommendation/suggestion results so self-recommending or already queued mods do not block Apply.

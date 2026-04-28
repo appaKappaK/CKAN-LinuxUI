@@ -2251,24 +2251,15 @@
                   CornerRadius="8"
                   Padding="10,6"
                   Width="210"
-                  Margin="14,0,38,0"
+                  Margin="8,0,28,0"
+                  ClipToBounds="True"
                   IsVisible="{Binding ShowReadyStatusSurface}"
                   VerticalAlignment="Center">
-            <Grid ColumnDefinitions="72,*"
-                  VerticalAlignment="Center">
-              <ProgressBar Width="56"
-                           Height="3"
-                           VerticalAlignment="Center"
-                           Minimum="0"
-                           Maximum="100"
-                           Value="{Binding ProgressPercent}" />
-              <TextBlock Grid.Column="1"
-                         FontSize="11.5"
-                         Opacity="0.74"
-                         TextTrimming="CharacterEllipsis"
-                         MaxLines="1"
-                         Text="{Binding StatusMessage}" />
-            </Grid>
+            <TextBlock FontSize="11.5"
+                       Opacity="0.74"
+                       TextTrimming="CharacterEllipsis"
+                       MaxLines="1"
+                       Text="{Binding StatusMessage}" />
           </Border>
         </Grid>
     </Border>
