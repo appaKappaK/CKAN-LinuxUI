@@ -106,7 +106,7 @@ Install the Linux GUI into a local prefix so it can be launched as
 `~/.local/bin/ckan-linux` without typing the staged package path:
 
 ```bash
-./scripts/install-linuxgui-local.sh
+./scripts/install-linuxgui.sh
 ~/.local/bin/ckan-linux
 ```
 

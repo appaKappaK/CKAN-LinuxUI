@@ -21,7 +21,7 @@ back to the legacy `ckan.exe gui` path.
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
-./scripts/install-linuxgui-local.sh
+./scripts/install-linuxgui.sh
 ~/.local/bin/ckan-linux
 ```
 
@@ -64,7 +64,7 @@ For normal local use, install the desktop app into `~/.local` and launch it as
 `~/.local/bin/ckan-linux`:
 
 ```bash
-./scripts/install-linuxgui-local.sh
+./scripts/install-linuxgui.sh
 ~/.local/bin/ckan-linux
 ```
 

@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 
 ### Internal
 
+- [LinuxGUI] Rename the local installer script and improve terminal progress output
 - [LinuxGUI] Organize the Avalonia shell into Shell, Windows, Models, and Services folders
 - [LinuxGUI] Load Rust catalog sidecar rows directly and cache parsed sidecar files for faster mod browser startup
 - [Docs] Update download count image for Minkowski² (#4474 by: Clayell; reviewed: HebaruSan)
