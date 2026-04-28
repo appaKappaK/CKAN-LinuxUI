@@ -181,11 +181,6 @@ default it writes:
 - settings: `~/.local/share/CKAN/linuxgui.settings.json`
 - shared CKAN data: `~/.local/share/CKAN/`
 
-The shell now also stores a persisted display-scale setting in that
-`linuxgui.settings.json` file. Use the `Display Scale` section in the left rail,
-pick a smaller or larger scale, then use `Restart to Apply` to relaunch the app
-with the new scale.
-
 The Linux shell initializes logging from `log4net.linuxgui.xml`. When you use
 `./scripts/run-linuxgui-dev.sh`, the launcher now writes a comprehensive dev
 session log and installs a debug-level log4net config in the isolated `run/`
