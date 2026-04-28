@@ -131,8 +131,9 @@ CKAN_LINUX_DEV_HOME=/path/to/dev-home ./scripts/run-linuxgui-dev.sh
 
 The mod browser can optionally use a Rust-generated catalog sidecar for faster
 catalog/search experiments while CKAN's registry remains authoritative for
-installs and dependency resolution. Generate the file with `ckan-meta-rs` and
-point the GUI at it:
+details, installs, and dependency resolution. Sidecar rows include browse-list
+metadata such as title, summary, relationships, compatibility, release date, and
+download count. Generate the file with `ckan-meta-rs` and point the GUI at it:
 
 ```bash
 CKAN_CATALOG_INDEX_PATH=/path/to/catalog-index-latest.json ./scripts/run-linuxgui-dev.sh
@@ -145,7 +146,7 @@ Catalog load timings are written to the dev session/debug logs. Look for these
 prefixes when comparing normal mode to sidecar mode:
 
 - `Mod catalog service list`
-- `Mod catalog index build`
+- `Mod catalog index direct build`
 - `Mod catalog registry build`
 - `LinuxGUI catalog load`
 - `LinuxGUI catalog filter`

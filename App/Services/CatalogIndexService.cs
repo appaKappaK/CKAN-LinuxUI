@@ -12,6 +12,12 @@ namespace CKAN.App.Services
 {
     public sealed class CatalogIndexService
     {
+        private readonly object cacheLock = new object();
+        private string?         cachedPath;
+        private DateTime        cachedLastWriteUtc;
+        private long            cachedLength;
+        private CatalogIndex?   cachedIndex;
+
         public CatalogIndex? TryLoad()
         {
             foreach (var path in CandidatePaths())
@@ -29,15 +35,39 @@ namespace CKAN.App.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                if (string.IsNullOrWhiteSpace(path))
                 {
                     return null;
                 }
 
-                var index = JsonConvert.DeserializeObject<CatalogIndex>(File.ReadAllText(path));
-                return index?.SchemaVersion == 1 && index.Modules.Count > 0
-                    ? index
-                    : null;
+                var info = new FileInfo(path);
+                if (!info.Exists)
+                {
+                    return null;
+                }
+
+                lock (cacheLock)
+                {
+                    if (cachedIndex != null
+                        && string.Equals(cachedPath, info.FullName, StringComparison.Ordinal)
+                        && cachedLastWriteUtc == info.LastWriteTimeUtc
+                        && cachedLength == info.Length)
+                    {
+                        return cachedIndex;
+                    }
+
+                    var index = JsonConvert.DeserializeObject<CatalogIndex>(File.ReadAllText(info.FullName));
+                    if (index?.SchemaVersion == 1 && index.Modules.Count > 0)
+                    {
+                        cachedPath         = info.FullName;
+                        cachedLastWriteUtc = info.LastWriteTimeUtc;
+                        cachedLength       = info.Length;
+                        cachedIndex        = index;
+                        return index;
+                    }
+                }
+
+                return null;
             }
             catch
             {
@@ -64,6 +94,15 @@ namespace CKAN.App.Services
                     .Where(module => !string.Equals(module.Kind, "dlc", StringComparison.OrdinalIgnoreCase))
                     .Select(module => module.Identifier)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+        public static IReadOnlyList<CatalogIndexModule> LatestModules(CatalogIndex index)
+            => index.Modules
+                    .Where(module => module.IsLatest)
+                    .Where(module => !string.IsNullOrWhiteSpace(module.Identifier))
+                    .Where(module => !string.Equals(module.Kind, "dlc", StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(module => module.Identifier, StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
                     .ToList();
     }
 }

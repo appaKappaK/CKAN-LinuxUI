@@ -65,6 +65,7 @@ namespace CKAN.LinuxGUI
         private const int    DevQueueSmokeTargetActionCount = 20;
         private const int    DevQueueSmokePreviewConflictCount = 8;
         private const int    DevQueueSmokePreviewAutoRemovalCount = 6;
+        private const int    CatalogLoadSettleDelayMs = 75;
 
         private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
@@ -4994,6 +4995,12 @@ namespace CKAN.LinuxGUI
             {
                 while (IsReady)
                 {
+                    await Task.Delay(CatalogLoadSettleDelayMs);
+                    if (!IsReady)
+                    {
+                        break;
+                    }
+
                     int activeRequestId = catalogLoadRequestId;
                     IsCatalogLoading = true;
                     CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";

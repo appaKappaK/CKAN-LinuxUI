@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -33,15 +34,12 @@ namespace CKAN.App.Services
                 }
 
                 var totalWatch = Stopwatch.StartNew();
-                var primeWatch = Stopwatch.StartNew();
-                PrimeRepositoryCache(context);
-                primeWatch.Stop();
                 var buildWatch = Stopwatch.StartNew();
-                var items = BuildCurrentItems(context, out string source);
+                var items = BuildCurrentItems(context, out string source, out long primeMs);
                 buildWatch.Stop();
                 totalWatch.Stop();
                 Trace.TraceInformation(
-                    $"Mod catalog service list source={source} items={items.Count} prime_ms={primeWatch.ElapsedMilliseconds} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                    $"Mod catalog service list source={source} items={items.Count} prime_ms={primeMs} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
                 return (IReadOnlyList<ModListItem>)items;
             }, cancellationToken);
 
@@ -60,15 +58,12 @@ namespace CKAN.App.Services
                 }
 
                 var totalWatch = Stopwatch.StartNew();
-                var primeWatch = Stopwatch.StartNew();
-                PrimeRepositoryCache(context);
-                primeWatch.Stop();
                 var buildWatch = Stopwatch.StartNew();
-                var items = BuildCurrentItems(context, out string source);
+                var items = BuildCurrentItems(context, out string source, out long primeMs);
                 buildWatch.Stop();
                 totalWatch.Stop();
                 Trace.TraceInformation(
-                    $"Mod catalog service counts source={source} items={items.Count} prime_ms={primeWatch.ElapsedMilliseconds} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                    $"Mod catalog service counts source={source} items={items.Count} prime_ms={primeMs} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
 
                 return GetFilterOptionCounts(items, filter);
             }, cancellationToken);
@@ -180,14 +175,21 @@ namespace CKAN.App.Services
             => gameInstanceService.RepositoryData.Prepopulate(context.Registry.Repositories.Values.ToList(), null);
 
         private List<ModListItem> BuildCurrentItems(CatalogContext context,
-                                                    out string     source)
+                                                    out string     source,
+                                                    out long       primeMs)
         {
             var indexedItems = BuildItemsFromCatalogIndex(context);
             if (indexedItems != null)
             {
                 source = "catalog-index";
+                primeMs = 0;
                 return indexedItems;
             }
+
+            var primeWatch = Stopwatch.StartNew();
+            PrimeRepositoryCache(context);
+            primeWatch.Stop();
+            primeMs = primeWatch.ElapsedMilliseconds;
 
             source = "registry";
             var watch = Stopwatch.StartNew();
@@ -262,69 +264,64 @@ namespace CKAN.App.Services
             var inst            = context.Instance;
             var installedIdents = registry.InstalledModules.Select(im => im.identifier)
                                                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var latestModules = CatalogIndexService.LatestModules(index)
+                                                   .ToDictionary(module => module.Identifier,
+                                                                 StringComparer.OrdinalIgnoreCase);
             var items = new List<ModListItem>();
             int installedCount = 0;
 
             var installedWatch = Stopwatch.StartNew();
-            long installedLatestMs = 0;
-            long installedUpdateMs = 0;
             long installedRowMs    = 0;
             foreach (var instMod in registry.InstalledModules
                                             .Where(im => !im.Module.IsDLC)
                                             .OrderBy(im => im.identifier, StringComparer.OrdinalIgnoreCase))
             {
                 var identifier = instMod.identifier;
-                var latestWatch = Stopwatch.StartNew();
-                var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
-                var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
-                var displayMod       = latestCompatible ?? latestAvailable ?? instMod.Module;
-                latestWatch.Stop();
-                installedLatestMs += latestWatch.ElapsedMilliseconds;
-
-                var updateWatch = Stopwatch.StartNew();
-                bool hasUpdate = HasUpdate(registry, inst, identifier, checkMissingFiles: false);
-                updateWatch.Stop();
-                installedUpdateMs += updateWatch.ElapsedMilliseconds;
-
                 var rowWatch = Stopwatch.StartNew();
-                items.Add(MakeListItem(context,
-                                       displayMod,
-                                       installedModule: instMod,
-                                       hasUpdate: hasUpdate,
-                                       incompatibleOverride: latestCompatible == null
-                                                             && !instMod.Module.IsCompatible(inst.VersionCriteria())));
+                if (latestModules.TryGetValue(identifier, out var indexedModule))
+                {
+                    bool latestCompatible = CatalogModuleCompatible(indexedModule, inst.VersionCriteria());
+                    bool hasUpdate = latestCompatible
+                                     && CatalogVersionGreaterThan(indexedModule.Version, instMod.Module.version);
+                    items.Add(MakeListItemFromCatalogIndex(context,
+                                                           indexedModule,
+                                                           installedModule: instMod,
+                                                           hasUpdate: hasUpdate,
+                                                           incompatibleOverride: !latestCompatible
+                                                                                 && !instMod.Module.IsCompatible(inst.VersionCriteria())));
+                }
+                else
+                {
+                    items.Add(MakeListItem(context,
+                                           instMod.Module,
+                                           installedModule: instMod,
+                                           hasUpdate: false,
+                                           incompatibleOverride: !instMod.Module.IsCompatible(inst.VersionCriteria())));
+                }
                 rowWatch.Stop();
                 installedRowMs += rowWatch.ElapsedMilliseconds;
                 installedCount++;
             }
             installedWatch.Stop();
 
-            var identifiers = CatalogIndexService.LatestIdentifiers(index)
-                                                 .Where(identifier => !installedIdents.Contains(identifier))
-                                                 .ToList();
             int resolvedCount = 0;
             int skippedCount  = 0;
             int incompatibleCount = 0;
 
             var resolveWatch = Stopwatch.StartNew();
-            foreach (var identifier in identifiers)
+            foreach (var indexedModule in latestModules.Values
+                                                       .Where(module => !installedIdents.Contains(module.Identifier))
+                                                       .OrderBy(module => module.Identifier,
+                                                                StringComparer.OrdinalIgnoreCase))
             {
-                var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
-                var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
-                var displayMod       = latestCompatible ?? latestAvailable;
-                if (displayMod == null || displayMod.IsDLC)
-                {
-                    skippedCount++;
-                    continue;
-                }
-
-                items.Add(MakeListItem(context,
-                                       displayMod,
+                bool compatible = CatalogModuleCompatible(indexedModule, inst.VersionCriteria());
+                items.Add(MakeListItemFromCatalogIndex(context,
+                                       indexedModule,
                                        installedModule: null,
                                        hasUpdate: false,
-                                       incompatibleOverride: latestCompatible == null));
+                                       incompatibleOverride: !compatible));
                 resolvedCount++;
-                if (latestCompatible == null)
+                if (!compatible)
                 {
                     incompatibleCount++;
                 }
@@ -333,9 +330,101 @@ namespace CKAN.App.Services
             totalWatch.Stop();
 
             Trace.TraceInformation(
-                $"Mod catalog index build modules={index.Modules.Count} candidates={identifiers.Count} installed={installedCount} resolved={resolvedCount} incompatible={incompatibleCount} skipped={skippedCount} items={items.Count} load_index_ms={indexWatch.ElapsedMilliseconds} installed_ms={installedWatch.ElapsedMilliseconds} installed_latest_ms={installedLatestMs} installed_update_ms={installedUpdateMs} installed_row_ms={installedRowMs} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                $"Mod catalog index direct build modules={index.Modules.Count} candidates={latestModules.Count} installed={installedCount} resolved={resolvedCount} incompatible={incompatibleCount} skipped={skippedCount} items={items.Count} load_index_ms={indexWatch.ElapsedMilliseconds} installed_ms={installedWatch.ElapsedMilliseconds} installed_row_ms={installedRowMs} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
 
             return items.Count > 0 ? items : null;
+        }
+
+        private ModListItem MakeListItemFromCatalogIndex(CatalogContext      context,
+                                                         CatalogIndexModule  module,
+                                                         InstalledModule?    installedModule,
+                                                         bool                hasUpdate,
+                                                         bool                incompatibleOverride)
+        {
+            var installedCkanModule = installedModule?.Module;
+            bool isAutodetected = context.Registry.IsAutodetected(module.Identifier);
+            bool isInstalled = installedModule != null || isAutodetected;
+            bool isCached = installedCkanModule != null && IsCached(context, installedCkanModule);
+            bool hasVersionUpdate = hasUpdate
+                                    && installedCkanModule != null
+                                    && CatalogVersionGreaterThan(module.Version, installedCkanModule.version);
+            string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
+                                                               isAutodetected,
+                                                               hasVersionUpdate,
+                                                               incompatibleOverride,
+                                                               isCached,
+                                                               hasReplacement: false);
+            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected);
+            string tertiaryStateLabel = FormatTertiaryStateLabel(isAutodetected,
+                                                                 incompatibleOverride);
+            string statusSummary = FormatStatusSummary(isInstalled,
+                                                       hasVersionUpdate,
+                                                       incompatibleOverride,
+                                                       isCached,
+                                                       hasReplacement: false);
+            var releaseDate = ParseCatalogDate(module.ReleaseDate);
+
+            return new ModListItem
+            {
+                Identifier        = module.Identifier,
+                Name              = string.IsNullOrWhiteSpace(module.Name)
+                    ? module.Identifier
+                    : module.Name.Trim(),
+                Author            = string.Join(", ", module.Authors),
+                Summary           = module.AbstractText?.Trim() ?? "",
+                Description       = string.IsNullOrWhiteSpace(module.Description)
+                    ? module.AbstractText?.Trim() ?? ""
+                    : module.Description!.Trim(),
+                License           = module.Licenses.Count > 0
+                    ? string.Join(", ", module.Licenses)
+                    : "Unspecified",
+                Languages         = "",
+                Depends           = string.Join(", ", module.DependencyNames),
+                Recommends        = string.Join(", ", module.RecommendationNames),
+                Suggests          = string.Join(", ", module.SuggestionNames),
+                Conflicts         = string.Join(", ", module.ConflictNames),
+                Supports          = "",
+                Tags              = "",
+                Labels            = string.Join(", ", ModuleLabelList.ModuleLabels.LabelsFor(context.Instance.Name)
+                                                                          .Where(label => label.ContainsModule(context.Instance.Game,
+                                                                                                               module.Identifier))
+                                                                          .Select(label => label.Name)
+                                                                          .OrderBy(name => name,
+                                                                                   StringComparer.CurrentCultureIgnoreCase)),
+                LatestVersion     = module.Version ?? "",
+                InstalledVersion  = installedCkanModule?.version.ToString() ?? "",
+                ReleaseDate       = releaseDate?.ToString("yyyy-MM-dd") ?? "Unknown",
+                ReleaseDateValue  = releaseDate,
+                InstallDate       = installedModule?.InstallTime.ToString("yyyy-MM-dd")
+                                    ?? (isAutodetected ? "External" : "-"),
+                InstallDateValue  = installedModule?.InstallTime.Date,
+                DownloadCount     = module.DownloadCount,
+                DownloadCountLabel = module.DownloadCount?.ToString("N0") ?? "-",
+                IsInstalled       = isInstalled,
+                IsAutodetected    = isAutodetected,
+                HasUpdate         = hasUpdate,
+                HasVersionUpdate  = hasVersionUpdate,
+                IsIncompatible    = incompatibleOverride,
+                IsCached          = isCached,
+                HasReplacement    = false,
+                Compatibility     = FormatCatalogCompatibility(module),
+                PrimaryStateLabel = primaryStateLabel,
+                PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
+                                                            isAutodetected,
+                                                            hasVersionUpdate,
+                                                            incompatibleOverride,
+                                                            hasReplacement: false),
+                SecondaryStateLabel = secondaryStateLabel,
+                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
+                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected),
+                TertiaryStateLabel = tertiaryStateLabel,
+                TertiaryStateBackground = FormatTertiaryStateBackground(isAutodetected,
+                                                                        incompatibleOverride),
+                TertiaryStateBorderBrush = FormatTertiaryStateBorderBrush(isAutodetected,
+                                                                          incompatibleOverride),
+                StatusSummary     = statusSummary,
+                HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
+            };
         }
 
         private ModListItem MakeListItem(CatalogContext context,
@@ -973,6 +1062,93 @@ namespace CKAN.App.Services
             }
             return FormatDisplayedCompatibilityVersion(latest);
         }
+
+        private static string FormatCatalogCompatibility(CatalogIndexModule module)
+        {
+            if (TryCatalogGameVersion(module.KspVersionMax, out var max)
+                || TryCatalogGameVersion(module.KspVersion, out max))
+            {
+                return max.IsAny
+                    ? "Any"
+                    : FormatDisplayedCompatibilityVersion(max);
+            }
+
+            return "Any";
+        }
+
+        private static bool CatalogModuleCompatible(CatalogIndexModule module,
+                                                    GameVersionCriteria criteria)
+        {
+            if (criteria.Versions.Count == 0)
+            {
+                return true;
+            }
+
+            if (!TryCatalogGameVersionRange(module, out var moduleRange))
+            {
+                return false;
+            }
+
+            return criteria.Versions.Any(version => version.ToVersionRange()
+                                                           .IntersectWith(moduleRange) != null);
+        }
+
+        private static bool TryCatalogGameVersionRange(CatalogIndexModule module,
+                                                       out GameVersionRange range)
+        {
+            if (TryCatalogGameVersion(module.KspVersion, out var exact))
+            {
+                range = exact.ToVersionRange();
+                return true;
+            }
+
+            bool hasMin = TryCatalogGameVersion(module.KspVersionMin, out var min);
+            bool hasMax = TryCatalogGameVersion(module.KspVersionMax, out var max);
+            if (hasMin || hasMax)
+            {
+                range = new GameVersionRange(hasMin ? min : GameVersion.Any,
+                                             hasMax ? max : GameVersion.Any);
+                return true;
+            }
+
+            range = GameVersionRange.Any;
+            return true;
+        }
+
+        private static bool TryCatalogGameVersion(string? value,
+                                                  out GameVersion version)
+        {
+            if (GameVersion.TryParse(value, out var parsed) && parsed != null)
+            {
+                version = parsed;
+                return true;
+            }
+
+            version = GameVersion.Any;
+            return false;
+        }
+
+        private static bool CatalogVersionGreaterThan(string? catalogVersion,
+                                                      ModuleVersion installedVersion)
+        {
+            try
+            {
+                return !string.IsNullOrWhiteSpace(catalogVersion)
+                       && new ModuleVersion(catalogVersion).CompareTo(installedVersion) > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static DateTime? ParseCatalogDate(string? value)
+            => DateTime.TryParse(value,
+                                 CultureInfo.InvariantCulture,
+                                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                                 out var date)
+                ? date.Date
+                : null;
 
         private static string FormatDisplayedCompatibilityVersion(GameVersion? version)
         {

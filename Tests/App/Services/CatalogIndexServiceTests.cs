@@ -70,5 +70,47 @@ namespace Tests.App.Services
                 Directory.Delete(dir, true);
             }
         }
+
+        [Test]
+        public void TryLoad_WithChangedFile_ReloadsIndex()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var path = Path.Combine(dir, "catalog-index-latest.json");
+                var service = new CatalogIndexService();
+
+                File.WriteAllText(path, @"{
+                    ""schema_version"": 1,
+                    ""source"": ""fixture"",
+                    ""modules"": [
+                        { ""identifier"": ""FirstModule"", ""name"": ""First Module"", ""kind"": ""package"", ""is_latest"": true }
+                    ]
+                }");
+                File.SetLastWriteTimeUtc(path, new System.DateTime(2026, 1, 1, 0, 0, 0, System.DateTimeKind.Utc));
+
+                var first = service.TryLoad(path);
+
+                File.WriteAllText(path, @"{
+                    ""schema_version"": 1,
+                    ""source"": ""fixture"",
+                    ""modules"": [
+                        { ""identifier"": ""SecondModule"", ""name"": ""Second Module"", ""kind"": ""package"", ""is_latest"": true }
+                    ]
+                }");
+                File.SetLastWriteTimeUtc(path, new System.DateTime(2026, 1, 1, 0, 0, 1, System.DateTimeKind.Utc));
+
+                var second = service.TryLoad(path);
+
+                Assert.That(first, Is.Not.Null);
+                Assert.That(second, Is.Not.Null);
+                Assert.That(first!.Modules.Single().Identifier, Is.EqualTo("FirstModule"));
+                Assert.That(second!.Modules.Single().Identifier, Is.EqualTo("SecondModule"));
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
     }
 }
