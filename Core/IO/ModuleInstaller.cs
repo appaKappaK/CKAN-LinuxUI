@@ -1593,10 +1593,12 @@ namespace CKAN.IO
                                                     RelationshipResolverOptions.KitchenSinkOpts(instance.StabilityToleranceConfig),
                                                     registry, instance.Game, crit);
             var recommenders = resolver.Dependencies().ToHashSet();
+            var toInstallIdentifiers = toInstall.Select(m => m.identifier).ToHashSet(StringComparer.OrdinalIgnoreCase);
             log.DebugFormat("Recommenders: {0}", string.Join(", ", recommenders));
 
             var checkedRecs = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !toInstallIdentifiers.Contains(m.identifier))
                                       .Where(m => resolver.ReasonsFor(m)
                                                           .Any(r => r is SelectionReason.Recommended { ProvidesIndex: 0 }))
                                       .ToHashSet();
@@ -1609,6 +1611,7 @@ namespace CKAN.IO
 
             recommendations = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !toInstallIdentifiers.Contains(m.identifier))
                                       .ToDictionary(m => m,
                                                     m => new Tuple<bool, List<string>>(
                                                              checkedRecs.Contains(m),
@@ -1622,6 +1625,7 @@ namespace CKAN.IO
             suggestions = resolver.Suggestions(recommenders,
                                                recommendations.Keys.ToList())
                                   .Except(exclude)
+                                  .Where(m => !toInstallIdentifiers.Contains(m.identifier))
                                   .ToDictionary(m => m,
                                                 m => resolver.ReasonsFor(m)
                                                              .OfType<SelectionReason.Suggested>()

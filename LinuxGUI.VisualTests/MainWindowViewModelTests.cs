@@ -445,6 +445,39 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task ViewPreviewRecommendationsInBrowser_ShowsRelationshipTargetNotSource()
+        {
+            var (viewModel, service) = CreateViewModel(
+                updateRecommendations: new[] { "MechJeb 2 (mechjeb2 2.14.3) recommended by PlanetShine" });
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe(_ => { });
+
+                await WaitForAsync(() => viewModel.HasPreviewRecommendations);
+
+                viewModel.ViewPreviewRecommendationsInBrowserCommand.Execute().Subscribe(_ => { });
+
+                await WaitForAsync(() => viewModel.ShowRelationshipBrowserScope
+                                          && viewModel.Mods.Count == 1);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ShowBrowseSurface, Is.True);
+                    Assert.That(viewModel.RelationshipBrowserScopeText, Is.EqualTo("Preview recommendations"));
+                    Assert.That(viewModel.Mods.Single().Identifier, Is.EqualTo("mechjeb2"));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task AcknowledgeExecutionResult_SuccessReturnsToBrowseAndClearsResult()
         {
             var applyResult = new ApplyChangesResult

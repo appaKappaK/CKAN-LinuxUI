@@ -139,6 +139,19 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Updated `LinuxGUI/README.md` with the current desktop workflow, cleanup menu actions, optional-extras behavior, and provider-choice behavior.
 - Moved `PROJECT_PLAN.md` into a clearer local-planning ignore section and untracked it from git.
 
+## 2026-04-28
+
+### Preview and Relationship Browser Fixes
+- Fixed preview dependency/recommendation/suggestion `View` actions so Browse opens the relationship target mods instead of matching the source mod from text such as `recommended by`.
+- Kept already-planned installs out of optional recommendation/suggestion results so self-recommending or already queued mods do not block Apply.
+- Changed recommendation-analysis failures during preview into notices instead of conflicts when Apply can otherwise proceed.
+- Improved preview conflict issue text for entries that do not have a second conflict target.
+
+### Browser Layout Stability
+- Reserved the mod browser vertical scrollbar lane even for short filtered lists so column headers stay aligned with rows in scoped relationship views.
+- Temporarily disabled the Play menu entries in both header variants while launch handling remains unavailable in the Linux shell.
+- Added regression coverage for preview relationship browsing and already-planned recommendation handling.
+
 ## Notes
 - The new shell deliberately does not reuse `GUIMod` or other WinForms-era presentation models.
 - The legacy `Newly compatible` filter has not been ported yet because the new shell does not yet track repository-update deltas.

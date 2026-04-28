@@ -79,6 +79,42 @@ namespace Tests.App.Services
             }
         }
 
+        [Test]
+        public async Task PreviewChanges_AlreadyPlannedRecommendation_DoesNotBlockApply()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(SelfRecommendingModMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var changes = new ChangesetService();
+                changes.QueueInstall(new ModListItem
+                {
+                    Identifier    = "SelfRecommend",
+                    Name          = "Self Recommend",
+                    LatestVersion = "1.0",
+                });
+                var actions = new ModActionService(gameService, changes, user);
+
+                var preview = await actions.PreviewChangesAsync(CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(preview.CanApply, Is.True);
+                    Assert.That(preview.Conflicts, Is.Empty);
+                    Assert.That(preview.Recommendations, Is.Empty);
+                    Assert.That(preview.AttentionNotes, Is.Empty);
+                });
+            }
+        }
+
         private sealed class TestGameInstanceService : IGameInstanceService
         {
             public TestGameInstanceService(GameInstance          instance,
@@ -176,6 +212,19 @@ namespace Tests.App.Services
             ""author"": ""Test Author"",
             ""version"": ""1.0"",
             ""download"": ""https://example.com/shared-dep.zip""
+        }";
+
+        private const string SelfRecommendingModMetadata = @"{
+            ""spec_version"": 1,
+            ""identifier"": ""SelfRecommend"",
+            ""name"": ""Self Recommend"",
+            ""abstract"": ""Root mod that should not be recommended again while queued."",
+            ""author"": ""Test Author"",
+            ""version"": ""1.0"",
+            ""download"": ""https://example.com/self-recommend.zip"",
+            ""recommends"": [
+                { ""name"": ""SelfRecommend"" }
+            ]
         }";
     }
 }

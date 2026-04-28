@@ -611,7 +611,7 @@ namespace CKAN.App.Services
                     }
                     catch (Exception ex)
                     {
-                        conflicts.Add($"Recommendation analysis failed: {ex.Message}");
+                        notices.Add($"Recommendation analysis skipped: {ex.Message}");
                     }
                 }
                 catch (TooManyModsProvideKraken ex)

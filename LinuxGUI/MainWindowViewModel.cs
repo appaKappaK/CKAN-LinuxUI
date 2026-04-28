@@ -5508,6 +5508,7 @@ namespace CKAN.LinuxGUI
         {
             var leftTarget = ConflictLeftSide(conflict);
             var rightTarget = ConflictRightSide(conflict);
+            var hasRightTarget = !string.IsNullOrWhiteSpace(rightTarget);
             var leftInfo = ResolveConflictSideInfo(leftTarget);
             var rightInfo = ResolveConflictSideInfo(rightTarget);
             if (string.IsNullOrWhiteSpace(leftTarget))
@@ -5516,16 +5517,20 @@ namespace CKAN.LinuxGUI
             }
 
             var displayLeftTarget = leftInfo.DisplayName;
-            var displayRightTarget = rightInfo.DisplayName;
-            var actionText = string.IsNullOrWhiteSpace(displayRightTarget)
-                ? $"Review {displayLeftTarget}"
-                : $"{displayLeftTarget} conflicts with {displayRightTarget}";
+            var displayRightTarget = hasRightTarget
+                ? rightInfo.DisplayName
+                : "";
+            var actionText = hasRightTarget
+                ? $"{displayLeftTarget} conflicts with {displayRightTarget}"
+                : displayLeftTarget;
 
             return new PreviewConflictChoiceItem
             {
                 ConflictText = conflict,
                 ActionText = actionText,
-                DetailText = BuildConflictChoiceDetail(leftInfo, rightInfo),
+                DetailText = hasRightTarget
+                    ? BuildConflictChoiceDetail(leftInfo, rightInfo)
+                    : BuildConflictIssueDetail(leftInfo),
                 ActionButtonText = IsDevSmokeConflict(conflict) ? "Clear" : "Review",
             };
         }
@@ -5554,6 +5559,9 @@ namespace CKAN.LinuxGUI
             var rightState = BuildConflictSideState(right);
             return $"State: {leftState} vs {rightState}. Keep one; remove the other before applying.";
         }
+
+        private string BuildConflictIssueDetail(ConflictSideInfo issue)
+            => $"State: {BuildConflictSideState(issue)}. Clear this issue before applying.";
 
         private static string BuildConflictSideState(ConflictSideInfo side)
             => side.QueuedAction?.ActionKind switch
@@ -8674,10 +8682,12 @@ namespace CKAN.LinuxGUI
             }
 
             var mainText = PreviewEntryModText(entry);
-            var matchingItem = allCatalogItems
-                .OrderByDescending(item => item.Identifier.Length)
-                .FirstOrDefault(item => PreviewEntryMatchesMod(mainText, item)
-                                     || PreviewEntryMatchesMod(entry, item));
+            var matchingItem = FindPreviewEntryMod(mainText);
+            if (matchingItem == null
+                && string.Equals(mainText, entry.Trim(), StringComparison.Ordinal))
+            {
+                matchingItem = FindPreviewEntryMod(entry);
+            }
             if (matchingItem != null)
             {
                 identifiers.Add(matchingItem.Identifier);
@@ -8688,6 +8698,11 @@ namespace CKAN.LinuxGUI
                 }
             }
         }
+
+        private ModListItem? FindPreviewEntryMod(string entry)
+            => allCatalogItems
+                .OrderByDescending(item => item.Identifier.Length)
+                .FirstOrDefault(item => PreviewEntryMatchesMod(entry, item));
 
         private static string PreviewEntryQueueSourceText(string relationshipName,
                                                           string entry)
