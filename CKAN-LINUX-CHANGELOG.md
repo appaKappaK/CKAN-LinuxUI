@@ -157,6 +157,10 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Expanded catalog timing diagnostics for sidecar index loading, installed-row handling, filter application, details loading, and preview generation.
 - Removed duplicate startup catalog loads by making explicit startup/switch flows own catalog loading while instance-change notifications only refresh instance UI state.
 
+### Rust Sidecar Publishing
+- Published `ckan-meta-rs` as the public Rust catalog sidecar generator at `https://github.com/appaKappaK/ckan-meta-rs`.
+- Updated the root and LinuxGUI README files to point at the public `ckan-meta-rs` source while documenting that CKAN-Linux includes the optional sidecar reader.
+
 ## Notes
 - The new shell deliberately does not reuse `GUIMod` or other WinForms-era presentation models.
 - The legacy `Newly compatible` filter has not been ported yet because the new shell does not yet track repository-update deltas.
