@@ -7,6 +7,7 @@ REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 
 PREFIX=${CKAN_LINUX_INSTALL_PREFIX:-"$HOME/.local"}
 SKIP_BUILD=0
+VERBOSE=0
 START_TIME=$SECONDS
 
 if [[ -t 1 ]]; then
@@ -52,6 +53,48 @@ fail() {
     printf '%s[error]%s %s\n' "$RED" "$RESET" "$1" >&2
 }
 
+run_build() {
+    local log_dir="$REPO_ROOT/_build/logs"
+    local log_file="$log_dir/install-linuxgui-$(date +%Y%m%d-%H%M%S).log"
+    local pid
+    local status
+    local spin='-\|/'
+    local index=0
+    local started=$SECONDS
+
+    if [[ "$VERBOSE" == "1" ]]; then
+        "$REPO_ROOT/build.sh" LinuxGUIPackage --configuration=Release
+        return
+    fi
+
+    install -d "$log_dir"
+    detail "Build output: $log_file"
+    "$REPO_ROOT/build.sh" LinuxGUIPackage --configuration=Release > "$log_file" 2>&1 &
+    pid=$!
+
+    if [[ -t 1 ]]; then
+        while kill -0 "$pid" 2>/dev/null; do
+            printf '\r    [%s] Building package layout... %ss' "${spin:index++%${#spin}:1}" "$((SECONDS - started))"
+            sleep 1
+        done
+        printf '\r    [ ] Building package layout... %ss\n' "$((SECONDS - started))"
+    fi
+
+    set +e
+    wait "$pid"
+    status=$?
+    set -e
+
+    if [[ $status -ne 0 ]]; then
+        fail "Build failed. Last log lines:"
+        tail -n 40 "$log_file" >&2 || true
+        return "$status"
+    fi
+
+    ok "Build completed in $((SECONDS - started))s."
+    detail "Full build log: $log_file"
+}
+
 finish() {
     local status=$?
     if [[ $status -ne 0 ]]; then
@@ -64,17 +107,19 @@ trap finish EXIT
 
 usage() {
     cat <<EOF
-Usage: $0 [--prefix PATH] [--skip-build]
+Usage: $0 [--prefix PATH] [--skip-build] [--verbose]
 
 Build and install the CKAN Linux GUI launcher into a local prefix.
 
 Defaults:
   prefix: $HOME/.local
+  build output: quiet progress with full log under _build/logs
 
 Examples:
   $0
   $0 --prefix /usr/local
   $0 --skip-build
+  $0 --verbose
 EOF
 }
 
@@ -90,6 +135,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-build)
             SKIP_BUILD=1
+            shift
+            ;;
+        --verbose)
+            VERBOSE=1
             shift
             ;;
         --help|-h)
@@ -116,14 +165,16 @@ detail "Repository: $REPO_ROOT"
 detail "Install prefix: $PREFIX"
 if [[ "$SKIP_BUILD" == "1" ]]; then
     detail "Build: skipped by request"
+elif [[ "$VERBOSE" == "1" ]]; then
+    detail "Build: Release LinuxGUIPackage with verbose output"
 else
-    detail "Build: Release LinuxGUIPackage"
+    detail "Build: Release LinuxGUIPackage with quiet progress"
 fi
 
 if [[ "$SKIP_BUILD" != "1" ]]; then
     step "Building release package layout"
     detail "./build.sh LinuxGUIPackage --configuration=Release"
-    "$REPO_ROOT/build.sh" LinuxGUIPackage --configuration=Release
+    run_build
     ok "Package layout built."
 else
     step "Skipping build"
