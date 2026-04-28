@@ -152,6 +152,11 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Temporarily disabled the Play menu entries in both header variants while launch handling remains unavailable in the Linux shell.
 - Added regression coverage for preview relationship browsing and already-planned recommendation handling.
 
+### Catalog Performance
+- Added optional Rust sidecar catalog-index support for fast LinuxGUI catalog list builds without per-row CKAN registry metadata resolution.
+- Expanded catalog timing diagnostics for sidecar index loading, installed-row handling, filter application, details loading, and preview generation.
+- Removed duplicate startup catalog loads by making explicit startup/switch flows own catalog loading while instance-change notifications only refresh instance UI state.
+
 ## Notes
 - The new shell deliberately does not reuse `GUIMod` or other WinForms-era presentation models.
 - The legacy `Newly compatible` filter has not been ported yet because the new shell does not yet track repository-update deltas.

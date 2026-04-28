@@ -4871,7 +4871,11 @@ namespace CKAN.LinuxGUI
             try
             {
                 await gameInstanceService.SetCurrentInstanceAsync(SelectedInstance.Name, CancellationToken.None);
-                ReloadInstances();
+                ReloadInstances(loadCatalog: false);
+                if (IsReady)
+                {
+                    await LoadModCatalogAsync();
+                }
             }
             catch (Exception ex)
             {
@@ -5221,7 +5225,7 @@ namespace CKAN.LinuxGUI
                 }
                 ClearApplyResult();
                 CurrentInstanceName = current?.Name ?? "No instance selected";
-                ReloadInstances();
+                ReloadInstances(loadCatalog: false);
                 this.RaisePropertyChanged(nameof(CurrentInstance));
                 this.RaisePropertyChanged(nameof(CurrentRegistry));
                 this.RaisePropertyChanged(nameof(CurrentRegistryManager));

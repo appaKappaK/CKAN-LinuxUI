@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,8 +29,13 @@ namespace CKAN.App.Services
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
             => Task.Run(() =>
             {
+                var watch = Stopwatch.StartNew();
                 cancellationToken.ThrowIfCancellationRequested();
-                var plan = BuildExecutionPlan(changesetService.CurrentApplyQueue, cancellationToken);
+                var currentQueue = changesetService.CurrentApplyQueue;
+                var plan = BuildExecutionPlan(currentQueue, cancellationToken);
+                watch.Stop();
+                Trace.TraceInformation(
+                    $"LinuxGUI preview build actions={currentQueue.Count} can_apply={plan.CanApply} downloads={plan.DownloadsRequired.Count} dependencies={plan.DependencyInstalls.Count} recommendations={plan.Recommendations.Count} suggestions={plan.Suggestions.Count} supporters={plan.Supporters.Count} conflicts={plan.Conflicts.Count} total_ms={watch.ElapsedMilliseconds}");
                 return new ChangesetPreviewModel
                 {
                     SummaryText        = plan.SummaryText,

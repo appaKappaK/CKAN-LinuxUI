@@ -93,13 +93,25 @@ namespace CKAN.App.Services
                                                          CancellationToken cancellationToken)
             => Task.Run(() =>
             {
+                var totalWatch = Stopwatch.StartNew();
+                long primeMs = 0;
+                long resolveMs = 0;
+                long buildMs = 0;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (CurrentContext() is not CatalogContext context)
                 {
+                    totalWatch.Stop();
+                    Trace.TraceInformation(
+                        $"Mod catalog details identifier={identifier} found=false reason=no-context total_ms={totalWatch.ElapsedMilliseconds}");
                     return null;
                 }
 
+                var primeWatch = Stopwatch.StartNew();
                 PrimeRepositoryCache(context);
+                primeWatch.Stop();
+                primeMs = primeWatch.ElapsedMilliseconds;
+
+                var resolveWatch = Stopwatch.StartNew();
                 var registry = context.Registry;
                 var inst     = context.Instance;
                 var installedModule = registry.InstalledModule(identifier);
@@ -112,6 +124,10 @@ namespace CKAN.App.Services
                     identifier);
                 if (displayMod == null)
                 {
+                    resolveWatch.Stop();
+                    totalWatch.Stop();
+                    Trace.TraceInformation(
+                        $"Mod catalog details identifier={identifier} found=false prime_ms={primeMs} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
                     return null;
                 }
 
@@ -121,8 +137,11 @@ namespace CKAN.App.Services
                                         && installed != null
                                         && (latestCompatible ?? latestAvailable) != null
                                         && (latestCompatible ?? latestAvailable)!.version.CompareTo(installed.version) > 0;
+                resolveWatch.Stop();
+                resolveMs = resolveWatch.ElapsedMilliseconds;
 
-                return new ModDetailsModel
+                var buildWatch = Stopwatch.StartNew();
+                var details = new ModDetailsModel
                 {
                     Identifier       = identifier,
                     Title            = displayMod.name ?? identifier,
@@ -160,6 +179,12 @@ namespace CKAN.App.Services
                                                                inst.StabilityToleranceConfig,
                                                                inst.VersionCriteria()) != null,
                 };
+                buildWatch.Stop();
+                buildMs = buildWatch.ElapsedMilliseconds;
+                totalWatch.Stop();
+                Trace.TraceInformation(
+                    $"Mod catalog details identifier={identifier} found=true prime_ms={primeMs} resolve_ms={resolveMs} build_ms={buildMs} total_ms={totalWatch.ElapsedMilliseconds}");
+                return details;
             }, cancellationToken);
 
         private CatalogContext? CurrentContext()
