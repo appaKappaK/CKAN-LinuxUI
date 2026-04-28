@@ -129,10 +129,12 @@ You can override the base directory with:
 CKAN_LINUX_DEV_HOME=/path/to/dev-home ./scripts/run-linuxgui-dev.sh
 ```
 
-The mod browser can optionally use a Rust-generated catalog sidecar for faster
-catalog/search experiments while CKAN's registry remains authoritative for
-details, installs, and dependency resolution. The LinuxGUI sidecar reader is
-included in this repository; the generator source is published at
+### Rust Catalog Sidecar
+
+The mod browser includes a Rust-generated catalog sidecar path for faster
+catalog/search while CKAN's registry remains authoritative for details, installs,
+and dependency resolution. The LinuxGUI sidecar reader is included in this
+repository; the generator source is published at
 [`appaKappaK/ckan-meta-rs`](https://github.com/appaKappaK/ckan-meta-rs).
 Sidecar rows include browse-list metadata such as title, summary,
 relationships, compatibility, release date, and download count. Generate the
