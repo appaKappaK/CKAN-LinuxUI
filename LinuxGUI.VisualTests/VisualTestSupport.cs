@@ -31,8 +31,26 @@ namespace CKAN.LinuxGUI.VisualTests
 
         private static readonly string[] WorkCodeFiles =
         {
-            "LinuxGUI/MainWindow.axaml",
-            "LinuxGUI/MainWindowViewModel.cs",
+            "LinuxGUI/Shell/MainWindow.axaml",
+            "LinuxGUI/Shell/MainWindow.axaml.cs",
+            "LinuxGUI/Shell/MainWindow.Interactions.cs",
+            "LinuxGUI/Shell/MainWindow.Keyboard.cs",
+            "LinuxGUI/Shell/MainWindow.Lifecycle.cs",
+            "LinuxGUI/Shell/MainWindow.Menus.cs",
+            "LinuxGUI/Shell/MainWindow.PluginController.cs",
+            "LinuxGUI/Shell/MainWindow.ViewModelBinding.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Browser.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.BrowserColumns.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.CatalogSkeleton.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Filters.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Helpers.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.InstanceState.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Launching.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Operations.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.PreviewApply.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.Queue.cs",
+            "LinuxGUI/Shell/MainWindowViewModel.SelectedMod.cs",
             "App/Models/ModListItem.cs",
             "App/Models/ChangesetPreviewModel.cs",
         };

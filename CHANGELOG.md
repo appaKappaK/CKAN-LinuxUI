@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 
 ### Internal
 
+- [LinuxGUI] Organize the Avalonia shell into Shell, Windows, Models, and Services folders
 - [LinuxGUI] Load Rust catalog sidecar rows directly and cache parsed sidecar files for faster mod browser startup
 - [Docs] Update download count image for Minkowski² (#4474 by: Clayell; reviewed: HebaruSan)
 - [Netkan] Fix `x_netkan_epoch` not applied before unreliable server check (#4477 by: HebaruSan)

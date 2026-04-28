@@ -841,7 +841,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
             try
             {
-                await Task.Delay(150);
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "mechjeb2")
+                                          && !viewModel.IsCatalogLoading);
                 viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "mechjeb2");
                 await Task.Delay(75);
 

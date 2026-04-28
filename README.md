@@ -46,7 +46,7 @@ usr/lib/ckan-linux/CKAN-LinuxGUI
 
 The .NET entry point for that binary is `LinuxGUI/Program.cs`; it initializes
 logging and starts the Avalonia desktop lifetime. `LinuxGUI/App.axaml.cs` then
-builds the app services and opens `MainWindow`.
+builds the app services and opens `LinuxGUI/Shell/MainWindow.axaml`.
 
 For Debian packages produced by this fork, `/usr/bin/ckan` is also wired to use
 this replacement desktop UI when no command line arguments are supplied and a

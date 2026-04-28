@@ -10,12 +10,23 @@ The installed desktop command is `ckan-linux`. The package launcher lives at
 
 The app binary starts in `LinuxGUI/Program.cs`, which initializes LinuxGUI
 logging and starts Avalonia with the classic desktop lifetime. `App.axaml.cs`
-then registers the app services and opens `MainWindow`.
+then registers the app services and opens `Shell/MainWindow.axaml`.
 
 When this repository's Debian package installs `/usr/bin/ckan-linux`, the
 `/usr/bin/ckan` wrapper uses it as the replacement UI for graphical no-argument
 launches. Command line arguments still run through the existing Mono `ckan.exe`
 path, and no-display launches continue to use `ckan consoleui`.
+
+## Source Layout
+
+The Linux GUI app keeps startup files at the `LinuxGUI/` root and groups the
+desktop surface by role:
+
+- `Shell/` contains `MainWindow`, its view model partials, and startup shell
+  state.
+- `Windows/` contains secondary dialogs and utility windows.
+- `Models/` contains Linux GUI view-model support items used by bindings.
+- `Services/` contains Linux GUI service adapters and controller glue.
 
 ## Current Desktop Flow
 
