@@ -45,6 +45,7 @@ namespace CKAN.LinuxGUI
             services.AddSingleton<AvaloniaUser>();
             services.AddSingleton<IUser>(provider => provider.GetRequiredService<AvaloniaUser>());
             services.AddSingleton<IGameInstanceService, GameInstanceService>();
+            services.AddSingleton<CatalogIndexService>();
             services.AddSingleton<IModCatalogService, ModCatalogService>();
             services.AddSingleton<IModSearchService, ModSearchService>();
             services.AddSingleton<IChangesetService, ChangesetService>();

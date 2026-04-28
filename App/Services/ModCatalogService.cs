@@ -13,10 +13,13 @@ namespace CKAN.App.Services
     public sealed class ModCatalogService : IModCatalogService
     {
         private readonly IGameInstanceService gameInstanceService;
+        private readonly CatalogIndexService  catalogIndexService;
 
-        public ModCatalogService(IGameInstanceService gameInstanceService)
+        public ModCatalogService(IGameInstanceService gameInstanceService,
+                                 CatalogIndexService  catalogIndexService)
         {
             this.gameInstanceService = gameInstanceService;
+            this.catalogIndexService  = catalogIndexService;
         }
 
         public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
@@ -29,7 +32,7 @@ namespace CKAN.App.Services
                 }
 
                 PrimeRepositoryCache(context);
-                return (IReadOnlyList<ModListItem>)BuildItems(context).ToList();
+                return (IReadOnlyList<ModListItem>)BuildCurrentItems(context);
             }, cancellationToken);
 
         public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
@@ -47,7 +50,7 @@ namespace CKAN.App.Services
                 }
 
                 PrimeRepositoryCache(context);
-                var items = BuildItems(context).ToList();
+                var items = BuildCurrentItems(context);
 
                 return GetFilterOptionCounts(items, filter);
             }, cancellationToken);
@@ -158,6 +161,9 @@ namespace CKAN.App.Services
         private void PrimeRepositoryCache(CatalogContext context)
             => gameInstanceService.RepositoryData.Prepopulate(context.Registry.Repositories.Values.ToList(), null);
 
+        private List<ModListItem> BuildCurrentItems(CatalogContext context)
+            => BuildItemsFromCatalogIndex(context) ?? BuildItems(context).ToList();
+
         private IEnumerable<ModListItem> BuildItems(CatalogContext context)
         {
             var registry = context.Registry;
@@ -203,6 +209,58 @@ namespace CKAN.App.Services
                                           hasUpdate: false,
                                           incompatibleOverride: true);
             }
+        }
+
+        private List<ModListItem>? BuildItemsFromCatalogIndex(CatalogContext context)
+        {
+            var index = catalogIndexService.TryLoad();
+            if (index == null)
+            {
+                return null;
+            }
+
+            var registry        = context.Registry;
+            var inst            = context.Instance;
+            var installedIdents = registry.InstalledModules.Select(im => im.identifier)
+                                                           .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var items = new List<ModListItem>();
+
+            foreach (var instMod in registry.InstalledModules
+                                            .Where(im => !im.Module.IsDLC)
+                                            .OrderBy(im => im.identifier, StringComparer.OrdinalIgnoreCase))
+            {
+                var identifier = instMod.identifier;
+                var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
+                var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
+                var displayMod       = latestCompatible ?? latestAvailable ?? instMod.Module;
+
+                items.Add(MakeListItem(context,
+                                       displayMod,
+                                       installedModule: instMod,
+                                       hasUpdate: HasUpdate(registry, inst, identifier),
+                                       incompatibleOverride: latestCompatible == null
+                                                             && !instMod.Module.IsCompatible(inst.VersionCriteria())));
+            }
+
+            foreach (var identifier in CatalogIndexService.LatestIdentifiers(index)
+                                                          .Where(identifier => !installedIdents.Contains(identifier)))
+            {
+                var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
+                var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
+                var displayMod       = latestCompatible ?? latestAvailable;
+                if (displayMod == null || displayMod.IsDLC)
+                {
+                    continue;
+                }
+
+                items.Add(MakeListItem(context,
+                                       displayMod,
+                                       installedModule: null,
+                                       hasUpdate: false,
+                                       incompatibleOverride: latestCompatible == null));
+            }
+
+            return items.Count > 0 ? items : null;
         }
 
         private ModListItem MakeListItem(CatalogContext context,
