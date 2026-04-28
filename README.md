@@ -89,6 +89,10 @@ That produces `_build/package/ckan-linux/linux-x64/`, including:
 - Debian packaging that routes graphical no-argument `ckan` launches to
   `ckan-linux` while keeping argument-driven command and console behavior
   intact.
+- Optional fast catalog browsing through the Rust-generated sidecar index from
+  [`ckan-meta-rs`](https://github.com/appaKappaK/ckan-meta-rs). The LinuxGUI
+  sidecar reader is included in this repo; CKAN core remains authoritative for
+  details, installs, dependency resolution, and registry writes.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Desktop App Development
@@ -106,7 +110,8 @@ Run the LinuxGUI visual tests:
 ```
 
 See [`LinuxGUI/README.md`](LinuxGUI/README.md) for the full LinuxGUI build,
-packaging, development, logging, and visual-test workflow.
+packaging, development, optional `ckan-meta-rs` catalog sidecar, logging, and
+visual-test workflow.
 
 ## Upstream CKAN Context
 
