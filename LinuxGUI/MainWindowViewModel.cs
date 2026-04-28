@@ -5001,12 +5001,16 @@ namespace CKAN.LinuxGUI
 
                     try
                     {
+                        var totalWatch = Stopwatch.StartNew();
+                        var serviceWatch = Stopwatch.StartNew();
                         var items = await modCatalogService.GetAllModListAsync(CancellationToken.None);
+                        serviceWatch.Stop();
                         if (activeRequestId != catalogLoadRequestId)
                         {
                             continue;
                         }
 
+                        var uiWatch = Stopwatch.StartNew();
                         ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
                         ClearDefaultInstalledFilterWhenEmpty(items);
@@ -5014,6 +5018,12 @@ namespace CKAN.LinuxGUI
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
                         SeedDevQueueSmoke(items);
+                        uiWatch.Stop();
+                        totalWatch.Stop();
+                        var summary = $"Last catalog load: {items.Count} mods in {totalWatch.ElapsedMilliseconds} ms (service {serviceWatch.ElapsedMilliseconds} ms, UI {uiWatch.ElapsedMilliseconds} ms).";
+                        Diagnostics = summary;
+                        Trace.TraceInformation(
+                            $"LinuxGUI catalog load request={activeRequestId} items={items.Count} service_ms={serviceWatch.ElapsedMilliseconds} ui_ms={uiWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
                     }
                     catch (Exception ex)
                     {
@@ -5879,21 +5889,30 @@ namespace CKAN.LinuxGUI
 
         private void ApplyCatalogFilterToLoadedItems(string? preferredSelectionIdentifier = null)
         {
+            var totalWatch = Stopwatch.StartNew();
             var currentFilter = CurrentFilter();
+            var scopeWatch = Stopwatch.StartNew();
             var sourceItems = ShowRelationshipBrowserScope
                 ? allCatalogItems.Where(item => relationshipBrowserScopeIdentifiers.Contains(item.Identifier)).ToList()
                 : allCatalogItems;
+            scopeWatch.Stop();
+            var filterWatch = Stopwatch.StartNew();
             var visibleItems = ShowRelationshipBrowserScope
                 ? modCatalogService.ApplyFilter(sourceItems, CurrentSortOnlyFilter())
                 : modCatalogService.ApplyFilter(sourceItems, currentFilter);
+            filterWatch.Stop();
 
+            var countWatch = Stopwatch.StartNew();
             filterOptionCounts = modCatalogService.GetFilterOptionCounts(sourceItems, currentFilter);
             hasFilterOptionCounts = true;
+            countWatch.Stop();
 
+            var applyWatch = Stopwatch.StartNew();
             ReplaceVisibleMods(visibleItems);
             ReplaceAvailableTagOptions(BuildAvailableTagOptions(sourceItems, currentFilter));
             ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(sourceItems, currentFilter.LabelText));
             PublishVisibleModQueueState();
+            applyWatch.Stop();
 
             string? selectedIdentifier = preferredSelectionIdentifier ?? SelectedMod?.Identifier;
             SelectedMod = selectedIdentifier != null
@@ -5916,6 +5935,9 @@ namespace CKAN.LinuxGUI
                     : $"Showing {Mods.Count} mod{(Mods.Count == 1 ? "" : "s")} for {CurrentInstanceName}.";
             PublishCatalogStateLabels();
             PublishFilterOptionCountLabels();
+            totalWatch.Stop();
+            Trace.TraceInformation(
+                $"LinuxGUI catalog filter scope={(ShowRelationshipBrowserScope ? RelationshipBrowserScopeText : "all")} source={sourceItems.Count} visible={visibleItems.Count} scope_ms={scopeWatch.ElapsedMilliseconds} filter_ms={filterWatch.ElapsedMilliseconds} counts_ms={countWatch.ElapsedMilliseconds} apply_ms={applyWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
         }
 
         private void ApplyVersionDisplaySettings(IEnumerable<ModListItem> items)

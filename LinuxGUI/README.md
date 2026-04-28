@@ -141,6 +141,15 @@ CKAN_CATALOG_INDEX_PATH=/path/to/catalog-index-latest.json ./scripts/run-linuxgu
 If the sidecar is missing, invalid, or not configured, the browser uses the
 normal CKAN metadata loader.
 
+Catalog load timings are written to the dev session/debug logs. Look for these
+prefixes when comparing normal mode to sidecar mode:
+
+- `Mod catalog service list`
+- `Mod catalog index build`
+- `Mod catalog registry build`
+- `LinuxGUI catalog load`
+- `LinuxGUI catalog filter`
+
 Skip the automatic rebuild check if you deliberately want to launch the current
 artifacts as-is:
 

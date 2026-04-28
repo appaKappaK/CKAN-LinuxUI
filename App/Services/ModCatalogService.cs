@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,8 +32,17 @@ namespace CKAN.App.Services
                     return (IReadOnlyList<ModListItem>)Array.Empty<ModListItem>();
                 }
 
+                var totalWatch = Stopwatch.StartNew();
+                var primeWatch = Stopwatch.StartNew();
                 PrimeRepositoryCache(context);
-                return (IReadOnlyList<ModListItem>)BuildCurrentItems(context);
+                primeWatch.Stop();
+                var buildWatch = Stopwatch.StartNew();
+                var items = BuildCurrentItems(context, out string source);
+                buildWatch.Stop();
+                totalWatch.Stop();
+                Trace.TraceInformation(
+                    $"Mod catalog service list source={source} items={items.Count} prime_ms={primeWatch.ElapsedMilliseconds} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                return (IReadOnlyList<ModListItem>)items;
             }, cancellationToken);
 
         public async Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
@@ -49,8 +59,16 @@ namespace CKAN.App.Services
                     return new FilterOptionCounts();
                 }
 
+                var totalWatch = Stopwatch.StartNew();
+                var primeWatch = Stopwatch.StartNew();
                 PrimeRepositoryCache(context);
-                var items = BuildCurrentItems(context);
+                primeWatch.Stop();
+                var buildWatch = Stopwatch.StartNew();
+                var items = BuildCurrentItems(context, out string source);
+                buildWatch.Stop();
+                totalWatch.Stop();
+                Trace.TraceInformation(
+                    $"Mod catalog service counts source={source} items={items.Count} prime_ms={primeWatch.ElapsedMilliseconds} build_ms={buildWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
 
                 return GetFilterOptionCounts(items, filter);
             }, cancellationToken);
@@ -161,8 +179,24 @@ namespace CKAN.App.Services
         private void PrimeRepositoryCache(CatalogContext context)
             => gameInstanceService.RepositoryData.Prepopulate(context.Registry.Repositories.Values.ToList(), null);
 
-        private List<ModListItem> BuildCurrentItems(CatalogContext context)
-            => BuildItemsFromCatalogIndex(context) ?? BuildItems(context).ToList();
+        private List<ModListItem> BuildCurrentItems(CatalogContext context,
+                                                    out string     source)
+        {
+            var indexedItems = BuildItemsFromCatalogIndex(context);
+            if (indexedItems != null)
+            {
+                source = "catalog-index";
+                return indexedItems;
+            }
+
+            source = "registry";
+            var watch = Stopwatch.StartNew();
+            var items = BuildItems(context).ToList();
+            watch.Stop();
+            Trace.TraceInformation(
+                $"Mod catalog registry build items={items.Count} elapsed_ms={watch.ElapsedMilliseconds}");
+            return items;
+        }
 
         private IEnumerable<ModListItem> BuildItems(CatalogContext context)
         {
@@ -213,9 +247,14 @@ namespace CKAN.App.Services
 
         private List<ModListItem>? BuildItemsFromCatalogIndex(CatalogContext context)
         {
+            var totalWatch = Stopwatch.StartNew();
+            var indexWatch = Stopwatch.StartNew();
             var index = catalogIndexService.TryLoad();
+            indexWatch.Stop();
             if (index == null)
             {
+                Trace.TraceInformation(
+                    $"Mod catalog index unavailable load_ms={indexWatch.ElapsedMilliseconds}");
                 return null;
             }
 
@@ -224,7 +263,9 @@ namespace CKAN.App.Services
             var installedIdents = registry.InstalledModules.Select(im => im.identifier)
                                                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var items = new List<ModListItem>();
+            int installedCount = 0;
 
+            var installedWatch = Stopwatch.StartNew();
             foreach (var instMod in registry.InstalledModules
                                             .Where(im => !im.Module.IsDLC)
                                             .OrderBy(im => im.identifier, StringComparer.OrdinalIgnoreCase))
@@ -240,16 +281,26 @@ namespace CKAN.App.Services
                                        hasUpdate: HasUpdate(registry, inst, identifier),
                                        incompatibleOverride: latestCompatible == null
                                                              && !instMod.Module.IsCompatible(inst.VersionCriteria())));
+                installedCount++;
             }
+            installedWatch.Stop();
 
-            foreach (var identifier in CatalogIndexService.LatestIdentifiers(index)
-                                                          .Where(identifier => !installedIdents.Contains(identifier)))
+            var identifiers = CatalogIndexService.LatestIdentifiers(index)
+                                                 .Where(identifier => !installedIdents.Contains(identifier))
+                                                 .ToList();
+            int resolvedCount = 0;
+            int skippedCount  = 0;
+            int incompatibleCount = 0;
+
+            var resolveWatch = Stopwatch.StartNew();
+            foreach (var identifier in identifiers)
             {
                 var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
                 var latestAvailable  = TryLatestAvailable(registry, identifier, inst, compatibleOnly: false);
                 var displayMod       = latestCompatible ?? latestAvailable;
                 if (displayMod == null || displayMod.IsDLC)
                 {
+                    skippedCount++;
                     continue;
                 }
 
@@ -258,7 +309,17 @@ namespace CKAN.App.Services
                                        installedModule: null,
                                        hasUpdate: false,
                                        incompatibleOverride: latestCompatible == null));
+                resolvedCount++;
+                if (latestCompatible == null)
+                {
+                    incompatibleCount++;
+                }
             }
+            resolveWatch.Stop();
+            totalWatch.Stop();
+
+            Trace.TraceInformation(
+                $"Mod catalog index build modules={index.Modules.Count} candidates={identifiers.Count} installed={installedCount} resolved={resolvedCount} incompatible={incompatibleCount} skipped={skippedCount} items={items.Count} load_index_ms={indexWatch.ElapsedMilliseconds} installed_ms={installedWatch.ElapsedMilliseconds} resolve_ms={resolveWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
 
             return items.Count > 0 ? items : null;
         }
