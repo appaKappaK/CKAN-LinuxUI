@@ -2190,7 +2190,7 @@
                         CornerRadius="0,9,9,0"
                         MinHeight="30"
                         Padding="12,0"
-                        MinWidth="220"
+                        MinWidth="180"
                         MaxWidth="320"
                         VerticalAlignment="Center"
                         IsVisible="{Binding ShowPassiveHeaderInstanceLabel}">
@@ -2206,7 +2206,7 @@
 
                 <ComboBox Grid.Column="1"
                           Classes="header-instance-picker header-instance-picker-segment"
-                          MinWidth="220"
+                          MinWidth="180"
                           MaxWidth="320"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
@@ -2250,8 +2250,8 @@
                   BorderThickness="1"
                   CornerRadius="8"
                   Padding="10,6"
-                  Width="210"
-                  Margin="8,0,28,0"
+                  Width="280"
+                  Margin="8,0,0,0"
                   ClipToBounds="True"
                   IsVisible="{Binding ShowReadyStatusSurface}"
                   VerticalAlignment="Center">
