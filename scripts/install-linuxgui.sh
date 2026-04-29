@@ -77,7 +77,7 @@ run_build() {
             printf '\r    [%s] Building package layout... %ss' "${spin:index++%${#spin}:1}" "$((SECONDS - started))"
             sleep 1
         done
-        printf '\r    [ ] Building package layout... %ss\n' "$((SECONDS - started))"
+        printf '\r\033[K'
     fi
 
     set +e
