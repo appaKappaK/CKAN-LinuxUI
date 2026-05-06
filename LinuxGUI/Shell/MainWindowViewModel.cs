@@ -180,6 +180,7 @@ namespace CKAN.LinuxGUI
         private bool    selectedModIsIncompatible;
         private bool    selectedModHasReplacement;
         private bool    selectedModDependenciesExpanded;
+        private bool    selectedModDependentsExpanded;
         private bool    selectedModRecommendationsExpanded;
         private bool    selectedModSuggestionsExpanded;
         private bool    hasFilterOptionCounts;
@@ -326,6 +327,9 @@ namespace CKAN.LinuxGUI
             var canClearFilters = this.WhenAnyValue(vm => vm.HasActiveFilters,
                                                     vm => vm.IsApplyingChanges,
                                                     (hasFilters, applying) => hasFilters && !applying);
+            var canClearSearch = this.WhenAnyValue(vm => vm.HasSearchText,
+                                                   vm => vm.IsApplyingChanges,
+                                                   (hasSearch, applying) => hasSearch && !applying);
             var canClearAdvancedText = this.WhenAnyValue(vm => vm.HasAdvancedFilterText,
                                                          vm => vm.IsApplyingChanges,
                                                          (hasText, applying) => hasText && !applying);
@@ -368,6 +372,7 @@ namespace CKAN.LinuxGUI
             ToggleSortOptionsCommand = ReactiveCommand.Create(ToggleSortOptions);
             ClearAdvancedFiltersCommand = ReactiveCommand.Create(ClearAdvancedFilters, canClearAdvancedText);
             ClearFiltersCommand = ReactiveCommand.Create(ClearAllFilters, canClearFilters);
+            ClearSearchCommand = ReactiveCommand.Create(ClearSearch, canClearSearch);
             ClearPopupFiltersCommand = ReactiveCommand.Create(ClearPopupFilters);
             ClearTagFilterCommand = ReactiveCommand.Create(ClearTagFilter);
             SelectTagFilterCommand = ReactiveCommand.Create<FilterTagOptionItem?>(SelectTagFilter);
@@ -391,6 +396,8 @@ namespace CKAN.LinuxGUI
             DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
             AcknowledgeExecutionResultCommand = ReactiveCommand.Create(AcknowledgeExecutionResult);
             OpenCurrentGameDirectoryCommand = ReactiveCommand.Create(OpenCurrentGameDirectory,
+                                                                    this.WhenAnyValue(vm => vm.HasCurrentInstance));
+            OpenCurrentShipDirectoryCommand = ReactiveCommand.Create(OpenCurrentShipDirectory,
                                                                     this.WhenAnyValue(vm => vm.HasCurrentInstance));
             PlayDirectCommand = ReactiveCommand.CreateFromTask(() => PlayGameAsync(GameLaunchMode.Direct),
                                                                canPlayDirect);
@@ -418,9 +425,11 @@ namespace CKAN.LinuxGUI
                 RemoveNowSelectedModAsync,
                 this.WhenAnyValue(vm => vm.ShowRemoveNowAction));
             ToggleSelectedModDependenciesCommand = ReactiveCommand.Create(ToggleSelectedModDependenciesExpanded);
+            ToggleSelectedModDependentsCommand = ReactiveCommand.Create(ToggleSelectedModDependentsExpanded);
             ToggleSelectedModRecommendationsCommand = ReactiveCommand.Create(ToggleSelectedModRecommendationsExpanded);
             ToggleSelectedModSuggestionsCommand = ReactiveCommand.Create(ToggleSelectedModSuggestionsExpanded);
             ViewSelectedModDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("dependencies", SelectedModDependencies));
+            ViewSelectedModDependentsInBrowserCommand = ReactiveCommand.Create(ViewSelectedModDependentsInBrowser);
             ViewSelectedModRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("recommendations", SelectedModRecommendations));
             ViewSelectedModSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("suggestions", SelectedModSuggestions));
             ViewPreviewDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependencies", PreviewDependencies));
@@ -641,6 +650,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ClearSearchCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ClearPopupFiltersCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearTagFilterCommand { get; }
@@ -681,6 +692,8 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> OpenCurrentGameDirectoryCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> OpenCurrentShipDirectoryCommand { get; }
+
         public ReactiveCommand<Unit, Unit> PlayDirectCommand { get; }
 
         public ReactiveCommand<Unit, Unit> PlayViaSteamCommand { get; }
@@ -705,11 +718,15 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ToggleSelectedModDependenciesCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ToggleSelectedModDependentsCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ToggleSelectedModRecommendationsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ToggleSelectedModSuggestionsCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewSelectedModDependenciesInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewSelectedModDependentsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewSelectedModRecommendationsInBrowserCommand { get; }
 
@@ -1195,6 +1212,12 @@ namespace CKAN.LinuxGUI
             private set => this.RaiseAndSetIfChanged(ref selectedModDependenciesExpanded, value);
         }
 
+        public bool ShowSelectedModDependentsExpanded
+        {
+            get => selectedModDependentsExpanded && HasSelectedModDependents;
+            private set => this.RaiseAndSetIfChanged(ref selectedModDependentsExpanded, value);
+        }
+
         public bool ShowSelectedModRecommendationsExpanded
         {
             get => selectedModRecommendationsExpanded && SelectedModRecommendations.Count > 0;
@@ -1208,6 +1231,27 @@ namespace CKAN.LinuxGUI
         }
 
         public bool HasSelectedModDependencies => SelectedModDependencies.Count > 0;
+
+        public bool HasSelectedModDependents => SelectedModDependentItems().Count > 0;
+
+        public string SelectedModDependentCountLabel
+            => SelectedMod?.IsInstalled == true
+                ? CountLabel(SelectedModDependentItems().Count,
+                             "Installed Mod Requires This",
+                             "Installed Mods Require This")
+                : CountLabel(SelectedModDependentItems().Count,
+                             "Mod Requires This",
+                             "Mods Require This");
+
+        public IReadOnlyList<ModRelationshipItem> SelectedModDependentPreview
+            => SelectedModDependentItems()
+                .Take(10)
+                .Select(item => new ModRelationshipItem
+                {
+                    Text = item.Name,
+                    Identifiers = new List<string> { item.Identifier },
+                })
+                .ToList();
 
         public bool HasSelectedModRecommendations => SelectedModRecommendations.Count > 0;
 
@@ -1237,6 +1281,11 @@ namespace CKAN.LinuxGUI
         public string SelectedModDependencyChevron
             => HasSelectedModDependencies
                 ? ShowSelectedModDependenciesExpanded ? "▾" : "▸"
+                : "";
+
+        public string SelectedModDependentChevron
+            => HasSelectedModDependents
+                ? ShowSelectedModDependentsExpanded ? "▾" : "▸"
                 : "";
 
         public string SelectedModRecommendationChevron
@@ -2038,6 +2087,9 @@ namespace CKAN.LinuxGUI
         public bool HasActiveFilters
             => !string.IsNullOrWhiteSpace(ModSearchText)
                || HasActiveAdvancedFilters;
+
+        public bool HasSearchText
+            => !string.IsNullOrWhiteSpace(ModSearchText);
 
         public string AdvancedFilterSummary
         {

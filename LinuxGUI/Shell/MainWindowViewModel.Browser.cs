@@ -732,6 +732,7 @@ namespace CKAN.LinuxGUI
                 ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
                 ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
                 ShowSelectedModDependenciesExpanded = false;
+                ShowSelectedModDependentsExpanded = false;
                 ShowSelectedModRecommendationsExpanded = false;
                 ShowSelectedModSuggestionsExpanded = false;
                 SetSelectedModDetailsSection(ModDetailsSection.Overview);
@@ -1325,6 +1326,12 @@ namespace CKAN.LinuxGUI
             ClearRelationshipBrowserScope();
             ModSearchText = "";
             ClearPopupFilters();
+        }
+
+        private void ClearSearch()
+        {
+            pendingModListScrollReset = true;
+            ModSearchText = "";
         }
 
         private void ClearPopupFilters()

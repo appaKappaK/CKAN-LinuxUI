@@ -82,6 +82,29 @@ namespace CKAN.LinuxGUI
                            "Could not open the current game directory.");
         }
 
+        private void OpenCurrentShipDirectory()
+        {
+            if (CurrentInstance == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var shipsPath = Path.Combine(CurrentInstance.GameDir, "Ships");
+                Directory.CreateDirectory(Path.Combine(shipsPath, "VAB"));
+                Directory.CreateDirectory(Path.Combine(shipsPath, "SPH"));
+                LaunchExternal(shipsPath,
+                               $"Opened {CurrentInstance.Name} ship directory in your file manager.",
+                               "Could not open the current ship directory.");
+            }
+            catch (Exception ex)
+            {
+                Diagnostics = ex.Message;
+                StatusMessage = "Could not open the current ship directory.";
+            }
+        }
+
         private async Task PlayGameAsync(GameLaunchMode mode)
         {
             if (CurrentInstance is not GameInstance instance)

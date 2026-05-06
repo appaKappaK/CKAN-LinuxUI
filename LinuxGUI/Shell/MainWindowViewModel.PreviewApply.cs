@@ -420,6 +420,7 @@ namespace CKAN.LinuxGUI
             ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
             ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
             ShowSelectedModDependenciesExpanded = false;
+            ShowSelectedModDependentsExpanded = false;
             ShowSelectedModRecommendationsExpanded = false;
             ShowSelectedModSuggestionsExpanded = false;
             this.RaisePropertyChanged(nameof(ShowOpenSelectedModCacheLocationAction));
@@ -465,6 +466,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasSelectedTagFilter));
             this.RaisePropertyChanged(nameof(ActiveFilterCount));
             this.RaisePropertyChanged(nameof(HasActiveFilters));
+            this.RaisePropertyChanged(nameof(HasSearchText));
             this.RaisePropertyChanged(nameof(AdvancedFilterSummary));
             this.RaisePropertyChanged(nameof(MoreFiltersLabel));
             this.RaisePropertyChanged(nameof(MoreFiltersButtonBackground));

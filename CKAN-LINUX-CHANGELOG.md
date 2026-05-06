@@ -3,6 +3,17 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-05-06
+
+### Browser and Details Usability
+- Added an inline search clear button that appears only when the browser search box has text.
+- Added a details-pane "Mods Require This" relationship section with a capped inline preview and full browser-scoped view.
+- Scoped installed-mod dependent counts to installed dependents so removal impact is easier to judge.
+- Tightened resource-link labels and alignment in the details pane.
+
+### File Menu Convenience
+- Added `File > Open ship directory` to open the current instance's `Ships` folder and create `Ships/VAB` and `Ships/SPH` when needed.
+
 ## 2026-04-19
 
 ### Foundations

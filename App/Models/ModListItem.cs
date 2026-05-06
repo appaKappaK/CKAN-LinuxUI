@@ -29,6 +29,8 @@ namespace CKAN.App.Models
 
         public string Depends { get; init; } = "";
 
+        public string DependsIdentifiers { get; init; } = "";
+
         public string Recommends { get; init; } = "";
 
         public string Suggests { get; init; } = "";
@@ -36,6 +38,8 @@ namespace CKAN.App.Models
         public string Conflicts { get; init; } = "";
 
         public string Supports { get; init; } = "";
+
+        public string ProvidesIdentifiers { get; init; } = "";
 
         public string Tags { get; init; } = "";
 

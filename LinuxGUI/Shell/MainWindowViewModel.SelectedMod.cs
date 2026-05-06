@@ -79,8 +79,8 @@ namespace CKAN.LinuxGUI
             AddResourceLink(links, "Curse", resources.curse);
             AddResourceLink(links, "CI", resources.ci);
             AddResourceLink(links, "Metanetkan", resources.metanetkan);
-            AddResourceLink(links, "Remote version info", resources.remoteSWInfo);
-            AddResourceLink(links, "Remote version file", resources.remoteAvc);
+            AddResourceLink(links, "Version", resources.remoteSWInfo);
+            AddResourceLink(links, "Version", resources.remoteAvc);
             AddResourceLink(links, "Store", resources.store);
             AddResourceLink(links, "Steam", resources.steamstore);
             AddResourceLink(links, "GOG", resources.gogstore);
@@ -313,6 +313,92 @@ namespace CKAN.LinuxGUI
             ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
             PublishRelationshipBrowserScopeState();
         }
+
+        private void ViewSelectedModDependentsInBrowser()
+        {
+            var dependents = SelectedModDependentItems();
+            if (dependents.Count == 0)
+            {
+                StatusMessage = SelectedMod?.IsInstalled == true
+                    ? $"No installed browser-visible mods depend on {SelectedModTitle}."
+                    : $"No browser-visible mods depend on {SelectedModTitle}.";
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = dependents
+                .Select(item => item.Identifier)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
+            RelationshipBrowserScopeText = $"Required by {SelectedModTitle}";
+            pendingModListScrollReset = true;
+            ApplyCatalogFilterToLoadedItems(relationshipBrowserScopeIdentifiers.FirstOrDefault());
+            PublishRelationshipBrowserScopeState();
+        }
+
+        private List<ModListItem> SelectedModDependentItems()
+        {
+            if (SelectedMod == null || allCatalogItems.Count == 0)
+            {
+                return new List<ModListItem>();
+            }
+
+            var selectedTargets = SelectedModDependencyTargetIdentifiers();
+            if (selectedTargets.Count == 0)
+            {
+                return new List<ModListItem>();
+            }
+
+            return allCatalogItems
+                .Where(item => !string.Equals(item.Identifier, SelectedMod.Identifier, StringComparison.OrdinalIgnoreCase))
+                .Where(item => !SelectedMod.IsInstalled || item.IsInstalled)
+                .Where(item => SplitIdentifierList(item.DependsIdentifiers).Any(selectedTargets.Contains))
+                .GroupBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(item => item.Identifier, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private HashSet<string> SelectedModDependencyTargetIdentifiers()
+        {
+            var identifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (SelectedMod == null)
+            {
+                return identifiers;
+            }
+
+            AddDependencyTargetIdentifier(identifiers, SelectedMod.Identifier);
+            AddDependencyTargetIdentifier(identifiers, SelectedMod.Name);
+            foreach (var identifier in SplitIdentifierList(SelectedMod.ProvidesIdentifiers))
+            {
+                AddDependencyTargetIdentifier(identifiers, identifier);
+            }
+
+            if (SelectedModVersionChoice?.Module is CkanModule selectedModule)
+            {
+                AddDependencyTargetIdentifier(identifiers, selectedModule.identifier);
+                AddDependencyTargetIdentifier(identifiers, selectedModule.name);
+                foreach (var identifier in selectedModule.ProvidesList)
+                {
+                    AddDependencyTargetIdentifier(identifiers, identifier);
+                }
+            }
+
+            return identifiers;
+        }
+
+        private static void AddDependencyTargetIdentifier(HashSet<string> identifiers,
+                                                          string?         identifier)
+        {
+            if (!string.IsNullOrWhiteSpace(identifier))
+            {
+                identifiers.Add(identifier.Trim());
+            }
+        }
+
+        private static IEnumerable<string> SplitIdentifierList(string identifiers)
+            => identifiers.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         private void ShowPreviewEntriesInBrowser(string              relationshipName,
                                                  IEnumerable<string> entries)
@@ -602,13 +688,18 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(SelectedModSelectedVersionMatchesInstalled));
             this.RaisePropertyChanged(nameof(SelectedModSelectedVersionIsCompatible));
             this.RaisePropertyChanged(nameof(HasSelectedModDependencies));
+            this.RaisePropertyChanged(nameof(HasSelectedModDependents));
+            this.RaisePropertyChanged(nameof(SelectedModDependentCountLabel));
+            this.RaisePropertyChanged(nameof(SelectedModDependentPreview));
             this.RaisePropertyChanged(nameof(HasSelectedModRecommendations));
             this.RaisePropertyChanged(nameof(HasSelectedModSuggestions));
             this.RaisePropertyChanged(nameof(ShowSelectedModResourceLinks));
             this.RaisePropertyChanged(nameof(ShowSelectedModDependenciesExpanded));
+            this.RaisePropertyChanged(nameof(ShowSelectedModDependentsExpanded));
             this.RaisePropertyChanged(nameof(ShowSelectedModRecommendationsExpanded));
             this.RaisePropertyChanged(nameof(ShowSelectedModSuggestionsExpanded));
             this.RaisePropertyChanged(nameof(SelectedModDependencyChevron));
+            this.RaisePropertyChanged(nameof(SelectedModDependentChevron));
             this.RaisePropertyChanged(nameof(SelectedModRecommendationChevron));
             this.RaisePropertyChanged(nameof(SelectedModSuggestionChevron));
         }
@@ -629,6 +720,15 @@ namespace CKAN.LinuxGUI
             {
                 ShowSelectedModDependenciesExpanded = !ShowSelectedModDependenciesExpanded;
                 this.RaisePropertyChanged(nameof(SelectedModDependencyChevron));
+            }
+        }
+
+        private void ToggleSelectedModDependentsExpanded()
+        {
+            if (HasSelectedModDependents)
+            {
+                ShowSelectedModDependentsExpanded = !ShowSelectedModDependentsExpanded;
+                this.RaisePropertyChanged(nameof(SelectedModDependentChevron));
             }
         }
 

@@ -95,6 +95,9 @@ That produces `_build/package/ckan-linux/linux-x64/`, including:
   [`ckan-meta-rs`](https://github.com/appaKappaK/ckan-meta-rs). The LinuxGUI
   sidecar reader is included in this repo; CKAN core remains authoritative for
   details, installs, dependency resolution, and registry writes.
+- LinuxGUI browser conveniences including clearable search, details-pane
+  relationship browsing for mods that require the selected mod, and a File menu
+  shortcut to the KSP `Ships` craft folders.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Rust Catalog Sidecar

@@ -196,6 +196,35 @@
       <Setter Property="Foreground" Value="#7A8490" />
       <Setter Property="Opacity" Value="1" />
     </Style>
+    <Style Selector="Button.search-clear-button">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Foreground" Value="#AEB8C3" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.search-clear-button:pointerover">
+      <Setter Property="Background" Value="#263340" />
+      <Setter Property="Foreground" Value="#F4F6F8" />
+    </Style>
+    <Style Selector="Button.search-clear-button:pressed">
+      <Setter Property="Background" Value="#1D2732" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.search-clear-button:disabled">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
     <Style Selector="Border.browser-chip">
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="Padding" Value="12,6" />
@@ -1674,6 +1703,10 @@
                       Command="{Binding OpenCurrentGameDirectoryCommand}"
                       IsEnabled="{Binding HasCurrentInstance}" />
             <MenuItem Classes="app-menu-item"
+                      Header="Open ship directory"
+                      Command="{Binding OpenCurrentShipDirectoryCommand}"
+                      IsEnabled="{Binding HasCurrentInstance}" />
+            <MenuItem Classes="app-menu-item"
                       Header="Play"
                       IsEnabled="False">
               <MenuItem Classes="app-menu-item play-submenu-item"
@@ -1928,6 +1961,10 @@
               <MenuItem Classes="app-menu-item"
                         Header="Open game directory"
                         Command="{Binding OpenCurrentGameDirectoryCommand}"
+                        IsEnabled="{Binding HasCurrentInstance}" />
+              <MenuItem Classes="app-menu-item"
+                        Header="Open ship directory"
+                        Command="{Binding OpenCurrentShipDirectoryCommand}"
                         IsEnabled="{Binding HasCurrentInstance}" />
               <MenuItem Classes="app-menu-item"
                         Header="Play"
@@ -2716,14 +2753,22 @@
                         MinHeight="0">
                     <Grid ColumnDefinitions="*,Auto,Auto"
                           Margin="0,0,0,8">
-                      <TextBox x:Name="SearchTextBox"
-                               Classes="browser-search"
-                               MinHeight="34"
-                               Padding="12,6"
-                               IsEnabled="{Binding CanInteractWithCatalog}"
-                               IsReadOnly="{Binding IsCatalogLoading}"
-                               Watermark="Search by mod name, author, or description"
-                               Text="{Binding ModSearchText}" />
+                      <Grid>
+                        <TextBox x:Name="SearchTextBox"
+                                 Classes="browser-search"
+                                 MinHeight="34"
+                                 Padding="12,6,40,6"
+                                 IsEnabled="{Binding CanInteractWithCatalog}"
+                                 IsReadOnly="{Binding IsCatalogLoading}"
+                                 Watermark="Search by mod name, author, or description"
+                                 Text="{Binding ModSearchText}" />
+                        <Button Classes="search-clear-button"
+                                Content="x"
+                                Command="{Binding ClearSearchCommand}"
+                                IsVisible="{Binding HasSearchText}"
+                                IsEnabled="{Binding CanInteractWithCatalog}"
+                                ToolTip.Tip="Clear search" />
+                      </Grid>
                       <Border Grid.Column="1"
                               Classes="browser-chip"
                               Background="#20262D"
@@ -3861,6 +3906,46 @@
                               <Grid ColumnDefinitions="Auto,Auto"
                                     HorizontalAlignment="Left">
                                 <Button Classes="detail-disclosure"
+                                        Command="{Binding ToggleSelectedModDependentsCommand}">
+                                  <Grid ColumnDefinitions="Auto,Auto"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Classes="detail-value"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding SelectedModDependentCountLabel}" />
+                                    <TextBlock Grid.Column="1"
+                                               Classes="detail-chevron"
+                                               Text="{Binding SelectedModDependentChevron}" />
+                                  </Grid>
+                                </Button>
+                                <Button Grid.Column="1"
+                                        Classes="detail-section-action"
+                                        Margin="8,-1,0,0"
+                                        IsVisible="{Binding HasSelectedModDependents}"
+                                        Command="{Binding ViewSelectedModDependentsInBrowserCommand}"
+                                        Content="View" />
+                              </Grid>
+                              <ItemsControl ItemsSource="{Binding SelectedModDependentPreview}"
+                                            IsVisible="{Binding ShowSelectedModDependentsExpanded}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <TextBlock Classes="detail-label"
+                                               Margin="0,0,0,4"
+                                               TextWrapping="Wrap"
+                                               Text="{Binding Text}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                            <Border Background="#24303B"
+                                    Height="1"
+                                    Margin="0,0,0,8" />
+
+                            <StackPanel Spacing="4"
+                                        Margin="0,0,0,8">
+                              <Grid ColumnDefinitions="Auto,Auto"
+                                    HorizontalAlignment="Left">
+                                <Button Classes="detail-disclosure"
                                         Command="{Binding ToggleSelectedModDependenciesCommand}">
                                   <Grid ColumnDefinitions="Auto,Auto"
                                         HorizontalAlignment="Left">
@@ -3978,7 +4063,7 @@
                               <ItemsControl ItemsSource="{Binding SelectedModResourceLinks}">
                                 <ItemsControl.ItemTemplate>
                                   <DataTemplate x:DataType="vm:ModResourceLinkItem">
-                                    <Grid ColumnDefinitions="76,*"
+                                    <Grid ColumnDefinitions="92,*"
                                           Margin="0,0,0,2">
                                       <TextBlock Classes="detail-label"
                                                  Margin="0,3,8,0"

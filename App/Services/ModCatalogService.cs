@@ -405,6 +405,7 @@ namespace CKAN.App.Services
                     : "Unspecified",
                 Languages         = "",
                 Depends           = string.Join(", ", module.DependencyNames),
+                DependsIdentifiers = FormatIdentifierList(module.DependencyNames),
                 Recommends        = string.Join(", ", module.RecommendationNames),
                 Suggests          = string.Join(", ", module.SuggestionNames),
                 Conflicts         = string.Join(", ", module.ConflictNames),
@@ -498,10 +499,12 @@ namespace CKAN.App.Services
                 License           = FormatLicense(displayMod),
                 Languages         = string.Join(", ", displayMod.localizations ?? Array.Empty<string>()),
                 Depends           = FormatRelationshipList(displayMod.depends),
+                DependsIdentifiers = FormatRelationshipIdentifierList(displayMod.depends),
                 Recommends        = FormatRelationshipList(displayMod.recommends),
                 Suggests          = FormatRelationshipList(displayMod.suggests),
                 Conflicts         = FormatRelationshipList(displayMod.conflicts),
                 Supports          = FormatRelationshipList(displayMod.supports),
+                ProvidesIdentifiers = FormatIdentifierList(displayMod.ProvidesList),
                 Tags              = string.Join(", ", displayMod.Tags?.OrderBy(tag => tag, StringComparer.CurrentCultureIgnoreCase)
                                                                ?? Enumerable.Empty<string>()),
                 Labels            = string.Join(", ", ModuleLabelList.ModuleLabels.LabelsFor(context.Instance.Name)
@@ -710,6 +713,27 @@ namespace CKAN.App.Services
                            (relationships ?? Enumerable.Empty<RelationshipDescriptor>())
                                .Select(relationship => relationship.ToString())
                                .Where(text => !string.IsNullOrWhiteSpace(text)));
+
+        private static string FormatRelationshipIdentifierList(IEnumerable<RelationshipDescriptor>? relationships)
+            => FormatIdentifierList((relationships ?? Enumerable.Empty<RelationshipDescriptor>())
+                .SelectMany(RelationshipIdentifiers));
+
+        private static string FormatIdentifierList(IEnumerable<string>? identifiers)
+            => string.Join("\n",
+                           (identifiers ?? Enumerable.Empty<string>())
+                               .Where(identifier => !string.IsNullOrWhiteSpace(identifier))
+                               .Distinct(StringComparer.OrdinalIgnoreCase));
+
+        private static IEnumerable<string> RelationshipIdentifiers(RelationshipDescriptor relationship)
+            => relationship switch
+            {
+                ModuleRelationshipDescriptor moduleRelationship
+                    => Enumerable.Repeat(moduleRelationship.name, 1),
+                AnyOfRelationshipDescriptor anyOfRelationship
+                    => anyOfRelationship.any_of?.SelectMany(RelationshipIdentifiers)
+                       ?? Enumerable.Empty<string>(),
+                _ => Enumerable.Empty<string>(),
+            };
 
         private static bool MatchesSearchText(ModListItem item, string searchText)
         {
