@@ -136,9 +136,6 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Applied saved display scale at shell startup with a restart-to-apply flow.
 - Expanded settings persistence for window state and shell-level options.
 
-### UX Research
-- Added `LinuxGUI/KSP_UI_ASSET_SHORTLIST.md` as a focused design-vetting note for possible KSP-style UI references.
-
 ## 2026-04-20
 
 ### Browser, Queue, and Preview Basics
