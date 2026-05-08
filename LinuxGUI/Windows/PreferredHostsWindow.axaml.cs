@@ -53,7 +53,9 @@ namespace CKAN.LinuxGUI
 
         private void HelpButton_OnClick(object? sender,
                                         Avalonia.Interactivity.RoutedEventArgs e)
-            => Utilities.ProcessStartURL(HelpURLs.PreferredHosts);
+            => viewModel.StatusMessage = Utilities.ProcessStartURL(HelpURLs.PreferredHosts)
+                ? "Opened preferred-host help."
+                : "Could not open preferred-host help.";
 
         private void CancelButton_OnClick(object? sender,
                                           Avalonia.Interactivity.RoutedEventArgs e)
@@ -81,6 +83,7 @@ namespace CKAN.LinuxGUI
             private readonly IReadOnlyList<string> allHosts;
             private string? selectedAvailableHost;
             private string? selectedPreferredHost;
+            private string statusMessage = "";
 
             public EditorViewModel(IEnumerable<string>  allHosts,
                                    IEnumerable<string?> preferredHosts)
@@ -95,6 +98,18 @@ namespace CKAN.LinuxGUI
             public ObservableCollection<string> AvailableHosts { get; }
 
             public ObservableCollection<string> PreferredHosts { get; }
+
+            public string StatusMessage
+            {
+                get => statusMessage;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref statusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowStatusMessage));
+                }
+            }
+
+            public bool ShowStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
 
             public string? SelectedAvailableHost
             {

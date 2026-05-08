@@ -82,7 +82,7 @@ namespace CKAN.LinuxGUI
         private async Task<bool> ConfirmIncompatibleLaunchAsync(string prompt)
         {
             var dialog = new SimplePromptWindow(prompt,
-                                                new[] { "Launch anyway" },
+                                                Array.Empty<string>(),
                                                 "Launch",
                                                 "Cancel");
             return await ShowOwnedDialogAsync<int>(dialog) == 0;

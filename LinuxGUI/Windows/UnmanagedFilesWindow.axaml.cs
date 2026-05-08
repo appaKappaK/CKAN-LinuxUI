@@ -35,7 +35,7 @@ namespace CKAN.LinuxGUI
             if (viewModel.Instance != null
                 && viewModel.SelectedPath is string path)
             {
-                Utilities.OpenFileBrowser(viewModel.Instance.ToAbsoluteGameDir(path));
+                viewModel.OpenSelected(path);
             }
         }
 
@@ -46,6 +46,7 @@ namespace CKAN.LinuxGUI
         private sealed class WindowViewModel : ReactiveObject
         {
             private string? selectedPath;
+            private string statusMessage = "";
 
             public WindowViewModel(GameInstance? instance,
                                    Registry?     registry)
@@ -74,6 +75,18 @@ namespace CKAN.LinuxGUI
 
             public bool HasSelection => !string.IsNullOrWhiteSpace(SelectedPath);
 
+            public string StatusMessage
+            {
+                get => statusMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref statusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowStatusMessage));
+                }
+            }
+
+            public bool ShowStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
             public string SummaryText
                 => Instance == null
                     ? "No current instance is available."
@@ -89,6 +102,7 @@ namespace CKAN.LinuxGUI
 
             public void Refresh()
             {
+                StatusMessage = "";
                 Paths.Clear();
                 if (Instance == null || Registry == null)
                 {
@@ -105,6 +119,20 @@ namespace CKAN.LinuxGUI
 
                 SelectedPath = Paths.FirstOrDefault();
                 this.RaisePropertyChanged(nameof(CountLabel));
+            }
+
+            public void OpenSelected(string path)
+            {
+                if (Instance == null)
+                {
+                    StatusMessage = "No game instance is available.";
+                    return;
+                }
+
+                var target = Instance.ToAbsoluteGameDir(path);
+                StatusMessage = Utilities.OpenFileBrowser(target)
+                    ? $"Opened {path} in your file manager."
+                    : $"Could not open {path} in your file manager.";
             }
         }
     }

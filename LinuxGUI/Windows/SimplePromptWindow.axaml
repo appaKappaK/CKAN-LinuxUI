@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -105,6 +104,7 @@
               Content="{Binding CancelLabel}" />
       <Button Classes="dialog-action"
               Click="ConfirmButton_OnClick"
+              IsEnabled="{Binding CanConfirm}"
               Content="{Binding ConfirmLabel}" />
     </StackPanel>
   </Grid>

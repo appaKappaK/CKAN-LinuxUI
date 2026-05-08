@@ -34,8 +34,8 @@ namespace CKAN.LinuxGUI
         {
             if (viewModel.SelectedDormantPlugin != null)
             {
-                controller.ActivatePlugin(viewModel.SelectedDormantPlugin);
-                viewModel.Refresh(controller);
+                RunPluginOperation(() => controller.ActivatePlugin(viewModel.SelectedDormantPlugin),
+                                   "Plugin activated.");
             }
         }
 
@@ -44,18 +44,18 @@ namespace CKAN.LinuxGUI
         {
             if (viewModel.SelectedActivePlugin != null)
             {
-                controller.DeactivatePlugin(viewModel.SelectedActivePlugin);
-                viewModel.Refresh(controller);
+                RunPluginOperation(() => controller.DeactivatePlugin(viewModel.SelectedActivePlugin),
+                                   "Plugin deactivated.");
             }
         }
 
-        private void ReloadButton_OnClick(object? sender,
-                                          Avalonia.Interactivity.RoutedEventArgs e)
+        private void RestartButton_OnClick(object? sender,
+                                           Avalonia.Interactivity.RoutedEventArgs e)
         {
             if (viewModel.SelectedActivePlugin != null)
             {
-                controller.ReloadPlugin(viewModel.SelectedActivePlugin);
-                viewModel.Refresh(controller);
+                RunPluginOperation(() => controller.RestartPlugin(viewModel.SelectedActivePlugin),
+                                   "Plugin restarted.");
             }
         }
 
@@ -64,7 +64,25 @@ namespace CKAN.LinuxGUI
         {
             if (viewModel.SelectedDormantPlugin != null)
             {
-                controller.UnloadPlugin(viewModel.SelectedDormantPlugin);
+                RunPluginOperation(() => controller.UnloadPlugin(viewModel.SelectedDormantPlugin),
+                                   "Plugin forgotten for this session. Restart CKAN Linux to release the loaded assembly.");
+            }
+        }
+
+        private void RunPluginOperation(System.Action operation,
+                                        string        successMessage)
+        {
+            try
+            {
+                operation();
+                viewModel.Message = successMessage;
+            }
+            catch (System.Exception ex)
+            {
+                viewModel.Message = ex.Message;
+            }
+            finally
+            {
                 viewModel.Refresh(controller);
             }
         }

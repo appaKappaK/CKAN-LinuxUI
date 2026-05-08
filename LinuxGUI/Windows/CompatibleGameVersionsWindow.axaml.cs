@@ -121,6 +121,7 @@ namespace CKAN.LinuxGUI
                 var text = AddVersionText.Trim();
                 if (string.IsNullOrWhiteSpace(text))
                 {
+                    AddVersionValidationMessage = "Enter a game version before adding it.";
                     return;
                 }
 

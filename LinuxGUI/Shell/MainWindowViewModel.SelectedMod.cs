@@ -79,8 +79,8 @@ namespace CKAN.LinuxGUI
             AddResourceLink(links, "Curse", resources.curse);
             AddResourceLink(links, "CI", resources.ci);
             AddResourceLink(links, "Metanetkan", resources.metanetkan);
-            AddResourceLink(links, "Version", resources.remoteSWInfo);
-            AddResourceLink(links, "Version", resources.remoteAvc);
+            AddResourceLink(links, "Version file", resources.remoteSWInfo);
+            AddResourceLink(links, "AVC version", resources.remoteAvc);
             AddResourceLink(links, "Store", resources.store);
             AddResourceLink(links, "Steam", resources.steamstore);
             AddResourceLink(links, "GOG", resources.gogstore);
@@ -159,7 +159,7 @@ namespace CKAN.LinuxGUI
                               {
                                   VersionText = module.version.ToString(),
                                   CompatibilityText = BuildVersionCompatibilityLabel(module, CurrentInstance),
-                                  ReleaseDateText = module.release_date?.ToLocalTime().ToString("M/d/yyyy") ?? "Unknown",
+                                  ReleaseDateText = module.release_date?.ToLocalTime().ToString("yyyy-MM-dd") ?? "Unknown",
                                   BadgeText = badgeText,
                                   BadgeForeground = badgeForeground,
                                   IsInstalledVersion = installedVersion?.Equals(module.version) == true,

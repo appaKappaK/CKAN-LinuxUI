@@ -17,7 +17,7 @@
         MinHeight="700"
         Title="CKAN Linux"
         FontFamily="Inter, Noto Sans, Segoe UI, Arial"
-        Background="#171C22">
+        Background="#11161B">
   <Window.Styles>
     <Style Selector="ToggleButton.toolbar-chip">
       <Setter Property="MinHeight" Value="34" />
@@ -72,7 +72,6 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.command-button:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -142,7 +141,6 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.preview-action:pointerover">
       <Setter Property="Opacity" Value="0.92" />
@@ -180,7 +178,6 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#EAF1F8" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.browser-chip:pointerover">
       <Setter Property="Background" Value="#202A34" />
@@ -210,7 +207,6 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Foreground" Value="#AEB8C3" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="FontSize" Value="16" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
@@ -305,7 +301,6 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="999" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.category-filter-chip:pointerover">
       <Setter Property="Opacity" Value="0.86" />
@@ -452,6 +447,19 @@
     <Style Selector="PopupRoot">
       <Setter Property="Background" Value="#20262D" />
     </Style>
+    <Style Selector="MenuFlyoutPresenter">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="MenuFlyoutPresenter /template/ Border">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
     <Style Selector="Menu.app-menu-bar > MenuItem">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="#F4F6F8" />
@@ -474,7 +482,6 @@
       <Setter Property="Foreground" Value="#F4F6F8" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0,0,8,0" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -536,8 +543,8 @@
       <Setter Property="MinHeight" Value="30" />
     </Style>
     <Style Selector="Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="999" />
       <Setter Property="Margin" Value="0" />
@@ -615,6 +622,12 @@
       <Setter Property="StrokeThickness" Value="0.9" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
+    <Style Selector="Line.icon-stroke">
+      <Setter Property="Stroke" Value="#EAF1F8" />
+      <Setter Property="StrokeThickness" Value="1.7" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
     <Style Selector="Ellipse.ready-menu-icon-ring">
       <Setter Property="Stroke" Value="#324050" />
       <Setter Property="StrokeThickness" Value="1" />
@@ -623,8 +636,8 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#54708C" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#D8E1EA" />
@@ -643,8 +656,8 @@
       <Setter Property="Stroke" Value="#4CAF7D" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
       <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:selected Border.ready-menu-key-top-edge">
@@ -680,8 +693,8 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:focus TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#B6C0CB" />
@@ -700,8 +713,8 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#54708C" />
       <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem[IsSubMenuOpen=true] Border.ready-menu-key-top-edge">
@@ -737,8 +750,8 @@
       <Setter Property="Stroke" Value="#324050" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover Border.ready-menu-key-shell">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#54708C" />
     </Style>
     <Style Selector="Menu.ready-title-menu > MenuItem:pointerover TextBlock.ready-menu-key-label">
       <Setter Property="Foreground" Value="#D8E1EA" />
@@ -773,8 +786,8 @@
     </Style>
     <Style Selector="MenuItem.app-menu-item /template/ Border">
       <Setter Property="Background" Value="#20262D" />
-      <Setter Property="BorderBrush" Value="#303944" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="MenuItem.app-menu-item:pointerover">
       <Setter Property="Background" Value="#2A323C" />
@@ -787,8 +800,8 @@
     </Style>
     <Style Selector="MenuItem.app-menu-item:pointerover /template/ Border">
       <Setter Property="Background" Value="#2A323C" />
-      <Setter Property="BorderBrush" Value="#303944" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="#49647D" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="MenuItem.app-menu-item:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="#2A323C" />
@@ -797,17 +810,17 @@
     </Style>
     <Style Selector="MenuItem.app-menu-item:selected /template/ Border">
       <Setter Property="Background" Value="#2A323C" />
-      <Setter Property="BorderBrush" Value="#303944" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="#49647D" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="MenuItem.play-submenu-item /template/ Border">
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="MenuItem.play-submenu-item:pointerover /template/ Border">
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="MenuItem.play-submenu-item:selected /template/ Border">
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="Menu.app-menu-bar Separator">
       <Setter Property="Background" Value="#20262D" />
@@ -858,22 +871,25 @@
       <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
     <Style Selector="Border.surface-view-logo-bed">
-      <Setter Property="Width" Value="164" />
-      <Setter Property="Height" Value="46" />
-      <Setter Property="Margin" Value="0,1,0,0" />
+      <Setter Property="Width" Value="188" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="Margin" Value="0,-5,0,-5" />
+      <Setter Property="Background" Value="#17212B" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
+      <Setter Property="BorderThickness" Value="1,0" />
       <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="ClipToBounds" Value="True" />
-      <Setter Property="Opacity" Value="0.78" />
+      <Setter Property="Opacity" Value="1" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Image.surface-view-logo-badge">
-      <Setter Property="Width" Value="116" />
-      <Setter Property="Height" Value="116" />
-      <Setter Property="Margin" Value="0,-29,0,0" />
+      <Setter Property="Width" Value="224" />
+      <Setter Property="Height" Value="119" />
+      <Setter Property="Margin" Value="0,-36,0,0" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Top" />
-      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="Stretch" Value="UniformToFill" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.surface-view-toggle-rim">
@@ -914,7 +930,6 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Foreground" Value="#9AA4AF" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.surface-view-tab:pointerover TextBlock.surface-view-label">
       <Setter Property="Foreground" Value="#C4CDD8" />
@@ -1070,6 +1085,117 @@
       <Setter Property="Background" Value="#65707C" />
       <Setter Property="Opacity" Value="0.45" />
     </Style>
+    <Style Selector="Border.workspace-tab-strip">
+      <Setter Property="Background" Value="#10151A" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,0" />
+      <Setter Property="Padding" Value="0,0,12,0" />
+    </Style>
+    <Style Selector="StackPanel.workspace-tabs">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="2" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.workspace-tab">
+      <Setter Property="MinHeight" Value="38" />
+      <Setter Property="MinWidth" Value="112" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="9,9,0,0" />
+      <Setter Property="Foreground" Value="#A9B4C0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.workspace-tab /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="9,9,0,0" />
+    </Style>
+    <Style Selector="Button.workspace-tab:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.workspace-tab-shell">
+      <Setter Property="Background" Value="#18222C" />
+      <Setter Property="BorderBrush" Value="#334657" />
+      <Setter Property="BorderThickness" Value="1,1,1,0" />
+      <Setter Property="CornerRadius" Value="9,9,0,0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.workspace-tab:pointerover Border.workspace-tab-shell">
+      <Setter Property="Background" Value="#1E2C38" />
+      <Setter Property="BorderBrush" Value="#465B70" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active Border.workspace-tab-shell">
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active:pointerover Border.workspace-tab-shell">
+      <Setter Property="Background" Value="#26394D" />
+      <Setter Property="BorderBrush" Value="#49647D" />
+    </Style>
+    <Style Selector="StackPanel.workspace-tab-content">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="8" />
+      <Setter Property="Margin" Value="13,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBlock.workspace-tab-label">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#A9B4C0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active TextBlock.workspace-tab-label">
+      <Setter Property="Foreground" Value="#D8E7F7" />
+    </Style>
+    <Style Selector="Line.workspace-tab-icon-stroke">
+      <Setter Property="Stroke" Value="#A9B4C0" />
+      <Setter Property="StrokeThickness" Value="1.4" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.workspace-tab.active Line.workspace-tab-icon-stroke">
+      <Setter Property="Stroke" Value="#8EC5F7" />
+    </Style>
+    <Style Selector="Border.workspace-tab-badge">
+      <Setter Property="Background" Value="#28456D" />
+      <Setter Property="BorderBrush" Value="#3E679A" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="7,1" />
+      <Setter Property="MinWidth" Value="24" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.workspace-tab-badge-text">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#D8E7F7" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
     <Style Selector="ListBox#ModsListBox">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
@@ -1082,7 +1208,6 @@
       <Setter Property="Margin" Value="0,0,4,0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="CornerRadius" Value="5" />
       <Setter Property="Background" Value="Transparent" />
@@ -1135,7 +1260,6 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="ListBox#ModsListBox > ListBoxItem:focus /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -1197,7 +1321,6 @@
       <Setter Property="Margin" Value="0,0,0,1" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="CornerRadius" Value="5" />
       <Setter Property="Background" Value="Transparent" />
@@ -1342,7 +1465,6 @@
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.preview-conflict-row-button:pointerover">
       <Setter Property="Background" Value="Transparent" />
@@ -1368,7 +1490,6 @@
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="0,0,0,6" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -1419,7 +1540,6 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="ListBox#PreviewConflictList > ListBoxItem:focus /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -1440,17 +1560,17 @@
     <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,0,2,0" />
+      <Setter Property="Margin" Value="6,0,0,0" />
     </Style>
     <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical:pointerover">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,0,2,0" />
+      <Setter Property="Margin" Value="6,0,0,0" />
     </Style>
     <Style Selector="ScrollViewer#DetailsScrollViewer ScrollBar:vertical:expanded">
       <Setter Property="Width" Value="10" />
       <Setter Property="MinWidth" Value="10" />
-      <Setter Property="Margin" Value="4,0,2,0" />
+      <Setter Property="Margin" Value="6,0,0,0" />
     </Style>
     <Style Selector="TextBlock.row-title">
       <Setter Property="FontSize" Value="13.5" />
@@ -1561,7 +1681,6 @@
       <Setter Property="Foreground" Value="#DDEAF8" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.detail-section-action:pointerover">
       <Setter Property="Background" Value="#294259" />
@@ -1578,8 +1697,8 @@
     <Style Selector="ComboBox.header-instance-picker">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="10,0" />
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Foreground" Value="#F4F6F8" />
@@ -1587,16 +1706,16 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:pointerover">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#54708C" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:focus">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#566B80" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#607D99" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker:dropdownopen">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#566B80" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#607D99" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker ComboBoxItem">
       <Setter Property="Background" Value="#161B21" />
@@ -1617,7 +1736,7 @@
     <Style Selector="ComboBox.header-instance-picker-segment">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="12,0" />
-      <Setter Property="Background" Value="#212938" />
+      <Setter Property="Background" Value="#223345" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="0,9,9,0" />
@@ -1626,19 +1745,19 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:pointerover">
-      <Setter Property="Background" Value="#263246" />
+      <Setter Property="Background" Value="#28405A" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:focus">
-      <Setter Property="Background" Value="#263246" />
+      <Setter Property="Background" Value="#28405A" />
     </Style>
     <Style Selector="ComboBox.header-instance-picker-segment:dropdownopen">
-      <Setter Property="Background" Value="#263246" />
+      <Setter Property="Background" Value="#28405A" />
     </Style>
     <Style Selector="Button.header-instance-reload">
       <Setter Property="MinHeight" Value="30" />
       <Setter Property="Padding" Value="12,0" />
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Foreground" Value="#DCE4EC" />
@@ -1646,18 +1765,18 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.header-instance-reload /template/ ContentPresenter">
-      <Setter Property="Background" Value="#212938" />
-      <Setter Property="BorderBrush" Value="#394654" />
+      <Setter Property="Background" Value="#223345" />
+      <Setter Property="BorderBrush" Value="#3E5770" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="Button.header-instance-reload:pointerover">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#54708C" />
     </Style>
     <Style Selector="Button.header-instance-reload:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#263246" />
-      <Setter Property="BorderBrush" Value="#4A5B70" />
+      <Setter Property="Background" Value="#28405A" />
+      <Setter Property="BorderBrush" Value="#54708C" />
     </Style>
     <Style Selector="TextBox.browser-search">
       <Setter Property="Background" Value="#16202A" />
@@ -1685,12 +1804,22 @@
     </LayoutTransformControl.LayoutTransform>
   <Grid HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
-        RowDefinitions="Auto,Auto,*"
-        Background="#171C22">
+        RowDefinitions="Auto,Auto,*">
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0%,0%"
+                           EndPoint="0%,100%">
+        <GradientStop Color="#10151A"
+                      Offset="0" />
+        <GradientStop Color="#141A20"
+                      Offset="0.42" />
+        <GradientStop Color="#0F1418"
+                      Offset="1" />
+      </LinearGradientBrush>
+    </Grid.Background>
     <Border Background="#20262D"
             Padding="16,10"
             IsVisible="{Binding ShowLegacyHeader}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+      <Grid ColumnDefinitions="Auto,*,Auto"
             VerticalAlignment="Center">
         <Menu Classes="app-menu-bar"
               VerticalAlignment="Center">
@@ -1708,7 +1837,7 @@
                       IsEnabled="{Binding HasCurrentInstance}" />
             <MenuItem Classes="app-menu-item"
                       Header="Play"
-                      IsEnabled="False">
+                      IsEnabled="{Binding HasCurrentInstance}">
               <MenuItem Classes="app-menu-item play-submenu-item"
                         Header="Via Steam"
                         Command="{Binding PlayViaSteamCommand}"
@@ -1892,14 +2021,18 @@
     </Border>
 
     <Border Grid.Row="0"
-            Background="#1E252D"
-            BorderBrush="#2F3741"
+            Background="#1C2A39"
+            BorderBrush="#334B62"
             BorderThickness="0,0,0,1"
             Padding="10,5"
             IsVisible="{Binding ShowReadyHeader}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+      <Grid ColumnDefinitions="*,188,*"
             VerticalAlignment="Center">
-          <Menu Classes="app-menu-bar ready-title-menu"
+        <Grid Grid.Column="0"
+              ColumnDefinitions="Auto,*"
+              MinWidth="0">
+          <Menu Grid.Column="0"
+                Classes="app-menu-bar ready-title-menu"
                 IsEnabled="{Binding CanInteractWithCatalog}"
                 VerticalAlignment="Center">
             <MenuItem>
@@ -1968,7 +2101,7 @@
                         IsEnabled="{Binding HasCurrentInstance}" />
               <MenuItem Classes="app-menu-item"
                         Header="Play"
-                        IsEnabled="False">
+                        IsEnabled="{Binding HasCurrentInstance}">
                 <MenuItem Classes="app-menu-item play-submenu-item"
                           Header="Via Steam"
                           Command="{Binding PlayViaSteamCommand}"
@@ -2189,26 +2322,62 @@
             </MenuItem>
           </Menu>
 
+          <Border Grid.Column="1"
+                  Background="{Binding StatusSurfaceBackground}"
+                  BorderBrush="{Binding StatusSurfaceBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="10,6"
+                  MaxWidth="300"
+                  Margin="14,0,12,0"
+                  ClipToBounds="True"
+                  HorizontalAlignment="Stretch"
+                  IsVisible="{Binding ShowReadyStatusSurface}"
+                  VerticalAlignment="Center">
+            <StackPanel Spacing="5">
+              <TextBlock FontSize="11.5"
+                         Opacity="0.74"
+                         TextTrimming="CharacterEllipsis"
+                         MaxLines="1"
+                         Text="{Binding StatusMessage}" />
+              <ProgressBar Height="4"
+                           Minimum="0"
+                           Maximum="100"
+                           Value="{Binding ProgressPercent}"
+                           IsIndeterminate="{Binding IsReadyStatusProgressIndeterminate}"
+                           IsVisible="{Binding ShowReadyStatusProgress}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+          <Border Grid.Column="1"
+                  ZIndex="1"
+                  Classes="surface-view-logo-bed"
+                  IsVisible="{Binding ShowReadyHeader}">
+            <Image Classes="surface-view-logo-badge"
+                   Source="avares://CKAN-LinuxGUI/Assets/CKAN-Logo-Linux.png" />
+          </Border>
+
           <StackPanel Grid.Column="2"
                       Orientation="Horizontal"
                       Spacing="8"
-                      Margin="16,0,38,0"
-                      HorizontalAlignment="Left"
+                      Margin="12,0,0,0"
+                      HorizontalAlignment="Right"
                       VerticalAlignment="Center">
             <Button Classes="header-instance-reload"
                     IsEnabled="{Binding CanInteractWithCatalog}"
                     Command="{Binding RefreshCommand}"
                     Content="Reload" />
 
-            <Border Background="#212938"
-                    BorderBrush="#394654"
+            <Border Background="#223345"
+                    BorderBrush="#3E5770"
                     BorderThickness="1"
                     CornerRadius="10"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center">
               <Grid ColumnDefinitions="Auto,Auto">
-                <Border Background="#212938"
-                        BorderBrush="#394654"
+                <Border Background="#223345"
+                        BorderBrush="#3E5770"
                         BorderThickness="0,0,1,0"
                         CornerRadius="9,0,0,9"
                         MinHeight="30"
@@ -2223,7 +2392,7 @@
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="#171F2A"
+                        Background="#19283A"
                         CornerRadius="0,9,9,0"
                         MinHeight="30"
                         Padding="12,0"
@@ -2280,105 +2449,12 @@
               </Grid>
             </Border>
           </StackPanel>
-
-          <Border Grid.Column="3"
-                  Background="{Binding StatusSurfaceBackground}"
-                  BorderBrush="{Binding StatusSurfaceBorderBrush}"
-                  BorderThickness="1"
-                  CornerRadius="8"
-                  Padding="10,6"
-                  Width="280"
-                  Margin="8,0,0,0"
-                  ClipToBounds="True"
-                  IsVisible="{Binding ShowReadyStatusSurface}"
-                  VerticalAlignment="Center">
-            <TextBlock FontSize="11.5"
-                       Opacity="0.74"
-                       TextTrimming="CharacterEllipsis"
-                       MaxLines="1"
-                       Text="{Binding StatusMessage}" />
-          </Border>
         </Grid>
-    </Border>
-
-    <Border Grid.Row="0"
-            ZIndex="10"
-            Classes="surface-view-logo-bed"
-            IsVisible="{Binding ShowReadyHeader}">
-      <Image Classes="surface-view-logo-badge"
-             Source="avares://CKAN-LinuxGUI/Assets/ckan-256.png" />
-    </Border>
-
-    <Border Grid.Row="0"
-            x:Name="SurfaceViewToggle"
-            ZIndex="20"
-            Classes="surface-view-toggle"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            IsVisible="{Binding ShowReadyHeader}">
-      <Border Classes="surface-view-toggle-panel"
-              Classes.compact="{Binding SurfaceViewToggleCompact}">
-        <Grid>
-          <Border Classes="surface-view-toggle-rim" />
-          <Grid ColumnDefinitions="76,*"
-                Margin="5,0"
-                VerticalAlignment="Center">
-            <Button Classes="surface-view-tab"
-                    Classes.active="{Binding ShowBrowseSurface}"
-                    Command="{Binding ShowBrowseSurfaceCommand}"
-                    IsEnabled="{Binding CanInteractWithCatalog}"
-                    Grid.Column="0"
-                    HorizontalAlignment="Stretch">
-              <Grid RowDefinitions="Auto,*,Auto">
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-shell" />
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-left-edge" />
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-right-edge" />
-                <Border Classes="surface-view-tab-top-edge" />
-                <StackPanel Grid.Row="1"
-                            Classes="surface-view-tab-content">
-                  <TextBlock Classes="surface-view-label"
-                             Text="Browse" />
-                  <Border Classes="surface-view-indicator" />
-                </StackPanel>
-                <Border Grid.Row="2"
-                        Classes="surface-view-tab-bottom-edge" />
-              </Grid>
-            </Button>
-            <Button Classes="surface-view-tab"
-                    Classes.active="{Binding ShowPreviewSurface}"
-                    Command="{Binding ShowPreviewSurfaceCommand}"
-                    IsEnabled="{Binding CanInteractWithCatalog}"
-                    Grid.Column="1"
-                    HorizontalAlignment="Stretch">
-              <Grid RowDefinitions="Auto,*,Auto">
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-shell" />
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-left-edge" />
-                <Border Grid.RowSpan="3"
-                        Classes="surface-view-tab-right-edge" />
-                <Border Classes="surface-view-tab-top-edge" />
-                <StackPanel Grid.Row="1"
-                            Classes="surface-view-tab-content">
-                  <TextBlock Classes="surface-view-label"
-                             Text="{Binding PreviewSurfaceButtonLabel}" />
-                  <Border Classes="surface-view-indicator" />
-                </StackPanel>
-                <Border Grid.Row="2"
-                        Classes="surface-view-tab-bottom-edge" />
-              </Grid>
-            </Button>
-          </Grid>
-        </Grid>
-      </Border>
     </Border>
 
     <Grid Grid.Row="2"
           ColumnDefinitions="Auto,*"
-          Margin="12"
+          Margin="6"
           MinHeight="0">
       <Border Background="#161B21"
               BorderBrush="#2B323C"
@@ -2628,7 +2704,9 @@
               Margin="0"
               MinHeight="0">
         <Grid MinHeight="0">
-          <Border Background="#202930"
+          <Border Background="#161B21"
+                  BorderBrush="#33404B"
+                  BorderThickness="1"
                   CornerRadius="12"
                   Padding="16"
                   IsVisible="{Binding IsLoading}">
@@ -2650,7 +2728,9 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#202930"
+          <Border Background="#161B21"
+                  BorderBrush="#33404B"
+                  BorderThickness="1"
                   CornerRadius="12"
                   Padding="16"
                   IsVisible="{Binding IsEmpty}">
@@ -2675,7 +2755,9 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#202930"
+          <Border Background="#161B21"
+                  BorderBrush="#33404B"
+                  BorderThickness="1"
                   CornerRadius="12"
                   Padding="16"
                   IsVisible="{Binding NeedsSelection}">
@@ -2705,9 +2787,12 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#202930"
+          <Border Background="#161B21"
+                  BorderBrush="Transparent"
+                  BorderThickness="0"
                   CornerRadius="12"
-                  Padding="12"
+                  Padding="0"
+                  ClipToBounds="True"
                   IsHitTestVisible="{Binding CanUseCatalogPanel}"
                   IsVisible="{Binding IsReady}"
                   MinHeight="0">
@@ -2740,17 +2825,100 @@
               </Border>
               -->
 
-              <Grid Grid.Row="1"
-                    ColumnDefinitions="*,Auto"
-                    IsVisible="{Binding ShowBrowseSurface}"
-                    MinHeight="0">
-                <Border Background="#161B21"
-                        CornerRadius="10"
-                        Padding="10"
-                        Margin="0,0,6,0"
-                        MinHeight="0">
-                  <Grid RowDefinitions="Auto,*"
-                        MinHeight="0">
+              <Border Grid.Row="0"
+                      Classes="workspace-tab-strip"
+                      IsVisible="{Binding ShowWorkspaceTabs}">
+                <Grid>
+                  <StackPanel Classes="workspace-tabs">
+                    <Button Classes="workspace-tab"
+                            Classes.active="{Binding ShowBrowseSurface}"
+                            Command="{Binding ShowBrowseSurfaceCommand}"
+                            IsEnabled="{Binding CanInteractWithCatalog}">
+                      <Grid RowDefinitions="*,Auto">
+                        <Border Grid.RowSpan="2"
+                                Classes="workspace-tab-shell" />
+                        <StackPanel Classes="workspace-tab-content">
+                          <Viewbox Width="14"
+                                   Height="14"
+                                   Stretch="Uniform">
+                            <Canvas Width="14"
+                                    Height="14">
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,4"
+                                           EndPoint="11,4" />
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,7"
+                                           EndPoint="11,7" />
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,10"
+                                           EndPoint="11,10" />
+                            </Canvas>
+                          </Viewbox>
+                          <TextBlock Classes="workspace-tab-label"
+                                     Text="Browse" />
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+
+                    <Button Classes="workspace-tab"
+                            Classes.active="{Binding ShowPreviewSurface}"
+                            Command="{Binding ShowPreviewSurfaceCommand}"
+                            IsEnabled="{Binding CanInteractWithCatalog}"
+                            IsVisible="{Binding ShowReviewWorkspaceTab}">
+                      <Grid RowDefinitions="*,Auto">
+                        <Border Grid.RowSpan="2"
+                                Classes="workspace-tab-shell" />
+                        <StackPanel Classes="workspace-tab-content">
+                          <Viewbox Width="14"
+                                   Height="14"
+                                   Stretch="Uniform">
+                            <Canvas Width="14"
+                                    Height="14">
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,4"
+                                           EndPoint="11,4" />
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,7"
+                                           EndPoint="11,7" />
+                              <shapes:Line Classes="workspace-tab-icon-stroke"
+                                           StartPoint="3,10"
+                                           EndPoint="11,10" />
+                            </Canvas>
+                          </Viewbox>
+                          <TextBlock Classes="workspace-tab-label"
+                                     Text="{Binding ReviewSurfaceButtonLabel}" />
+                          <Border Classes="workspace-tab-badge"
+                                  IsVisible="{Binding ShowQueueTabBadge}">
+                            <TextBlock Classes="workspace-tab-badge-text"
+                                       Text="{Binding QueueTabCountLabel}" />
+                          </Border>
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Border>
+
+              <Border Grid.Row="1"
+                      Background="#223345"
+                      BorderBrush="Transparent"
+                      BorderThickness="0"
+                      CornerRadius="0,10,10,10"
+                      Padding="9"
+                      Margin="0"
+                      IsVisible="{Binding ShowBrowseSurface}"
+                      MinHeight="0">
+                <Grid ColumnDefinitions="*,Auto"
+                      MinHeight="0">
+                  <Border Background="Transparent"
+                          BorderBrush="Transparent"
+                          BorderThickness="0"
+                          CornerRadius="0"
+                          Padding="0"
+                          Margin="0"
+                          MinHeight="0">
+                    <Grid RowDefinitions="Auto,*"
+                          MinHeight="0">
                     <Grid ColumnDefinitions="*,Auto,Auto"
                           Margin="0,0,0,8">
                       <Grid>
@@ -2763,11 +2931,24 @@
                                  Watermark="Search by mod name, author, or description"
                                  Text="{Binding ModSearchText}" />
                         <Button Classes="search-clear-button"
-                                Content="x"
                                 Command="{Binding ClearSearchCommand}"
                                 IsVisible="{Binding HasSearchText}"
                                 IsEnabled="{Binding CanInteractWithCatalog}"
-                                ToolTip.Tip="Clear search" />
+                                ToolTip.Tip="Clear search">
+                          <Viewbox Width="10"
+                                   Height="10"
+                                   Stretch="Uniform">
+                            <Canvas Width="10"
+                                    Height="10">
+                              <shapes:Line Classes="icon-stroke"
+                                           StartPoint="2,2"
+                                           EndPoint="8,8" />
+                              <shapes:Line Classes="icon-stroke"
+                                           StartPoint="8,2"
+                                           EndPoint="2,8" />
+                            </Canvas>
+                          </Viewbox>
+                        </Button>
                       </Grid>
                       <Border Grid.Column="1"
                               Classes="browser-chip"
@@ -2813,6 +2994,9 @@
                                 MaxHeight="620"
                                 x:CompileBindings="False"
                                 BoxShadow="0 18 36 0 #66000000">
+                          <ScrollViewer MaxHeight="588"
+                                        HorizontalScrollBarVisibility="Disabled"
+                                        VerticalScrollBarVisibility="Auto">
                           <StackPanel Spacing="12">
                             <Grid ColumnDefinitions="*,*">
                               <StackPanel Spacing="8">
@@ -2926,6 +3110,7 @@
                               </StackPanel>
                             </Border>
                           </StackPanel>
+                          </ScrollViewer>
                         </Border>
                       </Popup>
                     </Grid>
@@ -3406,30 +3591,37 @@
                                       VerticalAlignment="Center">
                             <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
-                                       Text="No mods match the current search and filters." />
+                                       Text="{Binding EmptyModResultsTitle}" />
                             <TextBlock Opacity="0.82"
                                        TextWrapping="Wrap"
-                                       Text="Broaden the query or clear the active filters to restore the catalog list." />
+                                       Text="{Binding EmptyModResultsMessage}" />
                             <Button Width="140"
                                     Classes="command-button"
                                     HorizontalAlignment="Left"
+                                    IsVisible="{Binding ShowClearFiltersForEmptyResults}"
                                     Command="{Binding ClearFiltersCommand}"
                                     Content="Clear Filters" />
+                            <Button Width="140"
+                                    Classes="command-button primary"
+                                    HorizontalAlignment="Left"
+                                    IsVisible="{Binding ShowCatalogLoadError}"
+                                    Command="{Binding RefreshCommand}"
+                                    Content="Retry Load" />
                           </StackPanel>
                         </Border>
                       </Grid>
                     </Border>
 
                   </Grid>
-                </Border>
+                  </Border>
 
                 <Border Grid.Column="1"
                         Background="#14191F"
                         BorderBrush="#2B323C"
                         BorderThickness="1"
                         CornerRadius="8"
-                        Padding="14"
-                        Margin="8,0,0,0"
+                        Padding="14,14,2,14"
+                        Margin="6,0,0,0"
                         Width="292"
                         MinWidth="272"
                         MinHeight="0"
@@ -3567,7 +3759,7 @@
                                   MinHeight="0"
                                   IsVisible="{Binding ShowSelectedModContent}">
                       <StackPanel Spacing="10"
-                                  Margin="0,0,8,0">
+                                  Margin="0,0,6,0">
                         <TextBlock Classes="panel-title"
                                    TextWrapping="Wrap"
                                    Text="{Binding SelectedModTitle}" />
@@ -4091,12 +4283,16 @@
                     </ScrollViewer>
                   </Grid>
                 </Border>
-              </Grid>
+                </Grid>
+              </Border>
 
               <Border Grid.Row="1"
-                      Background="#161B21"
-                      CornerRadius="10"
-                      Padding="18"
+                      Background="#14191F"
+                      BorderBrush="#223345"
+                      BorderThickness="1"
+                      CornerRadius="0,10,10,10"
+                      Padding="9"
+                      Margin="0"
                       IsVisible="{Binding ShowPreviewSurface}">
                 <Grid RowDefinitions="*,Auto">
 
@@ -5078,6 +5274,9 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 IsVisible="{Binding ShowExecutionResultOverlay}">
+          <ScrollViewer MaxHeight="640"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="14">
             <TextBlock FontSize="22"
                        FontWeight="SemiBold"
@@ -5134,6 +5333,7 @@
                     Command="{Binding AcknowledgeExecutionResultCommand}"
                     Content="{Binding ExecutionResultAcknowledgeLabel}" />
           </StackPanel>
+          </ScrollViewer>
         </Border>
       </Grid>
     </Border>

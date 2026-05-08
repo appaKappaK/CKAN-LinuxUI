@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 
 using Avalonia.Controls;
+using ReactiveUI;
 
 namespace CKAN.LinuxGUI
 {
@@ -17,12 +18,19 @@ namespace CKAN.LinuxGUI
         {
             if (sender is Button { Tag: string url })
             {
-                Utilities.ProcessStartURL(url);
+                if (DataContext is WindowViewModel viewModel)
+                {
+                    viewModel.StatusMessage = Utilities.ProcessStartURL(url)
+                        ? $"Opened {url}."
+                        : $"Could not open {url}.";
+                }
             }
         }
 
-        private sealed class WindowViewModel
+        private sealed class WindowViewModel : ReactiveObject
         {
+            private string statusMessage = "";
+
             public WindowViewModel()
             {
                 VersionText = $"Version {Meta.GetVersion()}";
@@ -39,6 +47,18 @@ namespace CKAN.LinuxGUI
             public string VersionText { get; }
 
             public ObservableCollection<AboutLinkItem> Links { get; }
+
+            public string StatusMessage
+            {
+                get => statusMessage;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref statusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowStatusMessage));
+                }
+            }
+
+            public bool ShowStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
         }
     }
 

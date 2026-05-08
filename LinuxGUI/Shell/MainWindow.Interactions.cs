@@ -156,7 +156,19 @@ namespace CKAN.LinuxGUI
                 {
                     Header = viewModel.PurgeCacheContextLabel(mod),
                 };
-                purgeCacheItem.Click += (_, _) => viewModel.PurgeCacheFromBrowser(mod);
+                purgeCacheItem.Click += async (_, _) =>
+                {
+                    var choice = await ShowOwnedDialogAsync<int>(
+                        new SimplePromptWindow(
+                            $"Purge cached archive for \"{mod.Name}\"?",
+                            new[] { "Purge", "Cancel" },
+                            "Purge",
+                            "Cancel"));
+                    if (choice == 0)
+                    {
+                        viewModel.PurgeCacheFromBrowser(mod);
+                    }
+                };
                 purgeCacheItem.Classes.Add("mod-row-menu-item");
                 menu.Items.Add(purgeCacheItem);
             }
@@ -237,25 +249,6 @@ namespace CKAN.LinuxGUI
 
             activeModRowMenu = menu;
             menu.Open(control);
-        }
-
-        private void SurfaceViewToggle_OnPointerPressed(object? sender,
-                                                        PointerPressedEventArgs e)
-        {
-            if (DataContext is not MainWindowViewModel viewModel)
-            {
-                return;
-            }
-
-            var source = sender as Control ?? this;
-            var updateKind = e.GetCurrentPoint(source).Properties.PointerUpdateKind;
-            if (updateKind != PointerUpdateKind.RightButtonPressed)
-            {
-                return;
-            }
-
-            viewModel.ToggleSurfaceViewTogglePinned();
-            e.Handled = true;
         }
 
         private void BrowserColumnResizeHandle_OnPointerPressed(object? sender,

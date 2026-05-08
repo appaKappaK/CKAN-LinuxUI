@@ -92,8 +92,8 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private void ForgetButton_OnClick(object? sender,
-                                          Avalonia.Interactivity.RoutedEventArgs e)
+        private async void ForgetButton_OnClick(object? sender,
+                                                Avalonia.Interactivity.RoutedEventArgs e)
         {
             if (manager == null || viewModel.SelectedInstance == null || viewModel.SelectedInstance.IsCurrent)
             {
@@ -101,6 +101,16 @@ namespace CKAN.LinuxGUI
             }
 
             var selected = viewModel.SelectedInstance;
+            var choice = await new SimplePromptWindow(
+                $"Forget game instance \"{selected.Name}\"?\n\nThe game folder will not be deleted.",
+                new[] { "Forget", "Cancel" },
+                "Forget",
+                "Cancel").ShowDialog<int>(this);
+            if (choice != 0)
+            {
+                return;
+            }
+
             try
             {
                 if (selected.IsDefault)
@@ -182,36 +192,22 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
             {
-                Title = "Register game instance",
+                Title = "Choose game instance folder",
                 AllowMultiple = false,
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType("Game instance files")
-                    {
-                        Patterns = KnownGames.AllInstanceAnchorFiles.ToArray(),
-                    },
-                    FilePickerFileTypes.All,
-                },
             });
-            var path = files.FirstOrDefault()?.TryGetLocalPath();
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return;
-            }
-
-            var chosen = Path.GetFileName(path);
-            if (!KnownGames.AllInstanceAnchorFiles.Contains(chosen, Platform.PathComparer))
-            {
-                viewModel.SetStatus($"Choose a game instance file such as {string.Join(", ", KnownGames.AllInstanceAnchorFiles.Take(3))}.");
-                return;
-            }
-
-            var directory = Path.GetDirectoryName(path);
+            var directory = folders.FirstOrDefault()?.TryGetLocalPath();
             if (string.IsNullOrWhiteSpace(directory))
             {
-                viewModel.SetStatus("Could not determine the selected game folder.");
+                return;
+            }
+
+            var anchorFile = KnownGames.AllInstanceAnchorFiles
+                                       .FirstOrDefault(file => File.Exists(Path.Combine(directory, file)));
+            if (anchorFile == null)
+            {
+                viewModel.SetStatus($"Choose the game folder containing a file such as {string.Join(", ", KnownGames.AllInstanceAnchorFiles.Take(3))}.");
                 return;
             }
 
@@ -385,18 +381,18 @@ namespace CKAN.LinuxGUI
 
             public string SelectedStatusBackground
                 => SelectedInstance?.IsCurrent == true ? "#244031" :
-                   SelectedInstance?.IsDefault == true ? "#332C48" : "#24384D";
+                   SelectedInstance?.IsDefault == true ? "#4A3920" : "#24384D";
 
             public string SelectedStatusBorderBrush
                 => SelectedInstance?.IsCurrent == true ? "#3E7A58" :
-                   SelectedInstance?.IsDefault == true ? "#654E91" : "#40648B";
+                   SelectedInstance?.IsDefault == true ? "#9A7B37" : "#40648B";
 
             public string DetailText
                 => SelectedInstance == null
                     ? "Select a registered install to review it."
                     : SelectedInstance.IsCurrent
-                        ? "This install is already active. Choose another registered instance to switch the mod browser."
-                        : "Switching instances reloads the mod catalog for the selected install.";
+                        ? "This install is already active. Management changes are saved immediately."
+                        : "Switching instances reloads the mod catalog for the selected install. Management changes are saved immediately.";
 
             public string FooterText
                 => statusMessage ?? "";

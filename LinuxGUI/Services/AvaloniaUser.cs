@@ -44,7 +44,10 @@ namespace CKAN.LinuxGUI
         }
 
         public bool RaiseYesNoDialog(string question)
-            => RunDialog(() => new SimplePromptWindow(question, new[] { "Yes", "No" })
+            => RunDialog(() => new SimplePromptWindow(question,
+                                                       Array.Empty<string>(),
+                                                       "Yes",
+                                                       "No")
                               .ShowDialog<int>(OwnerWindow())) == 0;
 
         public int RaiseSelectionDialog(string message, params object[] args)

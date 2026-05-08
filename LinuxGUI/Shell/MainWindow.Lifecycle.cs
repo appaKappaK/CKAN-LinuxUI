@@ -36,17 +36,26 @@ namespace CKAN.LinuxGUI
             }
 
             var saved = appSettings.WindowState;
+            var primaryArea = Screens.Primary?.WorkingArea;
             if (saved.Width is double width && width > 0 && !double.IsNaN(width))
             {
-                Width = width;
+                Width = primaryArea is PixelRect area
+                    ? Math.Min(width, Math.Max(MinWidth, area.Width))
+                    : width;
             }
             if (saved.Height is double height && height > 0 && !double.IsNaN(height))
             {
-                Height = height;
+                Height = primaryArea is PixelRect area
+                    ? Math.Min(height, Math.Max(MinHeight, area.Height))
+                    : height;
             }
             if (saved.PositionX is int x && saved.PositionY is int y)
             {
-                Position = new PixelPoint(x, y);
+                var position = new PixelPoint(x, y);
+                if (IsSavedPositionVisible(position))
+                {
+                    Position = position;
+                }
             }
             if (saved.IsMaximized)
             {
@@ -74,6 +83,16 @@ namespace CKAN.LinuxGUI
         private void OnPositionChanged(object? sender,
                                        PixelPointEventArgs e)
             => CloseActiveModRowMenu();
+
+        private bool IsSavedPositionVisible(PixelPoint position)
+            => Screens.All.Any(screen =>
+            {
+                var area = screen.WorkingArea;
+                return position.X >= area.X
+                       && position.Y >= area.Y
+                       && position.X < area.X + area.Width
+                       && position.Y < area.Y + area.Height;
+            });
 
         private void OnActivated(object? sender,
                                  EventArgs e)
@@ -119,6 +138,15 @@ namespace CKAN.LinuxGUI
                     return;
                 }
 
+                for (var attempt = 0; attempt < 20 && activeOwnedDialog != null; ++attempt)
+                {
+                    await Task.Delay(250);
+                }
+                if (activeOwnedDialog != null)
+                {
+                    return;
+                }
+
                 var channel = useDevBuilds ? "dev build" : "release";
                 var choice = await ShowOwnedDialogAsync<int>(
                     new SimplePromptWindow(
@@ -129,7 +157,12 @@ namespace CKAN.LinuxGUI
 
                 if (choice == 0)
                 {
-                    Utilities.ProcessStartURL(CkanReleasesUrl);
+                    if (!Utilities.ProcessStartURL(CkanReleasesUrl))
+                    {
+                        await ShowOwnedDialogAsync(
+                            new MessageDialogWindow("Open Releases",
+                                                    $"Could not open the CKAN releases page.\n\n{CkanReleasesUrl}"));
+                    }
                 }
             }
             catch

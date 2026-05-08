@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Avalonia.Controls;
+using ReactiveUI;
 
 namespace CKAN.LinuxGUI
 {
@@ -23,7 +24,10 @@ namespace CKAN.LinuxGUI
 
         private void ConfirmButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            Close((DataContext as PromptViewModel)?.SelectedIndex ?? 0);
+            if (DataContext is PromptViewModel { CanConfirm: true } viewModel)
+            {
+                Close(viewModel.SelectedIndex);
+            }
         }
 
         private void CancelButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -31,17 +35,22 @@ namespace CKAN.LinuxGUI
             Close(-1);
         }
 
-        private sealed class PromptViewModel
+        private sealed class PromptViewModel : ReactiveObject
         {
+            private int selectedIndex;
+
             public PromptViewModel(string                prompt,
                                    IReadOnlyList<string> options,
                                    string                confirmLabel,
                                    string                cancelLabel)
             {
                 Prompt = prompt;
-                Options = options.Select(PromptOption.FromText).ToList();
                 ConfirmLabel = string.IsNullOrWhiteSpace(confirmLabel) ? "OK" : confirmLabel;
                 CancelLabel = string.IsNullOrWhiteSpace(cancelLabel) ? "Cancel" : cancelLabel;
+                Options = ShouldRenderOptions(options, ConfirmLabel, CancelLabel)
+                    ? options.Select(PromptOption.FromText).ToList()
+                    : Array.Empty<PromptOption>();
+                selectedIndex = Options.Count > 0 ? -1 : 0;
             }
 
             public string Prompt { get; }
@@ -60,7 +69,25 @@ namespace CKAN.LinuxGUI
 
             public string CancelLabel { get; }
 
-            public int SelectedIndex { get; set; }
+            public int SelectedIndex
+            {
+                get => selectedIndex;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref selectedIndex, value);
+                    this.RaisePropertyChanged(nameof(CanConfirm));
+                }
+            }
+
+            public bool CanConfirm => !HasOptions || SelectedIndex >= 0;
+
+            private static bool ShouldRenderOptions(IReadOnlyList<string> options,
+                                                    string                confirmLabel,
+                                                    string                cancelLabel)
+                => options.Count > 0
+                   && !(options.Count == 2
+                        && string.Equals(options[0], confirmLabel, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(options[1], cancelLabel, StringComparison.OrdinalIgnoreCase));
         }
 
         private sealed class PromptOption

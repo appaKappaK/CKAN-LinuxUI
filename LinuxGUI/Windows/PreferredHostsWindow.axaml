@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -45,7 +44,6 @@
       <Setter Property="BorderBrush" Value="#3B4B5B" />
       <Setter Property="Foreground" Value="#F4F6F8" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.host-move:pointerover">
       <Setter Property="Background" Value="#2A3744" />
@@ -73,6 +71,11 @@
                  Opacity="0.74"
                  TextWrapping="Wrap"
                  Text="Choose which download hosts CKAN should prefer when a mod has multiple mirrors. The special placeholder marks where all other hosts should fall in the order." />
+      <TextBlock FontSize="12"
+                 Foreground="#F06C6C"
+                 IsVisible="{Binding ShowStatusMessage}"
+                 TextWrapping="Wrap"
+                 Text="{Binding StatusMessage}" />
     </StackPanel>
 
     <Grid Grid.Row="1"
@@ -110,10 +113,12 @@
         <Button Classes="host-move"
                 Click="MoveRightButton_OnClick"
                 IsEnabled="{Binding CanMoveRight}"
+                ToolTip.Tip="Add selected host to preferred order"
                 Content="▸" />
         <Button Classes="host-move"
                 Click="MoveLeftButton_OnClick"
                 IsEnabled="{Binding CanMoveLeft}"
+                ToolTip.Tip="Remove selected host from preferred order"
                 Content="◂" />
       </StackPanel>
 
@@ -151,10 +156,12 @@
           <Button Classes="host-move"
                   Click="MoveUpButton_OnClick"
                   IsEnabled="{Binding CanMoveUp}"
+                  ToolTip.Tip="Move selected host earlier"
                   Content="▴" />
           <Button Classes="host-move"
                   Click="MoveDownButton_OnClick"
                   IsEnabled="{Binding CanMoveDown}"
+                  ToolTip.Tip="Move selected host later"
                   Content="▾" />
         </StackPanel>
       </Grid>

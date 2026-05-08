@@ -3,6 +3,46 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-05-07
+
+### LinuxGUI Review Fix Pass
+- Captured the 50-item design review checklist in `LINUXGUI_FINDINGS.tmp.md` before editing so the remaining findings stay visible.
+- Improved interaction safety for destructive actions, including authentication-token deletion, download-cache purge actions, cached-archive purge, and forgotten game instances.
+- Tightened LinuxGUI feedback loops for ready-status progress, add-repository failures, invalid cache-size and refresh-interval settings, download-statistics empty states, and play-time edits.
+- Hardened plugin import so replacing a plugin DLL stages through a temporary file before overwriting the destination.
+- Clarified several UI affordances: masked authentication tokens, explicit preferred-host button tooltips, recommendation-audit context text, distinct selected-mod resource labels, and consistent release-date formatting.
+- Updated generic prompt behavior so yes/no style confirmations use action buttons directly, while provider/dependency choices require an explicit selection before confirmation.
+- Added follow-up fixes for overflow and silent-failure cases: scroll-contained generic message dialogs and advanced filters, visible auto-update errors, compatible-version empty input validation, command-line load/duplicate warnings, installation-filter path validation, file-manager/help-link launch failures, and plugin operation status.
+- Reworded plugin unloading to a session-level forget action, trimmed long plugin rows, and cleared repaired plugin load failures when a replacement assembly loads cleanly.
+- Re-enabled the Play submenu parent when a game instance is active so its launch and command-line actions are reachable.
+- Added bounds checks for restored main-window position/size, delayed launch update prompts while another owned dialog is active, and constrained execution-result overlays so long apply messages stay reachable.
+- Changed manual game-instance registration to select the game folder instead of an anchor file, clarified that instance-management edits save immediately, and changed close-style controls there and in display scale to read as completed actions.
+- Made play-time editing format and parse hours with the current UI culture while still accepting invariant decimal input.
+- Reworded unavailable Settings controls so they explain that the feature is not available, and surfaced a fallback message when the launch update prompt cannot open the releases page.
+- Restored visible keyboard focus indicators by removing LinuxGUI focus-adorn suppression, kept the Browse/Preview switcher visible instead of hover-hidden, and moved remaining purple preview/default accents into the established blue/amber status palette.
+- Split catalog-load failures from normal empty filter results so failed loads show the diagnostic text and a retry action instead of a misleading no-results message.
+- Renamed the plugin Reload action to Restart so the label reflects deactivate/activate behavior without implying the assembly can be unloaded and re-read from disk.
+- Replaced the search clear text glyph with a small vector clear icon and marked the temporary findings checklist with fixed/mitigated status for follow-up tracking.
+- Moved the ready-state loading/progress surface out of the centered header lane so it no longer renders underneath the Browse/Preview switcher.
+- Replaced the floating Browse/Preview switcher with a workspace tab strip above the catalog content; Browse stays visible, while Review Queue appears with a queued item count only when there is something to review.
+- Gave workspace tabs a resting outline and surface fill so they remain legible without requiring hover.
+- Rebalanced the ready-workspace background with a darker app canvas, bordered workspace slab, and active tab surface that visually connects to the catalog content.
+- Matched the workspace slab background to the tab surface so the protruding Browse tab reads as connected to the page rather than separated by a different band color.
+- Moved ready-state loading/progress into the left header gap between Help and the centered logo, and changed the workspace tab band so the darker background stays above the divider while brighter tabs stand out from it.
+- Let the dark workspace tab band span the full ready panel width by moving panel padding down into the Browse and Review content areas.
+- Moved the workspace divider behind the tab controls and removed the tab button's own bottom stroke so no extra border hugs the active tab underside.
+- Removed the outer ready-workspace border and tab-band divider so borders are limited to the Browse content controls and the tab outline.
+- Aligned the workspace tab with the content surface edge and matched the Browse/Review content background to the tab color so the tab reads as attached to the lighter panel.
+- Matched the workspace tab-band left inset to the content surface inset so the Browse tab edge lines up with the attached panel.
+- Removed the remaining tab-band left padding so the rendered Browse tab edge lines up with the attached blue workspace surface.
+- Removed the remaining left inset from the Browse and Review workspace surfaces so the blue panel starts directly under the tab edge.
+- Extended the active workspace frame from the selected tab around the Browse/Review content panel, while inactive workspace tabs use a darker surface to read as separate tabs.
+- Matched the active workspace tab's root and template backgrounds so no darker strip appears inside the selected Browse tab.
+- Replaced native workspace-tab chrome with an explicit tab shell so the selected tab fills cleanly into its left corner without template background bleed.
+- Removed the workspace panel side/bottom frame so the right-side light strip is gone and containment stays with the search and mod-list controls.
+- Removed the Browse workspace right/bottom padding so the actual search/list frame reaches the panel edge instead of leaving a light strip beside it.
+- Extended the blue Browse/Review workspace surface to the row edges and restored equal internal padding on all sides so the left and right blue borders around the list match.
+
 ## 2026-05-06
 
 ### Browser and Details Usability

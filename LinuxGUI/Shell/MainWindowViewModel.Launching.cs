@@ -209,8 +209,9 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            Utilities.OpenFileBrowser(path);
-            StatusMessage = "Opened cached archive location in your file manager.";
+            StatusMessage = Utilities.OpenFileBrowser(path)
+                ? "Opened cached archive location in your file manager."
+                : "Could not open cached archive location in your file manager.";
         }
 
         private void OpenSelectedModResourceLink(ModResourceLinkItem? link)

@@ -14,7 +14,7 @@ display is available, a no-argument launch opens the console UI instead. If
 `ckan-linux` is unavailable, the wrapper falls back to the legacy `ckan.exe gui`
 path.
 
-![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.jpeg)
+![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
 ## Desktop App Quick Start
 

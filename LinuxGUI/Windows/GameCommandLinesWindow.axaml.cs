@@ -29,8 +29,10 @@ namespace CKAN.LinuxGUI
             this.instance = instance;
             var defaults = instance.Game.DefaultCommandLines(steamLibrary,
                                                              new System.IO.DirectoryInfo(instance.GameDir));
-            var current = GameCommandLineConfigStore.Load(instance, steamLibrary);
-            viewModel = new EditorViewModel(current, defaults);
+            var current = GameCommandLineConfigStore.Load(instance,
+                                                          steamLibrary,
+                                                          out var loadWarning);
+            viewModel = new EditorViewModel(current, defaults, loadWarning);
             DataContext = viewModel;
         }
 
@@ -61,7 +63,8 @@ namespace CKAN.LinuxGUI
             private string validationMessage = "";
 
             public EditorViewModel(IReadOnlyCollection<string> currentCommandLines,
-                                   IEnumerable<string>   defaults)
+                                   IEnumerable<string>         defaults,
+                                   string                      initialValidationMessage = "")
             {
                 this.defaults = defaults.Where(line => !string.IsNullOrWhiteSpace(line))
                                         .Distinct()
@@ -70,6 +73,7 @@ namespace CKAN.LinuxGUI
                                                currentCommandLines
                                                    .Where(line => !string.IsNullOrWhiteSpace(line))
                                                    .Distinct());
+                validationMessage = initialValidationMessage;
             }
 
             public string CommandLinesText
@@ -115,7 +119,16 @@ namespace CKAN.LinuxGUI
 
             public bool TryValidate()
             {
-                if (CommandLines.Length > 0)
+                var lines = ParsedCommandLines();
+                var duplicate = lines.GroupBy(line => line, StringComparer.Ordinal)
+                                     .FirstOrDefault(group => group.Count() > 1);
+                if (duplicate != null)
+                {
+                    ValidationMessage = $"Duplicate launch command: {duplicate.Key}";
+                    return false;
+                }
+
+                if (lines.Length > 0)
                 {
                     ValidationMessage = "";
                     return true;
@@ -124,6 +137,13 @@ namespace CKAN.LinuxGUI
                 ValidationMessage = "At least one launch command is required.";
                 return false;
             }
+
+            private string[] ParsedCommandLines()
+                => CommandLinesText.Split(new[] { "\r\n", "\n", "\r" },
+                                          StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(line => line.Trim())
+                                   .Where(line => !string.IsNullOrWhiteSpace(line))
+                                   .ToArray();
         }
     }
 }

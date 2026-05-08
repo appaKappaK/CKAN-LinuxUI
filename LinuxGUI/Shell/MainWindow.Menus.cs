@@ -394,6 +394,7 @@ namespace CKAN.LinuxGUI
 
             var dialog = new PlayTimeWindow(viewModel.KnownGameInstances);
             await ShowOwnedDialogAsync(dialog);
+            viewModel.RefreshInstanceSummaries();
         }
 
         private async void UnmanagedFilesMenuItem_OnClick(object? sender,

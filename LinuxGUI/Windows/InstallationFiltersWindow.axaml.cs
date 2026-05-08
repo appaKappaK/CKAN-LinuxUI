@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 
 using Avalonia.Controls;
@@ -56,7 +57,9 @@ namespace CKAN.LinuxGUI
 
         private void HelpButton_OnClick(object? sender,
                                         Avalonia.Interactivity.RoutedEventArgs e)
-            => Utilities.ProcessStartURL(HelpURLs.Filters);
+            => viewModel.StatusMessage = Utilities.ProcessStartURL(HelpURLs.Filters)
+                ? "Opened installation-filter help."
+                : "Could not open installation-filter help.";
 
         private void CancelButton_OnClick(object? sender,
                                           Avalonia.Interactivity.RoutedEventArgs e)
@@ -71,7 +74,12 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            Changed = viewModel.Apply(configuration, instance);
+            if (!viewModel.TryApply(configuration, instance, out var changed))
+            {
+                return;
+            }
+
+            Changed = changed;
             Close(true);
         }
 
@@ -80,6 +88,7 @@ namespace CKAN.LinuxGUI
             private readonly IDictionary<string, string[]> presets;
             private string globalFiltersText;
             private string instanceFiltersText;
+            private string statusMessage = "";
 
             public EditorViewModel(string                       globalFiltersTitle,
                                    string                       globalFiltersText,
@@ -108,6 +117,18 @@ namespace CKAN.LinuxGUI
 
             public ObservableCollection<PresetOption> Presets { get; }
 
+            public string StatusMessage
+            {
+                get => statusMessage;
+                set
+                {
+                    this.RaiseAndSetIfChanged(ref statusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowStatusMessage));
+                }
+            }
+
+            public bool ShowStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
             public bool HasPresets => Presets.Count > 0;
 
             public string GlobalFiltersText
@@ -135,19 +156,45 @@ namespace CKAN.LinuxGUI
                                                     .Distinct(StringComparer.OrdinalIgnoreCase));
             }
 
-            public bool Apply(IConfiguration configuration,
-                              GameInstance    instance)
+            public bool TryApply(IConfiguration configuration,
+                                 GameInstance    instance,
+                                 out bool        changed)
             {
+                changed = false;
                 var newGlobal = ParseFilters(GlobalFiltersText);
                 var newInstance = ParseFilters(InstanceFiltersText);
-                bool changed = !configuration.GetGlobalInstallFilters(instance.Game).SequenceEqual(newGlobal)
-                               || !instance.InstallFilters.SequenceEqual(newInstance);
+                if (!TryValidateFilters("Global filters", newGlobal)
+                    || !TryValidateFilters("Instance filters", newInstance))
+                {
+                    return false;
+                }
+
+                changed = !configuration.GetGlobalInstallFilters(instance.Game).SequenceEqual(newGlobal)
+                          || !instance.InstallFilters.SequenceEqual(newInstance);
                 if (changed)
                 {
                     configuration.SetGlobalInstallFilters(instance.Game, newGlobal);
                     instance.InstallFilters = newInstance;
                 }
-                return changed;
+                StatusMessage = "";
+                return true;
+            }
+
+            private bool TryValidateFilters(string label,
+                                            IEnumerable<string> filters)
+            {
+                foreach (var filter in filters)
+                {
+                    if (Path.IsPathRooted(filter)
+                        || filter.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries)
+                                 .Any(segment => segment == "..")
+                        || filter.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                    {
+                        StatusMessage = $"{label} must use relative game paths without parent-directory segments: {filter}";
+                        return false;
+                    }
+                }
+                return true;
             }
 
             private static string[] ParseFilters(string text)

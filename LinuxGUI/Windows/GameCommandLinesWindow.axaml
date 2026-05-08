@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -45,7 +44,6 @@
       <Setter Property="Padding" Value="0" />
       <Setter Property="SelectionBrush" Value="#355779" />
       <Setter Property="CaretBrush" Value="#F4F6F8" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="TextBox.command-editor:pointerover">
       <Setter Property="Background" Value="Transparent" />

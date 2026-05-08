@@ -259,14 +259,15 @@ namespace CKAN
         }
 
         [ExcludeFromCodeCoverage]
-        public static void OpenFileBrowser(string location)
+        public static bool OpenFileBrowser(string location)
         {
             // We need the folder of the file
             // Otherwise the OS would try to open the file in its default application
             if (DirPath(location) is string path)
             {
-                OpenDirectory(path);
+                return OpenDirectory(path);
             }
+            return false;
         }
 
         [ExcludeFromCodeCoverage]

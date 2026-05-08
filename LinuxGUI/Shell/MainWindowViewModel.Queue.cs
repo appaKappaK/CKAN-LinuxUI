@@ -1178,6 +1178,10 @@ namespace CKAN.LinuxGUI
             {
                 queueDrawerStickyCollapsed = false;
                 IsQueueDrawerExpanded = false;
+                if (!ShowInlineApplyResult && ShowPreviewSurface)
+                {
+                    ShowBrowseSurfaceTab();
+                }
             }
             else if (queueDrawerStickyCollapsed)
             {

@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -48,6 +47,11 @@
                  Opacity="0.74"
                  TextWrapping="Wrap"
                  Text="{Binding SummaryText}" />
+      <TextBlock FontSize="12"
+                 Foreground="#F06C6C"
+                 IsVisible="{Binding ShowStatusMessage}"
+                 TextWrapping="Wrap"
+                 Text="{Binding StatusMessage}" />
     </StackPanel>
 
     <Grid Grid.Row="1"

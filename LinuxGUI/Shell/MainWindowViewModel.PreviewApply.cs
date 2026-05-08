@@ -435,6 +435,10 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
             this.RaisePropertyChanged(nameof(ShowModList));
             this.RaisePropertyChanged(nameof(ShowEmptyModResults));
+            this.RaisePropertyChanged(nameof(ShowCatalogLoadError));
+            this.RaisePropertyChanged(nameof(ShowClearFiltersForEmptyResults));
+            this.RaisePropertyChanged(nameof(EmptyModResultsTitle));
+            this.RaisePropertyChanged(nameof(EmptyModResultsMessage));
         }
 
         private void PublishSelectedModDisplayState()
@@ -652,6 +656,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(HasQueuedActionUndo));
             this.RaisePropertyChanged(nameof(ShowQueueFooterActions));
             this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
+            this.RaisePropertyChanged(nameof(ShowWorkspaceTabs));
+            this.RaisePropertyChanged(nameof(ShowReviewWorkspaceTab));
             this.RaisePropertyChanged(nameof(QueuedChangeActionCount));
             this.RaisePropertyChanged(nameof(QueuedDownloadActionCount));
             this.RaisePropertyChanged(nameof(QueuedRecommendationActionCount));
@@ -678,6 +684,9 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(CollapsedQueueStubBackground));
             this.RaisePropertyChanged(nameof(CollapsedQueueStubBorderBrush));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonLabel));
+            this.RaisePropertyChanged(nameof(ReviewSurfaceButtonLabel));
+            this.RaisePropertyChanged(nameof(ShowQueueTabBadge));
+            this.RaisePropertyChanged(nameof(QueueTabCountLabel));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
             this.RaisePropertyChanged(nameof(PreviewShowsEmptyCard));
@@ -830,11 +839,15 @@ namespace CKAN.LinuxGUI
         {
             this.RaisePropertyChanged(nameof(HasApplyResult));
             this.RaisePropertyChanged(nameof(SurfaceViewToggleCompact));
+            this.RaisePropertyChanged(nameof(ShowWorkspaceTabs));
+            this.RaisePropertyChanged(nameof(ShowReviewWorkspaceTab));
             this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
             this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
             this.RaisePropertyChanged(nameof(ShowInlineApplyResult));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(PreviewSurfaceButtonLabel));
+            this.RaisePropertyChanged(nameof(ReviewSurfaceButtonLabel));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
             this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
             this.RaisePropertyChanged(nameof(ShowExpandedQueuePanel));
@@ -854,8 +867,12 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowExecutionProgressOverlay));
             this.RaisePropertyChanged(nameof(ShowExecutionResultOverlay));
             this.RaisePropertyChanged(nameof(ShowInlineApplyResult));
+            this.RaisePropertyChanged(nameof(ShowWorkspaceTabs));
+            this.RaisePropertyChanged(nameof(ShowReviewWorkspaceTab));
             this.RaisePropertyChanged(nameof(ShowPreviewConflictPopup));
             this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+            this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+            this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
             this.RaisePropertyChanged(nameof(ShowEmptyQueueStub));
             this.RaisePropertyChanged(nameof(ShowCollapsedApplyResultStub));
             this.RaisePropertyChanged(nameof(ShowExpandedQueuePanel));

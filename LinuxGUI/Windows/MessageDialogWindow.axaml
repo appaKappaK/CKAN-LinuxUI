@@ -2,7 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CKAN.LinuxGUI.MessageDialogWindow"
         x:CompileBindings="False"
-        Width="460"
+        Width="520"
+        MaxHeight="720"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
@@ -19,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -33,8 +33,12 @@
 
   <Grid RowDefinitions="Auto,Auto"
         Margin="20">
-    <TextBlock TextWrapping="Wrap"
-               Text="{Binding Message}" />
+    <ScrollViewer MaxHeight="560"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <TextBlock TextWrapping="Wrap"
+                 Text="{Binding Message}" />
+    </ScrollViewer>
 
     <Button Grid.Row="1"
             Classes="dialog-action"

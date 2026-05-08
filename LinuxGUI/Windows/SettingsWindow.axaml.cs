@@ -97,8 +97,17 @@ namespace CKAN.LinuxGUI
                                                        Avalonia.Interactivity.RoutedEventArgs e)
         {
             viewModel.SetRepositoryStatus("Loading official repositories...");
-            var repositories = await viewModel.LoadOfficialRepositoriesAsync();
-            viewModel.SetRepositoryStatus("");
+            IReadOnlyList<Repository> repositories;
+            try
+            {
+                repositories = await viewModel.LoadOfficialRepositoriesAsync();
+                viewModel.SetRepositoryStatus("");
+            }
+            catch (Exception ex)
+            {
+                viewModel.SetRepositoryStatus($"Could not load official repositories: {ex.Message}");
+                return;
+            }
 
             var dialog = new AddRepositoryWindow(repositories);
             if (await dialog.ShowDialog<bool>(this)
@@ -147,7 +156,25 @@ namespace CKAN.LinuxGUI
 
         private void RemoveAuthTokenButton_OnClick(object? sender,
                                                    Avalonia.Interactivity.RoutedEventArgs e)
-            => viewModel.RemoveSelectedAuthToken();
+            => _ = RemoveSelectedAuthTokenAsync();
+
+        private async Task RemoveSelectedAuthTokenAsync()
+        {
+            if (viewModel.SelectedAuthTokenRow == null)
+            {
+                return;
+            }
+
+            var choice = await new SimplePromptWindow(
+                $"Delete authentication token for \"{viewModel.SelectedAuthTokenRow.Host}\"?",
+                new[] { "Delete", "Cancel" },
+                "Delete",
+                "Cancel").ShowDialog<int>(this);
+            if (choice == 0)
+            {
+                viewModel.RemoveSelectedAuthToken();
+            }
+        }
 
         private async void ChangeCachePathButton_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
@@ -171,7 +198,7 @@ namespace CKAN.LinuxGUI
             var choice = await new SimplePromptWindow(
                 $"Delete all files from the download cache?\n\n{viewModel.DownloadCacheSummary}",
                 new[] { "Delete", "Cancel" },
-                "OK",
+                "Delete",
                 "Cancel").ShowDialog<int>(this);
             if (choice == 0)
             {
@@ -197,8 +224,10 @@ namespace CKAN.LinuxGUI
             private readonly GameInstance? instance;
             private readonly LinuxGuiConfiguration? guiConfiguration;
             private string latestVersion = "Not checked";
+            private string updateErrorMessage = "";
             private string downloadCacheSummary = "Calculating...";
             private string cacheErrorMessage = "";
+            private string behaviorStatusMessage = "";
             private string repositoryStatusMessage = "";
             private string authTokenStatusMessage = "";
             private string cacheSizeLimitMiBText = "";
@@ -330,6 +359,18 @@ namespace CKAN.LinuxGUI
                 private set => this.RaiseAndSetIfChanged(ref latestVersion, value);
             }
 
+            public string UpdateErrorMessage
+            {
+                get => updateErrorMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref updateErrorMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowUpdateError));
+                }
+            }
+
+            public bool ShowUpdateError => !string.IsNullOrWhiteSpace(UpdateErrorMessage);
+
             public bool UseDevBuilds
             {
                 get => configuration?.DevBuilds ?? false;
@@ -375,9 +416,20 @@ namespace CKAN.LinuxGUI
                     {
                         return;
                     }
-                    configuration.CacheSizeLimit = long.TryParse(value, out var mib) && mib > 0
-                        ? mib * 1024 * 1024
-                        : null;
+                    var text = (value ?? "").Trim();
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        configuration.CacheSizeLimit = null;
+                        CacheErrorMessage = "";
+                        return;
+                    }
+                    if (long.TryParse(text, out var mib) && mib > 0)
+                    {
+                        configuration.CacheSizeLimit = mib * 1024 * 1024;
+                        CacheErrorMessage = "";
+                        return;
+                    }
+                    CacheErrorMessage = "Maximum cache size must be a positive whole number, or empty for unlimited.";
                 }
             }
 
@@ -393,6 +445,18 @@ namespace CKAN.LinuxGUI
 
             public bool ShowCacheError => !string.IsNullOrWhiteSpace(CacheErrorMessage);
 
+            public string BehaviorStatusMessage
+            {
+                get => behaviorStatusMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref behaviorStatusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowBehaviorStatus));
+                }
+            }
+
+            public bool ShowBehaviorStatus => !string.IsNullOrWhiteSpace(BehaviorStatusMessage);
+
             public string RefreshRateText
             {
                 get => refreshRateText;
@@ -401,9 +465,22 @@ namespace CKAN.LinuxGUI
                     this.RaiseAndSetIfChanged(ref refreshRateText, value);
                     if (configuration != null)
                     {
-                        configuration.RefreshRate = int.TryParse(value, out var minutes) && minutes > 0
-                            ? minutes
-                            : 0;
+                        var text = (value ?? "").Trim();
+                        if (string.IsNullOrWhiteSpace(text) || text == "0")
+                        {
+                            configuration.RefreshRate = 0;
+                            BehaviorStatusMessage = "";
+                        }
+                        else if (int.TryParse(text, out var minutes) && minutes > 0)
+                        {
+                            configuration.RefreshRate = minutes;
+                            BehaviorStatusMessage = "";
+                        }
+                        else
+                        {
+                            BehaviorStatusMessage = "Refresh interval must be a positive whole number, or 0 to disable scheduled refresh.";
+                            return;
+                        }
                         if (configuration.RefreshRate == 0)
                         {
                             RefreshPaused = false;
@@ -763,6 +840,7 @@ namespace CKAN.LinuxGUI
                 try
                 {
                     LatestVersion = "Checking...";
+                    UpdateErrorMessage = "";
                     var useDevBuilds = UseDevBuilds;
                     var update = await Task.Run(() => new AutoUpdate().GetUpdate(useDevBuilds));
                     LatestVersion = update.Version?.ToString() ?? "Unavailable";
@@ -770,7 +848,7 @@ namespace CKAN.LinuxGUI
                 catch (Exception ex)
                 {
                     LatestVersion = "Unavailable";
-                    CacheErrorMessage = ex.Message;
+                    UpdateErrorMessage = ex.Message;
                 }
             }
 
@@ -818,7 +896,10 @@ namespace CKAN.LinuxGUI
                 try
                 {
                     Directory.CreateDirectory(DownloadCachePath);
-                    Utilities.OpenFileBrowser(DownloadCachePath);
+                    if (!Utilities.OpenFileBrowser(DownloadCachePath))
+                    {
+                        CacheErrorMessage = "Could not open the cache folder in your file manager.";
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1016,7 +1097,13 @@ namespace CKAN.LinuxGUI
             public string Url => Repository.uri?.ToString() ?? "";
         }
 
-        private sealed record AuthTokenRow(string Host, string Token);
+        private sealed record AuthTokenRow(string Host, string Token)
+        {
+            public string MaskedToken
+                => string.IsNullOrEmpty(Token)
+                    ? ""
+                    : new string('*', Math.Min(12, Math.Max(6, Token.Length)));
+        }
 
         private sealed class ReleaseStatusOption
         {

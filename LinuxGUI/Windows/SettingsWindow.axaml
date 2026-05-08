@@ -42,7 +42,6 @@
       <Setter Property="Padding" Value="12,5" />
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.settings-button:pointerover">
       <Setter Property="Background" Value="#2A3744" />
@@ -127,7 +126,6 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="ListBox.settings-list ListBoxItem:pointerover">
       <Setter Property="Background" Value="#1D2A36" />
@@ -256,7 +254,7 @@
                     <TextBlock Grid.Column="1"
                                Foreground="#E8EDF2"
                                TextTrimming="CharacterEllipsis"
-                               Text="{Binding Token}" />
+                               Text="{Binding MaskedToken}" />
                   </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>
@@ -286,7 +284,7 @@
       <Border Grid.Row="1"
               Classes="settings-group"
               Margin="0,0,14,14">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Auto-Updates" />
           <Grid Grid.Row="1"
@@ -325,8 +323,15 @@
                     Classes="settings-button compact"
                     HorizontalAlignment="Stretch"
                     IsEnabled="False"
-                    Content="Install update" />
+                    ToolTip.Tip="Automatic update installation is not available in this Linux GUI build."
+                    Content="Manual install" />
           </Grid>
+          <TextBlock Grid.Row="5"
+                     Classes="card-error"
+                     Margin="0,10,0,0"
+                     IsVisible="{Binding ShowUpdateError}"
+                     TextWrapping="Wrap"
+                     Text="{Binding UpdateErrorMessage}" />
         </Grid>
       </Border>
 
@@ -398,19 +403,21 @@
       <Border Grid.Row="2"
               Classes="settings-group"
               Margin="0,0,14,0">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Behavior" />
           <CheckBox Grid.Row="1"
                     Classes="settings-check"
                     IsEnabled="False"
                     IsChecked="{Binding EnableTrayIcon}"
-                    Content="Enable tray icon" />
+                    ToolTip.Tip="Tray integration is not available yet."
+                    Content="Enable tray icon (not available)" />
           <CheckBox Grid.Row="2"
                     Classes="settings-check"
                     IsEnabled="False"
                     IsChecked="{Binding MinimizeToTray}"
-                    Content="Minimize to tray" />
+                    ToolTip.Tip="Tray integration is not available yet."
+                    Content="Minimize to tray (not available)" />
           <Grid Grid.Row="3"
                 ColumnDefinitions="140,52,*"
                 Margin="0,8,0,8">
@@ -426,12 +433,17 @@
                        Margin="8,0,0,0"
                        Text="minute(s)" />
           </Grid>
-          <CheckBox Grid.Row="4"
+          <TextBlock Grid.Row="4"
+                     Classes="card-error"
+                     Margin="0,0,0,8"
+                     IsVisible="{Binding ShowBehaviorStatus}"
+                     Text="{Binding BehaviorStatusMessage}" />
+          <CheckBox Grid.Row="5"
                     Classes="settings-check"
                     IsEnabled="{Binding CanPauseRefresh}"
                     IsChecked="{Binding RefreshPaused}"
                     Content="Pause refreshing" />
-          <Grid Grid.Row="5"
+          <Grid Grid.Row="6"
                 Margin="0,4,0,0"
                 ColumnDefinitions="140,*">
             <TextBlock Classes="settings-label"
@@ -481,7 +493,8 @@
                     Classes="settings-check"
                     IsEnabled="False"
                     IsChecked="{Binding AutoSortByUpdate}"
-                    Content="Automatically sort by &quot;Update&quot; column when clicking &quot;Add available updates&quot;" />
+                    ToolTip.Tip="Automatic update-column sorting is not implemented yet."
+                    Content="Automatically sort by &quot;Update&quot; column when clicking &quot;Add available updates&quot; (not available)" />
           <CheckBox Grid.Row="6"
                     Classes="settings-check"
                     IsChecked="{Binding PreselectRecommendedMods}"

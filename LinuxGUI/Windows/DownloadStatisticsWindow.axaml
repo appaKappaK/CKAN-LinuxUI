@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -56,8 +55,18 @@
                      Text="Cached Size" />
         </Grid>
 
+        <TextBlock Grid.Row="1"
+                   Margin="0,18,0,0"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="13"
+                   Opacity="0.76"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding ShowEmptyState}"
+                   Text="{Binding SummaryText}" />
         <ScrollViewer Grid.Row="1"
-                      Margin="0,12,0,0">
+                      Margin="0,12,0,0"
+                      IsVisible="{Binding ShowRows}">
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>

@@ -32,7 +32,7 @@ namespace CKAN.LinuxGUI
         {
             if (viewModel.SelectedSnapshot?.Path is string path)
             {
-                Utilities.OpenFileBrowser(path);
+                viewModel.OpenSnapshotFolder(path);
             }
         }
 
@@ -43,6 +43,7 @@ namespace CKAN.LinuxGUI
         private sealed class WindowViewModel : ReactiveObject
         {
             private HistorySnapshotEntry? selectedSnapshot;
+            private string statusMessage = "";
 
             public WindowViewModel(GameInstance? instance)
             {
@@ -74,6 +75,18 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public string StatusMessage
+            {
+                get => statusMessage;
+                private set
+                {
+                    this.RaiseAndSetIfChanged(ref statusMessage, value);
+                    this.RaisePropertyChanged(nameof(ShowStatusMessage));
+                }
+            }
+
+            public bool ShowStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
             public bool HasSelectedSnapshot => SelectedSnapshot != null;
 
             public string SummaryText
@@ -104,6 +117,7 @@ namespace CKAN.LinuxGUI
 
                 try
                 {
+                    StatusMessage = "";
                     var module = CkanModule.FromFile(SelectedSnapshot.Path);
                     var deps = module.depends?.OfType<ModuleRelationshipDescriptor>()
                                            .Select(rel => new HistoryModuleEntry(
@@ -116,9 +130,17 @@ namespace CKAN.LinuxGUI
                         Modules.Add(dep);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    StatusMessage = $"Could not read snapshot {SelectedSnapshot.FileName}: {ex.Message}";
                 }
+            }
+
+            public void OpenSnapshotFolder(string path)
+            {
+                StatusMessage = Utilities.OpenFileBrowser(path)
+                    ? "Opened the snapshot folder in your file manager."
+                    : "Could not open the snapshot folder in your file manager.";
             }
         }
 

@@ -14,21 +14,37 @@ namespace CKAN.LinuxGUI
     {
         public static IReadOnlyList<string> Load(GameInstance instance,
                                                  SteamLibrary steamLibrary)
+            => Load(instance, steamLibrary, out _);
+
+        public static IReadOnlyList<string> Load(GameInstance instance,
+                                                 SteamLibrary steamLibrary,
+                                                 out string warning)
         {
+            warning = "";
             var defaults = instance.Game.DefaultCommandLines(steamLibrary,
                                                              new DirectoryInfo(instance.GameDir))
                                         .Where(line => !string.IsNullOrWhiteSpace(line))
                                         .Distinct()
                                         .ToList();
 
-            if (TryLoadFromJson(instance, defaults) is { Count: > 0 } jsonLines)
+            if (TryLoadFromJson(instance, defaults, out var jsonWarning) is { Count: > 0 } jsonLines)
             {
                 return jsonLines;
             }
 
-            if (TryLoadFromLegacyXml(instance, defaults) is { Count: > 0 } xmlLines)
+            if (!string.IsNullOrWhiteSpace(jsonWarning))
+            {
+                warning = jsonWarning;
+            }
+
+            if (TryLoadFromLegacyXml(instance, defaults, out var xmlWarning) is { Count: > 0 } xmlLines)
             {
                 return xmlLines;
+            }
+
+            if (string.IsNullOrWhiteSpace(warning))
+            {
+                warning = xmlWarning;
             }
 
             return defaults;
@@ -68,8 +84,10 @@ namespace CKAN.LinuxGUI
         }
 
         private static List<string>? TryLoadFromJson(GameInstance  instance,
-                                                     List<string> defaults)
+                                                     List<string> defaults,
+                                                     out string    warning)
         {
+            warning = "";
             var path = JsonConfigPath(instance);
             if (!File.Exists(path))
             {
@@ -105,8 +123,9 @@ namespace CKAN.LinuxGUI
                         .ToList();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                warning = $"Could not read saved launch commands from {Platform.FormatPath(path)}: {ex.Message}";
                 return null;
             }
 
@@ -114,8 +133,10 @@ namespace CKAN.LinuxGUI
         }
 
         private static List<string>? TryLoadFromLegacyXml(GameInstance  instance,
-                                                          List<string> defaults)
+                                                          List<string> defaults,
+                                                          out string    warning)
         {
+            warning = "";
             var path = LegacyXmlConfigPath(instance);
             if (!File.Exists(path))
             {
@@ -154,8 +175,9 @@ namespace CKAN.LinuxGUI
 
                 return commandLines;
             }
-            catch
+            catch (Exception ex)
             {
+                warning = $"Could not read legacy launch commands from {Platform.FormatPath(path)}: {ex.Message}";
                 return null;
             }
         }

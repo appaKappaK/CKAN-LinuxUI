@@ -65,10 +65,6 @@ namespace CKAN.LinuxGUI
             AddHandler(InputElement.PointerWheelChangedEvent,
                        Window_OnPointerWheelChanged,
                        RoutingStrategies.Tunnel);
-            SurfaceViewToggle.AddHandler(InputElement.PointerPressedEvent,
-                                         SurfaceViewToggle_OnPointerPressed,
-                                         RoutingStrategies.Tunnel,
-                                         true);
             Opened += OnOpened;
             Closing += OnClosing;
             PositionChanged += OnPositionChanged;

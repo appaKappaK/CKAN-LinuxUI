@@ -48,12 +48,27 @@ namespace CKAN.LinuxGUI
             }
 
             var targetPath = Path.Combine(pluginsPath, Path.GetFileName(sourcePath));
-            if (File.Exists(targetPath))
+            var fullSourcePath = Path.GetFullPath(sourcePath);
+            var fullTargetPath = Path.GetFullPath(targetPath);
+            if (string.Equals(fullSourcePath, fullTargetPath, Platform.PathComparison))
             {
-                File.Delete(targetPath);
+                throw new InvalidOperationException("The selected plugin is already in the plugins folder.");
             }
 
-            File.Copy(sourcePath, targetPath);
+            var tempPath = Path.Combine(pluginsPath,
+                                        $"{Path.GetFileNameWithoutExtension(sourcePath)}.{Guid.NewGuid():N}.tmp");
+            try
+            {
+                File.Copy(sourcePath, tempPath);
+                File.Move(tempPath, targetPath, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
             LoadAssembly(targetPath, activate: false);
         }
 
@@ -63,7 +78,7 @@ namespace CKAN.LinuxGUI
         public void DeactivatePlugin(PluginLoadRecord record)
             => DeactivatePlugin(record.Plugin);
 
-        public void ReloadPlugin(PluginLoadRecord record)
+        public void RestartPlugin(PluginLoadRecord record)
         {
             DeactivatePlugin(record.Plugin);
             ActivatePlugin(record.Plugin);
@@ -86,6 +101,7 @@ namespace CKAN.LinuxGUI
         private void LoadAssembly(string dllPath,
                                   bool   activate)
         {
+            ClearLoadFailuresFor(dllPath);
             try
             {
                 var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(dllPath));
@@ -199,10 +215,13 @@ namespace CKAN.LinuxGUI
             }
             catch (Exception ex)
             {
+                var message = $"Failed to activate {plugin.GetName()}: {ex.Message}";
+                loadFailures.Add(message);
                 log.ErrorFormat("Failed to activate plugin \"{0} - {1}\" - {2}",
                                 plugin.GetName(),
                                 plugin.GetVersion(),
                                 ex);
+                throw new InvalidOperationException(message, ex);
             }
         }
 
@@ -218,6 +237,10 @@ namespace CKAN.LinuxGUI
                 dormantPlugins.Add(plugin);
                 activePlugins.Remove(plugin);
                 log.InfoFormat("Deactivated plugin \"{0} - {1}\"", plugin.GetName(), plugin.GetVersion());
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to deactivate {plugin.GetName()}.");
             }
         }
 
@@ -241,6 +264,7 @@ namespace CKAN.LinuxGUI
             }
             catch (Exception ex)
             {
+                loadFailures.Add($"Failed to deactivate {plugin.GetName()}: {ex.Message}");
                 log.ErrorFormat("Failed to deactivate plugin \"{0} - {1}\" - {2}",
                                 plugin.GetName(),
                                 plugin.GetVersion(),
@@ -266,6 +290,12 @@ namespace CKAN.LinuxGUI
             => new PluginLoadRecord(plugin,
                                     pluginPaths.GetValueOrDefault(plugin) ?? "",
                                     isActive);
+
+        private void ClearLoadFailuresFor(string dllPath)
+        {
+            var fileName = Path.GetFileName(dllPath);
+            loadFailures.RemoveAll(failure => failure.Contains(fileName, StringComparison.OrdinalIgnoreCase));
+        }
 
         private readonly string pluginsPath;
         private readonly HashSet<IGUIPlugin> activePlugins = new HashSet<IGUIPlugin>();

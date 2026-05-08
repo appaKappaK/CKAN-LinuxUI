@@ -20,7 +20,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -103,9 +102,14 @@
                 <Border Classes="utility-list-row">
                   <StackPanel Spacing="4">
                     <TextBlock FontWeight="SemiBold"
+                               MaxLines="2"
+                               TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding DisplayName}" />
                     <TextBlock FontSize="12"
                                Opacity="0.7"
+                               MaxLines="1"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding FileName}" />
                     <TextBlock FontSize="11"
                                Opacity="0.55"
@@ -139,9 +143,9 @@
                     Background="#1F3D58"
                     BorderBrush="#31597B"
                     Foreground="#F4F6F8"
-                    Click="ReloadButton_OnClick"
+                    Click="RestartButton_OnClick"
                     IsEnabled="{Binding HasSelectedActivePlugin}"
-                    Content="Reload" />
+                    Content="Restart" />
           </StackPanel>
         </Grid>
       </Border>
@@ -167,9 +171,14 @@
                 <Border Classes="utility-list-row">
                   <StackPanel Spacing="4">
                     <TextBlock FontWeight="SemiBold"
+                               MaxLines="2"
+                               TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding DisplayName}" />
                     <TextBlock FontSize="12"
                                Opacity="0.7"
+                               MaxLines="1"
+                               TextTrimming="CharacterEllipsis"
                                Text="{Binding FileName}" />
                     <TextBlock FontSize="11"
                                Opacity="0.55"
@@ -199,7 +208,7 @@
                     Foreground="#F4F6F8"
                     Click="UnloadButton_OnClick"
                     IsEnabled="{Binding HasSelectedDormantPlugin}"
-                    Content="Unload" />
+                    Content="Forget" />
           </StackPanel>
         </Grid>
       </Border>

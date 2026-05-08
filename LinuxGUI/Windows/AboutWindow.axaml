@@ -4,7 +4,7 @@
         x:Class="CKAN.LinuxGUI.AboutWindow"
         x:CompileBindings="False"
         Width="560"
-        Height="270"
+        Height="310"
         MinWidth="520"
         MinHeight="250"
         CanResize="False"
@@ -31,7 +31,7 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*"
+  <Grid RowDefinitions="Auto,Auto,*,Auto"
         Margin="14">
     <TextBlock FontSize="22"
                FontWeight="SemiBold"
@@ -67,5 +67,12 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
+    <TextBlock Grid.Row="3"
+               Margin="0,8,0,0"
+               FontSize="12"
+               Foreground="#F06C6C"
+               TextWrapping="Wrap"
+               IsVisible="{Binding ShowStatusMessage}"
+               Text="{Binding StatusMessage}" />
   </Grid>
 </Window>

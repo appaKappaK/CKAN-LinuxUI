@@ -83,6 +83,7 @@ namespace CKAN.LinuxGUI
 
             public bool TrySave()
             {
+                var parsed = new List<(PlayTimeEntry Entry, double Hours)>();
                 foreach (var entry in Entries)
                 {
                     if (!entry.TryGetHours(out var hours))
@@ -90,7 +91,11 @@ namespace CKAN.LinuxGUI
                         ValidationMessage = $"Invalid hours value for {entry.Name}. Use a non-negative number.";
                         return false;
                     }
+                    parsed.Add((entry, hours));
+                }
 
+                foreach (var (entry, hours) in parsed)
+                {
                     var timeLog = entry.Instance.playTime ?? new TimeLog();
                     timeLog.Time = TimeSpan.FromHours(hours);
                     timeLog.Save(TimeLog.GetPath(entry.Instance.CkanDir));
@@ -112,7 +117,7 @@ namespace CKAN.LinuxGUI
                 Name = instance.Name;
                 GameName = instance.Game.ShortName;
                 GameDir = Platform.FormatPath(instance.GameDir);
-                hoursText = (instance.playTime?.Time.TotalHours ?? 0d).ToString("N1", CultureInfo.InvariantCulture);
+                hoursText = (instance.playTime?.Time.TotalHours ?? 0d).ToString("N1", CultureInfo.CurrentCulture);
             }
 
             public GameInstance Instance { get; }
@@ -130,11 +135,18 @@ namespace CKAN.LinuxGUI
             }
 
             public bool TryGetHours(out double hours)
-                => double.TryParse(HoursText,
-                                   NumberStyles.Float | NumberStyles.AllowThousands,
-                                   CultureInfo.InvariantCulture,
-                                   out hours)
-                   && hours >= 0;
+            {
+                var styles = NumberStyles.Float | NumberStyles.AllowThousands;
+                return (double.TryParse(HoursText,
+                                        styles,
+                                        CultureInfo.CurrentCulture,
+                                        out hours)
+                        || double.TryParse(HoursText,
+                                           styles,
+                                           CultureInfo.InvariantCulture,
+                                           out hours))
+                       && hours >= 0;
+            }
         }
     }
 }

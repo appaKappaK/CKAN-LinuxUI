@@ -1206,9 +1206,6 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewConflictPopupTitle));
         }
 
-        internal void ToggleSurfaceViewTogglePinned()
-            => SurfaceViewTogglePinned = !SurfaceViewTogglePinned;
-
         private void ResetUiScale()
             => PendingUiScalePercent = UiScaleSettings.DefaultPercent;
 

@@ -46,6 +46,10 @@ namespace CKAN.LinuxGUI
                     1 => "1 host has cached downloads.",
                     _ => $"{Rows.Count} hosts have cached downloads.",
                 };
+
+            public bool ShowEmptyState => Rows.Count == 0;
+
+            public bool ShowRows => Rows.Count > 0;
         }
 
         private sealed class HostDownloadRow

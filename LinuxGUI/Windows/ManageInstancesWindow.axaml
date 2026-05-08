@@ -21,7 +21,6 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Foreground" Value="#F3F7FC" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="Button.dialog-action:pointerover">
       <Setter Property="Background" Value="#2E3C49" />
@@ -54,16 +53,22 @@
             Padding="12">
       <Grid RowDefinitions="Auto,Auto,*">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock FontSize="14"
-                     FontWeight="SemiBold"
-                     Text="Registered Instances" />
+          <StackPanel Spacing="3">
+            <TextBlock FontSize="14"
+                       FontWeight="SemiBold"
+                       Text="Registered Instances" />
+            <TextBlock FontSize="12"
+                       Opacity="0.68"
+                       TextWrapping="Wrap"
+                       Text="Management changes are saved immediately. Use Open Selected Install to switch the active mod browser." />
+          </StackPanel>
           <StackPanel Grid.Column="1"
                       Orientation="Horizontal"
                       Spacing="10">
             <Button Classes="dialog-action"
                     Click="AddInstanceButton_OnClick"
                     IsEnabled="{Binding CanManageInstances}"
-                    Content="Add Instance" />
+                    Content="Add Folder" />
             <Button Classes="dialog-action"
                     Click="ImportSteamButton_OnClick"
                     IsEnabled="{Binding CanImportSteam}"
@@ -193,7 +198,7 @@
                 BorderBrush="#39424E"
                 Foreground="#F4F6F8"
                 Click="CloseButton_OnClick"
-                Content="Close" />
+                Content="Done" />
       </StackPanel>
     </Grid>
   </Grid>
