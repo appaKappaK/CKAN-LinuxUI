@@ -70,6 +70,12 @@ namespace CKAN
         [MemberNotNull(nameof(playTime))]
         private void SetupCkanDirectories()
         {
+            if (!Game.GameInFolder(new DirectoryInfo(GameDir)))
+            {
+                playTime = new TimeLog();
+                return;
+            }
+
             log.InfoFormat("Initialising {0}", CkanDir);
 
             // TxFileManager knows if we are in a transaction

@@ -8,6 +8,7 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 ### LinuxGUI Startup and Preview Polish
 - Reduced the preview relationship scroll areas for dependencies, recommendations, suggestions, and supported mods so each section shows about four entries before scrolling.
 - Warm-started the ready browser state when an active, remembered, or default install is already known, avoiding a brief legacy loading shell flash before the mod browser appears.
+- Stopped startup from recreating a deleted saved game-instance folder just to initialize `CKAN/`; stale instances remain listed for explicit forgetting instead.
 - Added regression coverage for immediate ready-state startup.
 
 ## 2026-05-07

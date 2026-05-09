@@ -109,6 +109,8 @@ That produces `_build/package/ckan-linux/linux-x64/`, including:
   open the related mods in Browse.
 - Warm startup into the mod browser when the active or remembered install is
   already known, avoiding a brief instance-loading shell flash on launch.
+- Stale saved installs stay visible for explicit cleanup without recreating a
+  deleted game folder just to initialize CKAN state.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Rust Catalog Sidecar

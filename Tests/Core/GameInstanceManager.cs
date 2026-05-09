@@ -372,6 +372,36 @@ namespace Tests.Core
         }
 
         [Test]
+        public void Ctor_MissingConfiguredInstance_DoesNotCreateGameOrCkanDirectory()
+        {
+            using (var tempdir = new TemporaryDirectory())
+            using (var config = new FakeConfiguration(
+                       new List<Tuple<string, string, string>>
+                       {
+                           new Tuple<string, string, string>("deleted",
+                                                             Path.Combine(tempdir, "DeletedKSP"),
+                                                             "KSP")
+                       },
+                       null,
+                       null))
+            {
+                string missingGameDir = config.GetInstance(0).Item2;
+                string missingCkanDir = Path.Combine(missingGameDir, "CKAN");
+
+                using (var mgr = new GameInstanceManager(new NullUser(), config))
+                {
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(mgr.HasInstance("deleted"), Is.True);
+                        Assert.That(mgr.Instances["deleted"].Valid, Is.False);
+                        DirectoryAssert.DoesNotExist(missingGameDir);
+                        DirectoryAssert.DoesNotExist(missingCkanDir);
+                    });
+                }
+            }
+        }
+
+        [Test]
         public void SetCurrentInstanceByPath_WithInstance_Works()
         {
             // Act

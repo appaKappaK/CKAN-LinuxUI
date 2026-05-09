@@ -53,7 +53,8 @@ namespace CKAN.App.Services
                 cancellationToken.ThrowIfCancellationRequested();
                 if (AppSettings.LastInstanceName is string preferredName
                     && preferredName.Length > 0
-                    && Manager.HasInstance(preferredName))
+                    && Manager.Instances.TryGetValue(preferredName, out GameInstance? preferredInst)
+                    && preferredInst.Valid)
                 {
                     Manager.SetCurrentInstance(preferredName);
                 }
@@ -79,7 +80,7 @@ namespace CKAN.App.Services
 
         public RegistryManager? AcquireWriteRegistryManager()
         {
-            if (CurrentInstance == null)
+            if (CurrentInstance?.Valid != true)
             {
                 return null;
             }
@@ -96,7 +97,7 @@ namespace CKAN.App.Services
 
         public void RefreshCurrentRegistry()
         {
-            if (CurrentInstance == null)
+            if (CurrentInstance?.Valid != true)
             {
                 CurrentRegistry = null;
                 return;
@@ -115,12 +116,17 @@ namespace CKAN.App.Services
                 CurrentRegistryManager = null;
                 CurrentRegistry = null;
             }
-            else
+            else if (current.Valid)
             {
                 CurrentRegistryManager = preferReadOnlyRegistry
                     ? null
                     : RegistryManager.Instance(current, RepositoryData);
                 RefreshCurrentRegistry();
+            }
+            else
+            {
+                CurrentRegistryManager = null;
+                CurrentRegistry = null;
             }
             CurrentInstanceChanged?.Invoke(current);
         }
