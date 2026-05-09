@@ -3,6 +3,13 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-05-09
+
+### LinuxGUI Startup and Preview Polish
+- Reduced the preview relationship scroll areas for dependencies, recommendations, suggestions, and supported mods so each section shows about four entries before scrolling.
+- Warm-started the ready browser state when an active, remembered, or default install is already known, avoiding a brief legacy loading shell flash before the mod browser appears.
+- Added regression coverage for immediate ready-state startup.
+
 ## 2026-05-07
 
 ### LinuxGUI Review Fix Pass

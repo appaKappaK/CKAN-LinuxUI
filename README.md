@@ -104,6 +104,11 @@ That produces `_build/package/ckan-linux/linux-x64/`, including:
 - LinuxGUI browser conveniences including clearable search, details-pane
   relationship browsing for mods that require the selected mod, and a File menu
   shortcut to the KSP `Ships` craft folders.
+- A preview workflow that keeps dependency, recommendation, suggestion, and
+  supported-mod lists compact while still allowing each section to scroll or
+  open the related mods in Browse.
+- Warm startup into the mod browser when the active or remembered install is
+  already known, avoiding a brief instance-loading shell flash on launch.
 - Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
 
 ## Rust Catalog Sidecar

@@ -279,6 +279,7 @@ namespace CKAN.LinuxGUI
             pendingUiScalePercent = appliedUiScalePercent;
             showDetailsPane = false;
             ApplyStoredFilterState(modSearchService.Current);
+            SeedWarmStartupState();
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing,
                                                vm => vm.IsApplyingChanges,

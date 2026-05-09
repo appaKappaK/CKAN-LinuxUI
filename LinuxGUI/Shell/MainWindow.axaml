@@ -4611,7 +4611,7 @@
                                         BorderThickness="1"
                                         CornerRadius="6"
                                         ClipToBounds="True">
-                                  <ScrollViewer Height="179"
+                                  <ScrollViewer Height="120"
                                                 Classes="preview-section-scroll"
                                                 VerticalScrollBarVisibility="Auto"
                                                 PointerWheelChanged="PreviewDependenciesScrollViewer_OnPointerWheelChanged">
@@ -4675,7 +4675,7 @@
                                           BorderThickness="1"
                                           CornerRadius="6"
                                           ClipToBounds="True">
-                                    <ScrollViewer Height="179"
+                                    <ScrollViewer Height="120"
                                                   Classes="preview-section-scroll"
                                                   VerticalScrollBarVisibility="Auto"
                                                   PointerWheelChanged="PreviewRecommendationsScrollViewer_OnPointerWheelChanged">
@@ -4739,7 +4739,7 @@
                                           BorderThickness="1"
                                           CornerRadius="6"
                                           ClipToBounds="True">
-                                    <ScrollViewer Height="179"
+                                    <ScrollViewer Height="120"
                                                   Classes="preview-section-scroll"
                                                   VerticalScrollBarVisibility="Auto"
                                                   PointerWheelChanged="PreviewSuggestionsScrollViewer_OnPointerWheelChanged">
@@ -4803,7 +4803,7 @@
                                           BorderThickness="1"
                                           CornerRadius="6"
                                           ClipToBounds="True">
-                                    <ScrollViewer Height="179"
+                                    <ScrollViewer Height="120"
                                                   Classes="preview-section-scroll"
                                                   VerticalScrollBarVisibility="Auto"
                                                   PointerWheelChanged="PreviewSupportersScrollViewer_OnPointerWheelChanged">

@@ -22,6 +22,31 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public void ReadyStartup_UsesWarmBrowserStateImmediately()
+        {
+            var settings = new FakeAppSettingsService();
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                new ModSearchService(settings),
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.IsReady, Is.True);
+                Assert.That(viewModel.IsLoading, Is.False);
+                Assert.That(viewModel.ShowReadyHeader, Is.True);
+                Assert.That(viewModel.ShowLegacyHeader, Is.False);
+                Assert.That(viewModel.CurrentInstanceName, Is.EqualTo("Career Save"));
+            });
+        }
+
+        [AvaloniaTest]
         public async Task PrimarySelectedModAction_FollowsQueuedActionPrecedence()
         {
             var (viewModel, service) = CreateViewModel();

@@ -29,6 +29,55 @@ namespace CKAN.LinuxGUI
 {
     public sealed partial class MainWindowViewModel : ReactiveObject
     {
+        private void SeedWarmStartupState()
+        {
+            var knownInstances = gameInstanceService.Instances;
+            var warmInstanceName = WarmStartupInstanceName(knownInstances);
+            if (string.IsNullOrWhiteSpace(warmInstanceName))
+            {
+                return;
+            }
+
+            foreach (var inst in knownInstances)
+            {
+                Instances.Add(inst);
+            }
+
+            InstanceCount = Instances.Count;
+            SelectedInstance = Instances.FirstOrDefault(inst => string.Equals(inst.Name,
+                                                                              warmInstanceName,
+                                                                              StringComparison.Ordinal))
+                               ?? Instances.FirstOrDefault();
+            CurrentInstanceName = warmInstanceName;
+            StartupStage = StartupStage.Ready;
+            StageTitle = "Ready";
+            StageDescription = "";
+            StatusMessage = $"Loading {warmInstanceName}…";
+            CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
+            SelectedActionLabel = "Open Selected Install";
+            SelectedActionHint = "Choose a different install here if you want to switch contexts.";
+            PublishInstanceStateLabels();
+        }
+
+        private string? WarmStartupInstanceName(IReadOnlyList<InstanceSummary> knownInstances)
+        {
+            var current = gameInstanceService.CurrentInstance;
+            if (!string.IsNullOrWhiteSpace(current?.Name))
+            {
+                return current.Name;
+            }
+
+            if (appSettingsService.LastInstanceName is { Length: > 0 } lastInstanceName
+                && knownInstances.Any(inst => string.Equals(inst.Name,
+                                                            lastInstanceName,
+                                                            StringComparison.Ordinal)))
+            {
+                return lastInstanceName;
+            }
+
+            return knownInstances.FirstOrDefault(inst => inst.IsDefault)?.Name;
+        }
+
         private void PublishInstanceStateLabels()
         {
             UpdateCurrentInstanceContext();
