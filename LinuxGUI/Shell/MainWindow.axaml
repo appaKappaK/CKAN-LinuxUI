@@ -1837,7 +1837,7 @@
                       IsEnabled="{Binding HasCurrentInstance}" />
             <MenuItem Classes="app-menu-item"
                       Header="Play"
-                      IsEnabled="{Binding HasCurrentInstance}">
+                      IsEnabled="False">
               <MenuItem Classes="app-menu-item play-submenu-item"
                         Header="Via Steam"
                         Command="{Binding PlayViaSteamCommand}"
@@ -2101,7 +2101,7 @@
                         IsEnabled="{Binding HasCurrentInstance}" />
               <MenuItem Classes="app-menu-item"
                         Header="Play"
-                        IsEnabled="{Binding HasCurrentInstance}">
+                        IsEnabled="False">
                 <MenuItem Classes="app-menu-item play-submenu-item"
                           Header="Via Steam"
                           Command="{Binding PlayViaSteamCommand}"
