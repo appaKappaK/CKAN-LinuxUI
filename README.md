@@ -76,7 +76,7 @@ fallback behavior, and benchmark notes.
 ## Development
 
 See [`LinuxGUI/README.md`](LinuxGUI/README.md) for LinuxGUI build, packaging,
-development launcher, optional Rust sidecar, logging, benchmarks, and visual-test
+development launcher, logging, benchmarks, and visual-test
 workflow.
 
 ## Upstream CKAN Context
