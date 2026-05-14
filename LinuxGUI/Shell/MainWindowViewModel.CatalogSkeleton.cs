@@ -41,15 +41,15 @@ namespace CKAN.LinuxGUI
                         .Select((item, index) => new CatalogSkeletonRow
                         {
                             AccentBrush             = string.IsNullOrWhiteSpace(item.PrimaryStateColor) ? "#39424E" : item.PrimaryStateColor,
-                            TitleWidth              = SkeletonTextWidth(item.Name, 120, 320, 6.4),
-                            AuthorWidth             = SkeletonTextWidth(item.Author, 54, 180, 4.8),
-                            SummaryWidth            = SkeletonTextWidth(item.Summary, 180, 420, 5.4),
-                            DownloadsWidth          = SkeletonTextWidth(item.DownloadCountLabel, 42, 72, 5.8),
-                            CompatibilityWidth      = SkeletonTextWidth(item.Compatibility, 24, 40, 4.2),
-                            ReleaseWidth            = SkeletonTextWidth(item.ReleaseDate, 36, 68, 4.8),
-                            VersionPrimaryWidth     = SkeletonTextWidth(item.LatestVersion, 36, 132, 5.6),
+                            TitleWidth              = SkeletonTextWidth(item.Name, 108, 300, 6.0),
+                            AuthorWidth             = SkeletonTextWidth(item.Author, 48, 168, 4.5),
+                            SummaryWidth            = SkeletonTextWidth(item.Summary, 168, 396, 5.1),
+                            DownloadsWidth          = SkeletonTextWidth(item.DownloadCountLabel, 40, 68, 5.4),
+                            CompatibilityWidth      = SkeletonTextWidth(item.Compatibility, 22, 38, 4.0),
+                            ReleaseWidth            = SkeletonTextWidth(item.ReleaseDate, 34, 64, 4.5),
+                            VersionPrimaryWidth     = SkeletonTextWidth(item.LatestVersion, 30, 58, 3.8),
                             VersionSecondaryWidth   = item.IsInstalled
-                                ? SkeletonTextWidth(item.InstalledVersion, 28, 118, 5.2)
+                                ? SkeletonTextWidth(item.InstalledVersion, 24, 48, 3.5)
                                 : 0,
                             Opacity                 = opacityCycle[index % opacityCycle.Length],
                             PrimaryBadgeWidth       = PillWidth(item.PrimaryStateLabel),
@@ -93,14 +93,14 @@ namespace CKAN.LinuxGUI
              double QueueBadgeWidth,
              double Opacity)[] patterns =
             {
-                (182, 92, 286, 66, 42, 76, 98, 74, 54, true,  0,  0,  0, 1.00),
-                (208, 108, 254, 60, 36, 68, 90, 66, 48, false, 0,  0,  0, 0.98),
-                (196, 96, 308, 64, 40, 72, 94, 70, 58, false, 0,  0,  0, 0.96),
-                (176, 88, 244, 58, 34, 64, 86, 62, 74, false, 0,  0,  0, 0.94),
-                (214, 112, 322, 68, 44, 80, 102, 76, 54, true,  0,  0, 66, 0.97),
-                (188, 94, 266, 62, 38, 70, 92, 68, 58, false, 54, 0,  0, 0.95),
-                (202, 104, 296, 66, 40, 74, 96, 72, 48, false, 0,  60, 0, 0.93),
-                (172, 84, 236, 56, 32, 62, 84, 60, 74, false, 0,  0,  0, 0.91),
+                (182, 92, 286, 66, 42, 76, 54, 42, 54, true,  0,  0,  0, 1.00),
+                (208, 108, 254, 60, 36, 68, 48, 36, 48, false, 0,  0,  0, 0.98),
+                (196, 96, 308, 64, 40, 72, 52, 40, 58, false, 0,  0,  0, 0.96),
+                (176, 88, 244, 58, 34, 64, 44, 32, 74, false, 0,  0,  0, 0.94),
+                (214, 112, 322, 68, 44, 80, 56, 44, 54, true,  0,  0, 66, 0.97),
+                (188, 94, 266, 62, 38, 70, 50, 38, 58, false, 54, 0,  0, 0.95),
+                (202, 104, 296, 66, 40, 74, 54, 42, 48, false, 0,  60, 0, 0.93),
+                (172, 84, 236, 56, 32, 62, 42, 30, 74, false, 0,  0,  0, 0.91),
             };
 
             return Enumerable.Range(0, 26)
@@ -147,8 +147,8 @@ namespace CKAN.LinuxGUI
                 DownloadsWidth           = row.DownloadsWidth,
                 CompatibilityWidth       = row.CompatibilityWidth,
                 ReleaseWidth             = row.ReleaseWidth,
-                VersionPrimaryWidth      = row.VersionPrimaryWidth,
-                VersionSecondaryWidth    = row.VersionSecondaryWidth,
+                VersionPrimaryWidth      = Math.Min(row.VersionPrimaryWidth, 58),
+                VersionSecondaryWidth    = Math.Min(row.VersionSecondaryWidth, 48),
                 Opacity                  = row.Opacity,
                 PrimaryBadgeWidth        = row.PrimaryBadgeWidth,
                 PrimaryBadgeBackground   = row.PrimaryBadgeBackground,

@@ -326,7 +326,8 @@ namespace CKAN.LinuxGUI
         private async Task LoadCatalogAfterAppliedChangesAsync()
         {
             ClearRelationshipBrowserScopeForCatalogReload();
-            await LoadModCatalogAsync();
+            RefreshCurrentRegistryReference();
+            await LoadModCatalogAsync(forceReload: true);
         }
 
         private void ClearRelationshipBrowserScopeForCatalogReload()
@@ -360,6 +361,10 @@ namespace CKAN.LinuxGUI
         private void ShowExecutionResultDialog(bool returnToBrowse)
         {
             returnToBrowseAfterExecutionResult = returnToBrowse;
+            if (returnToBrowse)
+            {
+                ShowBrowseSurfaceTab();
+            }
             ShowExecutionResultOverlay = true;
             PublishExecutionOverlayState();
         }
@@ -432,13 +437,19 @@ namespace CKAN.LinuxGUI
         {
             this.RaisePropertyChanged(nameof(HasMods));
             this.RaisePropertyChanged(nameof(ModCountLabel));
+            this.RaisePropertyChanged(nameof(CanInteractWithCatalog));
+            this.RaisePropertyChanged(nameof(CanUseCatalogPanel));
             this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
+            this.RaisePropertyChanged(nameof(ShowCatalogBlockingOverlay));
             this.RaisePropertyChanged(nameof(ShowModList));
             this.RaisePropertyChanged(nameof(ShowEmptyModResults));
             this.RaisePropertyChanged(nameof(ShowCatalogLoadError));
             this.RaisePropertyChanged(nameof(ShowClearFiltersForEmptyResults));
             this.RaisePropertyChanged(nameof(EmptyModResultsTitle));
             this.RaisePropertyChanged(nameof(EmptyModResultsMessage));
+            this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+            this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+            this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
         }
 
         private void PublishSelectedModDisplayState()
@@ -885,6 +896,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewImpactSummary));
             this.RaisePropertyChanged(nameof(ExecutionDialogTitle));
             this.RaisePropertyChanged(nameof(ExecutionDialogMessage));
+            this.RaisePropertyChanged(nameof(ShowExecutionDialogMessage));
             this.RaisePropertyChanged(nameof(HasExecutionProgressValue));
             this.RaisePropertyChanged(nameof(IsExecutionProgressIndeterminate));
             this.RaisePropertyChanged(nameof(ExecutionProgressValue));

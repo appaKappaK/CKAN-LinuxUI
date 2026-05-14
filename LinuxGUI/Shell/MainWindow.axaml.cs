@@ -37,6 +37,7 @@ namespace CKAN.LinuxGUI
         private MainWindowViewModel? observedViewModel;
         private ContextMenu? activeModRowMenu;
         private Window? activeOwnedDialog;
+        private InstallationHistoryWindow? installationHistoryWindow;
         private DispatcherTimer? repositoryRefreshTimer;
         private LinuxGuiPluginController? pluginController;
         private string? pluginControllerInstanceDir;

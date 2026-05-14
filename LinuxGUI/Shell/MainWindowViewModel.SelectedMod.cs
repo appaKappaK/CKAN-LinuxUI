@@ -251,7 +251,7 @@ namespace CKAN.LinuxGUI
             if (SelectedModVersionChoice?.Module is CkanModule selectedModule
                 && CurrentCache.GetCachedFilename(selectedModule) is string selectedPath)
             {
-                return selectedPath;
+                return File.Exists(selectedPath) ? selectedPath : null;
             }
 
             if (CurrentRegistry == null)
@@ -259,14 +259,15 @@ namespace CKAN.LinuxGUI
                 return null;
             }
 
-            return Enumerable.Repeat(CurrentRegistry.InstalledModule(SelectedMod.Identifier)?.Module, 1)
-                             .Concat(Utilities.DefaultIfThrows(
-                                         () => CurrentRegistry.AvailableByIdentifier(SelectedMod.Identifier))
-                                     ?? Enumerable.Empty<CkanModule>())
-                             .OfType<CkanModule>()
-                             .Distinct()
-                             .Select(CurrentCache.GetCachedFilename)
-                             .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
+            var installedModule = CurrentRegistry.InstalledModule(SelectedMod.Identifier)?.Module;
+            if (installedModule != null
+                && CurrentCache.GetCachedFilename(installedModule) is string installedPath
+                && File.Exists(installedPath))
+            {
+                return installedPath;
+            }
+
+            return null;
         }
 
         private List<ModRelationshipItem> BuildRelationshipEntries(IEnumerable<RelationshipDescriptor>? relationships)

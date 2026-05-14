@@ -296,9 +296,12 @@ namespace CKAN.LinuxGUI
             Diagnostics = "Loading instance metadata.";
             if (wasReady)
             {
-                IsCatalogLoading = true;
-                CatalogStatusMessage = "Reloading mods from the current CKAN registry and repository cache…";
-                StatusMessage = "Reloading the current instance…";
+                bool hasLoadedCatalog = allCatalogItems.Count > 0;
+                IsCatalogLoading = !hasLoadedCatalog;
+                CatalogStatusMessage = LoadingCatalogSourceMessage(hasLoadedCatalog ? "Reloading" : "Loading");
+                StatusMessage = hasLoadedCatalog
+                    ? "Reloading the current instance…"
+                    : "Loading the current instance…";
             }
             else
             {
@@ -322,7 +325,7 @@ namespace CKAN.LinuxGUI
                         await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
                         RefreshCurrentRegistryReference();
                     }
-                    await LoadModCatalogAsync();
+                    await LoadModCatalogAsync(forceReload: true);
                 }
                 else if (wasReady)
                 {
@@ -507,7 +510,9 @@ namespace CKAN.LinuxGUI
                 ClearCatalogState();
                 StartupStage = StartupStage.SelectionRequired;
                 StageTitle = "Choose an Instance";
-                StageDescription = "Multiple installs are known, but none is active yet.";
+                StageDescription = Instances.Count == 1
+                    ? "Select the registered install to open the mod browser."
+                    : "Multiple installs are known, but none is active yet.";
                 StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")}. Select one to continue.";
                 SelectedActionLabel = "Open Selected Install";
                 SelectedActionHint = "Pick the install you want to browse and manage.";
@@ -516,14 +521,14 @@ namespace CKAN.LinuxGUI
             PublishInstanceStateLabels();
         }
 
-        private async Task LoadModCatalogAsync()
+        private async Task LoadModCatalogAsync(bool forceReload = false)
         {
             if (!IsReady)
             {
                 return;
             }
 
-            if (CanReuseRecentCatalogLoad())
+            if (!forceReload && CanReuseRecentCatalogLoad())
             {
                 return;
             }
@@ -547,14 +552,15 @@ namespace CKAN.LinuxGUI
                     int activeRequestId = catalogLoadRequestId;
                     var previousSelection = SelectedMod?.Identifier;
 
-                    if (CanReuseRecentCatalogLoad())
+                    if (!forceReload && CanReuseRecentCatalogLoad())
                     {
                         break;
                     }
 
-                    using var loadingIndicatorCts = new CancellationTokenSource();
-                    var loadingIndicatorTask = ShowCatalogLoadingAfterDelayAsync(activeRequestId,
-                                                                                 loadingIndicatorCts.Token);
+                    IsCatalogLoading = true;
+                    IsCatalogHydrating = false;
+                    CatalogStatusMessage = LoadingCatalogSourceMessage(forceReload ? "Reloading" : "Loading");
+                    PublishCatalogStateLabels();
 
                     try
                     {
@@ -567,7 +573,6 @@ namespace CKAN.LinuxGUI
                             continue;
                         }
 
-                        loadingIndicatorCts.Cancel();
                         var uiWatch = Stopwatch.StartNew();
                         ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
@@ -578,15 +583,20 @@ namespace CKAN.LinuxGUI
                         SeedDevQueueSmoke(items);
                         uiWatch.Stop();
                         totalWatch.Stop();
-                        var summary = $"Last catalog load: {items.Count} mods in {totalWatch.ElapsedMilliseconds} ms (service {serviceWatch.ElapsedMilliseconds} ms, UI {uiWatch.ElapsedMilliseconds} ms).";
+                        var source = string.IsNullOrWhiteSpace(modCatalogService.LastSource)
+                            ? "unknown"
+                            : modCatalogService.LastSource;
+                        var sourceLabel = string.Equals(source, "catalog-index", StringComparison.OrdinalIgnoreCase)
+                            ? "Rust catalog-index sidecar"
+                            : "CKAN registry";
+                        var summary = $"Last catalog load: {items.Count} mods in {totalWatch.ElapsedMilliseconds} ms from {sourceLabel} (service {serviceWatch.ElapsedMilliseconds} ms, UI {uiWatch.ElapsedMilliseconds} ms).";
                         Diagnostics = summary;
                         lastCatalogLoadCompletedUtc = DateTime.UtcNow;
                         Trace.TraceInformation(
-                            $"LinuxGUI catalog load request={activeRequestId} items={items.Count} service_ms={serviceWatch.ElapsedMilliseconds} ui_ms={uiWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
+                            $"LinuxGUI catalog load request={activeRequestId} source={source} items={items.Count} service_ms={serviceWatch.ElapsedMilliseconds} ui_ms={uiWatch.ElapsedMilliseconds} total_ms={totalWatch.ElapsedMilliseconds}");
                     }
                     catch (Exception ex)
                     {
-                        loadingIndicatorCts.Cancel();
                         Trace.TraceError($"Mod catalog load failed: {ex}");
                         if (activeRequestId != catalogLoadRequestId)
                         {
@@ -598,18 +608,10 @@ namespace CKAN.LinuxGUI
                     }
                     finally
                     {
-                        loadingIndicatorCts.Cancel();
-                        try
-                        {
-                            await loadingIndicatorTask;
-                        }
-                        catch (TaskCanceledException)
-                        {
-                        }
-
                         if (activeRequestId == catalogLoadRequestId)
                         {
                             IsCatalogLoading = false;
+                            IsCatalogHydrating = false;
                             PublishCatalogStateLabels();
                         }
                     }
@@ -632,18 +634,8 @@ namespace CKAN.LinuxGUI
                && DateTime.UtcNow - lastCatalogLoadCompletedUtc
                     < TimeSpan.FromMilliseconds(RecentCatalogReloadSuppressionMs);
 
-        private async Task ShowCatalogLoadingAfterDelayAsync(int               requestId,
-                                                             CancellationToken cancellationToken)
-        {
-            await Task.Delay(CatalogLoadingIndicatorDelayMs, cancellationToken);
-            if (!cancellationToken.IsCancellationRequested
-                && requestId == catalogLoadRequestId)
-            {
-                IsCatalogLoading = true;
-                CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
-                PublishCatalogStateLabels();
-            }
-        }
+        private string LoadingCatalogSourceMessage(string action)
+            => $"{action} mods from the {modCatalogService.LoadingSourceDescription}…";
 
         private async Task LoadModDetailsAsync(string? identifier)
         {
@@ -800,7 +792,7 @@ namespace CKAN.LinuxGUI
                 SuggestsText        = AdvancedSuggestsFilter,
                 ConflictsText       = AdvancedConflictsFilter,
                 SupportsText        = AdvancedSupportsFilter,
-                TagText             = AdvancedTagsFilter,
+                TagText             = "",
                 LabelText           = AdvancedLabelsFilter,
                 CompatibilityText   = AdvancedCompatibilityFilter,
                 SortOption          = SelectedSortOption?.Value ?? ModSortOption.Name,
@@ -863,7 +855,7 @@ namespace CKAN.LinuxGUI
             advancedSuggestsFilter = filter.SuggestsText ?? "";
             advancedConflictsFilter = filter.ConflictsText ?? "";
             advancedSupportsFilter = filter.SupportsText ?? "";
-            advancedTagsFilter = SerializeFilterValues(SplitFilterValues(filter.TagText));
+            advancedTagsFilter = "";
             advancedLabelsFilter = SerializeFilterValues(SplitFilterValues(filter.LabelText));
             advancedCompatibilityFilter = filter.CompatibilityText ?? "";
             filterInstalledOnly = filter.InstalledOnly;
@@ -950,8 +942,7 @@ namespace CKAN.LinuxGUI
 
         private void UpdateCurrentInstanceContext()
         {
-            var current = Instances.FirstOrDefault(inst => inst.IsCurrent)
-                          ?? SelectedInstance;
+            var current = Instances.FirstOrDefault(inst => inst.IsCurrent);
             CurrentInstanceContext = current == null
                 ? "Select an install to open the mod browser."
                 : $"{current.GameName} • {current.GameDir}";
@@ -1501,7 +1492,7 @@ namespace CKAN.LinuxGUI
 
             var applyWatch = Stopwatch.StartNew();
             ReplaceVisibleMods(visibleItems);
-            ReplaceAvailableTagOptions(BuildAvailableTagOptions(sourceItems, currentFilter));
+            ReplaceAvailableTagOptions(Array.Empty<FilterTagOptionItem>());
             ReplaceAvailableLabelOptions(BuildAvailableLabelOptions(sourceItems, currentFilter.LabelText));
             PublishVisibleModQueueState();
             applyWatch.Stop();
@@ -1538,8 +1529,42 @@ namespace CKAN.LinuxGUI
             bool hideV = SettingsWindow.HideVEnabled(CurrentInstance);
             foreach (var item in items)
             {
-                item.DisplayLatestVersion = FormatVersionForList(item.LatestVersion, hideEpochs, hideV);
-                item.DisplayInstalledVersion = FormatVersionForList(item.InstalledVersion, hideEpochs, hideV);
+                var latestVersion = FormatVersionForList(item.LatestVersion, hideEpochs, hideV);
+                var installedVersion = FormatVersionForList(item.InstalledVersion, hideEpochs, hideV);
+                item.DisplayInstalledVersion = installedVersion;
+                if (item.IsInstalled && !string.IsNullOrWhiteSpace(installedVersion))
+                {
+                    item.DisplayLatestVersion = installedVersion;
+                    item.DisplaySecondaryVersion = VersionIsGreaterThan(item.LatestVersion, item.InstalledVersion)
+                        ? latestVersion
+                        : "";
+                }
+                else
+                {
+                    item.DisplayLatestVersion = latestVersion;
+                    item.DisplaySecondaryVersion = "";
+                }
+            }
+        }
+
+        private static bool VersionIsGreaterThan(string latestVersion,
+                                                 string installedVersion)
+        {
+            if (string.IsNullOrWhiteSpace(latestVersion)
+                || string.IsNullOrWhiteSpace(installedVersion))
+            {
+                return false;
+            }
+
+            try
+            {
+                return new ModuleVersion(latestVersion).CompareTo(new ModuleVersion(installedVersion)) > 0;
+            }
+            catch
+            {
+                return !string.Equals(latestVersion.Trim(),
+                                      installedVersion.Trim(),
+                                      StringComparison.OrdinalIgnoreCase);
             }
         }
 

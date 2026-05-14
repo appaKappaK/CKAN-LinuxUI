@@ -72,6 +72,35 @@ namespace Tests.App.Services
         }
 
         [Test]
+        public void LatestModules_WithDuplicateLatestRows_PicksHighestVersion()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var path = Path.Combine(dir, "catalog-index-latest.json");
+                File.WriteAllText(path, @"{
+                    ""schema_version"": 1,
+                    ""source"": ""fixture"",
+                    ""modules"": [
+                        { ""identifier"": ""SystemHeat"", ""name"": ""System Heat"", ""version"": ""0.8.2"", ""kind"": ""package"", ""release_date"": ""2025-07-21"", ""is_latest"": true },
+                        { ""identifier"": ""SystemHeat"", ""name"": ""System Heat"", ""version"": ""0.9.1"", ""kind"": ""package"", ""release_date"": ""2026-05-12"", ""is_latest"": true }
+                    ]
+                }");
+
+                var index = new CatalogIndexService().TryLoad(path);
+                var modules = CatalogIndexService.LatestModules(index!).ToList();
+
+                Assert.That(modules, Has.Count.EqualTo(1));
+                Assert.That(modules[0].Identifier, Is.EqualTo("SystemHeat"));
+                Assert.That(modules[0].Version, Is.EqualTo("0.9.1"));
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Test]
         public void TryLoad_WithChangedFile_ReloadsIndex()
         {
             var dir = TestData.NewTempDir();

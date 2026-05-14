@@ -73,7 +73,7 @@ namespace CKAN.App.Services
 
         public void QueueUpdate(ModListItem mod, string? targetVersion = null)
         {
-            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            var resolvedTargetVersion = targetVersion?.Trim() ?? "";
             Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
@@ -83,8 +83,8 @@ namespace CKAN.App.Services
                 ActionText = UpdateActionText(mod.InstalledVersion, resolvedTargetVersion),
                 DetailText = string.IsNullOrWhiteSpace(resolvedTargetVersion)
                     ? string.IsNullOrWhiteSpace(mod.InstalledVersion)
-                        ? $"Update to {mod.LatestVersion}"
-                        : $"{mod.InstalledVersion} -> {mod.LatestVersion}"
+                        ? "Update to latest compatible version"
+                        : $"{mod.InstalledVersion} -> latest compatible version"
                     : string.IsNullOrWhiteSpace(mod.InstalledVersion)
                         ? $"Switch to {resolvedTargetVersion}"
                         : $"{mod.InstalledVersion} -> {resolvedTargetVersion}",
@@ -175,7 +175,7 @@ namespace CKAN.App.Services
         private static string QueueTargetVersion(ModListItem mod,
                                                  string?     targetVersion)
             => !string.IsNullOrWhiteSpace(targetVersion)
-                ? targetVersion.Trim()
+                ? targetVersion!.Trim()
                 : mod.LatestVersion?.Trim() ?? "";
 
         private void Upsert(QueuedActionModel action)

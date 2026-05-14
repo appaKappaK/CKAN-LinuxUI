@@ -168,7 +168,6 @@ namespace CKAN.LinuxGUI
             yield return ("Suggests", AdvancedSuggestsFilter);
             yield return ("Conflicts", AdvancedConflictsFilter);
             yield return ("Supports", AdvancedSupportsFilter);
-            yield return ("Category", AdvancedTagsFilter);
             yield return ("Labels", AdvancedLabelsFilter);
             yield return ("Compatibility", AdvancedCompatibilityFilter);
         }

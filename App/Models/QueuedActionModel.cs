@@ -35,6 +35,11 @@ namespace CKAN.App.Models
                     return TargetVersion;
                 }
 
+                if (ActionKind == QueuedActionKind.Update)
+                {
+                    return "Latest";
+                }
+
                 if (!string.IsNullOrWhiteSpace(ActionText)
                     && DetailText.StartsWith(ActionText + " ", System.StringComparison.OrdinalIgnoreCase))
                 {

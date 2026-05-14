@@ -8,6 +8,16 @@ namespace CKAN.App.Services
 {
     public interface IModCatalogService
     {
+#if NET5_0_OR_GREATER
+        string LastSource => "unknown";
+
+        string LoadingSourceDescription => "catalog source";
+#else
+        string LastSource { get; }
+
+        string LoadingSourceDescription { get; }
+#endif
+
         Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken);
 
         Task<IReadOnlyList<ModListItem>> GetModListAsync(FilterState filter,
@@ -24,5 +34,10 @@ namespace CKAN.App.Services
 
         Task<ModDetailsModel?> GetModDetailsAsync(string identifier,
                                                   CancellationToken cancellationToken);
+    }
+
+    public interface IStagedModCatalogService
+    {
+        Task<IReadOnlyList<ModListItem>> GetInstalledModListAsync(CancellationToken cancellationToken);
     }
 }

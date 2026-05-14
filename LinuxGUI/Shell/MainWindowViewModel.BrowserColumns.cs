@@ -77,10 +77,6 @@ namespace CKAN.LinuxGUI
                                                           double delta)
         {
             maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
-            var startVersionWidth = BrowserVersionColumnWidth(startMetadataWidth,
-                                                              startDownloadsWidth,
-                                                              startReleasedWidth,
-                                                              startInstalledWidth);
             var metadataWidth = startMetadataWidth;
             var downloadsWidth = startDownloadsWidth;
             var releasedWidth = startReleasedWidth;
@@ -88,36 +84,24 @@ namespace CKAN.LinuxGUI
 
             if (delta > 0)
             {
-                var availableGrowth = (startReleasedWidth - MinBrowserReleasedColumnWidth)
-                                      + (startInstalledWidth - MinBrowserInstalledColumnWidth)
-                                      + (startVersionWidth - MinBrowserVersionColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
+                var availableGrowth = startReleasedWidth - MinBrowserReleasedColumnWidth;
                 var growth = ClampDimension(delta,
                                             0,
                                             Math.Min(MaxBrowserDownloadsColumnWidth - startDownloadsWidth,
                                                      availableGrowth));
                 downloadsWidth = startDownloadsWidth + growth;
-                var remainingShrink = growth;
-                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
-                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
-                var versionShrink = Math.Min(remainingShrink,
-                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
-                remainingShrink -= versionShrink;
-                metadataWidth += remainingShrink;
+                releasedWidth = startReleasedWidth - growth;
             }
             else if (delta < 0)
             {
                 var requestedGrowth = -delta;
-                var availableGrowth = (startDownloadsWidth - MinBrowserDownloadsColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
+                var availableGrowth = startDownloadsWidth - MinBrowserDownloadsColumnWidth;
                 var growth = ClampDimension(requestedGrowth,
                                             0,
                                             Math.Min(MaxBrowserReleasedColumnWidth - startReleasedWidth,
                                                      availableGrowth));
                 releasedWidth = startReleasedWidth + growth;
-                var remainingShrink = growth;
-                ShrinkColumn(ref downloadsWidth, MinBrowserDownloadsColumnWidth, ref remainingShrink);
-                metadataWidth += remainingShrink;
+                downloadsWidth = startDownloadsWidth - growth;
             }
 
             SetBrowserColumnLayout(metadataWidth, downloadsWidth, releasedWidth, installedWidth, maxMetadataWidth);
@@ -131,44 +115,30 @@ namespace CKAN.LinuxGUI
                                                           double delta)
         {
             maxMetadataWidth = NormalizeBrowserMaxMetadataWidth(maxMetadataWidth);
-            var startVersionWidth = BrowserVersionColumnWidth(startMetadataWidth,
-                                                              startDownloadsWidth,
-                                                              startReleasedWidth,
-                                                              startInstalledWidth);
             var metadataWidth = startMetadataWidth;
             var releasedWidth = startReleasedWidth;
             var installedWidth = startInstalledWidth;
 
             if (delta > 0)
             {
-                var availableGrowth = (startInstalledWidth - MinBrowserInstalledColumnWidth)
-                                      + (startVersionWidth - MinBrowserVersionColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
+                var availableGrowth = startInstalledWidth - MinBrowserInstalledColumnWidth;
                 var growth = ClampDimension(delta,
                                             0,
                                             Math.Min(MaxBrowserReleasedColumnWidth - startReleasedWidth,
                                                      availableGrowth));
                 releasedWidth = startReleasedWidth + growth;
-                var remainingShrink = growth;
-                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
-                var versionShrink = Math.Min(remainingShrink,
-                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
-                remainingShrink -= versionShrink;
-                metadataWidth += remainingShrink;
+                installedWidth = startInstalledWidth - growth;
             }
             else if (delta < 0)
             {
                 var requestedGrowth = -delta;
-                var availableGrowth = (startReleasedWidth - MinBrowserReleasedColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
+                var availableGrowth = startReleasedWidth - MinBrowserReleasedColumnWidth;
                 var growth = ClampDimension(requestedGrowth,
                                             0,
                                             Math.Min(MaxBrowserInstalledColumnWidth - startInstalledWidth,
                                                      availableGrowth));
                 installedWidth = startInstalledWidth + growth;
-                var remainingShrink = growth;
-                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
-                metadataWidth += remainingShrink;
+                releasedWidth = startReleasedWidth - growth;
             }
 
             SetBrowserColumnLayout(metadataWidth,
@@ -197,32 +167,20 @@ namespace CKAN.LinuxGUI
 
             if (delta > 0)
             {
-                var availableGrowth = (startVersionWidth - MinBrowserVersionColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
+                var availableGrowth = startVersionWidth - MinBrowserVersionColumnWidth;
                 var growth = ClampDimension(delta,
                                             0,
                                             Math.Min(MaxBrowserInstalledColumnWidth - startInstalledWidth,
                                                      availableGrowth));
                 installedWidth = startInstalledWidth + growth;
-                var remainingShrink = growth;
-                var versionShrink = Math.Min(remainingShrink,
-                                             Math.Max(0, startVersionWidth - MinBrowserVersionColumnWidth));
-                remainingShrink -= versionShrink;
-                metadataWidth += remainingShrink;
             }
             else if (delta < 0)
             {
                 var requestedGrowth = -delta;
-                var availableGrowth = (startInstalledWidth - MinBrowserInstalledColumnWidth)
-                                      + (startReleasedWidth - MinBrowserReleasedColumnWidth)
-                                      + (startDownloadsWidth - MinBrowserDownloadsColumnWidth)
-                                      + (maxMetadataWidth - startMetadataWidth);
-                var growth = ClampDimension(requestedGrowth, 0, availableGrowth);
-                var remainingShrink = growth;
-                ShrinkColumn(ref installedWidth, MinBrowserInstalledColumnWidth, ref remainingShrink);
-                ShrinkColumn(ref releasedWidth, MinBrowserReleasedColumnWidth, ref remainingShrink);
-                ShrinkColumn(ref downloadsWidth, MinBrowserDownloadsColumnWidth, ref remainingShrink);
-                metadataWidth += remainingShrink;
+                var growth = ClampDimension(requestedGrowth,
+                                            0,
+                                            startInstalledWidth - MinBrowserInstalledColumnWidth);
+                installedWidth = startInstalledWidth - growth;
             }
 
             SetBrowserColumnLayout(metadataWidth,

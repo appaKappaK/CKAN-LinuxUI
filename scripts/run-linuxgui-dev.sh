@@ -24,17 +24,23 @@ HOST_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
 DEV_DATA_HOME="$DEV_HOME/data"
 DEV_REPOS_DIR="$DEV_DATA_HOME/CKAN/repos"
 DEV_DOWNLOADS_DIR="$DEV_DATA_HOME/CKAN/downloads"
+DEV_CATALOG_INDEX_LATEST="$DEV_DATA_HOME/CKAN/catalog-index-latest.json"
+DEV_CATALOG_INDEX="$DEV_DATA_HOME/CKAN/catalog-index.json"
 HOST_REPOS_DIR="$HOST_DATA_HOME/CKAN/repos"
 HOST_DOWNLOADS_DIR="$HOST_DATA_HOME/CKAN/downloads"
+HOST_CATALOG_INDEX_LATEST="$HOST_DATA_HOME/CKAN/catalog-index-latest.json"
+HOST_CATALOG_INDEX="$HOST_DATA_HOME/CKAN/catalog-index.json"
 RUN_DIR="$DEV_HOME/run"
 
 # Log configuration
 DEV_LOG_CONFIG_SRC="$REPO_ROOT/LinuxGUI/log4net.linuxgui.dev.xml"
 DEV_LOG_CONFIG_DEST="$RUN_DIR/log4net.linuxgui.xml"
 
-# Build output paths (MSBuild conventions)
-BUILD_BIN="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGUI"
-BUILD_DLL="$REPO_ROOT/_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/CKAN-LinuxGUI.dll"
+# Build output paths (MSBuild conventions). Keep this aligned with the build
+# command in maybe_refresh_dev_build; default dotnet builds use Debug.
+BUILD_CONFIGURATION=${CKAN_LINUX_DEV_BUILD_CONFIGURATION:-Debug}
+BUILD_BIN="$REPO_ROOT/_build/out/CKAN-LinuxGUI/$BUILD_CONFIGURATION/bin/net8.0/CKAN-LinuxGUI"
+BUILD_DLL="$REPO_ROOT/_build/out/CKAN-LinuxGUI/$BUILD_CONFIGURATION/bin/net8.0/CKAN-LinuxGUI.dll"
 PUBLISH_BIN="$REPO_ROOT/_build/publish/CKAN-LinuxGUI/linux-x64/CKAN-LinuxGUI"
 PACKAGE_BIN="$REPO_ROOT/_build/package/ckan-linux/linux-x64/usr/lib/ckan-linux/CKAN-LinuxGUI"
 
@@ -124,7 +130,7 @@ maybe_refresh_dev_build() {
 
     if dev_build_is_stale; then
         echo "Refreshing LinuxGUI dev build..."
-        dotnet build "$REPO_ROOT/LinuxGUI/CKAN-LinuxGUI.csproj" --no-restore
+        dotnet build "$REPO_ROOT/LinuxGUI/CKAN-LinuxGUI.csproj" --configuration "$BUILD_CONFIGURATION" --no-restore
     fi
 }
 
@@ -189,7 +195,7 @@ setup_symlink() {
     local dev_dir="$1"
     local host_dir="$2"
     
-    [[ -L "$dev_dir" ]] && return  # Already a symlink
+    [[ -L "$dev_dir" ]] && return 0  # Already a symlink
     
     # Only create link if host directory exists and target isn't already populated
     if [[ -d "$host_dir" ]]; then
@@ -200,10 +206,27 @@ setup_symlink() {
             ln -s "$host_dir" "$dev_dir"
         fi
     fi
+
+    return 0
 }
 
 setup_symlink "$DEV_REPOS_DIR" "$HOST_REPOS_DIR"
 setup_symlink "$DEV_DOWNLOADS_DIR" "$HOST_DOWNLOADS_DIR"
+
+setup_file_symlink() {
+    local dev_file="$1"
+    local host_file="$2"
+
+    [[ -L "$dev_file" || -e "$dev_file" ]] && return 0
+    [[ -f "$host_file" ]] || return 0
+    ln -s "$host_file" "$dev_file"
+    return 0
+}
+
+if [[ -z "${CKAN_CATALOG_INDEX_PATH:-}" ]]; then
+    setup_file_symlink "$DEV_CATALOG_INDEX_LATEST" "$HOST_CATALOG_INDEX_LATEST"
+    setup_file_symlink "$DEV_CATALOG_INDEX" "$HOST_CATALOG_INDEX"
+fi
 
 # Export environment variables for CKAN to use our dev directories
 export XDG_DATA_HOME="$DEV_DATA_HOME"
@@ -226,14 +249,14 @@ LATEST_DEBUG_LOG="$RUN_DIR/ckan-linux-debug-latest.log"
 # Rotate old session logs (keep last N sessions)
 if [[ "$CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS" -gt 0 ]]; then
     log_count=0
-    for old_log in "$RUN_DIR"/ckan-linux-session-*.log; do
-        if [[ -f "$old_log" ]]; then
-            ((log_count++)) || true
-            if [[ $log_count -gt "$CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS" ]]; then
-                rm -f "$old_log"
-            fi
+    while IFS= read -r old_log; do
+        ((log_count++)) || true
+        if [[ $log_count -gt "$CKAN_LINUX_DEV_LOG_ROTATE_SESSIONS" ]]; then
+            rm -f "$old_log"
         fi
-    done
+    done < <(find "$RUN_DIR" -maxdepth 1 -type f -name 'ckan-linux-session-*.log' -printf '%T@ %p\n' \
+        | sort -nr \
+        | sed 's/^[^ ]* //')
 fi
 
 # Create symlinks for latest logs
@@ -267,6 +290,15 @@ log_session_line "dev_repos_dir: $DEV_REPOS_DIR"
 log_session_line "host_repos_dir: $HOST_REPOS_DIR"
 log_session_line "dev_downloads_dir: $DEV_DOWNLOADS_DIR"
 log_session_line "host_downloads_dir: $HOST_DOWNLOADS_DIR"
+log_session_line "catalog_index_env: ${CKAN_CATALOG_INDEX_PATH:-}"
+log_session_line "dev_catalog_index_latest: $DEV_CATALOG_INDEX_LATEST"
+log_session_line "dev_catalog_index_latest_exists: $([[ -f "$DEV_CATALOG_INDEX_LATEST" ]] && echo 1 || echo 0)"
+log_session_line "dev_catalog_index: $DEV_CATALOG_INDEX"
+log_session_line "dev_catalog_index_exists: $([[ -f "$DEV_CATALOG_INDEX" ]] && echo 1 || echo 0)"
+log_session_line "host_catalog_index_latest: $HOST_CATALOG_INDEX_LATEST"
+log_session_line "host_catalog_index_latest_exists: $([[ -f "$HOST_CATALOG_INDEX_LATEST" ]] && echo 1 || echo 0)"
+log_session_line "host_catalog_index: $HOST_CATALOG_INDEX"
+log_session_line "host_catalog_index_exists: $([[ -f "$HOST_CATALOG_INDEX" ]] && echo 1 || echo 0)"
 
 # Show symlink targets if applicable
 if [[ -L "$DEV_REPOS_DIR" ]]; then
@@ -274,6 +306,12 @@ if [[ -L "$DEV_REPOS_DIR" ]]; then
 fi
 if [[ -L "$DEV_DOWNLOADS_DIR" ]]; then
     log_session_line "dev_downloads_link_target: $(readlink -f "$DEV_DOWNLOADS_DIR")"
+fi
+if [[ -L "$DEV_CATALOG_INDEX_LATEST" ]]; then
+    log_session_line "dev_catalog_index_latest_link_target: $(readlink -f "$DEV_CATALOG_INDEX_LATEST")"
+fi
+if [[ -L "$DEV_CATALOG_INDEX" ]]; then
+    log_session_line "dev_catalog_index_link_target: $(readlink -f "$DEV_CATALOG_INDEX")"
 fi
 
 log_session_line "session_log: $SESSION_LOG"

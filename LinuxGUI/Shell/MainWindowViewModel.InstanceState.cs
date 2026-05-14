@@ -53,7 +53,7 @@ namespace CKAN.LinuxGUI
             StageTitle = "Ready";
             StageDescription = "";
             StatusMessage = $"Loading {warmInstanceName}…";
-            CatalogStatusMessage = "Loading mods from the current CKAN registry and repository cache…";
+            CatalogStatusMessage = LoadingCatalogSourceMessage("Loading");
             SelectedActionLabel = "Open Selected Install";
             SelectedActionHint = "Choose a different install here if you want to switch contexts.";
             PublishInstanceStateLabels();
@@ -90,6 +90,7 @@ namespace CKAN.LinuxGUI
             PublishLaunchCommandState();
             this.RaisePropertyChanged(nameof(InstanceCountLabel));
             PublishCompatibleGameVersionState();
+            this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
             this.RaisePropertyChanged(nameof(ShowHeaderInstanceSwitcher));
             this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
             this.RaisePropertyChanged(nameof(ShowStartupInstancePanel));
@@ -116,6 +117,7 @@ namespace CKAN.LinuxGUI
             ShowLabelFilterPicker = false;
             filterOptionCounts = new FilterOptionCounts();
             hasFilterOptionCounts = false;
+            IsCatalogHydrating = false;
             ResetSelectedModDetails();
             SelectedMod = null;
             CatalogStatusMessage = "Select an active instance to view its mod catalog.";

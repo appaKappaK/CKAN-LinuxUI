@@ -19,6 +19,10 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public int ModDetailsRequestCount { get; private set; }
 
+        public string LastSource => inner.LastSource;
+
+        public string LoadingSourceDescription => inner.LoadingSourceDescription;
+
         public DelayedModCatalogService(int listDelayMs = 0,
                                         int detailsDelayMs = 0,
                                         IModCatalogService? inner = null)

@@ -320,6 +320,19 @@ namespace CKAN.App.Services
                     var leftoverConfigDirs = FilterConfigOnlyDirs(possibleConfigOnlyDirs,
                                                                   registryManager.registry,
                                                                   plan.Instance);
+                    var verificationErrors = VerifyAppliedPlan(plan, registryManager.registry);
+                    if (verificationErrors.Count > 0)
+                    {
+                        return new ApplyChangesResult
+                        {
+                            Kind = ApplyResultKind.Error,
+                            Success = false,
+                            Title = "Apply Verification Failed",
+                            Message = "CKAN finished the apply step, but the installed registry does not match the requested changes.",
+                            SummaryLines = BuildSummaryLines(plan),
+                            FollowUpLines = verificationErrors,
+                        };
+                    }
 
                     clearQueue();
 
@@ -1015,6 +1028,36 @@ namespace CKAN.App.Services
             return possibleConfigOnlyDirs;
         }
 
+        private static IReadOnlyList<string> VerifyAppliedPlan(ExecutionPlan plan,
+                                                               Registry      registry)
+        {
+            var errors = new List<string>();
+            foreach (var module in plan.RequestedInstalls.Concat(plan.RequestedUpdates))
+            {
+                var installed = registry.InstalledModule(module.identifier)?.Module;
+                if (installed == null)
+                {
+                    errors.Add($"{module.name} ({module.identifier}) was not installed.");
+                    continue;
+                }
+
+                if (!VersionTextMatches(installed.version.ToString(), module.version.ToString()))
+                {
+                    errors.Add($"{module.name} ({module.identifier}) is still {installed.version}; expected {module.version}.");
+                }
+            }
+
+            foreach (var module in plan.RequestedRemovals)
+            {
+                if (registry.InstalledModule(module.identifier) is InstalledModule installed)
+                {
+                    errors.Add($"{installed.Module.name} ({module.identifier}) is still installed.");
+                }
+            }
+
+            return errors;
+        }
+
         private static string Pluralize(int count)
             => count == 1 ? "" : "s";
 
@@ -1069,13 +1112,13 @@ namespace CKAN.App.Services
         private static string QueueTargetVersion(ModListItem mod,
                                                  string?     targetVersion)
             => !string.IsNullOrWhiteSpace(targetVersion)
-                ? targetVersion.Trim()
+                ? targetVersion!.Trim()
                 : mod.LatestVersion?.Trim() ?? "";
 
         private static CkanModule? TryRequestedVersion(IRegistryQuerier  registry,
                                                        QueuedActionModel action)
         {
-            var targetVersion = action.TargetVersion.Trim();
+            var targetVersion = action.TargetVersion!.Trim();
             var exact = Utilities.DefaultIfThrows(() => registry.GetModuleByVersion(action.Identifier,
                                                                                     targetVersion));
             if (exact != null)

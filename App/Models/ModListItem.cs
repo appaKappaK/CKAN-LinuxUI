@@ -12,6 +12,7 @@ namespace CKAN.App.Models
         private string queueRowAccentBrush   = "#00000000";
         private string displayLatestVersion = "";
         private string displayInstalledVersion = "";
+        private string displaySecondaryVersion = "";
 
         public string Identifier { get; init; } = "";
 
@@ -79,10 +80,27 @@ namespace CKAN.App.Models
             }
         }
 
+        public string DisplaySecondaryVersion
+        {
+            get => displaySecondaryVersion;
+            set
+            {
+                if (displaySecondaryVersion != value)
+                {
+                    displaySecondaryVersion = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ShowSecondaryVersionInList));
+                }
+            }
+        }
+
         public bool ShowInstalledVersionInList
             => IsInstalled
                && !string.IsNullOrWhiteSpace(InstalledVersion)
                && !string.Equals(InstalledVersion, LatestVersion, StringComparison.Ordinal);
+
+        public bool ShowSecondaryVersionInList
+            => !string.IsNullOrWhiteSpace(DisplaySecondaryVersion);
 
         public string ReleaseDate { get; init; } = "";
 

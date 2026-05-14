@@ -68,6 +68,8 @@ namespace CKAN.LinuxGUI
         {
             ObserveViewModel(null);
             CloseActiveModRowMenu();
+            installationHistoryWindow?.Close();
+            installationHistoryWindow = null;
             StopRepositoryRefreshTimer();
             DisposePluginController();
 

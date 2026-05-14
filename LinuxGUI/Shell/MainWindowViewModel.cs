@@ -156,6 +156,7 @@ namespace CKAN.LinuxGUI
         private bool    returnToBrowseAfterExecutionResult;
         private bool    hasSelectedInstance;
         private bool    isCatalogLoading;
+        private bool    isCatalogHydrating;
         private bool    isSelectedModLoading;
         private bool    isPreviewLoading;
         private bool    isApplyingChanges;
@@ -500,7 +501,6 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.AdvancedSuggestsFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedConflictsFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedSupportsFilter).Select(_ => Unit.Default),
-                    this.WhenAnyValue(vm => vm.AdvancedTagsFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedLabelsFilter).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.AdvancedCompatibilityFilter).Select(_ => Unit.Default))
                 .Skip(1)
@@ -801,6 +801,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(ShowReadyInstancePanel));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
                 this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
@@ -822,10 +823,12 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref statusMessage, value);
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
                 this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
                 this.RaisePropertyChanged(nameof(ExecutionDialogMessage));
+                this.RaisePropertyChanged(nameof(ShowExecutionDialogMessage));
             }
         }
 
@@ -1021,8 +1024,7 @@ namespace CKAN.LinuxGUI
             get => advancedTagsFilter;
             set
             {
-                this.RaiseAndSetIfChanged(ref advancedTagsFilter, value);
-                UpdateAvailableTagOptionSelection();
+                this.RaiseAndSetIfChanged(ref advancedTagsFilter, "");
                 PublishFilterStateLabels();
             }
         }
@@ -1322,6 +1324,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(IsExecutionProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(ExecutionProgressValue));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
             }
         }
@@ -1342,11 +1345,14 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref isRefreshing, value);
+                this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
                 this.RaisePropertyChanged(nameof(ShowSwitchSelectedInstanceAction));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(CanSwitchInstances));
+                this.RaisePropertyChanged(nameof(ReloadButtonLabel));
             }
         }
 
@@ -1364,7 +1370,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowReviewWorkspaceTab => HasQueuedActions || ShowInlineApplyResult;
 
-        public bool ShowHeaderStagePill => !IsReady;
+        public bool ShowHeaderStagePill => IsLoading || IsRefreshing;
 
         public bool ShowHeaderInstanceSwitcher => IsReady && InstanceCount > 1;
 
@@ -1374,7 +1380,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowReadyShell => IsReady;
 
-        public double LegacySidebarWidth => ShowLegacyShell ? 220 : 0;
+        public double LegacySidebarWidth => ShowLegacyShell ? 250 : 0;
 
         public bool HasInstances => InstanceCount > 0;
 
@@ -1450,18 +1456,23 @@ namespace CKAN.LinuxGUI
         public bool ShowReadyStatusSurface
             => IsReady
                && !ShowExecutionOverlay
-               && !IsCatalogLoading
                && (IsRefreshing
+                   || IsCatalogHydrating
                    || IsUserBusy
                    || ReadyStatusNeedsAttention);
 
         public bool ShowReadyStatusProgress
             => ShowReadyStatusSurface
                && !ReadyStatusNeedsAttention
-               && (IsRefreshing || IsUserBusy);
+               && (IsRefreshing || IsCatalogHydrating || IsUserBusy);
+
+        public bool ShowLegacyStatusProgress
+            => !IsReady
+               && !HasError
+               && (IsLoading || IsRefreshing || IsUserBusy || HasExecutionProgressValue);
 
         public bool IsReadyStatusProgressIndeterminate
-            => !HasExecutionProgressValue;
+            => IsCatalogHydrating || !HasExecutionProgressValue;
 
         public bool ShowPreviewSurface
         {
@@ -1541,12 +1552,26 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(ModCountLabel));
                 this.RaisePropertyChanged(nameof(ShowCatalogSkeleton));
+                this.RaisePropertyChanged(nameof(ShowCatalogBlockingOverlay));
                 this.RaisePropertyChanged(nameof(ShowModList));
                 this.RaisePropertyChanged(nameof(ShowEmptyModResults));
                 this.RaisePropertyChanged(nameof(ShowCatalogLoadError));
                 this.RaisePropertyChanged(nameof(ShowClearFiltersForEmptyResults));
                 this.RaisePropertyChanged(nameof(EmptyModResultsTitle));
                 this.RaisePropertyChanged(nameof(EmptyModResultsMessage));
+                this.RaisePropertyChanged(nameof(ReloadButtonLabel));
+            }
+        }
+
+        public bool IsCatalogHydrating
+        {
+            get => isCatalogHydrating;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref isCatalogHydrating, value);
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
             }
         }
 
@@ -1558,6 +1583,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowCatalogSkeleton => IsCatalogLoading;
 
+        public bool ShowCatalogBlockingOverlay => IsCatalogLoading && !HasMods;
 
         public bool ShowModList => !IsCatalogLoading && HasMods;
 
@@ -2013,11 +2039,11 @@ namespace CKAN.LinuxGUI
         public bool HasAdvancedFilterText
             => EnumerateAdvancedTextFilters().Any(filter => !string.IsNullOrWhiteSpace(filter.Value));
 
-        public bool HasAvailableTagOptions => AvailableTagOptions.Count > 0;
+        public bool HasAvailableTagOptions => false;
 
-        public int SelectedCategoryCount => SelectedFilterValues(AdvancedTagsFilter).Count;
+        public int SelectedCategoryCount => 0;
 
-        public bool HasSelectedTagFilter => SelectedCategoryCount > 0;
+        public bool HasSelectedTagFilter => false;
 
         public string TagFilterPickerSummary
             => HasAvailableTagOptions
@@ -2038,9 +2064,7 @@ namespace CKAN.LinuxGUI
         public double ClearAdvancedTextButtonOpacity => HasAdvancedFilterText ? 1.0 : 0.0;
 
         public int ActiveFilterCount
-            => EnumerateAdvancedTextFilters().Count(filter => filter.Label != "Category"
-                                                              && !string.IsNullOrWhiteSpace(filter.Value))
-               + SelectedCategoryCount
+            => EnumerateAdvancedTextFilters().Count(filter => !string.IsNullOrWhiteSpace(filter.Value))
                + CountTriStateFilter(FilterInstalledState)
                + CountTriStateFilter(FilterUpdatableState)
                + CountTriStateFilter(FilterCompatibleState)
@@ -2484,12 +2508,23 @@ namespace CKAN.LinuxGUI
                 ? StatusMessage
                 : currentExecutionStatusLabel;
 
+        public bool ShowExecutionDialogMessage
+            => !string.IsNullOrWhiteSpace(ExecutionDialogMessage)
+               && !string.Equals(NormalizeExecutionDialogText(ExecutionDialogMessage),
+                                 NormalizeExecutionDialogText(ExecutionDialogTitle),
+                                 StringComparison.OrdinalIgnoreCase);
+
         public bool HasExecutionProgressValue
             => ProgressPercent > 0 && ProgressPercent < 100;
 
         public bool IsExecutionProgressIndeterminate => !HasExecutionProgressValue;
 
         public double ExecutionProgressValue => ProgressPercent;
+
+        private static string NormalizeExecutionDialogText(string value)
+            => value.Trim()
+                    .TrimEnd('.', '…')
+                    .Trim();
 
         public string ExecutionResultAcknowledgeLabel => "OK";
 
@@ -2557,6 +2592,7 @@ namespace CKAN.LinuxGUI
                 this.RaiseAndSetIfChanged(ref isUserBusy, value);
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
                 this.RaisePropertyChanged(nameof(IsReadyStatusProgressIndeterminate));
                 this.RaisePropertyChanged(nameof(ExecutionDialogMessage));
             }
@@ -3092,6 +3128,13 @@ namespace CKAN.LinuxGUI
                     1 => "1 mod",
                     _ => $"{Mods.Count} mods",
                 };
+
+        public string ReloadButtonLabel
+            => IsRefreshing
+                ? "Reloading..."
+                : IsCatalogLoading
+                    ? "Loading..."
+                    : "Reload";
 
         public FilterState ActiveFilterState => CurrentFilter();
 

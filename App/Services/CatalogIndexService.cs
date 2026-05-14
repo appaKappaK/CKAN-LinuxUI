@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 
 using CKAN.App.Models;
 using CKAN.IO;
+using CKAN.Versioning;
 
 namespace CKAN.App.Services
 {
@@ -30,6 +31,10 @@ namespace CKAN.App.Services
             }
             return null;
         }
+
+        public bool HasCandidateFile()
+            => CandidatePaths().Any(path => !string.IsNullOrWhiteSpace(path)
+                                            && File.Exists(path));
 
         public CatalogIndex? TryLoad(string path)
         {
@@ -102,7 +107,78 @@ namespace CKAN.App.Services
                     .Where(module => !string.IsNullOrWhiteSpace(module.Identifier))
                     .Where(module => !string.Equals(module.Kind, "dlc", StringComparison.OrdinalIgnoreCase))
                     .GroupBy(module => module.Identifier, StringComparer.OrdinalIgnoreCase)
-                    .Select(group => group.First())
+                    .Select(SelectLatestModule)
                     .ToList();
+
+        private static CatalogIndexModule SelectLatestModule(IGrouping<string, CatalogIndexModule> group)
+        {
+            using var enumerator = group.GetEnumerator();
+            if (!enumerator.MoveNext())
+            {
+                throw new InvalidOperationException("Catalog index module group was empty.");
+            }
+
+            var best = enumerator.Current;
+            if (!enumerator.MoveNext())
+            {
+                return best;
+            }
+
+            var bestVersion = TryModuleVersion(best.Version);
+            do
+            {
+                var candidate = enumerator.Current;
+                var candidateVersion = TryModuleVersion(candidate.Version);
+                int versionComparison = ModuleVersionComparer.Instance.Compare(candidateVersion, bestVersion);
+                if (versionComparison > 0
+                    || (versionComparison == 0
+                        && string.Compare(candidate.ReleaseDate,
+                                          best.ReleaseDate,
+                                          StringComparison.OrdinalIgnoreCase) > 0))
+                {
+                    best = candidate;
+                    bestVersion = candidateVersion;
+                }
+            }
+            while (enumerator.MoveNext());
+
+            return best;
+        }
+
+        private static ModuleVersion? TryModuleVersion(string? value)
+        {
+            try
+            {
+                return string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : new ModuleVersion(value!);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private sealed class ModuleVersionComparer : IComparer<ModuleVersion?>
+        {
+            public static readonly ModuleVersionComparer Instance = new ModuleVersionComparer();
+
+            public int Compare(ModuleVersion? x, ModuleVersion? y)
+            {
+                if (x == null && y == null)
+                {
+                    return 0;
+                }
+                if (x == null)
+                {
+                    return -1;
+                }
+                if (y == null)
+                {
+                    return 1;
+                }
+                return x.CompareTo(y);
+            }
+        }
     }
 }

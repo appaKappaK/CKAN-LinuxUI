@@ -33,7 +33,19 @@ desktop surface by role:
 The app starts on the mod browser for the current instance. When no saved
 browser filter is active, the default mod list is `Installed`, so cleanup and
 updates are the first view instead of the full catalog. If no installed mods are
-detected, the browser falls back to `All`.
+detected, the browser falls back to `All`. Installed startup snapshots are
+sorted by mod name from A-Z before the full catalog data is available.
+
+If no active instance is selected, or if the saved/default instance cannot be
+activated, LinuxGUI opens the pre-browser instance selection surface. That
+screen uses the same installed app code as normal launches; the dev launcher
+only makes it easier to hit because it uses isolated dev configuration.
+
+Refreshing the catalog temporarily replaces the browser rows with the matching
+skeleton table until the reload finishes. During that work the header action
+changes from `Reload` to `Reloading...`. On cold start, catalog loading uses
+`Loading...` instead so the first load does not read like a user-triggered
+reload.
 
 Actions are queued before they are applied. Use the `Preview` surface to inspect
 what CKAN Linux is about to do:
@@ -66,6 +78,10 @@ The `Mods` menu includes maintenance actions for large cleanup passes:
 
 Removal previews also include auto-removable dependencies where the registry can
 prove they are no longer required by anything that will remain installed.
+
+`Mods > Installation History` opens as a non-modal utility window. Keep it open
+while browsing the mod list to cross-reference saved snapshots against current
+mods without repeatedly closing and reopening the history window.
 
 ## Build
 
@@ -125,7 +141,9 @@ cache, or app-data state with your normal CKAN setup:
 
 If the checked-in `LinuxGUI`, `App`, `Core`, or `PluginCompat` sources are newer
 than the local framework-dependent dev build, the launcher automatically refreshes
-`_build/out/CKAN-LinuxGUI/VSCodeIDE/bin/net8.0/` before starting the app.
+`_build/out/CKAN-LinuxGUI/Debug/bin/net8.0/` before starting the app. Override
+that with `CKAN_LINUX_DEV_BUILD_CONFIGURATION=Release` if you intentionally want
+the dev launcher to track the Release output path.
 
 By default this uses:
 
@@ -142,17 +160,38 @@ CKAN_LINUX_DEV_HOME=/path/to/dev-home ./scripts/run-linuxgui-dev.sh
 
 ### Rust Catalog Sidecar
 
-The mod browser includes a Rust-generated catalog sidecar path for faster
-catalog/search while CKAN's registry remains authoritative for details, installs,
-and dependency resolution. The LinuxGUI sidecar reader is included in this
-repository; the generator source is published at
+The mod browser can optionally use a Rust-generated catalog sidecar for faster
+catalog/search. Normal LinuxGUI builds and installs do not require Rust, the
+Rust repository, or a sidecar index; if no valid index is configured, the
+browser uses CKAN's normal registry/repository cache.
+
+The LinuxGUI sidecar reader is included in this repository. The external
+generator source is published at
 [`appaKappaK/ckan-meta-rs`](https://github.com/appaKappaK/ckan-meta-rs).
 Sidecar rows include browse-list metadata such as title, summary,
-relationships, compatibility, release date, and download count. Generate the
-file with `ckan-meta-rs` and point the GUI at it:
+relationships, compatibility, release date, and download count. CKAN's registry
+remains authoritative for details, installs, updates, and dependency
+resolution.
+
+To use the sidecar, generate the file with `ckan-meta-rs` and point the GUI at
+it:
 
 ```bash
 CKAN_CATALOG_INDEX_PATH=/path/to/catalog-index-latest.json ./scripts/run-linuxgui-dev.sh
+```
+
+In dev runs, `scripts/run-linuxgui-dev.sh` also checks the normal host app-data
+location, `${XDG_DATA_HOME:-$HOME/.local/share}/CKAN/catalog-index-latest.json`,
+and links it into the isolated dev data home when no explicit
+`CKAN_CATALOG_INDEX_PATH` is set.
+
+For repeated local use outside the dev launcher, either keep using
+`CKAN_CATALOG_INDEX_PATH` or symlink the generated file into app data:
+
+```bash
+mkdir -p ~/.local/share/CKAN
+ln -s /path/to/ckan-meta-rs/data/catalog-index-latest.json \
+      ~/.local/share/CKAN/catalog-index-latest.json
 ```
 
 If the sidecar is missing, invalid, or not configured, the browser uses the
@@ -166,6 +205,29 @@ prefixes when comparing normal mode to sidecar mode:
 - `Mod catalog registry build`
 - `LinuxGUI catalog load`
 - `LinuxGUI catalog filter`
+
+The browser diagnostics text also includes whether the last load used the Rust
+catalog-index sidecar or the CKAN registry fallback.
+
+For repeatable local measurements, run:
+
+```bash
+./scripts/benchmark-linuxgui-catalog.sh --iterations 3
+```
+
+On 2026-05-13 against the `KSP-Steam` instance, 98 installed mods, and the
+cached CKAN repository data in `~/.local/share/CKAN/repos`, the benchmark
+reported:
+
+| Path | Items | First run | Best run | Average |
+| --- | ---: | ---: | ---: | ---: |
+| Installed snapshot | 98 | 26 ms | 2 ms | 10 ms |
+| CKAN registry cache | 3,505 | 6,345 ms | 2,886 ms | 4,057 ms |
+| Rust sidecar index | 3,495 | 3,000 ms | 2,956 ms | 2,971 ms |
+
+These numbers are local cache timings, not network update timings. The script
+does not update repositories and uses read-only registry access so it can be run
+while comparing catalog load paths.
 
 Skip the automatic rebuild check if you deliberately want to launch the current
 artifacts as-is:

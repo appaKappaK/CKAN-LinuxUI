@@ -3,6 +3,42 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-05-14
+
+### LinuxGUI Startup and Loading Polish
+- Cleaned up the pre-browser instance selection screen by removing duplicate open actions, hiding idle progress chrome, using the current dark-blue selection styling, and showing invalid-instance errors as an inline callout instead of a full red page.
+- Changed the header reload button to show `Loading...` during cold-start catalog loads and reserve `Reloading...` for explicit refreshes.
+
+## 2026-05-13
+
+### LinuxGUI Catalog and Utility Fixes
+- Fixed LinuxGUI update detection so the `Updatable` filter, selected-mod update badge, and queue-update action use CKAN registry update resolution instead of trusting the sidecar browse row alone.
+- Fixed grouped/bulk update applies so rows queued without an explicit version resolve to the live CKAN registry latest at apply time instead of reusing stale browse-row version text.
+- Added post-apply registry verification so LinuxGUI no longer reports a successful apply if requested install/update/remove results are not reflected in the installed registry.
+- Hid the details-pane file-manager cache action when the selected version does not have an actual cached archive, instead of showing a disabled action inherited from another version.
+- Removed duplicate execution-dialog body text when the status message repeats the dialog title.
+- Shortened queued unpinned update version text to `Latest` so the queue table does not truncate `latest compatible version`.
+- Changed installed browse rows to show the installed version as the primary table value and show a secondary latest value only when the registry has a newer version.
+- Kept startup and reload installed-mod snapshots sorted by name from A-Z before the full catalog finishes loading.
+- Made the header reload button switch to `Reloading...` while a refresh or catalog reload is active.
+- Restored full skeleton replacement during explicit catalog reloads so stale rows are hidden until the refreshed catalog is ready.
+- Hid unused tag/category filter chips from the advanced filter popout while preserving label filters.
+- Tightened and clipped skeleton version placeholders so reload skeleton pills stay inside the row background.
+- Added explicit top and bottom edge strokes to top-level dropdown menus so they match submenu containment.
+- Made duplicate latest rows in the optional catalog sidecar choose the highest module version for browse-list display, with regression coverage for the older-installed/newer-available case.
+- Stopped advanced-filter dismiss clicks from passing through to the mod list and accidentally opening the details pane.
+- Changed `Mods > Installation History` to open as a non-modal owned utility window so the mod browser remains usable for cross-referencing.
+- Updated the catalog loading and execution-overlay skeleton table to use the current browser header and column layout.
+- Clamped internal browser column dividers so they only resize their adjacent columns instead of shrinking unrelated columns or moving the table metadata block.
+- Cleaned up LinuxGUI dropdown menu chrome by removing per-item border lines, hiding menu separator strokes, strengthening the outer dropdown border, and offsetting submenus from their parent arrow lane.
+- Surfaced whether the last LinuxGUI catalog load used the Rust catalog-index sidecar or CKAN registry fallback, and taught the dev launcher to link host app-data catalog-index files into the isolated dev data home.
+- Added `scripts/benchmark-linuxgui-catalog.sh` to compare installed snapshot, CKAN registry-cache, and Rust sidecar catalog load timings against the local CKAN cache.
+- Fixed the LinuxGUI dev launcher to rebuild and launch the same Debug output path instead of rebuilding Debug while checking the older VSCodeIDE output.
+- Fixed the LinuxGUI dev launcher so missing optional host catalog-index files do not trip `set -e` before the app starts.
+- Fixed LinuxGUI dev session log rotation so it keeps the newest logs instead of the oldest logs.
+- Added targeted catalog-index regression coverage for duplicate latest sidecar rows.
+- Added LinuxGUI regression coverage for internal browser-column divider resize behavior.
+
 ## 2026-05-09
 
 ### LinuxGUI Startup and Preview Polish

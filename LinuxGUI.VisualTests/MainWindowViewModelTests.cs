@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -89,7 +90,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
             try
             {
-                await Task.Delay(150);
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
 
                 Assert.Multiple(() =>
                 {
@@ -187,7 +188,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(viewModel.QueuedActions, Has.Count.EqualTo(1));
                     Assert.That(viewModel.QueuedActions.Single().Identifier, Is.EqualTo("restock"));
-                    Assert.That(viewModel.PreviewSurfaceButtonLabel, Is.EqualTo("Preview (1)"));
+                    Assert.That(viewModel.PreviewSurfaceButtonLabel, Is.EqualTo("Review (1)"));
                 });
             }
         }
@@ -261,8 +262,49 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 Assert.That(viewModel.FilterInstalledOnly, Is.True);
                 Assert.That(viewModel.ActiveFilterState.InstalledOnly, Is.True);
+                Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Name));
+                Assert.That(viewModel.SortDescending, Is.False);
                 Assert.That(viewModel.Mods, Is.Not.Empty);
                 Assert.That(viewModel.Mods.All(mod => mod.IsInstalled), Is.True);
+                Assert.That(viewModel.Mods.Select(mod => mod.Name),
+                            Is.EqualTo(viewModel.Mods.Select(mod => mod.Name)
+                                               .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)));
+            });
+        }
+
+        [AvaloniaTest]
+        public async Task SavedInstalledOnlyFilter_StartsSortedByNameAscending()
+        {
+            var settings = new FakeAppSettingsService();
+            settings.SaveBrowserState(new FilterState
+            {
+                InstalledOnly  = true,
+                SortOption     = ModSortOption.Popularity,
+                SortDescending = true,
+            }, false);
+
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var search = new ModSearchService(settings);
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                search,
+                changes,
+                new FakeModActionService(changes),
+                new AvaloniaUser());
+
+            await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.FilterInstalledOnly, Is.True);
+                Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Name));
+                Assert.That(viewModel.SortDescending, Is.False);
+                Assert.That(viewModel.Mods.Select(mod => mod.Name),
+                            Is.EqualTo(viewModel.Mods.Select(mod => mod.Name)
+                                               .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)));
             });
         }
 
@@ -470,6 +512,80 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task ApplyChanges_ForcesCatalogReloadAfterSuccess()
+        {
+            var applyResult = new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Apply Completed",
+                Message = "Applied queued changes.",
+            };
+            var catalog = new DelayedModCatalogService();
+            var (viewModel, service) = CreateViewModel(applyResult, catalog);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
+
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.ApplyChangesButtonLabel == "Apply Changes");
+
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.HasApplyResult && !viewModel.IsApplyingChanges);
+
+                Assert.That(catalog.ModListRequestCount, Is.EqualTo(2));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ApplyingChangesOverlay_HidesDuplicateStatusMessage()
+        {
+            var applyResult = new ApplyChangesResult
+            {
+                Kind = ApplyResultKind.Success,
+                Success = true,
+                Title = "Apply Completed",
+                Message = "Applied queued changes.",
+            };
+            var (viewModel, service) = CreateViewModel(applyResult,
+                                                       catalog: null,
+                                                       updateRecommendations: null,
+                                                       updateSupporters: null,
+                                                       applyDelayMs: 300);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.ApplyChangesButtonLabel == "Apply Changes");
+
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.IsApplyingChanges);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.ExecutionDialogTitle, Is.EqualTo("Applying Changes"));
+                    Assert.That(viewModel.ExecutionDialogMessage, Is.EqualTo("Applying changes…"));
+                    Assert.That(viewModel.ShowExecutionDialogMessage, Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task ViewPreviewRecommendationsInBrowser_ShowsRelationshipTargetNotSource()
         {
             var (viewModel, service) = CreateViewModel(
@@ -527,7 +643,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.Multiple(() =>
                 {
                     Assert.That(viewModel.ShowExecutionResultOverlay, Is.True);
-                    Assert.That(viewModel.ShowPreviewSurface, Is.True);
+                    Assert.That(viewModel.ShowBrowseSurface, Is.True);
                     Assert.That(viewModel.HasApplyResult, Is.True);
                 });
 
@@ -691,7 +807,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
             try
             {
-                await Task.Delay(150);
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
                 viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
                 viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
                 await Task.Delay(100);
@@ -793,6 +909,141 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasActiveFilters, Is.False);
                     Assert.That(viewModel.FilterCachedOnly, Is.False);
                     Assert.That(viewModel.SelectedSortOption?.Value, Is.EqualTo(ModSortOption.Popularity));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task DownloadsReleasedDivider_OnlyResizesDownloadsAndReleasedColumns()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+                var metadataWidth = viewModel.BrowserMetadataColumnWidth;
+                var downloadsWidth = viewModel.BrowserDownloadsColumnWidth;
+                var releasedWidth = viewModel.BrowserReleasedColumnWidth;
+                var installedWidth = viewModel.BrowserInstalledColumnWidth;
+                var versionWidth = BrowserVersionColumnWidth(viewModel);
+                var maxMetadataWidth = viewModel.BrowserColumnResizeMaxMetadataWidth(1200);
+
+                viewModel.ResizeBrowserDownloadsReleasedDivider(metadataWidth,
+                                                                downloadsWidth,
+                                                                releasedWidth,
+                                                                installedWidth,
+                                                                maxMetadataWidth,
+                                                                10000);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.BrowserMetadataColumnWidth, Is.EqualTo(metadataWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserDownloadsColumnWidth, Is.GreaterThan(downloadsWidth));
+                    Assert.That(viewModel.BrowserReleasedColumnWidth, Is.LessThan(releasedWidth));
+                    Assert.That(viewModel.BrowserInstalledColumnWidth, Is.EqualTo(installedWidth).Within(0.1));
+                    Assert.That(BrowserVersionColumnWidth(viewModel), Is.EqualTo(versionWidth).Within(0.1));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ReleasedInstalledDivider_OnlyResizesReleasedAndInstalledColumns()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+                var metadataWidth = viewModel.BrowserMetadataColumnWidth;
+                var downloadsWidth = viewModel.BrowserDownloadsColumnWidth;
+                var releasedWidth = viewModel.BrowserReleasedColumnWidth;
+                var installedWidth = viewModel.BrowserInstalledColumnWidth;
+                var versionWidth = BrowserVersionColumnWidth(viewModel);
+                var maxMetadataWidth = viewModel.BrowserColumnResizeMaxMetadataWidth(1200);
+
+                viewModel.ResizeBrowserReleasedInstalledDivider(metadataWidth,
+                                                                downloadsWidth,
+                                                                releasedWidth,
+                                                                installedWidth,
+                                                                maxMetadataWidth,
+                                                                10000);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.BrowserMetadataColumnWidth, Is.EqualTo(metadataWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserDownloadsColumnWidth, Is.EqualTo(downloadsWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserReleasedColumnWidth, Is.GreaterThan(releasedWidth));
+                    Assert.That(viewModel.BrowserInstalledColumnWidth, Is.LessThan(installedWidth));
+                    Assert.That(BrowserVersionColumnWidth(viewModel), Is.EqualTo(versionWidth).Within(0.1));
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task InstalledVersionDivider_OnlyResizesInstalledAndVersionColumns()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+                var metadataWidth = viewModel.BrowserMetadataColumnWidth;
+                var downloadsWidth = viewModel.BrowserDownloadsColumnWidth;
+                var releasedWidth = viewModel.BrowserReleasedColumnWidth;
+                var installedWidth = viewModel.BrowserInstalledColumnWidth;
+                var versionWidth = BrowserVersionColumnWidth(viewModel);
+                var maxMetadataWidth = viewModel.BrowserColumnResizeMaxMetadataWidth(1200);
+
+                viewModel.ResizeBrowserInstalledVersionDivider(metadataWidth,
+                                                               downloadsWidth,
+                                                               releasedWidth,
+                                                               installedWidth,
+                                                               maxMetadataWidth,
+                                                               -10000);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.BrowserMetadataColumnWidth, Is.EqualTo(metadataWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserDownloadsColumnWidth, Is.EqualTo(downloadsWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserReleasedColumnWidth, Is.EqualTo(releasedWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserInstalledColumnWidth, Is.LessThan(installedWidth));
+                    Assert.That(BrowserVersionColumnWidth(viewModel), Is.GreaterThan(versionWidth));
+                });
+
+                var shrunkenInstalledWidth = viewModel.BrowserInstalledColumnWidth;
+                var expandedVersionWidth = BrowserVersionColumnWidth(viewModel);
+
+                viewModel.ResizeBrowserInstalledVersionDivider(viewModel.BrowserMetadataColumnWidth,
+                                                               viewModel.BrowserDownloadsColumnWidth,
+                                                               viewModel.BrowserReleasedColumnWidth,
+                                                               shrunkenInstalledWidth,
+                                                               maxMetadataWidth,
+                                                               10000);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.BrowserMetadataColumnWidth, Is.EqualTo(metadataWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserDownloadsColumnWidth, Is.EqualTo(downloadsWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserReleasedColumnWidth, Is.EqualTo(releasedWidth).Within(0.1));
+                    Assert.That(viewModel.BrowserInstalledColumnWidth, Is.GreaterThan(shrunkenInstalledWidth));
+                    Assert.That(viewModel.BrowserInstalledColumnWidth, Is.EqualTo(installedWidth).Within(0.1));
+                    Assert.That(BrowserVersionColumnWidth(viewModel), Is.LessThan(expandedVersionWidth));
+                    Assert.That(BrowserVersionColumnWidth(viewModel), Is.EqualTo(versionWidth).Within(0.1));
                 });
             }
             finally
@@ -1168,11 +1419,11 @@ namespace CKAN.LinuxGUI.VisualTests
 
             try
             {
-                await Task.Delay(150);
+                await WaitForAsync(() => !viewModel.IsRefreshing
+                                         && !viewModel.IsCatalogLoading);
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.StatusMessage, Does.Contain("Loaded"));
                     Assert.That(viewModel.ShowReadyStatusSurface, Is.False);
                     Assert.That(viewModel.PreviewSurfaceButtonBackground, Is.EqualTo("#181D23"));
                 });
@@ -1248,6 +1499,38 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.ShowSelectedModContent, Is.True);
                     Assert.That(viewModel.SelectedModTitle, Is.EqualTo("Restock"));
                 });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task CatalogReload_ShowsSkeletonWithoutBlockingOverlay()
+        {
+            var (viewModel, service) = CreateViewModel(catalog: new DelayedModCatalogService(listDelayMs: 350));
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+
+                var refreshTask = viewModel.RefreshCurrentStateAsync();
+                await WaitForAsync(() => viewModel.IsCatalogLoading);
+                var canToggleAdvancedFilters = await viewModel.ToggleAdvancedFiltersCommand.CanExecute.FirstAsync();
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.Mods.Count, Is.GreaterThan(0));
+                    Assert.That(viewModel.ShowModList, Is.False);
+                    Assert.That(viewModel.ShowCatalogSkeleton, Is.True);
+                    Assert.That(viewModel.ShowCatalogBlockingOverlay, Is.False);
+                    Assert.That(viewModel.CanInteractWithCatalog, Is.False);
+                    Assert.That(canToggleAdvancedFilters, Is.False);
+                    Assert.That(viewModel.ModCountLabel, Is.EqualTo("Loading…"));
+                });
+
+                await refreshTask;
             }
             finally
             {
@@ -1334,7 +1617,8 @@ namespace CKAN.LinuxGUI.VisualTests
         private static (MainWindowViewModel ViewModel, FakeGameInstanceService Service) CreateViewModel(ApplyChangesResult? applyResult = null,
                                                                                                         IModCatalogService?  catalog = null,
                                                                                                         string[]?           updateRecommendations = null,
-                                                                                                        string[]?           updateSupporters = null)
+                                                                                                        string[]?           updateSupporters = null,
+                                                                                                        int                 applyDelayMs = 0)
         {
             var service = new FakeGameInstanceService(VisualScenario.Ready);
             var settings = new FakeAppSettingsService();
@@ -1342,6 +1626,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes,
                                                    applyResult,
+                                                   applyDelayMs,
                                                    updateRecommendations: updateRecommendations,
                                                    updateSupporters: updateSupporters);
             var user = new AvaloniaUser();
@@ -1487,6 +1772,12 @@ namespace CKAN.LinuxGUI.VisualTests
 
             Assert.That(condition(), Is.True, "Timed out waiting for the expected state.");
         }
+
+        private static double BrowserVersionColumnWidth(MainWindowViewModel viewModel)
+            => viewModel.BrowserMetadataColumnWidth
+               - viewModel.BrowserDownloadsColumnWidth
+               - viewModel.BrowserReleasedColumnWidth
+               - viewModel.BrowserInstalledColumnWidth;
 
         private static Task<IReadOnlyList<ModListItem>> StaticModListAsync(IReadOnlyList<ModListItem> items,
                                                                            System.Threading.CancellationToken cancellationToken)

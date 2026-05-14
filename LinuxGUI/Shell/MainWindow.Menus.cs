@@ -216,16 +216,36 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private async void InstallationHistoryMenuItem_OnClick(object? sender,
-                                                               Avalonia.Interactivity.RoutedEventArgs e)
+        private void InstallationHistoryMenuItem_OnClick(object? sender,
+                                                         Avalonia.Interactivity.RoutedEventArgs e)
         {
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
             }
 
-            var dialog = new InstallationHistoryWindow(viewModel.CurrentInstance);
-            await ShowOwnedDialogAsync(dialog);
+            if (installationHistoryWindow != null)
+            {
+                installationHistoryWindow.Activate();
+                return;
+            }
+
+            installationHistoryWindow = new InstallationHistoryWindow(viewModel.CurrentInstance);
+            installationHistoryWindow.Closed += InstallationHistoryWindow_OnClosed;
+            installationHistoryWindow.Show(this);
+        }
+
+        private void InstallationHistoryWindow_OnClosed(object? sender,
+                                                        EventArgs e)
+        {
+            if (sender is InstallationHistoryWindow window)
+            {
+                window.Closed -= InstallationHistoryWindow_OnClosed;
+            }
+            if (ReferenceEquals(installationHistoryWindow, sender))
+            {
+                installationHistoryWindow = null;
+            }
         }
 
         private async void InstallFromCkanMenuItem_OnClick(object? sender,
