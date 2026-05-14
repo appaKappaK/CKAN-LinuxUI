@@ -46,7 +46,6 @@ BenchmarkDotNet.Artifacts/
 
 .config/
 .mypy_cache/
-.gemini-review/
 
 # NuGet Packages
 *.nupkg
