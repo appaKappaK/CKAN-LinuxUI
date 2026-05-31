@@ -36,7 +36,7 @@ namespace CKAN.App.Services
 
         public void QueueDownload(ModListItem mod)
         {
-            var targetVersion = QueueTargetVersion(mod, null);
+            var targetVersion = QueueTargetVersion(null);
             Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
@@ -56,7 +56,7 @@ namespace CKAN.App.Services
 
         public void QueueInstall(ModListItem mod, string? targetVersion = null, string? sourceText = null)
         {
-            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            var resolvedTargetVersion = QueueTargetVersion(targetVersion);
             Upsert(new QueuedActionModel
             {
                 Identifier = mod.Identifier,
@@ -172,11 +172,10 @@ namespace CKAN.App.Services
             }
         }
 
-        private static string QueueTargetVersion(ModListItem mod,
-                                                 string?     targetVersion)
+        private static string QueueTargetVersion(string? targetVersion)
             => !string.IsNullOrWhiteSpace(targetVersion)
                 ? targetVersion!.Trim()
-                : mod.LatestVersion?.Trim() ?? "";
+                : "";
 
         private void Upsert(QueuedActionModel action)
         {

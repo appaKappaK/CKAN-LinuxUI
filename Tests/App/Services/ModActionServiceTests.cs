@@ -115,6 +115,42 @@ namespace Tests.App.Services
             }
         }
 
+        [Test]
+        public async Task ApplyChanges_InstallWithoutExplicitTarget_ResolvesLatestCompatible()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(StaleCatalogModOldMetadata,
+                                                          StaleCatalogModNewMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var changes = new ChangesetService();
+                changes.QueueInstall(new ModListItem
+                {
+                    Identifier    = "StaleCatalogMod",
+                    Name          = "Stale Catalog Mod",
+                    LatestVersion = "1.0",
+                });
+                var actions = new ModActionService(gameService, changes, user);
+
+                var result = await actions.ApplyChangesAsync(CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Success, Is.True);
+                    Assert.That(regMgr.registry.InstalledVersion("StaleCatalogMod")?.ToString(),
+                                Is.EqualTo("2.0"));
+                });
+            }
+        }
+
         private sealed class TestGameInstanceService : IGameInstanceService
         {
             public TestGameInstanceService(GameInstance          instance,
@@ -225,6 +261,26 @@ namespace Tests.App.Services
             ""recommends"": [
                 { ""name"": ""SelfRecommend"" }
             ]
+        }";
+
+        private const string StaleCatalogModOldMetadata = @"{
+            ""spec_version"": 1,
+            ""identifier"": ""StaleCatalogMod"",
+            ""name"": ""Stale Catalog Mod"",
+            ""abstract"": ""Older version from a stale catalog row."",
+            ""author"": ""Test Author"",
+            ""version"": ""1.0"",
+            ""kind"": ""metapackage""
+        }";
+
+        private const string StaleCatalogModNewMetadata = @"{
+            ""spec_version"": 1,
+            ""identifier"": ""StaleCatalogMod"",
+            ""name"": ""Stale Catalog Mod"",
+            ""abstract"": ""Latest version in the registry."",
+            ""author"": ""Test Author"",
+            ""version"": ""2.0"",
+            ""kind"": ""metapackage""
         }";
     }
 }

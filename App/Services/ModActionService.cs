@@ -1064,7 +1064,7 @@ namespace CKAN.App.Services
         private static QueuedActionModel CreateInstallAction(ModListItem mod,
                                                              string?     targetVersion = null)
         {
-            var resolvedTargetVersion = QueueTargetVersion(mod, targetVersion);
+            var resolvedTargetVersion = QueueTargetVersion(targetVersion);
             return new QueuedActionModel
             {
                 Identifier = mod.Identifier,
@@ -1109,11 +1109,10 @@ namespace CKAN.App.Services
             return TryLatestCompatible(registry, instance, action.Identifier);
         }
 
-        private static string QueueTargetVersion(ModListItem mod,
-                                                 string?     targetVersion)
+        private static string QueueTargetVersion(string? targetVersion)
             => !string.IsNullOrWhiteSpace(targetVersion)
                 ? targetVersion!.Trim()
-                : mod.LatestVersion?.Trim() ?? "";
+                : "";
 
         private static CkanModule? TryRequestedVersion(IRegistryQuerier  registry,
                                                        QueuedActionModel action)

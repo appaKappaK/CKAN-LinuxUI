@@ -35,7 +35,9 @@ namespace CKAN.App.Models
                     return TargetVersion;
                 }
 
-                if (ActionKind == QueuedActionKind.Update)
+                if (ActionKind == QueuedActionKind.Download
+                    || ActionKind == QueuedActionKind.Install
+                    || ActionKind == QueuedActionKind.Update)
                 {
                     return "Latest";
                 }
