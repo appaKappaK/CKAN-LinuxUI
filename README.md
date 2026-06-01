@@ -14,8 +14,8 @@ display is available, a no-argument launch opens the console UI instead. If
 `ckan-linux` is unavailable, the wrapper falls back to the legacy `ckan.exe gui`
 path.
 ### NOTES
-- Need to fix/add scroll for when it asks to overwrite alot of files which causes the yes and no to be offscreen, Workaround for now is to use tab; 1 tab = no, 2 tab = yes, then hit enter as the tab only selects/highlights
--
+- Need to fix/add scroll for when it asks to overwrite alot of files which causes the no and yes to be offscreen, Workaround for now is to use tab; 1 tab = no, 2 tab = yes, then hit enter as the tab only selects/highlights
+
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
 ## Desktop App Quick Start
