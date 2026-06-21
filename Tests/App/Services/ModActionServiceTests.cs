@@ -199,6 +199,10 @@ namespace Tests.App.Services
             {
             }
 
+            public void ReloadCurrentRegistry()
+            {
+            }
+
             public void Dispose()
                 => Manager.Dispose();
         }
