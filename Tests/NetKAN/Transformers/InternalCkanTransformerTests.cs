@@ -32,9 +32,9 @@ namespace Tests.NetKAN.Transformers
             mHttp.Setup(i => i.DownloadModule(It.IsAny<Metadata>()))
                 .Returns(filePath);
 
-            mModuleService.Setup(i => i.GetInternalCkan(
+            mModuleService.Setup(i => i.GetInternalCkans(
                     It.IsAny<CkanModule>(), It.IsAny<string>()))
-                .Returns(internalCkan);
+                .Returns(new[] { internalCkan });
 
             var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
 
@@ -71,9 +71,9 @@ namespace Tests.NetKAN.Transformers
             mHttp.Setup(i => i.DownloadModule(It.IsAny<Metadata>()))
                 .Returns(filePath);
 
-            mModuleService.Setup(i => i.GetInternalCkan(
+            mModuleService.Setup(i => i.GetInternalCkans(
                     It.IsAny<CkanModule>(), It.IsAny<string>()))
-                .Returns(internalCkan);
+                .Returns(new[] { internalCkan });
 
             var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
 
@@ -93,6 +93,48 @@ namespace Tests.NetKAN.Transformers
             Assert.That((string?)transformedJson["foo"], Is.EqualTo("baz"),
                 "InternalCkanTransformer should not override existing properties."
             );
+        }
+
+        [Test]
+        public void MergesMultipleInternalCkans()
+        {
+            // Arrange
+            const string filePath = "/DoesNotExist.zip";
+
+            var first = new JObject();
+            first["spec_version"] = 1;
+            first["foo"] = "bar";
+
+            var second = new JObject();
+            second["spec_version"] = 1;
+            second["baz"] = "qux";
+
+            var mHttp = new Mock<IHttpService>();
+            var mModuleService = new Mock<IModuleService>();
+
+            mHttp.Setup(i => i.DownloadModule(It.IsAny<Metadata>()))
+                .Returns(filePath);
+
+            mModuleService.Setup(i => i.GetInternalCkans(
+                    It.IsAny<CkanModule>(), It.IsAny<string>()))
+                .Returns(new[] { first, second });
+
+            var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
+
+            var json = new JObject();
+            json["spec_version"] = 1;
+            json["identifier"] = "DoesNotExist";
+            json["author"] = "DidNotCreate";
+            json["version"] = "1.0";
+            json["download"] = "https://awesomemod.example/AwesomeMod.zip";
+
+            // Act
+            var result = sut.Transform(new Metadata(json), opts).First();
+            var transformedJson = result.Json();
+
+            // Assert
+            Assert.That((string?)transformedJson["foo"], Is.EqualTo("bar"));
+            Assert.That((string?)transformedJson["baz"], Is.EqualTo("qux"));
         }
     }
 }
