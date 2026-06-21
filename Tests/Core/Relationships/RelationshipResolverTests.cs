@@ -1972,6 +1972,69 @@ namespace Tests.Core.Relationships
         public static IEnumerable<string> MergeWithDefaults(params string[] jsons)
             => jsons.Select(MergeWithDefaults);
 
+        [TestCase(
+            new string[]
+            {
+                @"{ ""identifier"": ""InstalledProvider"" }",
+                @"{
+                    ""identifier"": ""AlternateProvider"",
+                    ""provides"": [ ""InstalledProvider"" ]
+                }",
+                @"{
+                    ""identifier"": ""Parent"",
+                    ""depends"": [
+                        { ""name"": ""AlternateProvider"" }
+                    ]
+                }"
+            },
+            new string[] { "InstalledProvider" },
+            new string[] { "Parent" },
+            new string[] { "AlternateProvider 1.0 is needed for Parent 1.0, but cannot be installed because it conflicts with InstalledProvider 1.0 which also provides InstalledProvider" }
+        )]
+        public void Constructor_ProvidesConflict_Throws(string[] availableModules,
+                                                        string[] alreadyInstalled,
+                                                        string[] newInstalls,
+                                                        string[] errors)
+        {
+            var user = new NullUser();
+            using var inst     = new DisposableKSP();
+            using var repo     = new TemporaryRepository(availableModules.Select(MergeWithDefaults).ToArray());
+            using var repoData = new TemporaryRepositoryData(user, repo.repo);
+            using var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager, new Repository[] { repo.repo });
+
+            var registry  = regMgr.registry;
+            var toInstall = newInstalls
+                .Select(ident => registry.LatestAvailable(ident,
+                                                          inst.KSP.StabilityToleranceConfig,
+                                                          inst.KSP.VersionCriteria()))
+                .OfType<CkanModule>()
+                .ToArray();
+
+            foreach (var module in alreadyInstalled)
+            {
+                registry.RegisterModule(
+                    registry.LatestAvailable(module,
+                                             inst.KSP.StabilityToleranceConfig,
+                                             inst.KSP.VersionCriteria())!,
+                    Array.Empty<string>(),
+                    inst.KSP,
+                    false);
+            }
+
+            var exc = Assert.Throws<DependenciesNotSatisfiedKraken>(() =>
+            {
+                _ = new RelationshipResolver(
+                    toInstall, null,
+                    RelationshipResolverOptions.DependsOnlyOpts(stabilityTolerance),
+                    registry, game, crit);
+            })!;
+
+            CollectionAssert.AreEqual(
+                errors,
+                exc.Message.Split(new string[] { Environment.NewLine },
+                                  StringSplitOptions.RemoveEmptyEntries));
+        }
+
         // Unimportant required fields that we don't want to duplicate
         private static readonly JObject moduleDefaults = JObject.Parse(
             @"{
