@@ -3,6 +3,15 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-06-21
+
+### LinuxGUI Reload and Prompt Fixes
+- Fixed the header reload flow to reopen the current CKAN registry from disk before rebuilding the browser instead of reusing a stale in-memory registry snapshot.
+- Restored unmanaged `GameData` DLL detection during LinuxGUI reloads, so manually installed DLL mods such as `scatterer` reappear after a reload without restarting the app.
+- Added LinuxGUI regression coverage for refresh-triggered registry reloads and service coverage for rereading registry state from disk and rescanning unmanaged DLLs.
+- Changed generic LinuxGUI overwrite/detail prompts to split large bodies into a scrollable detail block so long file lists no longer push the confirm and cancel buttons offscreen.
+- Added a visual regression baseline for the long overwrite prompt layout.
+
 ## 2026-05-14
 
 ### LinuxGUI Startup and Loading Polish

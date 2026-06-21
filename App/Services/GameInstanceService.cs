@@ -107,6 +107,31 @@ namespace CKAN.App.Services
                               ?? RegistryManager.ReadOnlyRegistry(CurrentInstance, RepositoryData);
         }
 
+        public void ReloadCurrentRegistry()
+        {
+            if (CurrentInstance?.Valid != true)
+            {
+                CurrentRegistryManager = null;
+                CurrentRegistry = null;
+                return;
+            }
+
+            CurrentRegistryManager?.Dispose();
+            CurrentRegistryManager = null;
+            RegistryManager.DisposeInstance(CurrentInstance);
+
+            if (!preferReadOnlyRegistry)
+            {
+                CurrentRegistryManager = RegistryManager.Instance(CurrentInstance, RepositoryData);
+                if (CurrentRegistryManager.ScanUnmanagedFiles())
+                {
+                    CurrentRegistryManager.Save(false);
+                }
+            }
+
+            RefreshCurrentRegistry();
+        }
+
         private void OnInstanceChanged(GameInstance? previous,
                                        GameInstance? current)
         {

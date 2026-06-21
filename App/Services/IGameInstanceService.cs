@@ -33,5 +33,7 @@ namespace CKAN.App.Services
         RegistryManager? AcquireWriteRegistryManager();
 
         void RefreshCurrentRegistry();
+
+        void ReloadCurrentRegistry();
     }
 }

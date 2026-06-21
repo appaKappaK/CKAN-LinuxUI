@@ -314,6 +314,9 @@ namespace CKAN.LinuxGUI
             try
             {
                 await gameInstanceService.InitializeAsync(CancellationToken.None);
+                gameInstanceService.ReloadCurrentRegistry();
+                this.RaisePropertyChanged(nameof(CurrentRegistry));
+                this.RaisePropertyChanged(nameof(CurrentRegistryManager));
                 ReloadInstances(loadCatalog: false, updateReadyStatus: !wasReady);
                 if (IsReady)
                 {

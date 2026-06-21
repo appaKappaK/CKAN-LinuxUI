@@ -99,6 +99,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public IReadOnlyList<InstanceSummary> Instances { get; private set; } = Array.Empty<InstanceSummary>();
 
+        public int ReloadCurrentRegistryCallCount { get; private set; }
+
         public event Action<GameInstance?>? CurrentInstanceChanged;
 
         public Task InitializeAsync(CancellationToken cancellationToken)
@@ -136,6 +138,11 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public void RefreshCurrentRegistry()
         {
+        }
+
+        public void ReloadCurrentRegistry()
+        {
+            ReloadCurrentRegistryCallCount++;
         }
 
         public void ThrowOnInitialize()

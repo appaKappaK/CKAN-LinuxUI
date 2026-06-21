@@ -49,6 +49,24 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public void OverwritePrompt_KeepsActionsVisible()
+        {
+            var fileList = string.Join(Environment.NewLine,
+                                       Enumerable.Range(1, 18)
+                                                 .Select(index => $"- GameData/ExamplePack/Parts/Part-{index:00}.cfg  ({(index % 3 == 0 ? "DIFFERENT" : "same")})"));
+            var window = new SimplePromptWindow(
+                $"Module Example Pack wants to overwrite the following manually installed files:{Environment.NewLine}{Environment.NewLine}{fileList}{Environment.NewLine}{Environment.NewLine}Overwrite?",
+                Array.Empty<string>(),
+                "Yes",
+                "No")
+            {
+                Width = 660,
+            };
+
+            VisualTestSupport.CaptureAndAssert(window, "prompt-overwrite-files");
+        }
+
+        [AvaloniaTest]
         public Task ReadyShell_Renders()
             => RenderScenarioAsync(VisualScenario.Ready, "startup-ready");
 
@@ -663,6 +681,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 => inner.AcquireWriteRegistryManager();
             public void RefreshCurrentRegistry()
                 => inner.RefreshCurrentRegistry();
+            public void ReloadCurrentRegistry()
+                => inner.ReloadCurrentRegistry();
             public void Dispose() => inner.Dispose();
         }
     }

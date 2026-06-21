@@ -45,11 +45,47 @@
             CornerRadius="8"
             Padding="16">
       <StackPanel Spacing="12">
+        <ScrollViewer MaxHeight="220"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto"
+                      IsVisible="{Binding ShowSinglePrompt}">
+          <TextBlock FontSize="15"
+                     FontWeight="SemiBold"
+                     Foreground="#F4F6F8"
+                     TextWrapping="Wrap"
+                     Text="{Binding Prompt}" />
+        </ScrollViewer>
+
         <TextBlock FontSize="15"
                    FontWeight="SemiBold"
                    Foreground="#F4F6F8"
                    TextWrapping="Wrap"
-                   Text="{Binding Prompt}" />
+                   IsVisible="{Binding HasPromptIntro}"
+                   Text="{Binding PromptIntro}" />
+
+        <Border Background="#10151A"
+                BorderBrush="#2B3642"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10"
+                IsVisible="{Binding HasPromptDetail}">
+          <ScrollViewer MaxHeight="320"
+                        HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Auto">
+            <TextBlock FontFamily="Cascadia Mono, JetBrains Mono, Consolas, monospace"
+                       FontSize="13"
+                       Foreground="#D8E0E8"
+                       TextWrapping="NoWrap"
+                       Text="{Binding PromptDetail}" />
+          </ScrollViewer>
+        </Border>
+
+        <TextBlock FontSize="15"
+                   FontWeight="SemiBold"
+                   Foreground="#F4F6F8"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding HasPromptOutro}"
+                   Text="{Binding PromptOutro}" />
 
         <TextBlock FontSize="12"
                    Foreground="#7F8D9B"

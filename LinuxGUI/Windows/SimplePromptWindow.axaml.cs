@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Avalonia.Controls;
 using ReactiveUI;
@@ -44,20 +45,35 @@ namespace CKAN.LinuxGUI
                                    string                confirmLabel,
                                    string                cancelLabel)
             {
-                Prompt = prompt;
+                Prompt = prompt?.Trim() ?? "";
                 ConfirmLabel = string.IsNullOrWhiteSpace(confirmLabel) ? "OK" : confirmLabel;
                 CancelLabel = string.IsNullOrWhiteSpace(cancelLabel) ? "Cancel" : cancelLabel;
                 Options = ShouldRenderOptions(options, ConfirmLabel, CancelLabel)
                     ? options.Select(PromptOption.FromText).ToList()
                     : Array.Empty<PromptOption>();
+                (PromptIntro, PromptDetail, PromptOutro) = ParsePromptSections(Prompt, Options.Count > 0);
                 selectedIndex = Options.Count > 0 ? -1 : 0;
             }
 
             public string Prompt { get; }
 
+            public string PromptIntro { get; }
+
+            public string PromptDetail { get; }
+
+            public string PromptOutro { get; }
+
             public IReadOnlyList<PromptOption> Options { get; }
 
             public bool HasOptions => Options.Count > 0;
+
+            public bool HasPromptIntro => !string.IsNullOrWhiteSpace(PromptIntro);
+
+            public bool HasPromptDetail => !string.IsNullOrWhiteSpace(PromptDetail);
+
+            public bool HasPromptOutro => !string.IsNullOrWhiteSpace(PromptOutro);
+
+            public bool ShowSinglePrompt => !HasPromptDetail;
 
             public string SelectionHint
                 => Prompt.Contains("provider", StringComparison.OrdinalIgnoreCase)
@@ -88,6 +104,43 @@ namespace CKAN.LinuxGUI
                    && !(options.Count == 2
                         && string.Equals(options[0], confirmLabel, StringComparison.OrdinalIgnoreCase)
                         && string.Equals(options[1], cancelLabel, StringComparison.OrdinalIgnoreCase));
+
+            private static (string Intro, string Detail, string Outro) ParsePromptSections(string prompt,
+                                                                                           bool   hasOptions)
+            {
+                if (hasOptions || string.IsNullOrWhiteSpace(prompt))
+                {
+                    return ("", "", "");
+                }
+
+                var sections = Regex.Split(prompt, @"(?:\r?\n){2,}")
+                                    .Select(section => section.Trim())
+                                    .Where(section => !string.IsNullOrWhiteSpace(section))
+                                    .ToArray();
+
+                if (sections.Length < 3)
+                {
+                    return ("", "", "");
+                }
+
+                var detail = string.Join(Environment.NewLine + Environment.NewLine,
+                                         sections.Skip(1).Take(sections.Length - 2));
+                if (!LooksLikeDetailBlock(detail))
+                {
+                    return ("", "", "");
+                }
+
+                return (sections[0], detail, sections[^1]);
+            }
+
+            private static bool LooksLikeDetailBlock(string detail)
+            {
+                var lines = detail.Split(new[] { '\r', '\n' },
+                                         StringSplitOptions.RemoveEmptyEntries
+                                         | StringSplitOptions.TrimEntries);
+                return lines.Length > 1
+                       || lines.Any(line => line.StartsWith("- ", StringComparison.Ordinal));
+            }
         }
 
         private sealed class PromptOption

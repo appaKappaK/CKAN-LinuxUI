@@ -1539,6 +1539,26 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task RefreshCurrentState_ReloadsCurrentRegistryBeforeCatalogRefresh()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                int initialReloadCalls = service.ReloadCurrentRegistryCallCount;
+
+                await viewModel.RefreshCurrentStateAsync();
+
+                Assert.That(service.ReloadCurrentRegistryCallCount, Is.EqualTo(initialReloadCalls + 1));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public void PreselectRecommendedMods_PersistsThroughSettingsService()
         {
             var (viewModel, service) = CreateViewModel();
@@ -1745,6 +1765,11 @@ namespace CKAN.LinuxGUI.VisualTests
                 => CurrentRegistryManager;
 
             public void RefreshCurrentRegistry()
+            {
+                CurrentRegistry = CurrentRegistryManager?.registry;
+            }
+
+            public void ReloadCurrentRegistry()
             {
                 CurrentRegistry = CurrentRegistryManager?.registry;
             }

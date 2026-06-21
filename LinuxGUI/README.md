@@ -45,7 +45,10 @@ Refreshing the catalog temporarily replaces the browser rows with the matching
 skeleton table until the reload finishes. During that work the header action
 changes from `Reload` to `Reloading...`. On cold start, catalog loading uses
 `Loading...` instead so the first load does not read like a user-triggered
-reload.
+reload. An explicit reload now reopens the current CKAN registry from disk
+before rebuilding the browser and rescans unmanaged `GameData` DLLs, so changes
+made outside the current session, including manually installed DLL mods such as
+`scatterer`, are reflected without closing and reopening CKAN Linux.
 
 Actions are queued before they are applied. Use the `Preview` surface to inspect
 what CKAN Linux is about to do:
@@ -67,6 +70,10 @@ required dependency, apply opens a provider-choice dialog. The dialog is capped
 to a scrollable list and shows the provider identifier, display name, and any
 available CKAN hints such as version, cache state, download count, and summary
 so large provider sets do not take over the screen.
+
+Long overwrite and conflict-style prompts also use a scrollable detail block so
+the confirmation buttons remain reachable even when the prompt includes a large
+file list.
 
 The `Mods` menu includes maintenance actions for large cleanup passes:
 
