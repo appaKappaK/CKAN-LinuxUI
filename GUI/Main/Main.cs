@@ -68,8 +68,10 @@ namespace CKAN.GUI
             log.Info("Starting the GUI");
             if (//cmdlineArgs is [_, string focusIdent, ..]
                 cmdlineArgs.Length > 1
-                && cmdlineArgs[1] is string focusIdent)
+                && cmdlineArgs[1] is string focusIdentArg)
             {
+                focusIdent = focusIdentArg;
+
                 if (//focusIdent is ['/', '/', .. var rest]
                     focusIdent.Length > 2)
                 {
