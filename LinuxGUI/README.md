@@ -55,6 +55,7 @@ what CKAN Linux is about to do:
 
 - direct installs, updates, removals, and downloads
 - required dependency installs, which CKAN resolves automatically
+- dependent removals when a queued removal would break another installed mod
 - removable auto-installed dependencies that are no longer needed
 - conflicts or provider choices that need user input
 - optional recommendations, suggestions, and supported integration mods
@@ -83,8 +84,9 @@ The `Mods` menu includes maintenance actions for large cleanup passes:
 - `Queue remove all installed mods` replaces the current apply queue with
   removals for CKAN-managed installed mods.
 
-Removal previews also include auto-removable dependencies where the registry can
-prove they are no longer required by anything that will remain installed.
+Removal previews also include dependent removals for installed mods that would
+break, plus auto-removable dependencies where the registry can prove they are
+no longer required by anything that will remain installed.
 
 `Mods > Installation History` opens as a non-modal utility window. Keep it open
 while browsing the mod list to cross-reference saved snapshots against current

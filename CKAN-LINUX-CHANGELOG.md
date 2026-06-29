@@ -3,6 +3,24 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-06-28
+
+### LinuxGUI Status and Dialog Fixes
+- Routed the `Clean up missing installed mods` no-op notice through the existing ready-header status surface instead of a separate overlay band, fixing repeat notices that went blank or rendered behind the workspace background.
+- Let the ready-header status surface wrap and size closer to its current message while keeping transient notices out of the progress-bar state.
+- Wrapped and padded prompt/detail and message-dialog bodies so vertical scrollbars no longer sit on top of long text.
+- Restored saved main-window placement earlier in startup so the LinuxGUI window reopens closer to its last closed position.
+- Fixed preview removal analysis to surface dependent removals separately from auto-removals, with a dedicated red preview section and Browse-scoped `View` action for impacted mods.
+
+## 2026-06-25
+
+### LinuxGUI Queue and Cleanup Polish
+- Added a `View` action to the Review Queue panel header so queued mods can be opened directly in the scoped Browse view.
+- Fixed preview-scoped Browse views so clearing the queue also clears stale dependency/recommendation/suggestion scoped views instead of leaving a dead `Close` return path behind.
+- Preserved browse-list position more reliably across catalog reloads triggered by removal/apply flows.
+- Stopped imported `.ckan` installs from queueing mods that are already represented in the current install state.
+- Added a short transient no-op cleanup notice when `Clean up missing installed mods` finds nothing to repair, with repeat notices refreshing reliably.
+
 ## 2026-06-21
 
 ### LinuxGUI Reload and Prompt Fixes

@@ -15,7 +15,7 @@ display is available, a no-argument launch opens the console UI instead. If
 path.
 ### NOTES
 - The select instance page still needs work
-- Still a work in progress!
+- Work in progress!
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
 ## Desktop App Quick Start
