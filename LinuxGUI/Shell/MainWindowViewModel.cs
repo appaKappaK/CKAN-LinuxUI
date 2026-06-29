@@ -75,6 +75,7 @@ namespace CKAN.LinuxGUI
         private readonly IModSearchService    modSearchService;
         private readonly IChangesetService    changesetService;
         private readonly IModActionService    modActionService;
+        private readonly IDisabledModService  disabledModService;
         private readonly AvaloniaUser         user;
         private readonly ObservableAsPropertyHelper<bool> canUseSelectedInstance;
         private readonly SemaphoreSlim        catalogLoadSemaphore = new SemaphoreSlim(1, 1);
@@ -139,18 +140,22 @@ namespace CKAN.LinuxGUI
         private string  applyResultMessage = "";
         private string  applyResultBackground = "#20262D";
         private string  applyResultBorderBrush = "#2F3741";
+        private string  transientNoticeMessage = "";
         private int     progressPercent;
         private int     instanceCount;
+        private bool    showTransientNotice;
         private bool    filterInstalledOnly;
         private bool    filterNotInstalledOnly;
         private bool    filterUpdatableOnly;
         private bool    filterNotUpdatableOnly;
+        private bool    filterDisabledOnly;
         private bool    filterCompatibleOnly;
         private bool    filterCachedOnly;
         private bool    filterUncachedOnly;
         private bool    filterIncompatibleOnly;
         private bool    filterHasReplacementOnly;
         private bool    filterNoReplacementOnly;
+        private string? disabledModsDirectoryPath;
         private bool    isRefreshing;
         private bool    showExecutionResultOverlay;
         private bool    returnToBrowseAfterExecutionResult;
@@ -176,6 +181,7 @@ namespace CKAN.LinuxGUI
         private bool    previewCanApply;
         private bool    selectedModIsInstalled;
         private bool    selectedModIsAutodetected;
+        private bool    selectedModIsDisabled;
         private bool    selectedModHasUpdate;
         private bool    selectedModIsCached;
         private bool    selectedModIsIncompatible;
@@ -205,6 +211,7 @@ namespace CKAN.LinuxGUI
         private string  dismissedPreviewConflictKey = "";
         private int     selectedPreviewConflictCount;
         private string? selectedPreviewConflict;
+        private CancellationTokenSource? transientNoticeCts;
         private Func<IReadOnlyList<RecommendationAuditItem>, Task<IReadOnlyList<RecommendationAuditItem>?>>?
             recommendationSelectionPromptAsync;
         private readonly HashSet<string> selectedPreviewConflicts = new(StringComparer.Ordinal);
@@ -228,6 +235,7 @@ namespace CKAN.LinuxGUI
                                    IModSearchService    modSearchService,
                                    IChangesetService    changesetService,
                                    IModActionService    modActionService,
+                                   IDisabledModService  disabledModService,
                                    AvaloniaUser         user)
         {
             this.appSettingsService   = appSettingsService;
@@ -236,6 +244,7 @@ namespace CKAN.LinuxGUI
             this.modSearchService    = modSearchService;
             this.changesetService    = changesetService;
             this.modActionService    = modActionService;
+            this.disabledModService  = disabledModService;
             this.user                = user;
 
             Instances = new ObservableCollection<InstanceSummary>();
@@ -251,6 +260,7 @@ namespace CKAN.LinuxGUI
             SelectedModSuggestions = new ObservableCollection<ModRelationshipItem>();
             PreviewDownloadsRequired = new ObservableCollection<string>();
             PreviewDependencies = new ObservableCollection<string>();
+            PreviewDependentRemovals = new ObservableCollection<string>();
             PreviewAutoRemovals = new ObservableCollection<string>();
             PreviewAttentionNotes = new ObservableCollection<string>();
             PreviewRecommendations = new ObservableCollection<string>();
@@ -437,9 +447,11 @@ namespace CKAN.LinuxGUI
             ViewSelectedModRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("recommendations", SelectedModRecommendations));
             ViewSelectedModSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("suggestions", SelectedModSuggestions));
             ViewPreviewDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependencies", PreviewDependencies));
+            ViewPreviewDependentRemovalsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependent removals", PreviewDependentRemovals));
             ViewPreviewRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("recommendations", PreviewRecommendations));
             ViewPreviewSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("suggestions", PreviewSuggestions));
             ViewPreviewSupportersInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("supporters", PreviewSupporters));
+            ViewQueuedActionsInBrowserCommand = ReactiveCommand.Create(ShowQueuedActionsInBrowser);
             ClearRelationshipBrowserScopeCommand = ReactiveCommand.Create(ClearRelationshipBrowserScope);
             ShowOverviewDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Overview));
             ShowMetadataDetailsCommand = ReactiveCommand.Create(() => SetSelectedModDetailsSection(ModDetailsSection.Metadata));
@@ -515,6 +527,7 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterNotInstalledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterNotUpdatableOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterDisabledOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUncachedOnly).Select(_ => Unit.Default),
@@ -569,6 +582,8 @@ namespace CKAN.LinuxGUI
         public ObservableCollection<string> PreviewDownloadsRequired { get; }
 
         public ObservableCollection<string> PreviewDependencies { get; }
+
+        public ObservableCollection<string> PreviewDependentRemovals { get; }
 
         public ObservableCollection<string> PreviewAutoRemovals { get; }
 
@@ -737,11 +752,15 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> ViewPreviewDependenciesInBrowserCommand { get; }
 
+        public ReactiveCommand<Unit, Unit> ViewPreviewDependentRemovalsInBrowserCommand { get; }
+
         public ReactiveCommand<Unit, Unit> ViewPreviewRecommendationsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewSuggestionsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewSupportersInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewQueuedActionsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ClearRelationshipBrowserScopeCommand { get; }
 
@@ -821,6 +840,7 @@ namespace CKAN.LinuxGUI
             private set
             {
                 this.RaiseAndSetIfChanged(ref statusMessage, value);
+                this.RaisePropertyChanged(nameof(StatusSurfaceMessage));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
                 this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
                 this.RaisePropertyChanged(nameof(ShowLegacyStatusProgress));
@@ -829,6 +849,34 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
                 this.RaisePropertyChanged(nameof(ExecutionDialogMessage));
                 this.RaisePropertyChanged(nameof(ShowExecutionDialogMessage));
+            }
+        }
+
+        public string TransientNoticeMessage
+        {
+            get => transientNoticeMessage;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref transientNoticeMessage, value);
+                this.RaisePropertyChanged(nameof(StatusSurfaceMessage));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
+                this.RaisePropertyChanged(nameof(ReadyStatusNeedsAttention));
+            }
+        }
+
+        public bool ShowTransientNotice
+        {
+            get => showTransientNotice;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref showTransientNotice, value);
+                this.RaisePropertyChanged(nameof(StatusSurfaceMessage));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusSurface));
+                this.RaisePropertyChanged(nameof(ShowReadyStatusProgress));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBackground));
+                this.RaisePropertyChanged(nameof(StatusSurfaceBorderBrush));
+                this.RaisePropertyChanged(nameof(ReadyStatusNeedsAttention));
             }
         }
 
@@ -1453,16 +1501,23 @@ namespace CKAN.LinuxGUI
 
         public bool ShowReadyInstancePanel => IsReady;
 
+        public string StatusSurfaceMessage
+            => ShowTransientNotice && !string.IsNullOrWhiteSpace(TransientNoticeMessage)
+                ? TransientNoticeMessage
+                : StatusMessage;
+
         public bool ShowReadyStatusSurface
             => IsReady
                && !ShowExecutionOverlay
-               && (IsRefreshing
+               && (ShowTransientNotice
+                   || IsRefreshing
                    || IsCatalogHydrating
                    || IsUserBusy
                    || ReadyStatusNeedsAttention);
 
         public bool ShowReadyStatusProgress
             => ShowReadyStatusSurface
+               && !ShowTransientNotice
                && !ReadyStatusNeedsAttention
                && (IsRefreshing || IsCatalogHydrating || IsUserBusy);
 
@@ -1689,6 +1744,8 @@ namespace CKAN.LinuxGUI
 
         public bool HasQueuedDownloadActions => QueuedDownloadActionCount > 0;
 
+        public bool HasBrowserVisibleQueuedActions => HasQueuedActions;
+
         public bool ShowEmptyQueueState => !HasQueuedActions;
 
         public bool IsQueueDrawerExpanded
@@ -1711,6 +1768,8 @@ namespace CKAN.LinuxGUI
         public bool HasPreviewDownloadsRequired => PreviewDownloadsRequired.Count > 0;
 
         public bool HasPreviewDependencies => PreviewDependencies.Count > 0;
+
+        public bool HasPreviewDependentRemovals => PreviewDependentRemovals.Count > 0;
 
         public bool HasPreviewAutoRemovals => PreviewAutoRemovals.Count > 0;
 
@@ -1741,7 +1800,7 @@ namespace CKAN.LinuxGUI
             => "Optional extras are listed in Preview. Use each section's View button to inspect and queue extras. When Browse opens, click Close in the notice above the mod list to return to Preview. Required dependencies are automatic.";
 
         public bool HasPreviewDependenciesOrOptional
-            => HasPreviewDependencies || HasPreviewOptionalExtras;
+            => HasPreviewDependencies || HasPreviewDependentRemovals || HasPreviewOptionalExtras;
 
         public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
 
@@ -1971,12 +2030,13 @@ namespace CKAN.LinuxGUI
         {
             get
             {
-                if (HasError || MessageContains("failed") || MessageContains("could not"))
+                if (HasError || StatusSurfaceMessageContains("failed") || StatusSurfaceMessageContains("could not"))
                 {
                     return "#4A232A";
                 }
 
-                if (MessageContains("no known instances") || MessageContains("unavailable"))
+                if (StatusSurfaceMessageContains("no known instances")
+                    || StatusSurfaceMessageContains("unavailable"))
                 {
                     return "#4A3920";
                 }
@@ -1989,12 +2049,13 @@ namespace CKAN.LinuxGUI
         {
             get
             {
-                if (HasError || MessageContains("failed") || MessageContains("could not"))
+                if (HasError || StatusSurfaceMessageContains("failed") || StatusSurfaceMessageContains("could not"))
                 {
                     return "#934354";
                 }
 
-                if (MessageContains("no known instances") || MessageContains("unavailable"))
+                if (StatusSurfaceMessageContains("no known instances")
+                    || StatusSurfaceMessageContains("unavailable"))
                 {
                     return "#9A7B37";
                 }
@@ -2004,9 +2065,9 @@ namespace CKAN.LinuxGUI
         }
 
         private bool ReadyStatusNeedsAttention
-            => MessageContains("failed")
-               || MessageContains("could not")
-               || MessageContains("unavailable");
+            => StatusSurfaceMessageContains("failed")
+               || StatusSurfaceMessageContains("could not")
+               || StatusSurfaceMessageContains("unavailable");
 
         public string PreviewSurfaceButtonBackground
             => ShowPreviewSurface
@@ -2067,6 +2128,7 @@ namespace CKAN.LinuxGUI
             => EnumerateAdvancedTextFilters().Count(filter => !string.IsNullOrWhiteSpace(filter.Value))
                + CountTriStateFilter(FilterInstalledState)
                + CountTriStateFilter(FilterUpdatableState)
+               + (FilterDisabledOnly ? 1 : 0)
                + CountTriStateFilter(FilterCompatibleState)
                + CountTriStateFilter(FilterCachedState)
                + CountTriStateFilter(FilterReplaceableState);
@@ -2107,6 +2169,8 @@ namespace CKAN.LinuxGUI
         public string InstalledFilterLabel => FormatFilterOptionLabel("Installed", filterOptionCounts.Installed);
 
         public string UpdatableFilterLabel => FormatFilterOptionLabel("Updatable", filterOptionCounts.Updatable);
+
+        public string DisabledFilterLabel => FormatFilterOptionLabel("Disabled", filterOptionCounts.Disabled);
 
         public string ReplaceableFilterLabel => FormatFilterOptionLabel("Replaceable", filterOptionCounts.Replaceable);
 
@@ -2220,13 +2284,15 @@ namespace CKAN.LinuxGUI
                                              : !SelectedModIsIncompatible);
 
         public bool ShowUpdateAction => SelectedMod?.IsInstalled == true
+                                        && SelectedMod?.IsDisabled != true
                                         && !IsSelectedModLoading
                                         && (SelectedModVersionChoice != null
                                             ? !SelectedModSelectedVersionMatchesInstalled
-                                            : SelectedMod.HasVersionUpdate);
+                                            : SelectedMod?.HasVersionUpdate == true);
 
         public bool ShowRemoveAction => SelectedMod?.IsInstalled == true
                                         && SelectedMod?.IsAutodetected != true
+                                        && SelectedMod?.IsDisabled != true
                                         && !IsSelectedModLoading
                                         && (SelectedModVersionChoice != null
                                             ? SelectedModSelectedVersionMatchesInstalled
@@ -2270,11 +2336,14 @@ namespace CKAN.LinuxGUI
             => !IsSelectedModLoading
                && !ShowInstallNowAction
                && !ShowPrimarySelectedModAction
-               && (SelectedMod?.IsAutodetected == true
+               && (SelectedMod?.IsDisabled == true
+               || SelectedMod?.IsAutodetected == true
                || !SelectedModSelectedVersionIsCompatible);
 
         public string SelectedModActionUnavailableNote
-            => SelectedMod?.IsAutodetected == true
+            => SelectedMod?.IsDisabled == true
+                ? "This mod is currently disabled. Use the browser context menu to enable it again."
+                : SelectedMod?.IsAutodetected == true
                 ? "This mod is managed outside CKAN. CKAN can use it for dependency checks, but removal must be done manually from GameData."
                 : SelectedModVersionChoice == null
                     ? "This mod cannot be installed with the current compatibility settings. Adjust Compatible game versions in Settings if you want to allow it."
@@ -2391,6 +2460,18 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public bool SelectedModIsDisabled
+        {
+            get => selectedModIsDisabled;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref selectedModIsDisabled, value);
+                this.RaisePropertyChanged(nameof(ShowSelectedModStateBadges));
+                this.RaisePropertyChanged(nameof(ShowSelectedModActionUnavailableNote));
+                this.RaisePropertyChanged(nameof(SelectedModActionUnavailableNote));
+            }
+        }
+
         public bool SelectedModIsCached
         {
             get => selectedModIsCached;
@@ -2431,12 +2512,20 @@ namespace CKAN.LinuxGUI
 
         public bool ShowSelectedModStateBadges
             => SelectedModIsInstalled
+               || SelectedModIsDisabled
                || SelectedModIsCached
                || SelectedModHasUpdate
                || SelectedModIsAutodetected
                || SelectedModShowsIncompatibleState
                || SelectedModShowsDependencyState
                || SelectedModHasReplacement;
+
+        public bool ShowDisabledFilter
+            => filterOptionCounts.Disabled > 0
+               || !string.IsNullOrWhiteSpace(disabledModsDirectoryPath);
+
+        public bool ShowOpenDisabledModsDirectoryMenuItem
+            => !string.IsNullOrWhiteSpace(disabledModsDirectoryPath);
 
         public string QueueCountLabel
             => QueuedActions.Count switch
@@ -2656,6 +2745,16 @@ namespace CKAN.LinuxGUI
 
                 if (PreviewShowsReadyCard)
                 {
+                    if (HasPreviewDependencies && HasPreviewDependentRemovals && HasPreviewAutoRemovals)
+                    {
+                        return "Direct actions are shown on the left. CKAN will install required dependencies, remove dependent mods that would break, and remove unused auto-installed dependencies during Apply.";
+                    }
+
+                    if (HasPreviewDependencies && HasPreviewDependentRemovals)
+                    {
+                        return "Direct actions are shown on the left. CKAN will install required dependencies and remove dependent mods that would break during Apply.";
+                    }
+
                     if (HasPreviewDependencies && HasPreviewAutoRemovals)
                     {
                         return "Direct actions are shown on the left. CKAN will install required dependencies and remove unused auto-installed dependencies during Apply.";
@@ -2664,6 +2763,11 @@ namespace CKAN.LinuxGUI
                     if (HasPreviewDependencies)
                     {
                         return "Direct actions are shown on the left. Required dependency installs are handled automatically during Apply.";
+                    }
+
+                    if (HasPreviewDependentRemovals)
+                    {
+                        return "Direct actions are shown on the left. Dependent mods that would break are listed below and will also be removed during Apply.";
                     }
 
                     return HasPreviewAutoRemovals
@@ -2687,6 +2791,8 @@ namespace CKAN.LinuxGUI
                         : PreviewCanApply
                             ? HasPreviewAttentionNotes
                                 ? "Apply changes is ready. You may still need to confirm prompts during install."
+                                : HasPreviewDependentRemovals
+                                    ? "Apply changes will update GameData and remove dependent mods that would break."
                                 : HasPreviewAutoRemovals
                                     ? "Apply changes will update GameData and remove unused auto-installed dependencies."
                                     : "Apply changes will update GameData after the required downloads finish."
@@ -2700,7 +2806,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying. Right-click a mod to add it to cache.";
+                    return "Queue install, update, or remove actions to see downloads, dependencies, dependent removals, auto-removals, and conflicts before applying. Right-click a mod to add it to cache.";
                 }
 
                 if (!HasQueuedActions && ShowInlineApplyResult)
@@ -2726,6 +2832,10 @@ namespace CKAN.LinuxGUI
                 if (PreviewDependencies.Count > 0)
                 {
                     parts.Add(CountLabel(PreviewDependencies.Count, "dependency install", "dependency installs"));
+                }
+                if (PreviewDependentRemovals.Count > 0)
+                {
+                    parts.Add(CountLabel(PreviewDependentRemovals.Count, "dependent removal", "dependent removals"));
                 }
                 if (PreviewAutoRemovals.Count > 0)
                 {
@@ -2762,6 +2872,11 @@ namespace CKAN.LinuxGUI
 
         public bool ShowPreviewDependencyMetric => PreviewDependencies.Count > 0;
 
+        public string PreviewDependentRemovalCountLabel
+            => CountLabel(PreviewDependentRemovals.Count, "Dependent Removal", "Dependent Removals");
+
+        public bool ShowPreviewDependentRemovalMetric => PreviewDependentRemovals.Count > 0;
+
         public bool ShowPreviewQueuedActions
             => HasQueuedActions;
 
@@ -2769,10 +2884,16 @@ namespace CKAN.LinuxGUI
             => HasQueuedChangeActions && HasQueuedDownloadActions
                 ? "Install, update, and remove actions are listed together with queued downloads. Download Files runs separately and does not change GameData."
                 : HasQueuedChangeActions
-                    ? HasPreviewDependencies && HasPreviewAutoRemovals
-                        ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove unused auto-installed dependencies listed below."
+                    ? HasPreviewDependencies && HasPreviewDependentRemovals && HasPreviewAutoRemovals
+                        ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods, remove dependent mods that would break, and remove unused auto-installed dependencies listed below."
+                        : HasPreviewDependencies && HasPreviewDependentRemovals
+                            ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove dependent mods that would break."
+                        : HasPreviewDependencies && HasPreviewAutoRemovals
+                            ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove unused auto-installed dependencies listed below."
                         : HasPreviewDependencies
                             ? "These are the direct install/update/remove actions you selected. CKAN will also install the required mods listed below."
+                            : HasPreviewDependentRemovals
+                                ? "These are the direct install/update/remove actions you selected. CKAN will also remove dependent mods that would break."
                             : HasPreviewAutoRemovals
                                 ? "These are the direct install/update/remove actions you selected. CKAN will also remove unused auto-installed dependencies listed below."
                                 : "These are the direct install/update/remove actions you selected."
@@ -2894,6 +3015,11 @@ namespace CKAN.LinuxGUI
                     return "No queued item for this mod yet. Remove it now or queue the removal for later.";
                 }
 
+                if (SelectedMod?.IsDisabled == true)
+                {
+                    return "This mod is currently disabled. Use the browser context menu to enable it again.";
+                }
+
                 return ShowUpdateAction
                     ? "No queued item for this mod yet. Queue the update when you are ready to review it."
                     : "No queued item for this mod yet.";
@@ -2949,6 +3075,19 @@ namespace CKAN.LinuxGUI
                 if (this.RaiseAndSetIfChanged(ref filterNotUpdatableOnly, value) && value)
                 {
                     ClearFilter(ref filterUpdatableOnly, nameof(FilterUpdatableOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterDisabledOnly
+        {
+            get => filterDisabledOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterDisabledOnly, value) && value)
+                {
+                    ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
                 }
                 PublishFilterStateLabels();
             }

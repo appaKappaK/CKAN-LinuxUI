@@ -192,7 +192,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowDownloadOnlyContextAction(ModListItem mod)
         {
-            if (mod.IsAutodetected)
+            if (mod.IsAutodetected || mod.IsDisabled)
             {
                 return false;
             }
@@ -251,6 +251,66 @@ namespace CKAN.LinuxGUI
 
             changesetService.QueueDownload(mod);
             StatusMessage = $"Queued add to cache for {mod.Name}.";
+        }
+
+        public bool ShowToggleDisabledContextAction(ModListItem mod)
+            => !IsApplyingChanges
+               && changesetService.FindQueuedAction(mod.Identifier) == null
+               && (mod.IsDisabled
+               || (mod.IsInstalled
+                   && !mod.IsAutodetected
+                   && ShowOpenDisabledModsDirectoryMenuItem));
+
+        public string ToggleDisabledContextLabel(ModListItem mod)
+            => mod.IsDisabled ? "Enable" : "Disable";
+
+        public Task<DisabledModOperationPreview> PreviewToggleDisabledAsync(ModListItem mod)
+            => mod.IsDisabled
+                ? disabledModService.PreviewEnableAsync(mod.Identifier, CancellationToken.None)
+                : disabledModService.PreviewDisableAsync(mod.Identifier, CancellationToken.None);
+
+        public async Task ToggleDisabledAsync(ModListItem mod)
+        {
+            ClearApplyResult();
+            var actionVerb = mod.IsDisabled ? "Enabling" : "Disabling";
+            SetExecutionState($"{actionVerb} {mod.Name}",
+                              $"{actionVerb} {mod.Name}…");
+            IsApplyingChanges = true;
+            ApplyChangesResult? result = null;
+            try
+            {
+                result = mod.IsDisabled
+                    ? await disabledModService.EnableAsync(mod.Identifier, CancellationToken.None)
+                    : await disabledModService.DisableAsync(mod.Identifier, CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+                if (result.Success)
+                {
+                    await LoadCatalogAfterAppliedChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                result = new ApplyChangesResult
+                {
+                    Kind = ApplyResultKind.Error,
+                    Success = false,
+                    Title = mod.IsDisabled ? "Enable Failed" : "Disable Failed",
+                    Message = ex.Message,
+                };
+                SetApplyResult(result);
+                Diagnostics = ex.Message;
+                StatusMessage = mod.IsDisabled ? "Enable failed." : "Disable failed.";
+            }
+            finally
+            {
+                IsApplyingChanges = false;
+            }
+
+            if (result != null)
+            {
+                ShowExecutionResultDialog(result.Success);
+            }
         }
 
         public void PurgeCacheFromBrowser(ModListItem mod)
@@ -554,6 +614,7 @@ namespace CKAN.LinuxGUI
 
                     int activeRequestId = catalogLoadRequestId;
                     var previousSelection = SelectedMod?.Identifier;
+                    int previousSelectionIndex = SelectedMod == null ? -1 : Mods.IndexOf(SelectedMod);
 
                     if (!forceReload && CanReuseRecentCatalogLoad())
                     {
@@ -577,10 +638,12 @@ namespace CKAN.LinuxGUI
                         }
 
                         var uiWatch = Stopwatch.StartNew();
+                        RefreshDisabledModsState();
                         ApplyVersionDisplaySettings(items);
                         allCatalogItems = items;
                         ClearDefaultInstalledFilterWhenEmpty(items);
-                        ApplyCatalogFilterToLoadedItems(previousSelection);
+                        ApplyCatalogFilterToLoadedItems(previousSelection,
+                                                        previousSelectionIndex >= 0 ? previousSelectionIndex : null);
                         PruneQueuedAutodetectedRemovals(items);
                         PruneQueuedAutodetectedDownloads(items);
                         SeedDevQueueSmoke(items);
@@ -679,6 +742,7 @@ namespace CKAN.LinuxGUI
                 SelectedModDownloadCount = details.DownloadCount?.ToString("N0") ?? "Unknown";
                 SelectedModIsInstalled = details.IsInstalled;
                 SelectedModIsAutodetected = details.IsAutodetected;
+                SelectedModIsDisabled = details.IsDisabled;
                 SelectedModHasUpdate = details.HasVersionUpdate;
                 SelectedModHasReplacement = details.HasReplacement;
                 SelectedModBody = string.IsNullOrWhiteSpace(details.Description)
@@ -715,6 +779,7 @@ namespace CKAN.LinuxGUI
                 SelectedModSuggestionCountLabel = "";
                 SelectedModIsInstalled = false;
                 SelectedModIsAutodetected = false;
+                SelectedModIsDisabled = false;
                 SelectedModHasUpdate = false;
                 SelectedModIsCached = false;
                 SelectedModIsIncompatible = false;
@@ -752,6 +817,7 @@ namespace CKAN.LinuxGUI
                 }
                 ClearApplyResult();
                 CurrentInstanceName = current?.Name ?? "No instance selected";
+                RefreshDisabledModsState();
                 ReloadInstances(loadCatalog: false);
                 this.RaisePropertyChanged(nameof(CurrentInstance));
                 this.RaisePropertyChanged(nameof(CurrentRegistry));
@@ -804,6 +870,7 @@ namespace CKAN.LinuxGUI
                 NotInstalledOnly    = FilterNotInstalledOnly,
                 UpdatableOnly       = FilterUpdatableOnly,
                 NotUpdatableOnly    = FilterNotUpdatableOnly,
+                DisabledOnly        = FilterDisabledOnly,
                 CompatibleOnly      = FilterCompatibleOnly,
                 CachedOnly          = FilterCachedOnly,
                 UncachedOnly        = FilterUncachedOnly,
@@ -865,6 +932,7 @@ namespace CKAN.LinuxGUI
             filterNotInstalledOnly = filter.NotInstalledOnly;
             filterUpdatableOnly = filter.UpdatableOnly;
             filterNotUpdatableOnly = filter.NotUpdatableOnly;
+            filterDisabledOnly = filter.DisabledOnly;
             filterCompatibleOnly = filter.CompatibleOnly;
             filterCachedOnly = filter.CachedOnly;
             filterUncachedOnly = filter.UncachedOnly;
@@ -924,6 +992,7 @@ namespace CKAN.LinuxGUI
                && !filter.NotInstalledOnly
                && !filter.UpdatableOnly
                && !filter.NotUpdatableOnly
+               && !filter.DisabledOnly
                && !filter.NewOnly
                && !filter.CompatibleOnly
                && !filter.CachedOnly
@@ -931,6 +1000,14 @@ namespace CKAN.LinuxGUI
                && !filter.IncompatibleOnly
                && !filter.HasReplacementOnly
                && !filter.NoReplacementOnly;
+
+        private void RefreshDisabledModsState()
+        {
+            var snapshot = disabledModService.GetCurrentSnapshot();
+            disabledModsDirectoryPath = snapshot.DisabledDirectoryPath;
+            this.RaisePropertyChanged(nameof(ShowDisabledFilter));
+            this.RaisePropertyChanged(nameof(ShowOpenDisabledModsDirectoryMenuItem));
+        }
 
         private void UpdateSelectedInstanceSummary(InstanceSummary? instance)
         {
@@ -1332,6 +1409,7 @@ namespace CKAN.LinuxGUI
             FilterNotInstalledOnly = false;
             FilterUpdatableOnly = false;
             FilterNotUpdatableOnly = false;
+            FilterDisabledOnly = false;
             FilterCompatibleOnly = false;
             FilterCachedOnly = false;
             FilterUncachedOnly = false;
@@ -1473,7 +1551,8 @@ namespace CKAN.LinuxGUI
             ConsumePendingModListScrollReset();
         }
 
-        private void ApplyCatalogFilterToLoadedItems(string? preferredSelectionIdentifier = null)
+        private void ApplyCatalogFilterToLoadedItems(string? preferredSelectionIdentifier = null,
+                                                     int?    preferredSelectionIndex = null)
         {
             var totalWatch = Stopwatch.StartNew();
             var currentFilter = CurrentFilter();
@@ -1501,10 +1580,7 @@ namespace CKAN.LinuxGUI
             applyWatch.Stop();
 
             string? selectedIdentifier = preferredSelectionIdentifier ?? SelectedMod?.Identifier;
-            SelectedMod = selectedIdentifier != null
-                ? Mods.FirstOrDefault(mod => mod.Identifier.Equals(selectedIdentifier, StringComparison.OrdinalIgnoreCase))
-                  ?? Mods.FirstOrDefault()
-                : Mods.FirstOrDefault();
+            SelectedMod = ResolveVisibleSelection(selectedIdentifier, preferredSelectionIndex);
 
             if (pendingModListScrollReset)
             {
@@ -1605,6 +1681,29 @@ namespace CKAN.LinuxGUI
                 CatalogSkeletonRows = skeletonRows;
                 appSettingsService.SaveCatalogSkeletonRows(skeletonRows.Select(ToCatalogSkeletonSnapshotRow).ToList());
             }
+        }
+
+        private ModListItem? ResolveVisibleSelection(string? selectedIdentifier,
+                                                     int?    preferredSelectionIndex)
+        {
+            if (selectedIdentifier != null)
+            {
+                var exactMatch = Mods.FirstOrDefault(mod => mod.Identifier.Equals(selectedIdentifier,
+                                                                                   StringComparison.OrdinalIgnoreCase));
+                if (exactMatch != null)
+                {
+                    return exactMatch;
+                }
+            }
+
+            if (preferredSelectionIndex is int index
+                && index >= 0
+                && Mods.Count > 0)
+            {
+                return Mods[Math.Min(index, Mods.Count - 1)];
+            }
+
+            return Mods.FirstOrDefault();
         }
 
         private void ReplaceAvailableTagOptions(IEnumerable<FilterTagOptionItem> items)

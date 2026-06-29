@@ -173,6 +173,54 @@ namespace CKAN.LinuxGUI
                 menu.Items.Add(purgeCacheItem);
             }
 
+            if (viewModel.ShowToggleDisabledContextAction(mod))
+            {
+                var toggleDisabledItem = new MenuItem
+                {
+                    Header = viewModel.ToggleDisabledContextLabel(mod),
+                };
+                toggleDisabledItem.Click += async (_, _) =>
+                {
+                    var preview = await viewModel.PreviewToggleDisabledAsync(mod);
+                    if (!preview.CanApply)
+                    {
+                        await ShowOwnedDialogAsync(
+                            new MessageDialogWindow(preview.Title,
+                                                    string.Join(Environment.NewLine + Environment.NewLine,
+                                                                new[] { preview.Message }
+                                                                    .Concat(preview.SummaryLines)
+                                                                    .Concat(preview.FollowUpLines))));
+                        return;
+                    }
+
+                    var promptParts = new List<string> { preview.Message };
+                    if (preview.SummaryLines.Count > 0)
+                    {
+                        promptParts.Add(string.Join(Environment.NewLine,
+                                                    preview.SummaryLines.Select(line => $"- {line}")));
+                    }
+                    if (preview.FollowUpLines.Count > 0)
+                    {
+                        promptParts.Add(string.Join(Environment.NewLine,
+                                                    preview.FollowUpLines.Select(line => $"- {line}")));
+                    }
+                    promptParts.Add("Continue?");
+
+                    var choice = await ShowOwnedDialogAsync<int>(
+                        new SimplePromptWindow(string.Join(Environment.NewLine + Environment.NewLine,
+                                                          promptParts),
+                                               new[] { viewModel.ToggleDisabledContextLabel(mod), "Cancel" },
+                                               viewModel.ToggleDisabledContextLabel(mod),
+                                               "Cancel"));
+                    if (choice == 0)
+                    {
+                        await viewModel.ToggleDisabledAsync(mod);
+                    }
+                };
+                toggleDisabledItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(toggleDisabledItem);
+            }
+
             var toggleDetailsItem = new MenuItem
             {
                 Header = viewModel.DetailsPaneToggleLabel,

@@ -82,6 +82,19 @@ namespace CKAN.LinuxGUI
                            "Could not open the current game directory.");
         }
 
+        internal void OpenDisabledModsDirectory()
+        {
+            if (string.IsNullOrWhiteSpace(disabledModsDirectoryPath))
+            {
+                StatusMessage = "No disabled mods directory is available for the current install.";
+                return;
+            }
+
+            LaunchExternal(disabledModsDirectoryPath,
+                           "Opened the disabled mods directory.",
+                           "Could not open the disabled mods directory.");
+        }
+
         private void OpenCurrentShipDirectory()
         {
             if (CurrentInstance == null)

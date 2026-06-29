@@ -48,6 +48,8 @@ namespace CKAN.LinuxGUI
         private double browserColumnResizeStartReleasedWidth;
         private double browserColumnResizeStartInstalledWidth;
         private double browserColumnResizeMaxMetadataWidth;
+        private bool hasPendingModListScrollRestore;
+        private double pendingModListScrollOffsetY;
         private bool launchUpdateCheckStarted;
         private const double OverlayWheelScrollPixels = 48;
         private const double BrowserWheelScrollPixels = 112;
@@ -82,6 +84,7 @@ namespace CKAN.LinuxGUI
         {
             DataContext = viewModel;
             appSettings = appSettingsService;
+            RestoreWindowState();
         }
 
     }

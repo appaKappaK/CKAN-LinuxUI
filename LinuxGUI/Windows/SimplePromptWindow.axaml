@@ -2,9 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CKAN.LinuxGUI.SimplePromptWindow"
         x:CompileBindings="False"
-        Width="620"
+        MinWidth="620"
+        MaxWidth="860"
         MaxHeight="720"
-        SizeToContent="Height"
+        SizeToContent="WidthAndHeight"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="CKAN Linux"
@@ -70,13 +71,15 @@
                 Padding="10"
                 IsVisible="{Binding HasPromptDetail}">
           <ScrollViewer MaxHeight="320"
-                        HorizontalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled"
                         VerticalScrollBarVisibility="Auto">
-            <TextBlock FontFamily="Cascadia Mono, JetBrains Mono, Consolas, monospace"
-                       FontSize="13"
-                       Foreground="#D8E0E8"
-                       TextWrapping="NoWrap"
-                       Text="{Binding PromptDetail}" />
+            <Border Padding="0,0,16,0">
+              <TextBlock FontFamily="Cascadia Mono, JetBrains Mono, Consolas, monospace"
+                         FontSize="13"
+                         Foreground="#D8E0E8"
+                         TextWrapping="Wrap"
+                         Text="{Binding PromptDetail}" />
+            </Border>
           </ScrollViewer>
         </Border>
 

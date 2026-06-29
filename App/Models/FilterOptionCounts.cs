@@ -8,6 +8,8 @@ namespace CKAN.App.Models
 
         public int Updatable { get; init; }
 
+        public int Disabled { get; init; }
+
         public int Replaceable { get; init; }
 
         public int Cached { get; init; }

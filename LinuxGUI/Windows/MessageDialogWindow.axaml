@@ -2,9 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="CKAN.LinuxGUI.MessageDialogWindow"
         x:CompileBindings="False"
-        Width="520"
+        MinWidth="420"
+        MaxWidth="760"
         MaxHeight="720"
-        SizeToContent="Height"
+        SizeToContent="WidthAndHeight"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="{Binding Title}"
@@ -36,8 +37,10 @@
     <ScrollViewer MaxHeight="560"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <TextBlock TextWrapping="Wrap"
-                 Text="{Binding Message}" />
+      <Border Padding="0,0,16,0">
+        <TextBlock TextWrapping="Wrap"
+                   Text="{Binding Message}" />
+      </Border>
     </ScrollViewer>
 
     <Button Grid.Row="1"

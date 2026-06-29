@@ -46,6 +46,8 @@ namespace CKAN.App.Models
 
         public bool NotUpdatableOnly { get; init; }
 
+        public bool DisabledOnly { get; init; }
+
         public bool NewOnly { get; init; }
 
         public bool CompatibleOnly { get; init; }

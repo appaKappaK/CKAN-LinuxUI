@@ -29,7 +29,11 @@ namespace CKAN.LinuxGUI
             ObserveViewModel(DataContext as MainWindowViewModel);
             StartLaunchUpdateCheck();
             ConfigureRepositoryRefreshTimer();
+            RestoreWindowState();
+        }
 
+        private void RestoreWindowState()
+        {
             if (appSettings == null)
             {
                 return;

@@ -58,6 +58,8 @@ namespace CKAN.LinuxGUI
             {
                 CKAN.GUI.Main.ClearInstance();
                 DisposePluginController();
+                hasPendingModListScrollRestore = false;
+                pendingModListScrollOffsetY = 0;
             }
         }
 
@@ -120,7 +122,21 @@ namespace CKAN.LinuxGUI
         {
             if (e.PropertyName == nameof(MainWindowViewModel.ModListScrollResetRequestId))
             {
+                hasPendingModListScrollRestore = false;
+                pendingModListScrollOffsetY = 0;
                 ResetModListScrollToTop();
+            }
+            else if (e.PropertyName == nameof(MainWindowViewModel.IsCatalogLoading)
+                     && sender is MainWindowViewModel loadingViewModel)
+            {
+                if (loadingViewModel.IsCatalogLoading)
+                {
+                    CaptureModListScrollForRestore();
+                }
+                else
+                {
+                    RestoreModListScrollOffset();
+                }
             }
             else if (e.PropertyName == nameof(MainWindowViewModel.CurrentInstance)
                      && sender is MainWindowViewModel viewModel)
@@ -140,6 +156,45 @@ namespace CKAN.LinuxGUI
                 {
                     scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 0);
                 }
+            }, DispatcherPriority.Background);
+        }
+
+        private void CaptureModListScrollForRestore()
+        {
+            var scrollViewer = GetModListScrollViewer();
+            if (scrollViewer == null)
+            {
+                hasPendingModListScrollRestore = false;
+                pendingModListScrollOffsetY = 0;
+                return;
+            }
+
+            hasPendingModListScrollRestore = true;
+            pendingModListScrollOffsetY = scrollViewer.Offset.Y;
+        }
+
+        private void RestoreModListScrollOffset()
+        {
+            if (!hasPendingModListScrollRestore)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                var scrollViewer = GetModListScrollViewer();
+                if (scrollViewer == null)
+                {
+                    hasPendingModListScrollRestore = false;
+                    pendingModListScrollOffsetY = 0;
+                    return;
+                }
+
+                double maxOffsetY = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+                double targetOffsetY = Math.Clamp(pendingModListScrollOffsetY, 0, maxOffsetY);
+                scrollViewer.Offset = new Vector(scrollViewer.Offset.X, targetOffsetY);
+                hasPendingModListScrollRestore = false;
+                pendingModListScrollOffsetY = 0;
             }, DispatcherPriority.Background);
         }
 

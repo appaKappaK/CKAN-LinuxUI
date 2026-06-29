@@ -391,6 +391,15 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private void OpenDisabledModsDirectoryMenuItem_OnClick(object? sender,
+                                                               Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.OpenDisabledModsDirectory();
+            }
+        }
+
         private async void DownloadStatisticsMenuItem_OnClick(object? sender,
                                                               Avalonia.Interactivity.RoutedEventArgs e)
         {

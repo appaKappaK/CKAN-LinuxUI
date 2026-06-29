@@ -47,6 +47,7 @@ namespace CKAN.LinuxGUI
                 PreviewCanApply = false;
                 ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
@@ -75,6 +76,7 @@ namespace CKAN.LinuxGUI
                                       || previewConflicts.Count <= preview.Conflicts.Count);
                 ReplacePreviewCollection(PreviewDownloadsRequired, preview.DownloadsRequired);
                 ReplacePreviewCollection(PreviewDependencies, preview.DependencyInstalls);
+                ReplacePreviewCollection(PreviewDependentRemovals, preview.DependentRemovals);
                 ReplacePreviewCollection(PreviewAutoRemovals, previewAutoRemovals);
                 ReplacePreviewCollection(PreviewAttentionNotes, preview.AttentionNotes);
                 ReplacePreviewCollection(PreviewRecommendations, FilterPreviewOptionalEntries(preview.Recommendations));
@@ -95,6 +97,7 @@ namespace CKAN.LinuxGUI
                 });
                 ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+                ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
@@ -413,6 +416,7 @@ namespace CKAN.LinuxGUI
             SelectedModSuggestionCountLabel = "";
             SelectedModIsInstalled = false;
             SelectedModIsAutodetected = false;
+            SelectedModIsDisabled = false;
             SelectedModHasUpdate = false;
             SelectedModIsCached = false;
             SelectedModIsIncompatible = false;
@@ -498,6 +502,7 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PopupFiltersAreClear));
             this.RaisePropertyChanged(nameof(AllFilterButtonBackground));
             this.RaisePropertyChanged(nameof(AllFilterButtonBorderBrush));
+            this.RaisePropertyChanged(nameof(ShowDisabledFilter));
             this.RaisePropertyChanged(nameof(FilterInstalledState));
             this.RaisePropertyChanged(nameof(FilterUpdatableState));
             this.RaisePropertyChanged(nameof(FilterCompatibleState));
@@ -531,10 +536,12 @@ namespace CKAN.LinuxGUI
 
         private void PublishFilterOptionCountLabels()
         {
+            this.RaisePropertyChanged(nameof(ShowDisabledFilter));
             this.RaisePropertyChanged(nameof(AllFilterLabel));
             this.RaisePropertyChanged(nameof(CompatibleFilterLabel));
             this.RaisePropertyChanged(nameof(InstalledFilterLabel));
             this.RaisePropertyChanged(nameof(UpdatableFilterLabel));
+            this.RaisePropertyChanged(nameof(DisabledFilterLabel));
             this.RaisePropertyChanged(nameof(ReplaceableFilterLabel));
             this.RaisePropertyChanged(nameof(CachedFilterLabel));
             this.RaisePropertyChanged(nameof(UncachedFilterLabel));
@@ -762,6 +769,7 @@ namespace CKAN.LinuxGUI
             RefreshPreviewConflictPopupState();
             this.RaisePropertyChanged(nameof(HasPreviewDownloadsRequired));
             this.RaisePropertyChanged(nameof(HasPreviewDependencies));
+            this.RaisePropertyChanged(nameof(HasPreviewDependentRemovals));
             this.RaisePropertyChanged(nameof(HasPreviewAutoRemovals));
             this.RaisePropertyChanged(nameof(HasPreviewAttentionNotes));
             this.RaisePropertyChanged(nameof(HasPreviewRecommendations));
@@ -787,10 +795,12 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewDownloadMetricTitle));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewDependentRemovalCountLabel));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDependencyMetric));
+            this.RaisePropertyChanged(nameof(ShowPreviewDependentRemovalMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewAutoRemovalMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewConflictMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewAttentionMetric));
@@ -911,6 +921,7 @@ namespace CKAN.LinuxGUI
             PreviewCanApply = false;
             ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
             ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
+            ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
             ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
             ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
             ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());

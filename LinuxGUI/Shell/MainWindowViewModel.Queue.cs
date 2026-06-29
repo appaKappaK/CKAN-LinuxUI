@@ -52,6 +52,13 @@ namespace CKAN.LinuxGUI
                 return false;
             }
 
+            if (CurrentRegistry?.InstalledModule(module.identifier) != null
+                || CurrentRegistry?.IsAutodetected(module.identifier) == true
+                || disabledModService.GetCurrentSnapshot().IsDisabled(module.identifier))
+            {
+                return false;
+            }
+
             var catalogItem = allCatalogItems.FirstOrDefault(mod =>
                 string.Equals(mod.Identifier, module.identifier, StringComparison.OrdinalIgnoreCase));
             if (catalogItem == null || catalogItem.IsInstalled || catalogItem.IsIncompatible)
@@ -130,6 +137,7 @@ namespace CKAN.LinuxGUI
                 && autodetectedTargets.Count == 0)
             {
                 StatusMessage = "No CKAN-managed installed mods or autodetected DLL records with missing files were detected.";
+                ShowTransientNoticePopup("No missing installed mods found.");
                 return;
             }
 
@@ -1178,6 +1186,7 @@ namespace CKAN.LinuxGUI
             {
                 queueDrawerStickyCollapsed = false;
                 IsQueueDrawerExpanded = false;
+                ClearPreviewRelationshipBrowserScopeForQueueChange();
                 if (!ShowInlineApplyResult && ShowPreviewSurface)
                 {
                     ShowBrowseSurfaceTab();
@@ -1191,6 +1200,7 @@ namespace CKAN.LinuxGUI
             PublishVisibleModQueueState();
             PublishQueueStateLabels();
             PublishSelectedModActionState();
+            this.RaisePropertyChanged(nameof(HasBrowserVisibleQueuedActions));
         }
 
         private void PublishVisibleModQueueState()

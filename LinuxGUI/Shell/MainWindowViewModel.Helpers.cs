@@ -96,14 +96,17 @@ namespace CKAN.LinuxGUI
         private bool MessageContains(string value)
             => StatusMessage?.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 
+        private bool StatusSurfaceMessageContains(string value)
+            => StatusSurfaceMessage?.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+
         private static bool CanQueueInstall(ModListItem mod)
-            => !mod.IsInstalled && !mod.IsIncompatible;
+            => !mod.IsInstalled && !mod.IsDisabled && !mod.IsIncompatible;
 
         private static bool CanQueueUpdate(ModListItem mod)
-            => mod.IsInstalled && mod.HasVersionUpdate;
+            => mod.IsInstalled && !mod.IsDisabled && mod.HasVersionUpdate;
 
         private static bool CanQueueRemove(ModListItem mod)
-            => mod.IsInstalled && !mod.IsAutodetected && !mod.HasVersionUpdate;
+            => mod.IsInstalled && !mod.IsAutodetected && !mod.IsDisabled && !mod.HasVersionUpdate;
 
         private static string CountLabel(int count,
                                          string singular,
@@ -114,5 +117,47 @@ namespace CKAN.LinuxGUI
 
         private static string Pluralize(int count)
             => count == 1 ? "" : "s";
+
+        private void ShowTransientNoticePopup(string message,
+                                              int    durationMilliseconds = 3000)
+        {
+            transientNoticeCts?.Cancel();
+            transientNoticeCts?.Dispose();
+            var noticeCts = new CancellationTokenSource();
+            transientNoticeCts = noticeCts;
+            _ = Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                TransientNoticeMessage = message;
+                ShowTransientNotice = true;
+            });
+            _ = DismissTransientNoticeAsync(noticeCts, durationMilliseconds);
+        }
+
+        private async Task DismissTransientNoticeAsync(CancellationTokenSource noticeCts,
+                                                       int                    durationMilliseconds)
+        {
+            try
+            {
+                await Task.Delay(durationMilliseconds, noticeCts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(transientNoticeCts, noticeCts)
+                && !noticeCts.IsCancellationRequested)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (ReferenceEquals(transientNoticeCts, noticeCts)
+                        && !noticeCts.IsCancellationRequested)
+                    {
+                        ShowTransientNotice = false;
+                        TransientNoticeMessage = "";
+                    }
+                });
+            }
+        }
     }
 }

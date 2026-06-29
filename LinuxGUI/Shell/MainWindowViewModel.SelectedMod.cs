@@ -196,6 +196,7 @@ namespace CKAN.LinuxGUI
                 ReplaceSelectedModCollection(SelectedModRecommendations, Array.Empty<ModRelationshipItem>());
                 ReplaceSelectedModCollection(SelectedModSuggestions, Array.Empty<ModRelationshipItem>());
                 ReplaceSelectedModResourceLinks(BuildSelectedModResourceLinks(selectedModDetails.Resources));
+                SelectedModIsDisabled = selectedModDetails.IsDisabled;
                 SelectedModIsCached = selectedModDetails.IsCached;
                 SelectedModIsIncompatible = selectedModDetails.IsIncompatible;
                 UpdateSelectedModCachedArchivePath();
@@ -226,6 +227,7 @@ namespace CKAN.LinuxGUI
             SelectedModDependencyCountLabel = CountLabel(dependencies.Count, "Dependency", "Dependencies");
             SelectedModRecommendationCountLabel = CountLabel(recommendations.Count, "Recommendation", "Recommendations");
             SelectedModSuggestionCountLabel = CountLabel(suggestions.Count, "Suggestion", "Suggestions");
+            SelectedModIsDisabled = selectedModDetails.IsDisabled;
             SelectedModIsCached = CurrentCache?.IsMaybeCachedZip(module) == true;
             SelectedModIsIncompatible = !IsModuleInstallable(module,
                                                              CurrentRegistry,
@@ -424,6 +426,35 @@ namespace CKAN.LinuxGUI
             PublishRelationshipBrowserScopeState();
         }
 
+        private void ShowQueuedActionsInBrowser()
+        {
+            var queuedActions = QueuedActions
+                .Where(action => !string.IsNullOrWhiteSpace(action.Identifier))
+                .GroupBy(action => action.Identifier, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.Last())
+                .ToList();
+            if (queuedActions.Count == 0)
+            {
+                StatusMessage = "No queued mods are available in the browser.";
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = queuedActions
+                .Select(action => action.Identifier)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeQueueSources = queuedActions
+                .Where(action => !string.IsNullOrWhiteSpace(action.SourceText))
+                .ToDictionary(action => action.Identifier,
+                              action => action.SourceText,
+                              StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = true;
+            RelationshipBrowserScopeText = "Queued mods";
+            pendingModListScrollReset = true;
+            ShowBrowseSurfaceTab();
+            ApplyCatalogFilterToLoadedItems(queuedActions[0].Identifier);
+            PublishRelationshipBrowserScopeState();
+        }
+
         private void AddPreviewEntriesBrowserIdentifiers(HashSet<string>             identifiers,
                                                          Dictionary<string, string> queueSources,
                                                          string                     relationshipName,
@@ -476,21 +507,23 @@ namespace CKAN.LinuxGUI
             {
                 return relationshipName switch
                 {
-                    "recommendations" => "Recommended from preview",
-                    "suggestions"     => "Suggested from preview",
-                    "supporters"      => "Supported from preview",
-                    "dependencies"    => "Required dependency from preview",
-                    _                 => "",
+                    "recommendations"    => "Recommended from preview",
+                    "suggestions"        => "Suggested from preview",
+                    "supporters"         => "Supported from preview",
+                    "dependencies"       => "Required dependency from preview",
+                    "dependent removals" => "Dependent removal from preview",
+                    _                    => "",
                 };
             }
 
             return relationshipName switch
             {
-                "recommendations" => $"Recommended by {sourceText}",
-                "suggestions"     => $"Suggested by {sourceText}",
-                "supporters"      => $"Supported by {sourceText}",
-                "dependencies"    => $"Required by {sourceText}",
-                _                 => sourceText,
+                "recommendations"    => $"Recommended by {sourceText}",
+                "suggestions"        => $"Suggested by {sourceText}",
+                "supporters"         => $"Supported by {sourceText}",
+                "dependencies"       => $"Required by {sourceText}",
+                "dependent removals" => $"Removed because it depends on {sourceText}",
+                _                    => sourceText,
             };
         }
 
@@ -498,6 +531,7 @@ namespace CKAN.LinuxGUI
         {
             var markers = new[]
             {
+                " depends on ",
                 " required by ",
                 " recommended by ",
                 " suggested by ",
@@ -519,6 +553,7 @@ namespace CKAN.LinuxGUI
         {
             var markers = new[]
             {
+                " depends on ",
                 " required by ",
                 " recommended by ",
                 " suggested by ",
@@ -633,6 +668,25 @@ namespace CKAN.LinuxGUI
             {
                 ShowPreviewSurfaceTab();
             }
+        }
+
+        private void ClearPreviewRelationshipBrowserScopeForQueueChange()
+        {
+            if (!relationshipBrowserScopeReturnsToPreview)
+            {
+                return;
+            }
+
+            relationshipBrowserScopeIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            relationshipBrowserScopeReturnsToPreview = false;
+            RelationshipBrowserScopeText = "";
+            pendingModListScrollReset = true;
+            if (IsReady && allCatalogItems.Count > 0)
+            {
+                ApplyCatalogFilterToLoadedItems();
+            }
+            PublishRelationshipBrowserScopeState();
         }
 
         private async Task ReturnToPreviewAfterConflictQueueChangeAsync()
@@ -765,6 +819,8 @@ namespace CKAN.LinuxGUI
         private static string BuildSelectedModVersions(ModDetailsModel details)
             => details.IsAutodetected
                 ? $"Latest {details.LatestVersion}\nInstalled version unknown"
+                : details.IsDisabled
+                    ? $"Latest {details.LatestVersion}\nInstalled {details.InstalledVersion} (disabled)"
                 : details.IsInstalled
                     ? $"Latest {details.LatestVersion}\nInstalled {details.InstalledVersion}"
                     : $"Latest {details.LatestVersion}";
@@ -805,6 +861,10 @@ namespace CKAN.LinuxGUI
             if (details.IsAutodetected)
             {
                 parts.Add("Managed outside CKAN");
+            }
+            else if (details.IsDisabled)
+            {
+                parts.Add($"Disabled {details.InstalledVersion}");
             }
             else if (details.IsInstalled)
             {
