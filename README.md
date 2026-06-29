@@ -40,30 +40,16 @@ The optional Rust catalog sidecar is not required for this flow.
 
 ## What This Fork Provides
 
-- A native Linux desktop app built with Avalonia in `LinuxGUI/`.
-- A local installer that builds LinuxGUI and installs `ckan-linux` under
-  `~/.local` by default.
-- A package layout under `_build/package/ckan-linux/linux-x64/` with the
-  launcher, runtime files, icons, and desktop entry.
-- Debian package integration that routes graphical no-argument `ckan` launches to
-  `ckan-linux` while keeping argument-driven command and console behavior
-  intact.
-- Optional fast catalog browsing from an external Rust-generated sidecar index;
-  normal installs work without Rust and fall back to CKAN's registry cache.
-- LinuxGUI browser conveniences including clearable search, details-pane
-  relationship browsing for mods that require the selected mod, non-modal
-  installation-history cross-reference, and a File menu shortcut to the KSP
-  `Ships` craft folders.
-- A preview workflow that keeps dependency, recommendation, suggestion, and
-  supported-mod lists compact while still allowing each section to scroll or
-  open the related mods in Browse.
-- Warm startup into the mod browser when the active or remembered install is
-  already known, avoiding a brief instance-loading shell flash on launch.
-- A first-run and recovery surface for choosing a registered KSP install when no
-  active instance is available.
-- Stale saved installs stay visible for explicit cleanup without recreating a
-  deleted game folder just to initialize CKAN state.
-- Visual coverage for the LinuxGUI in `LinuxGUI.VisualTests/`.
+- A native Linux desktop app for CKAN, launched as `ckan-linux`.
+- Local install and package-build scripts for testing or distributing the Linux
+  shell.
+- Graphical no-argument launch integration that keeps CLI and headless CKAN
+  behavior intact.
+- Optional faster catalog browsing through the Rust sidecar index, with normal
+  CKAN registry fallback when it is not present.
+
+For LinuxGUI-specific workflow, preview behavior, packaging layout, and
+development details, see [`LinuxGUI/README.md`](LinuxGUI/README.md).
 
 ## Optional Rust Catalog Sidecar
 
