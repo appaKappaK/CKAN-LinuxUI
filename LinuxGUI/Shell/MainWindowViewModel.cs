@@ -2872,9 +2872,6 @@ namespace CKAN.LinuxGUI
 
         public bool ShowPreviewDependencyMetric => PreviewDependencies.Count > 0;
 
-        public string PreviewDependentRemovalCountLabel
-            => CountLabel(PreviewDependentRemovals.Count, "Dependent Removal", "Dependent Removals");
-
         public bool ShowPreviewDependentRemovalMetric => PreviewDependentRemovals.Count > 0;
 
         public bool ShowPreviewQueuedActions

@@ -795,7 +795,6 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewDownloadMetricTitle));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
-            this.RaisePropertyChanged(nameof(PreviewDependentRemovalCountLabel));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));

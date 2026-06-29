@@ -4875,24 +4875,11 @@
                                     BoxShadow="0 10 22 0 #22000000"
                                     IsVisible="{Binding HasPreviewDependentRemovals}">
                               <StackPanel Spacing="7">
-                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                <Grid ColumnDefinitions="*,Auto">
                                   <TextBlock FontWeight="SemiBold"
                                              VerticalAlignment="Center"
                                              Text="Dependent Removals" />
-                                  <Border Grid.Column="1"
-                                          Background="#4B2734"
-                                          BorderBrush="#8E4A5F"
-                                          BorderThickness="1"
-                                          CornerRadius="999"
-                                          Padding="7,2"
-                                          Margin="8,0,8,0"
-                                          VerticalAlignment="Center">
-                                    <TextBlock FontSize="10"
-                                               FontWeight="SemiBold"
-                                               Foreground="#FFE6EE"
-                                               Text="{Binding PreviewDependentRemovalCountLabel}" />
-                                  </Border>
-                                  <Button Grid.Column="2"
+                                  <Button Grid.Column="1"
                                           Classes="detail-section-action"
                                           Command="{Binding ViewPreviewDependentRemovalsInBrowserCommand}"
                                           Content="View" />
