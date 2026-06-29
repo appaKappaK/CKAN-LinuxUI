@@ -119,6 +119,7 @@ if [[ ! -d "$REPOS_DIR" ]]; then
 fi
 
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/ckan-linuxgui-catalog-bench.XXXXXX")
+BENCH_REF_DIR="$REPO_ROOT/_build/out/CKAN-App/VSCodeIDE/bin/net8.0"
 cleanup() {
     if [[ "$KEEP_TEMP" == "1" ]]; then
         echo "Kept temp benchmark project: $TMP_DIR" >&2
@@ -128,6 +129,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+dotnet build "$REPO_ROOT/App/CKAN-App.csproj" \
+    -p:TargetFramework=net8.0 \
+    -v minimal \
+    -m:1 \
+    -nr:false >/dev/null
+
+if [[ ! -f "$BENCH_REF_DIR/CKAN-App.dll" || ! -f "$BENCH_REF_DIR/CKAN.dll" ]]; then
+    echo "Benchmark references were not produced under $BENCH_REF_DIR" >&2
+    exit 1
+fi
+
 cat > "$TMP_DIR/CatalogBench.csproj" <<EOF
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -136,11 +148,36 @@ cat > "$TMP_DIR/CatalogBench.csproj" <<EOF
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <NoWarn>CS1591</NoWarn>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$REPO_ROOT/App/CKAN-App.csproj">
-      <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>
-    </ProjectReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+    <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="Autofac" Version="4.9.4" />
+    <PackageReference Include="SharpZipLib" Version="1.3.3" />
+    <PackageReference Include="TxFileManager" Version="1.5.0.1" />
+    <PackageReference Include="log4net" Version="3.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NJsonSchema" Version="10.9.0" />
+    <PackageReference Include="YamlDotNet" Version="9.1.0" />
+    <PackageReference Include="ValveKeyValue" Version="0.3.1.152" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+    <PackageReference Include="IndexRange" Version="1.0.3" />
+    <PackageReference Include="StringSyntaxAttribute" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="CKAN-App">
+      <HintPath>$BENCH_REF_DIR/CKAN-App.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="CKAN">
+      <HintPath>$BENCH_REF_DIR/CKAN.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 </Project>
 EOF
@@ -184,7 +221,7 @@ internal static class Program
         var options = Parse(args);
 
         Environment.SetEnvironmentVariable("XDG_DATA_HOME", options.TempDataHome);
-        Environment.SetEnvironmentVariable("CKAN_LINUX_DEV_NO_REGISTRY_LOCK", "1");
+        Environment.SetEnvironmentVariable("CKAN_LINUX_DEV_NO_REGISTRY_LOCK", "");
         Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", "");
         Directory.CreateDirectory(Path.Combine(options.TempDataHome, "CKAN"));
 
@@ -192,6 +229,7 @@ internal static class Program
         var repoData = new RepositoryDataManager(options.ReposDir);
         var settings = new AppSettingsService(Path.Combine(options.TempDataHome, "linuxgui.settings.json"));
         using var game = new GameInstanceService(config, repoData, settings);
+        var disabledMods = new DisabledModService(game);
 
         await game.InitializeAsync(CancellationToken.None);
         if (!string.IsNullOrWhiteSpace(options.InstanceName))
@@ -199,11 +237,23 @@ internal static class Program
             await game.SetCurrentInstanceAsync(options.InstanceName, CancellationToken.None);
         }
 
-        game.RefreshCurrentRegistry();
-        if (game.CurrentInstance == null)
+        if (game.CurrentInstance?.Valid != true)
         {
-            Console.Error.WriteLine("No current CKAN instance was selected.");
-            var names = game.Instances.Select(instance => instance.Name).ToList();
+            var fallback = game.Manager.Instances.Values
+                               .FirstOrDefault(instance => instance.Valid);
+            if (fallback != null)
+            {
+                await game.SetCurrentInstanceAsync(fallback.Name, CancellationToken.None);
+            }
+        }
+
+        game.RefreshCurrentRegistry();
+        if (game.CurrentInstance == null || game.CurrentRegistry == null)
+        {
+            Console.Error.WriteLine("No valid current CKAN instance was selected.");
+            var names = game.Manager.Instances.Values
+                            .Select(instance => $"{instance.Name} (valid={instance.Valid})")
+                            .ToList();
             if (names.Count > 0)
             {
                 Console.Error.WriteLine("Available instances:");
@@ -230,7 +280,7 @@ internal static class Program
                           () =>
                           {
                               Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", "");
-                              return new ModCatalogService(game, new CatalogIndexService());
+                              return new ModCatalogService(game, new CatalogIndexService(), disabledMods);
                           },
                           service => service.GetInstalledModListAsync(CancellationToken.None)),
 
@@ -240,7 +290,7 @@ internal static class Program
                           () =>
                           {
                               Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", "");
-                              return new ModCatalogService(game, new CatalogIndexService());
+                              return new ModCatalogService(game, new CatalogIndexService(), disabledMods);
                           },
                           service => service.GetAllModListAsync(CancellationToken.None)),
         };
@@ -253,7 +303,7 @@ internal static class Program
                                       () =>
                                       {
                                           Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", options.CatalogIndexPath);
-                                          return new ModCatalogService(game, new CatalogIndexService());
+                                          return new ModCatalogService(game, new CatalogIndexService(), disabledMods);
                                       },
                                       service => service.GetAllModListAsync(CancellationToken.None)));
         }
@@ -340,7 +390,7 @@ else
 fi
 echo
 
-dotnet run --project "$TMP_DIR/CatalogBench.csproj" --configuration Release -- \
+dotnet run --project "$TMP_DIR/CatalogBench.csproj" -m:1 -nr:false -- \
     --config "$CONFIG_PATH" \
     --repos "$REPOS_DIR" \
     --temp-data-home "$TMP_DIR/data" \

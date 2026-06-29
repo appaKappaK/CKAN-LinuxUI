@@ -51,6 +51,14 @@ namespace CKAN
                     string resourceFileName = GetResourceFileName(culture);
 
                     var store = MainAssembly.GetManifestResourceStream(resourceFileName);
+                    if (store == null
+                        && resourceFileName.Contains(".Properties.Resources."))
+                    {
+                        // Some build paths embed the CKAN resource set without the .Properties segment.
+                        var fallbackResourceFileName = resourceFileName.Replace(".Properties.Resources.",
+                                                                                ".Resources.");
+                        store = MainAssembly.GetManifestResourceStream(fallbackResourceFileName);
+                    }
 
                     // If we found the appropriate resources in the local assembly
                     if (store != null)

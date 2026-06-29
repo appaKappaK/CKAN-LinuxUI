@@ -16,12 +16,15 @@ namespace CKAN.App.Services
     {
         private readonly IGameInstanceService gameInstanceService;
         private readonly CatalogIndexService  catalogIndexService;
+        private readonly IDisabledModService  disabledModService;
 
         public ModCatalogService(IGameInstanceService gameInstanceService,
-                                 CatalogIndexService  catalogIndexService)
+                                 CatalogIndexService  catalogIndexService,
+                                 IDisabledModService  disabledModService)
         {
             this.gameInstanceService = gameInstanceService;
             this.catalogIndexService  = catalogIndexService;
+            this.disabledModService   = disabledModService;
         }
 
         public string LastSource { get; private set; } = "unknown";
@@ -108,6 +111,7 @@ namespace CKAN.App.Services
                 Compatible   = CountForPreview(items, filter, WithCompatibleOnly),
                 Installed    = CountForPreview(items, filter, WithInstalledOnly),
                 Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
+                Disabled     = CountForPreview(items, filter, WithDisabledOnly),
                 Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
                 Cached       = CountForPreview(items, filter, WithCachedOnly),
                 Uncached     = CountForPreview(items, filter, WithUncachedOnly),
@@ -140,6 +144,7 @@ namespace CKAN.App.Services
                 var resolveWatch = Stopwatch.StartNew();
                 var registry = context.Registry;
                 var inst     = context.Instance;
+                var disabledSnapshot = context.DisabledMods;
                 var installedModule = registry.InstalledModule(identifier);
                 var installed       = installedModule?.Module;
                 var latestCompatible = TryLatestAvailable(registry, identifier, inst, compatibleOnly: true);
@@ -158,6 +163,7 @@ namespace CKAN.App.Services
                 }
 
                 bool isAutodetected = registry.IsAutodetected(identifier);
+                bool isDisabled = disabledSnapshot.IsDisabled(identifier);
                 bool hasUpdate = HasUpdate(registry, inst, identifier, out CkanModule? latestUpdate);
                 bool hasVersionUpdate = latestUpdate != null
                                         && installed != null
@@ -196,6 +202,7 @@ namespace CKAN.App.Services
                     SuggestionCount     = displayMod.suggests?.Count ?? 0,
                     IsInstalled      = installed != null || isAutodetected,
                     IsAutodetected   = isAutodetected,
+                    IsDisabled       = isDisabled,
                     HasUpdate        = hasUpdate,
                     HasVersionUpdate = hasVersionUpdate,
                     IsCached         = IsCached(context, displayMod),
@@ -218,7 +225,9 @@ namespace CKAN.App.Services
             var instance = gameInstanceService.CurrentInstance;
             var registry = gameInstanceService.CurrentRegistry;
             return instance != null && registry != null
-                ? new CatalogContext(instance, registry)
+                ? new CatalogContext(instance,
+                                     registry,
+                                     disabledModService.GetCurrentSnapshot())
                 : null;
         }
 
@@ -380,9 +389,9 @@ namespace CKAN.App.Services
                                                        .OrderBy(module => module.Identifier,
                                                                 StringComparer.OrdinalIgnoreCase))
             {
-                bool compatible = CatalogModuleCompatible(indexedModule, inst.VersionCriteria());
-                items.Add(MakeListItemFromCatalogIndex(context,
-                                       indexedModule,
+            bool compatible = CatalogModuleCompatible(indexedModule, inst.VersionCriteria());
+            items.Add(MakeListItemFromCatalogIndex(context,
+                                   indexedModule,
                                        installedModule: null,
                                        hasUpdate: false,
                                        hasVersionUpdate: false,
@@ -411,18 +420,23 @@ namespace CKAN.App.Services
         {
             var installedCkanModule = installedModule?.Module;
             bool isAutodetected = context.Registry.IsAutodetected(module.Identifier);
+            bool isDisabled = context.DisabledMods.IsDisabled(module.Identifier);
             bool isInstalled = installedModule != null || isAutodetected;
             bool isCached = installedCkanModule != null && IsCached(context, installedCkanModule);
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
                                                                isAutodetected,
+                                                               isDisabled,
                                                                hasVersionUpdate,
                                                                incompatibleOverride,
                                                                isCached,
                                                                hasReplacement: false);
-            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected);
+            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected,
+                                                                   isDisabled);
             string tertiaryStateLabel = FormatTertiaryStateLabel(isAutodetected,
+                                                                 isDisabled,
                                                                  incompatibleOverride);
             string statusSummary = FormatStatusSummary(isInstalled,
+                                                       isDisabled,
                                                        hasVersionUpdate,
                                                        incompatibleOverride,
                                                        isCached,
@@ -468,6 +482,7 @@ namespace CKAN.App.Services
                 DownloadCountLabel = module.DownloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
                 IsAutodetected    = isAutodetected,
+                IsDisabled        = isDisabled,
                 HasUpdate         = hasUpdate,
                 HasVersionUpdate  = hasVersionUpdate,
                 IsIncompatible    = incompatibleOverride,
@@ -477,16 +492,21 @@ namespace CKAN.App.Services
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
                                                             isAutodetected,
+                                                            isDisabled,
                                                             hasVersionUpdate,
                                                             incompatibleOverride,
                                                             hasReplacement: false),
                 SecondaryStateLabel = secondaryStateLabel,
-                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
-                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected),
+                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected,
+                                                                         isDisabled),
+                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected,
+                                                                            isDisabled),
                 TertiaryStateLabel = tertiaryStateLabel,
                 TertiaryStateBackground = FormatTertiaryStateBackground(isAutodetected,
+                                                                        isDisabled,
                                                                         incompatibleOverride),
                 TertiaryStateBorderBrush = FormatTertiaryStateBorderBrush(isAutodetected,
+                                                                          isDisabled,
                                                                           incompatibleOverride),
                 StatusSummary     = statusSummary,
                 HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
@@ -499,18 +519,23 @@ namespace CKAN.App.Services
             var module = instMod.Module;
             var identifier = module.identifier;
             bool isAutodetected = context.Registry.IsAutodetected(identifier);
+            bool isDisabled = context.DisabledMods.IsDisabled(identifier);
             bool isCached = IsCached(context, module);
             bool isIncompatible = !module.IsCompatible(context.Instance.VersionCriteria());
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled: true,
                                                                isAutodetected,
+                                                               isDisabled,
                                                                hasUpdate: false,
                                                                isIncompatible,
                                                                isCached,
                                                                hasReplacement: false);
-            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected);
+            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected,
+                                                                   isDisabled);
             string tertiaryStateLabel = FormatTertiaryStateLabel(isAutodetected,
+                                                                 isDisabled,
                                                                  isIncompatible);
             string statusSummary = FormatStatusSummary(isInstalled: true,
+                                                       isDisabled,
                                                        hasUpdate: false,
                                                        isIncompatible,
                                                        isCached,
@@ -547,6 +572,7 @@ namespace CKAN.App.Services
                 DownloadCountLabel = "-",
                 IsInstalled       = true,
                 IsAutodetected    = isAutodetected,
+                IsDisabled        = isDisabled,
                 HasUpdate         = false,
                 HasVersionUpdate  = false,
                 IsIncompatible    = isIncompatible,
@@ -556,16 +582,21 @@ namespace CKAN.App.Services
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = FormatPrimaryStateColor(isInstalled: true,
                                                             isAutodetected,
+                                                            isDisabled,
                                                             hasUpdate: false,
                                                             isIncompatible,
                                                             hasReplacement: false),
                 SecondaryStateLabel = secondaryStateLabel,
-                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
-                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected),
+                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected,
+                                                                         isDisabled),
+                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected,
+                                                                            isDisabled),
                 TertiaryStateLabel = tertiaryStateLabel,
                 TertiaryStateBackground = FormatTertiaryStateBackground(isAutodetected,
+                                                                        isDisabled,
                                                                         isIncompatible),
                 TertiaryStateBorderBrush = FormatTertiaryStateBorderBrush(isAutodetected,
+                                                                          isDisabled,
                                                                           isIncompatible),
                 StatusSummary     = statusSummary,
                 HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
@@ -583,6 +614,7 @@ namespace CKAN.App.Services
                 context.Registry.Repositories.Values,
                 displayMod.identifier);
             bool isAutodetected = context.Registry.IsAutodetected(displayMod.identifier);
+            bool isDisabled = context.DisabledMods.IsDisabled(displayMod.identifier);
             bool isInstalled = installedModule != null || isAutodetected;
             bool isCached = IsCached(context, displayMod);
             bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
@@ -593,14 +625,18 @@ namespace CKAN.App.Services
                                     && displayMod.version.CompareTo(installedCkanModule.version) > 0;
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
                                                                isAutodetected,
+                                                               isDisabled,
                                                                hasVersionUpdate,
                                                                incompatibleOverride,
                                                                isCached,
                                                                hasReplacement);
-            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected);
+            string secondaryStateLabel = FormatSecondaryStateLabel(isAutodetected,
+                                                                   isDisabled);
             string tertiaryStateLabel = FormatTertiaryStateLabel(isAutodetected,
+                                                                 isDisabled,
                                                                  incompatibleOverride);
             string statusSummary = FormatStatusSummary(isInstalled,
+                                                       isDisabled,
                                                        hasVersionUpdate,
                                                        incompatibleOverride,
                                                        isCached,
@@ -643,6 +679,7 @@ namespace CKAN.App.Services
                 DownloadCountLabel = downloadCount?.ToString("N0") ?? "-",
                 IsInstalled       = isInstalled,
                 IsAutodetected    = isAutodetected,
+                IsDisabled        = isDisabled,
                 HasUpdate         = hasUpdate,
                 HasVersionUpdate  = hasVersionUpdate,
                 IsIncompatible    = incompatibleOverride,
@@ -652,16 +689,21 @@ namespace CKAN.App.Services
                 PrimaryStateLabel = primaryStateLabel,
                 PrimaryStateColor = FormatPrimaryStateColor(isInstalled,
                                                             isAutodetected,
+                                                            isDisabled,
                                                             hasVersionUpdate,
                                                             incompatibleOverride,
                                                             hasReplacement),
                 SecondaryStateLabel = secondaryStateLabel,
-                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected),
-                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected),
+                SecondaryStateBackground = FormatSecondaryStateBackground(isAutodetected,
+                                                                         isDisabled),
+                SecondaryStateBorderBrush = FormatSecondaryStateBorderBrush(isAutodetected,
+                                                                            isDisabled),
                 TertiaryStateLabel = tertiaryStateLabel,
                 TertiaryStateBackground = FormatTertiaryStateBackground(isAutodetected,
+                                                                        isDisabled,
                                                                         incompatibleOverride),
                 TertiaryStateBorderBrush = FormatTertiaryStateBorderBrush(isAutodetected,
+                                                                          isDisabled,
                                                                           incompatibleOverride),
                 StatusSummary     = statusSummary,
                 HasStatusSummary  = !string.IsNullOrWhiteSpace(statusSummary),
@@ -694,6 +736,7 @@ namespace CKAN.App.Services
                    && MatchesBooleanFilter(item.HasVersionUpdate,
                                            filter.UpdatableOnly,
                                            filter.NotUpdatableOnly)
+                   && (!filter.DisabledOnly || item.IsDisabled)
                    && MatchesBooleanFilter(!item.IsIncompatible,
                                            filter.CompatibleOnly,
                                            filter.IncompatibleOnly)
@@ -733,6 +776,12 @@ namespace CKAN.App.Services
                 NotInstalledOnly   = false,
                 UpdatableOnly      = true,
                 NotUpdatableOnly   = false,
+            };
+
+        private static FilterState WithDisabledOnly(FilterState filter)
+            => filter with
+            {
+                DisabledOnly = true,
             };
 
         private static FilterState WithCompatibleOnly(FilterState filter)
@@ -926,6 +975,7 @@ namespace CKAN.App.Services
                                               => !item.IsInstalled,
                 "updatable" or "update" or "update-available"
                                               => item.HasVersionUpdate,
+                "disabled"                    => item.IsDisabled,
                 "not-updatable" or "noupdate" or "notupdate"
                                               => !item.HasVersionUpdate,
                 "compatible"                 => !item.IsIncompatible,
@@ -1033,6 +1083,7 @@ namespace CKAN.App.Services
                or "conflict"
                or "supports"
                or "support"
+               or "disabled"
                or "tag"
                or "tags"
                or "label"
@@ -1054,12 +1105,15 @@ namespace CKAN.App.Services
 
         private static string FormatPrimaryStateLabel(bool isInstalled,
                                                       bool isAutodetected,
+                                                      bool isDisabled,
                                                       bool hasUpdate,
                                                       bool isIncompatible,
                                                       bool isCached,
                                                       bool hasReplacement)
             => isIncompatible && !isAutodetected
                 ? "Incompatible"
+                : isDisabled
+                    ? "Installed"
                 : hasUpdate
                     ? "Update Available"
                     : isInstalled
@@ -1070,11 +1124,14 @@ namespace CKAN.App.Services
 
         private static string FormatPrimaryStateColor(bool isInstalled,
                                                       bool isAutodetected,
+                                                      bool isDisabled,
                                                       bool hasUpdate,
                                                       bool isIncompatible,
                                                       bool hasReplacement)
             => isIncompatible && !isAutodetected
                 ? "#9A485C"
+                : isDisabled
+                    ? "#2B6A98"
                 : hasUpdate
                     ? "#6A952B"
                     : isInstalled
@@ -1083,28 +1140,59 @@ namespace CKAN.App.Services
                             ? "#734790"
                             : "#2F7C58";
 
-        private static string FormatSecondaryStateLabel(bool isAutodetected)
-            => isAutodetected ? "External" : "";
+        private static string FormatSecondaryStateLabel(bool isAutodetected,
+                                                        bool isDisabled)
+            => isDisabled
+                ? "Disabled"
+                : isAutodetected
+                    ? "External"
+                    : "";
 
-        private static string FormatSecondaryStateBackground(bool isAutodetected)
-            => isAutodetected ? "#5A4322" : "#39424E";
+        private static string FormatSecondaryStateBackground(bool isAutodetected,
+                                                             bool isDisabled)
+            => isDisabled
+                ? "#65502D"
+                : isAutodetected
+                    ? "#5A4322"
+                    : "#39424E";
 
-        private static string FormatSecondaryStateBorderBrush(bool isAutodetected)
-            => isAutodetected ? "#9F7A40" : "#607286";
+        private static string FormatSecondaryStateBorderBrush(bool isAutodetected,
+                                                              bool isDisabled)
+            => isDisabled
+                ? "#B38E4B"
+                : isAutodetected
+                    ? "#9F7A40"
+                    : "#607286";
 
         private static string FormatTertiaryStateLabel(bool isAutodetected,
+                                                       bool isDisabled,
                                                        bool isIncompatible)
-            => isAutodetected && isIncompatible ? "Dependency" : "";
+            => isAutodetected && isIncompatible
+                ? "Dependency"
+                : isDisabled && isIncompatible
+                    ? "Inactive"
+                    : "";
 
         private static string FormatTertiaryStateBackground(bool isAutodetected,
+                                                            bool isDisabled,
                                                             bool isIncompatible)
-            => isAutodetected && isIncompatible ? "#31424F" : "#31424F";
+            => isAutodetected && isIncompatible
+                ? "#31424F"
+                : isDisabled && isIncompatible
+                    ? "#4A3438"
+                    : "#31424F";
 
         private static string FormatTertiaryStateBorderBrush(bool isAutodetected,
+                                                             bool isDisabled,
                                                              bool isIncompatible)
-            => isAutodetected && isIncompatible ? "#4C6A86" : "#4C6A86";
+            => isAutodetected && isIncompatible
+                ? "#4C6A86"
+                : isDisabled && isIncompatible
+                    ? "#8C626A"
+                    : "#4C6A86";
 
         private static string FormatStatusSummary(bool isInstalled,
+                                                  bool isDisabled,
                                                   bool hasUpdate,
                                                   bool isIncompatible,
                                                   bool isCached,
@@ -1112,6 +1200,10 @@ namespace CKAN.App.Services
         {
             var parts = new List<string>();
 
+            if (isDisabled)
+            {
+                parts.Add("Disabled");
+            }
             if (hasUpdate)
             {
                 parts.Add("Installed");
@@ -1388,7 +1480,8 @@ namespace CKAN.App.Services
                                       out latestMod);
         }
 
-        private sealed record CatalogContext(GameInstance Instance,
-                                             Registry     Registry);
+        private sealed record CatalogContext(GameInstance         Instance,
+                                             Registry             Registry,
+                                             DisabledModsSnapshot DisabledMods);
     }
 }
