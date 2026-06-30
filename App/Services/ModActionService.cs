@@ -35,14 +35,13 @@ namespace CKAN.App.Services
                 var plan = BuildExecutionPlan(currentQueue, cancellationToken);
                 watch.Stop();
                 Trace.TraceInformation(
-                    $"LinuxGUI preview build actions={currentQueue.Count} can_apply={plan.CanApply} downloads={plan.DownloadsRequired.Count} dependencies={plan.DependencyInstalls.Count} dependent_removals={plan.DependentRemovals.Count} recommendations={plan.Recommendations.Count} suggestions={plan.Suggestions.Count} supporters={plan.Supporters.Count} conflicts={plan.Conflicts.Count} total_ms={watch.ElapsedMilliseconds}");
+                    $"LinuxGUI preview build actions={currentQueue.Count} can_apply={plan.CanApply} downloads={plan.DownloadsRequired.Count} dependencies={plan.DependencyInstalls.Count} recommendations={plan.Recommendations.Count} suggestions={plan.Suggestions.Count} supporters={plan.Supporters.Count} conflicts={plan.Conflicts.Count} total_ms={watch.ElapsedMilliseconds}");
                 return new ChangesetPreviewModel
                 {
                     SummaryText        = plan.SummaryText,
                     CanApply           = plan.CanApply,
                     DownloadsRequired  = plan.DownloadsRequired,
                     DependencyInstalls = plan.DependencyInstalls,
-                    DependentRemovals  = plan.DependentRemovals,
                     AutoRemovals       = plan.AutoRemovals,
                     AttentionNotes     = plan.AttentionNotes,
                     Recommendations    = plan.Recommendations,
@@ -524,7 +523,6 @@ namespace CKAN.App.Services
             requestedRemovals = DistinctInstalledModules(requestedRemovals);
 
             var dependencyInstalls = new List<string>();
-            var dependentRemovals  = new List<string>();
             var downloadsRequired  = new List<string>();
             var autoRemovals       = new List<string>();
             var recommendations    = new List<string>();
@@ -539,7 +537,6 @@ namespace CKAN.App.Services
             var combinedInstalls = DistinctModules(requestedInstalls.Concat(requestedUpdates));
             var directDownloads = DistinctModules(
                 requestedDownloads.Where(mod => !ContainsIdentifier(combinedInstalls, mod.identifier)));
-            var dependentRemovalModules = new List<InstalledModule>();
             var autoRemovalModules = new List<InstalledModule>();
 
             downloadsRequired.AddRange(
@@ -553,24 +550,6 @@ namespace CKAN.App.Services
             {
                 try
                 {
-                    var dependentRemovalIdentifiers = BuildDependentRemovalIdentifiers(requestedRemovals,
-                                                                                        combinedInstalls,
-                                                                                        registry);
-                    if (dependentRemovalIdentifiers.Count > 0)
-                    {
-                        dependentRemovalModules = dependentRemovalIdentifiers
-                            .Select(registry.InstalledModule)
-                            .OfType<InstalledModule>()
-                            .ToList();
-                        dependentRemovals.AddRange(
-                            BuildDependentRemovalDescriptions(
-                                dependentRemovalModules,
-                                requestedRemovals.ToDictionary(im => im.identifier,
-                                                               im => im.Module,
-                                                               StringComparer.OrdinalIgnoreCase),
-                                registry));
-                    }
-
                     var plannedRemovalIdentifiers = BuildPlannedRemovalIdentifiers(requestedRemovals,
                                                                                    combinedInstalls,
                                                                                    registry);
@@ -604,7 +583,6 @@ namespace CKAN.App.Services
                 try
                 {
                     var allRemoving = DistinctModules(requestedRemovals.Select(im => im.Module)
-                                                                      .Concat(dependentRemovalModules.Select(im => im.Module))
                                                                       .Concat(autoRemovalModules.Select(im => im.Module)));
 
                     var resolver = new RelationshipResolver(combinedInstalls,
@@ -687,13 +665,11 @@ namespace CKAN.App.Services
                                                 combinedInstalls.Count,
                                                 downloadsRequired.Count,
                                                 dependencyInstalls.Count,
-                                                dependentRemovals.Count,
                                                 autoRemovals.Count,
                                                 conflicts.Count),
                 CanApply           = conflicts.Count == 0,
                 DownloadsRequired  = downloadsRequired,
                 DependencyInstalls = dependencyInstalls,
-                DependentRemovals  = dependentRemovals,
                 AutoRemovals       = autoRemovals,
                 AttentionNotes     = notices,
                 Recommendations    = recommendations.Distinct().ToList(),
@@ -733,7 +709,6 @@ namespace CKAN.App.Services
                                            int resolvedInstallCount,
                                            int downloadCount,
                                            int dependencyCount,
-                                           int dependentRemovalCount,
                                            int autoRemovalCount,
                                            int conflictCount)
         {
@@ -758,10 +733,6 @@ namespace CKAN.App.Services
             if (dependencyCount > 0)
             {
                 parts.Add($"{dependencyCount} dependency install{(dependencyCount == 1 ? "" : "s")}");
-            }
-            if (dependentRemovalCount > 0)
-            {
-                parts.Add($"{dependentRemovalCount} dependent removal{(dependentRemovalCount == 1 ? "" : "s")}");
             }
             if (autoRemovalCount > 0)
             {
@@ -804,25 +775,6 @@ namespace CKAN.App.Services
             }
 
             return removableRoots;
-        }
-
-        private static HashSet<string> BuildDependentRemovalIdentifiers(
-            IReadOnlyCollection<InstalledModule> requestedRemovals,
-            IReadOnlyCollection<CkanModule>      combinedInstalls,
-            Registry                             registry)
-        {
-            var installingIdentifiers = combinedInstalls
-                .Select(mod => mod.identifier)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var directRemovalIdentifiers = requestedRemovals
-                .Select(im => im.identifier)
-                .ToArray();
-
-            return registry.FindReverseDependencies(
-                    directRemovalIdentifiers.Except(installingIdentifiers).ToArray(),
-                    combinedInstalls)
-                .Except(directRemovalIdentifiers)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
         private static IReadOnlyDictionary<string, CkanModule> BuildAutoRemovalRoots(
@@ -893,67 +845,6 @@ namespace CKAN.App.Services
                        return changedRoots.Count > 0
                            ? $"{FormatModule(im.Module)} no longer required by {string.Join(", ", changedRoots)}"
                            : $"{FormatModule(im.Module)} no longer required";
-                   })
-                   .Distinct()
-                   .ToList();
-        }
-
-        private static IReadOnlyList<string> BuildDependentRemovalDescriptions(
-            IReadOnlyCollection<InstalledModule>      dependentRemovalModules,
-            IReadOnlyDictionary<string, CkanModule> requestedRemovalRoots,
-            Registry                                  registry)
-        {
-            if (dependentRemovalModules.Count == 0 || requestedRemovalRoots.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-
-            var reverseDependencies = BuildReverseDependencyMap(
-                registry.InstalledModules.Select(im => im.Module).ToList());
-            var rootNamesByDependent = new Dictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var root in requestedRemovalRoots.Values)
-            {
-                var pending = new Queue<string>();
-                var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                pending.Enqueue(root.identifier);
-                visited.Add(root.identifier);
-
-                while (pending.Count > 0)
-                {
-                    var current = pending.Dequeue();
-                    if (!reverseDependencies.TryGetValue(current, out var dependers))
-                    {
-                        continue;
-                    }
-
-                    foreach (var dependerIdentifier in dependers)
-                    {
-                        if (!rootNamesByDependent.TryGetValue(dependerIdentifier, out var rootNames))
-                        {
-                            rootNames = new SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
-                            rootNamesByDependent[dependerIdentifier] = rootNames;
-                        }
-
-                        rootNames.Add(root.name ?? root.identifier);
-                        if (visited.Add(dependerIdentifier))
-                        {
-                            pending.Enqueue(dependerIdentifier);
-                        }
-                    }
-                }
-            }
-
-            return dependentRemovalModules
-                   .Select(im =>
-                   {
-                       var sourceNames = rootNamesByDependent.TryGetValue(im.identifier, out var roots)
-                           ? roots
-                           : new SortedSet<string>(StringComparer.CurrentCultureIgnoreCase)
-                           {
-                               "a queued removal",
-                           };
-                       return $"{FormatModule(im.Module)} depends on {string.Join(", ", sourceNames)}";
                    })
                    .Distinct()
                    .ToList();
@@ -1411,10 +1302,6 @@ namespace CKAN.App.Services
             {
                 lines.Add($"{plan.DependencyInstalls.Count} dependency install{Pluralize(plan.DependencyInstalls.Count)}");
             }
-            if (plan.DependentRemovals.Count > 0)
-            {
-                lines.Add($"{plan.DependentRemovals.Count} dependent removal{Pluralize(plan.DependentRemovals.Count)}");
-            }
             if (plan.DownloadsRequired.Count > 0)
             {
                 lines.Add($"{plan.DownloadsRequired.Count} download{Pluralize(plan.DownloadsRequired.Count)} required");
@@ -1457,8 +1344,6 @@ namespace CKAN.App.Services
             public IReadOnlyList<string> DownloadsRequired { get; init; } = Array.Empty<string>();
 
             public IReadOnlyList<string> DependencyInstalls { get; init; } = Array.Empty<string>();
-
-            public IReadOnlyList<string> DependentRemovals { get; init; } = Array.Empty<string>();
 
             public IReadOnlyList<string> AutoRemovals { get; init; } = Array.Empty<string>();
 

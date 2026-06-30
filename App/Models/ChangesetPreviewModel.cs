@@ -12,8 +12,6 @@ namespace CKAN.App.Models
 
         public IReadOnlyList<string> DependencyInstalls { get; init; } = new List<string>();
 
-        public IReadOnlyList<string> DependentRemovals { get; init; } = new List<string>();
-
         public IReadOnlyList<string> AutoRemovals { get; init; } = new List<string>();
 
         public IReadOnlyList<string> AttentionNotes { get; init; } = new List<string>();

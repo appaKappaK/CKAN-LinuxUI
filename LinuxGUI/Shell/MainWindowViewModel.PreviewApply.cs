@@ -47,7 +47,6 @@ namespace CKAN.LinuxGUI
                 PreviewCanApply = false;
                 ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
-                ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
@@ -76,7 +75,6 @@ namespace CKAN.LinuxGUI
                                       || previewConflicts.Count <= preview.Conflicts.Count);
                 ReplacePreviewCollection(PreviewDownloadsRequired, preview.DownloadsRequired);
                 ReplacePreviewCollection(PreviewDependencies, preview.DependencyInstalls);
-                ReplacePreviewCollection(PreviewDependentRemovals, preview.DependentRemovals);
                 ReplacePreviewCollection(PreviewAutoRemovals, previewAutoRemovals);
                 ReplacePreviewCollection(PreviewAttentionNotes, preview.AttentionNotes);
                 ReplacePreviewCollection(PreviewRecommendations, FilterPreviewOptionalEntries(preview.Recommendations));
@@ -97,7 +95,6 @@ namespace CKAN.LinuxGUI
                 });
                 ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
-                ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());
@@ -769,7 +766,6 @@ namespace CKAN.LinuxGUI
             RefreshPreviewConflictPopupState();
             this.RaisePropertyChanged(nameof(HasPreviewDownloadsRequired));
             this.RaisePropertyChanged(nameof(HasPreviewDependencies));
-            this.RaisePropertyChanged(nameof(HasPreviewDependentRemovals));
             this.RaisePropertyChanged(nameof(HasPreviewAutoRemovals));
             this.RaisePropertyChanged(nameof(HasPreviewAttentionNotes));
             this.RaisePropertyChanged(nameof(HasPreviewRecommendations));
@@ -799,7 +795,6 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDependencyMetric));
-            this.RaisePropertyChanged(nameof(ShowPreviewDependentRemovalMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewAutoRemovalMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewConflictMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewAttentionMetric));
@@ -920,7 +915,6 @@ namespace CKAN.LinuxGUI
             PreviewCanApply = false;
             ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
             ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
-            ReplacePreviewCollection(PreviewDependentRemovals, Array.Empty<string>());
             ReplacePreviewCollection(PreviewAutoRemovals, Array.Empty<string>());
             ReplacePreviewCollection(PreviewAttentionNotes, Array.Empty<string>());
             ReplacePreviewCollection(PreviewRecommendations, Array.Empty<string>());

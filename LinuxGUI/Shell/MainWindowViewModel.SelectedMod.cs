@@ -511,7 +511,6 @@ namespace CKAN.LinuxGUI
                     "suggestions"        => "Suggested from preview",
                     "supporters"         => "Supported from preview",
                     "dependencies"       => "Required dependency from preview",
-                    "dependent removals" => "Dependent removal from preview",
                     _                    => "",
                 };
             }
@@ -522,7 +521,6 @@ namespace CKAN.LinuxGUI
                 "suggestions"        => $"Suggested by {sourceText}",
                 "supporters"         => $"Supported by {sourceText}",
                 "dependencies"       => $"Required by {sourceText}",
-                "dependent removals" => $"Removed because it depends on {sourceText}",
                 _                    => sourceText,
             };
         }
@@ -531,7 +529,6 @@ namespace CKAN.LinuxGUI
         {
             var markers = new[]
             {
-                " depends on ",
                 " required by ",
                 " recommended by ",
                 " suggested by ",
@@ -553,7 +550,6 @@ namespace CKAN.LinuxGUI
         {
             var markers = new[]
             {
-                " depends on ",
                 " required by ",
                 " recommended by ",
                 " suggested by ",

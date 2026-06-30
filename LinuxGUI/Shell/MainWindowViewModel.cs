@@ -260,7 +260,6 @@ namespace CKAN.LinuxGUI
             SelectedModSuggestions = new ObservableCollection<ModRelationshipItem>();
             PreviewDownloadsRequired = new ObservableCollection<string>();
             PreviewDependencies = new ObservableCollection<string>();
-            PreviewDependentRemovals = new ObservableCollection<string>();
             PreviewAutoRemovals = new ObservableCollection<string>();
             PreviewAttentionNotes = new ObservableCollection<string>();
             PreviewRecommendations = new ObservableCollection<string>();
@@ -447,7 +446,6 @@ namespace CKAN.LinuxGUI
             ViewSelectedModRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("recommendations", SelectedModRecommendations));
             ViewSelectedModSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("suggestions", SelectedModSuggestions));
             ViewPreviewDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependencies", PreviewDependencies));
-            ViewPreviewDependentRemovalsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependent removals", PreviewDependentRemovals));
             ViewPreviewRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("recommendations", PreviewRecommendations));
             ViewPreviewSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("suggestions", PreviewSuggestions));
             ViewPreviewSupportersInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("supporters", PreviewSupporters));
@@ -582,8 +580,6 @@ namespace CKAN.LinuxGUI
         public ObservableCollection<string> PreviewDownloadsRequired { get; }
 
         public ObservableCollection<string> PreviewDependencies { get; }
-
-        public ObservableCollection<string> PreviewDependentRemovals { get; }
 
         public ObservableCollection<string> PreviewAutoRemovals { get; }
 
@@ -751,8 +747,6 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> ViewSelectedModSuggestionsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewDependenciesInBrowserCommand { get; }
-
-        public ReactiveCommand<Unit, Unit> ViewPreviewDependentRemovalsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewRecommendationsInBrowserCommand { get; }
 
@@ -1769,8 +1763,6 @@ namespace CKAN.LinuxGUI
 
         public bool HasPreviewDependencies => PreviewDependencies.Count > 0;
 
-        public bool HasPreviewDependentRemovals => PreviewDependentRemovals.Count > 0;
-
         public bool HasPreviewAutoRemovals => PreviewAutoRemovals.Count > 0;
 
         public bool HasPreviewAttentionNotes => PreviewAttentionNotes.Count > 0;
@@ -1800,7 +1792,7 @@ namespace CKAN.LinuxGUI
             => "Optional extras are listed in Preview. Use each section's View button to inspect and queue extras. When Browse opens, click Close in the notice above the mod list to return to Preview. Required dependencies are automatic.";
 
         public bool HasPreviewDependenciesOrOptional
-            => HasPreviewDependencies || HasPreviewDependentRemovals || HasPreviewOptionalExtras;
+            => HasPreviewDependencies || HasPreviewOptionalExtras;
 
         public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
 
@@ -2745,16 +2737,6 @@ namespace CKAN.LinuxGUI
 
                 if (PreviewShowsReadyCard)
                 {
-                    if (HasPreviewDependencies && HasPreviewDependentRemovals && HasPreviewAutoRemovals)
-                    {
-                        return "Direct actions are shown on the left. CKAN will install required dependencies, remove dependent mods that would break, and remove unused auto-installed dependencies during Apply.";
-                    }
-
-                    if (HasPreviewDependencies && HasPreviewDependentRemovals)
-                    {
-                        return "Direct actions are shown on the left. CKAN will install required dependencies and remove dependent mods that would break during Apply.";
-                    }
-
                     if (HasPreviewDependencies && HasPreviewAutoRemovals)
                     {
                         return "Direct actions are shown on the left. CKAN will install required dependencies and remove unused auto-installed dependencies during Apply.";
@@ -2763,11 +2745,6 @@ namespace CKAN.LinuxGUI
                     if (HasPreviewDependencies)
                     {
                         return "Direct actions are shown on the left. Required dependency installs are handled automatically during Apply.";
-                    }
-
-                    if (HasPreviewDependentRemovals)
-                    {
-                        return "Direct actions are shown on the left. Dependent mods that would break are listed below and will also be removed during Apply.";
                     }
 
                     return HasPreviewAutoRemovals
@@ -2791,8 +2768,6 @@ namespace CKAN.LinuxGUI
                         : PreviewCanApply
                             ? HasPreviewAttentionNotes
                                 ? "Apply changes is ready. You may still need to confirm prompts during install."
-                                : HasPreviewDependentRemovals
-                                    ? "Apply changes will update GameData and remove dependent mods that would break."
                                 : HasPreviewAutoRemovals
                                     ? "Apply changes will update GameData and remove unused auto-installed dependencies."
                                     : "Apply changes will update GameData after the required downloads finish."
@@ -2806,7 +2781,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions to see downloads, dependencies, dependent removals, auto-removals, and conflicts before applying. Right-click a mod to add it to cache.";
+                    return "Queue install, update, or remove actions to see downloads, dependencies, auto-removals, and conflicts before applying. Right-click a mod to add it to cache.";
                 }
 
                 if (!HasQueuedActions && ShowInlineApplyResult)
@@ -2832,10 +2807,6 @@ namespace CKAN.LinuxGUI
                 if (PreviewDependencies.Count > 0)
                 {
                     parts.Add(CountLabel(PreviewDependencies.Count, "dependency install", "dependency installs"));
-                }
-                if (PreviewDependentRemovals.Count > 0)
-                {
-                    parts.Add(CountLabel(PreviewDependentRemovals.Count, "dependent removal", "dependent removals"));
                 }
                 if (PreviewAutoRemovals.Count > 0)
                 {
@@ -2872,8 +2843,6 @@ namespace CKAN.LinuxGUI
 
         public bool ShowPreviewDependencyMetric => PreviewDependencies.Count > 0;
 
-        public bool ShowPreviewDependentRemovalMetric => PreviewDependentRemovals.Count > 0;
-
         public bool ShowPreviewQueuedActions
             => HasQueuedActions;
 
@@ -2881,16 +2850,10 @@ namespace CKAN.LinuxGUI
             => HasQueuedChangeActions && HasQueuedDownloadActions
                 ? "Install, update, and remove actions are listed together with queued downloads. Download Files runs separately and does not change GameData."
                 : HasQueuedChangeActions
-                    ? HasPreviewDependencies && HasPreviewDependentRemovals && HasPreviewAutoRemovals
-                        ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods, remove dependent mods that would break, and remove unused auto-installed dependencies listed below."
-                        : HasPreviewDependencies && HasPreviewDependentRemovals
-                            ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove dependent mods that would break."
-                        : HasPreviewDependencies && HasPreviewAutoRemovals
-                            ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove unused auto-installed dependencies listed below."
+                    ? HasPreviewDependencies && HasPreviewAutoRemovals
+                        ? "These are the direct install/update/remove actions you selected. CKAN will also install required mods and remove unused auto-installed dependencies listed below."
                         : HasPreviewDependencies
                             ? "These are the direct install/update/remove actions you selected. CKAN will also install the required mods listed below."
-                            : HasPreviewDependentRemovals
-                                ? "These are the direct install/update/remove actions you selected. CKAN will also remove dependent mods that would break."
                             : HasPreviewAutoRemovals
                                 ? "These are the direct install/update/remove actions you selected. CKAN will also remove unused auto-installed dependencies listed below."
                                 : "These are the direct install/update/remove actions you selected."
