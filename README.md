@@ -42,8 +42,8 @@ The optional Rust catalog sidecar is not required for this flow.
 ## What This Fork Provides
 
 - A native Linux desktop app for CKAN, launched as `ckan-linux`.
-- A local installer so the Linux desktop app can be launched without replacing
-  an existing system CKAN command.
+- A local installer that adds `ckan-linux` under `~/.local` without replacing
+  an existing system `ckan` command.
 - Graphical no-argument launch integration that keeps CLI and headless CKAN
   behavior intact.
 - Optional faster catalog browsing through the Rust sidecar index, with normal
@@ -62,20 +62,13 @@ See [`LinuxGUI/README.md`](LinuxGUI/README.md) for LinuxGUI workflow details,
 builds, packaging, the development launcher, Rust sidecar setup and fallback
 behavior, logs, benchmarks, and visual-test workflow.
 
-## Upstream CKAN Context
+## Links
 
-[<img src="https://img.shields.io/github/downloads/KSP-CKAN/CKAN/total.svg?label=%E2%A4%93Download&style=plastic" height="48px" style="height:48px;" />](https://github.com/KSP-CKAN/CKAN/releases/latest)
-
-[![Coverage Status](https://coveralls.io/repos/github/KSP-CKAN/CKAN/badge.svg?branch=master)](https://coveralls.io/github/KSP-CKAN/CKAN?branch=master)
-[![NuGet Version](https://img.shields.io/nuget/v/CKAN?label=NuGet&style=plastic&logo=nuget)](https://www.nuget.org/packages/CKAN)
-[![Crowdin](https://img.shields.io/badge/Crowdin-2E3340.svg?plastic&logo=Crowdin&logoColor=white)](https://crowdin.com/project/ckan)
-
-
-[Click here to report a CKAN Linux issue][6]
-
-[Click here to go to the CKAN wiki][5]
-
-[Click here to view the CKAN metadata specification](Spec.md)
+- [Report a CKAN Linux issue][6]
+- [CKAN LinuxGUI workflow and development notes](LinuxGUI/README.md)
+- [CKAN metadata specification](Spec.md)
+- [Upstream CKAN wiki for core CKAN concepts][5]
+- [Upstream CKAN releases][12]
 
 ## What's the CKAN?
 
@@ -90,10 +83,13 @@ CKAN is great for players _and_ for authors:
 
 The CKAN has been inspired by the solid and proven metadata formats from both the Debian project and the CPAN, each of which manages tens of thousands of packages.
 
-## What's the status of the CKAN?
+## Upstream CKAN Context
 
-The CKAN is currently under [active development][1].
-We very much welcome contributions, discussions, and especially pull-requests.
+This fork carries the upstream CKAN core and adds the LinuxGUI shell in this
+repository. Core CKAN development, metadata policy, and command-line behavior
+still come from the upstream CKAN project.
+
+The upstream CKAN project is under [active development][1].
 
 ## The CKAN spec
 
@@ -104,7 +100,9 @@ This repository includes a validator that you can use to [validate your files][3
 
 ## CKAN for players
 
-CKAN can download, install and update mods in just a few clicks. See the [User guide][2] to get started with CKAN.
+CKAN can download, install and update mods in just a few clicks. The upstream
+[User guide][2] is useful for CKAN concepts, but its screenshots and layout may
+not match this LinuxGUI shell.
 
 ## CKAN for modders
 
@@ -114,13 +112,14 @@ If the metadata we have is incorrect please [open an issue][7] and let us know.
 
 ## Contributing to CKAN
 
-**No technical expertise is required to contribute to CKAN**
+**No technical expertise is required to contribute to CKAN metadata.**
 
-If you want to contribute, please read our [CONTRIBUTING][4] file.
+For CKAN LinuxGUI issues, use this fork's [issue tracker][6]. For upstream CKAN
+metadata or core contributions, read the upstream [CONTRIBUTING][4] file.
 
 ## Thanks
 
-Our sincere thanks to [SignPath.io][10] for allowing us to use their free code signing service, and to [the SignPath Foundation][11] for giving us a free code signing certificate!
+This fork builds on the upstream CKAN project and its contributors.
 
 ---
 
@@ -135,5 +134,4 @@ Note: Are you looking for the Open Data portal software called CKAN? If so, thei
  [7]: https://github.com/KSP-CKAN/NetKAN/issues/new
  [8]: https://schemastore.org/
  [9]: https://github.com/ckan/ckan
- [10]: https://signpath.io/
- [11]: https://signpath.org/
+ [12]: https://github.com/KSP-CKAN/CKAN/releases/latest

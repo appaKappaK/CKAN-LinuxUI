@@ -1,6 +1,6 @@
 # CKAN Linux GUI
 
-This directory contains the Fedora/Linux-first Avalonia shell for CKAN.
+This directory contains the Linux-first Avalonia shell for CKAN.
 
 ## Entry Points
 
@@ -156,9 +156,9 @@ Install the Linux GUI into a local prefix so it can be launched as
 ~/.local/bin/ckan-linux
 ```
 
-By default this installs under `~/.local`, keeping it separate from the upstream
-`ckan` command. If `~/.local/bin` is already on your `PATH`, you can launch it
-as `ckan-linux`. Use `--prefix /usr/local` to install somewhere else.
+By default this installs under `~/.local`, keeping it separate from any existing
+system `ckan` command. If `~/.local/bin` is already on your `PATH`, you can
+launch it as `ckan-linux`. Use `--prefix /usr/local` to install somewhere else.
 
 ## Development
 
