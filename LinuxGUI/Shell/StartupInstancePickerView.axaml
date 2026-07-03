@@ -1,0 +1,463 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CKAN.LinuxGUI"
+             xmlns:models="using:CKAN.App.Models"
+             xmlns:shapes="using:Avalonia.Controls.Shapes"
+             x:Class="CKAN.LinuxGUI.StartupInstancePickerView"
+             x:Name="StartupInstancePickerRoot"
+             x:DataType="vm:MainWindowViewModel"
+             MinHeight="0">
+  <Grid MinHeight="0">
+    <Border Background="#161B21"
+            BorderBrush="Transparent"
+            BorderThickness="0"
+            CornerRadius="12"
+            Padding="0"
+            ClipToBounds="True"
+            IsHitTestVisible="False"
+            MinHeight="0">
+      <Grid RowDefinitions="Auto,*"
+            MinHeight="0"
+            Opacity="0.72">
+        <Border Grid.Row="0"
+                Classes="workspace-tab-strip"
+                MinHeight="38"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top">
+          <StackPanel Classes="workspace-tabs">
+            <Border Background="#223345"
+                    BorderBrush="#3E5770"
+                    BorderThickness="1,1,1,0"
+                    CornerRadius="9,9,0,0"
+                    MinHeight="38"
+                    MinWidth="112"
+                    Padding="13,0">
+              <StackPanel Orientation="Horizontal"
+                          Spacing="8"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                <Viewbox Width="14"
+                         Height="14"
+                         Stretch="Uniform">
+                  <Canvas Width="14"
+                          Height="14">
+                    <shapes:Line Classes="workspace-tab-icon-stroke"
+                                 StartPoint="3,4"
+                                 EndPoint="11,4" />
+                    <shapes:Line Classes="workspace-tab-icon-stroke"
+                                 StartPoint="3,7"
+                                 EndPoint="11,7" />
+                    <shapes:Line Classes="workspace-tab-icon-stroke"
+                                 StartPoint="3,10"
+                                 EndPoint="11,10" />
+                  </Canvas>
+                </Viewbox>
+                <TextBlock Classes="workspace-tab-label"
+                           Foreground="#D8E7F7"
+                           Text="Browse" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Background="#223345"
+                CornerRadius="0,10,10,10"
+                Padding="9"
+                MinHeight="0">
+          <Grid RowDefinitions="Auto,*"
+                MinHeight="0">
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  Margin="0,0,0,8">
+              <Border Background="#16202A"
+                      BorderBrush="#3D4E60"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      MinHeight="34"
+                      Padding="12,0">
+                <TextBlock FontSize="12"
+                           Foreground="#7F8B98"
+                           VerticalAlignment="Center"
+                           Text="Search by mod name, author, or description" />
+              </Border>
+              <Border Grid.Column="1"
+                      Classes="browser-chip"
+                      Margin="8,0,0,0"
+                      MinWidth="84"
+                      VerticalAlignment="Center">
+                <TextBlock FontSize="12"
+                           HorizontalAlignment="Center"
+                           Opacity="0.7"
+                           Text="No mods" />
+              </Border>
+              <Border Grid.Column="2"
+                      Background="#161B21"
+                      BorderBrush="#34404C"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      Margin="8,0,0,0"
+                      Width="152"
+                      Height="34">
+                <TextBlock FontSize="12"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Opacity="0.7"
+                           Text="More Filters" />
+              </Border>
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Background="#10151A"
+                    BorderBrush="#33404B"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="0"
+                    MinHeight="0">
+              <Grid RowDefinitions="Auto,*">
+                <Border Background="#182431"
+                        BorderBrush="#33404B"
+                        BorderThickness="0,0,0,1"
+                        Padding="14,9">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="{Binding BrowserMetadataColumnGridLength}" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Classes="column-sort-header"
+                               Text="Name" />
+                    <Border Grid.Column="1"
+                            BorderBrush="#2E3842"
+                            BorderThickness="1,0,0,0"
+                            Padding="10,0,0,0">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="{Binding BrowserDownloadsColumnGridLength}" />
+                          <ColumnDefinition Width="{Binding BrowserReleasedColumnGridLength}" />
+                          <ColumnDefinition Width="{Binding BrowserInstalledColumnGridLength}" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Classes="column-sort-header"
+                                   Text="Downloads" />
+                        <TextBlock Grid.Column="1"
+                                   Classes="column-sort-header"
+                                   Padding="10,0,0,0"
+                                   Text="Released" />
+                        <TextBlock Grid.Column="2"
+                                   Classes="column-sort-header"
+                                   Padding="10,0,0,0"
+                                   Text="Install Date" />
+                        <TextBlock Grid.Column="3"
+                                   Classes="column-sort-header"
+                                   Padding="10,0,0,0"
+                                   Text="Version" />
+                      </Grid>
+                    </Border>
+                  </Grid>
+                </Border>
+                <ItemsControl Grid.Row="1"
+                              Classes="catalog-skeleton-list"
+                              ItemsSource="{Binding CatalogSkeletonRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CatalogSkeletonRow"
+                                  x:CompileBindings="False">
+                      <Border Height="46"
+                              Background="#141D27"
+                              BorderBrush="#26323D"
+                              BorderThickness="0,0,0,1"
+                              Padding="14,0"
+                              Opacity="{Binding Opacity}">
+                        <Grid VerticalAlignment="Center">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="{Binding #StartupInstancePickerRoot.DataContext.BrowserMetadataColumnGridLength}" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel Grid.Column="0"
+                                      Spacing="4">
+                            <Grid ColumnDefinitions="Auto,Auto,*">
+                              <Border Width="{Binding TitleWidth}"
+                                      Height="12"
+                                      CornerRadius="6"
+                                      HorizontalAlignment="Left"
+                                      Background="#2A323C" />
+                              <Border Grid.Column="1"
+                                      Width="{Binding AuthorWidth}"
+                                      Height="9"
+                                      CornerRadius="5"
+                                      Margin="8,0,0,0"
+                                      HorizontalAlignment="Left"
+                                      Background="#242C36"
+                                      IsVisible="{Binding HasAuthor}" />
+                            </Grid>
+                            <Border Width="{Binding SummaryWidth}"
+                                    Height="8"
+                                    CornerRadius="5"
+                                    HorizontalAlignment="Left"
+                                    Background="#222A33" />
+                          </StackPanel>
+                          <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="{Binding #StartupInstancePickerRoot.DataContext.BrowserDownloadsColumnGridLength}" />
+                              <ColumnDefinition Width="{Binding #StartupInstancePickerRoot.DataContext.BrowserReleasedColumnGridLength}" />
+                              <ColumnDefinition Width="{Binding #StartupInstancePickerRoot.DataContext.BrowserInstalledColumnGridLength}" />
+                              <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="{Binding DownloadsWidth}"
+                                    Height="10"
+                                    CornerRadius="5"
+                                    HorizontalAlignment="Left"
+                                    Background="#28313B" />
+                            <Border Grid.Column="1"
+                                    Width="{Binding ReleaseWidth}"
+                                    Height="10"
+                                    CornerRadius="5"
+                                    Margin="10,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    Background="#242C36" />
+                            <Border Grid.Column="2"
+                                    Width="{Binding VersionSecondaryWidth}"
+                                    Height="10"
+                                    CornerRadius="5"
+                                    Margin="10,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    Background="#28313B" />
+                            <StackPanel Grid.Column="3"
+                                        Margin="10,0,0,0"
+                                        Spacing="5"
+                                        VerticalAlignment="Center">
+                              <Border Width="{Binding VersionPrimaryWidth}"
+                                      Height="10"
+                                      CornerRadius="5"
+                                      HorizontalAlignment="Left"
+                                      Background="#242C36" />
+                              <Border Width="{Binding VersionSecondaryWidth}"
+                                      Height="8"
+                                      CornerRadius="4"
+                                      HorizontalAlignment="Left"
+                                      Background="#222A33" />
+                            </StackPanel>
+                          </Grid>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Grid>
+            </Border>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+
+    <Border ZIndex="20"
+            Background="#B80E141B"
+            IsVisible="{Binding NeedsSelection}"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+        <Border Background="#13202B"
+                BorderBrush="#5B7892"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="0"
+                Width="820"
+                MaxWidth="900"
+                MaxHeight="540"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                ClipToBounds="True"
+                BoxShadow="0 22 42 0 #77000000">
+            <Grid RowDefinitions="*,Auto">
+                <Border Grid.Row="0"
+                        Background="#111922"
+                      BorderBrush="#33404B"
+                      BorderThickness="0"
+                      CornerRadius="10,10,0,0"
+                      Padding="0"
+                      Margin="0"
+                      HorizontalAlignment="Stretch"
+                      ClipToBounds="True">
+                    <Grid RowDefinitions="Auto,*"
+                          Margin="4">
+                  <Border Classes="startup-instance-header"
+                          Padding="0">
+                    <Grid ColumnDefinitions="*,16">
+                      <Grid ColumnDefinitions="4,*">
+                        <Border Background="Transparent"
+                                Width="4" />
+                        <Border Grid.Column="1"
+                                Padding="16,10">
+                          <Grid ColumnDefinitions="2.1*,1.1*,3*">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9FADBC"
+                                       Text="Install" />
+                            <Border Grid.Column="1"
+                                    BorderBrush="#263A4D"
+                                    BorderThickness="1,0,0,0"
+                                    Padding="16,0,0,0">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         Foreground="#9FADBC"
+                                         Text="Game" />
+                            </Border>
+                            <Border Grid.Column="2"
+                                    BorderBrush="#263A4D"
+                                    BorderThickness="1,0,0,0"
+                                    Padding="16,0,0,0">
+                              <TextBlock FontSize="11"
+                                         FontWeight="SemiBold"
+                                         Foreground="#9FADBC"
+                                         Text="Path" />
+                            </Border>
+                          </Grid>
+                        </Border>
+                      </Grid>
+                        <Border Grid.Column="1"
+                                Background="#111922"
+                                BorderThickness="0" />
+                    </Grid>
+                  </Border>
+
+                <ListBox Grid.Row="1"
+                         Classes="startup-instance-list"
+                         ItemsSource="{Binding Instances}"
+                         ScrollViewer.VerticalScrollBarVisibility="Visible"
+                         SelectedItem="{Binding SelectedInstance}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="models:InstanceSummary">
+                      <Border Classes="startup-instance-row"
+                              Margin="0">
+                        <Grid ColumnDefinitions="4,*">
+                          <Border Classes="startup-instance-edge"
+                                  Margin="0,0,0,-1"
+                                  VerticalAlignment="Stretch" />
+                        <Border Grid.Column="1"
+                                Padding="16,12">
+                            <Grid ColumnDefinitions="2.1*,1.1*,3*">
+                              <TextBlock Classes="startup-instance-name"
+                                         FontSize="14"
+                                         FontWeight="SemiBold"
+                                         TextTrimming="CharacterEllipsis"
+                                         Text="{Binding Name}" />
+                              <Border Grid.Column="1"
+                                      BorderBrush="#263A4D"
+                                      BorderThickness="1,0,0,0"
+                                      Padding="16,0,0,0">
+                                <TextBlock FontSize="12"
+                                           Opacity="0.78"
+                                           TextTrimming="CharacterEllipsis"
+                                           Text="{Binding GameName}" />
+                              </Border>
+                              <Border Grid.Column="2"
+                                      BorderBrush="#263A4D"
+                                      BorderThickness="1,0,0,0"
+                                      Padding="16,0,0,0">
+                                <TextBlock FontSize="12"
+                                           Opacity="0.82"
+                                           TextTrimming="CharacterEllipsis"
+                                           Text="{Binding GameDir}" />
+                              </Border>
+                          </Grid>
+                        </Border>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </Border>
+
+            <Border Grid.Row="1"
+                    Background="#101820"
+                    BorderBrush="#263541"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,10,10"
+                    Padding="22,12">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                  <TextBlock FontSize="12"
+                             Foreground="#AAB6C4"
+                             VerticalAlignment="Center"
+                             Text="Select an install from the list, then open it to load the mod browser." />
+                    <Border Grid.Column="1"
+                            Background="#2A1218"
+                            BorderBrush="#8D4352"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Padding="10,4"
+                            Margin="18,0,0,0"
+                            VerticalAlignment="Center"
+                          MinWidth="126"
+                          IsVisible="{Binding HasStartupSelectionError}"
+                          ToolTip.Placement="Pointer"
+                          ToolTip.HorizontalOffset="16"
+                          ToolTip.VerticalOffset="-7"
+                          ToolTip.Tip="{Binding StartupSelectionError}">
+                      <TextBlock FontSize="11"
+                                 FontWeight="SemiBold"
+                                 HorizontalAlignment="Center"
+                                 Foreground="#FFB8C2"
+                                 Text="ERROR: CAN'T OPEN" />
+                    </Border>
+                    <Button Grid.Column="2"
+                            Width="158"
+                            Margin="18,0,0,0"
+                            Classes="command-button primary"
+                        Command="{Binding SetCurrentInstanceCommand}"
+                        Content="{Binding SelectedActionLabel}" />
+              </Grid>
+            </Border>
+        </Grid>
+      </Border>
+    </Border>
+
+    <Border ZIndex="20"
+            Background="#B80E141B"
+            IsVisible="{Binding HasError}"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+      <Border Background="#151D26"
+              BorderBrush="#8A4353"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="0"
+              Width="560"
+              MaxWidth="680"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              BoxShadow="0 22 42 0 #77000000">
+        <Grid RowDefinitions="Auto,Auto,Auto">
+          <StackPanel Margin="22,20,22,16"
+                      Spacing="8">
+            <TextBlock FontSize="24"
+                       FontWeight="SemiBold"
+                       Text="{Binding StageTitle}" />
+          </StackPanel>
+
+          <Border Grid.Row="1"
+                  Background="#271217"
+                  BorderBrush="#934354"
+                  BorderThickness="1"
+                  CornerRadius="9"
+                  Padding="16"
+                  Margin="22,0,22,18">
+            <TextBlock TextWrapping="Wrap"
+                       FontWeight="SemiBold"
+                       Text="{Binding Diagnostics}" />
+          </Border>
+
+          <Border Grid.Row="2"
+                  Background="#101820"
+                  BorderBrush="#263541"
+                  BorderThickness="0,1,0,0"
+                  CornerRadius="0,0,10,10"
+                  Padding="22,12">
+            <Button Width="170"
+                    Classes="command-button primary"
+                    HorizontalAlignment="Left"
+                    Command="{Binding RefreshCommand}"
+                    Content="Retry Startup" />
+          </Border>
+        </Grid>
+      </Border>
+    </Border>
+  </Grid>
+</UserControl>

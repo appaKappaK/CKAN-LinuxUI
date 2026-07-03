@@ -8,7 +8,7 @@
         MinHeight="480"
         WindowStartupLocation="CenterOwner"
         Title="Preferred Hosts"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -39,15 +39,18 @@
       <Setter Property="MinWidth" Value="36" />
       <Setter Property="MinHeight" Value="36" />
       <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Background" Value="#202B35" />
       <Setter Property="BorderBrush" Value="#3B4B5B" />
       <Setter Property="Foreground" Value="#F4F6F8" />
+      <Setter Property="FontSize" Value="16" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.host-move:pointerover">
-      <Setter Property="Background" Value="#2A3744" />
-      <Setter Property="BorderBrush" Value="#55697E" />
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
     </Style>
     <Style Selector="Button.host-move:pressed">
       <Setter Property="Background" Value="#18212A" />
@@ -58,6 +61,34 @@
       <Setter Property="BorderBrush" Value="#303A44" />
       <Setter Property="Foreground" Value="#7B8794" />
       <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.host-move /template/ ContentPresenter">
+      <Setter Property="Background" Value="#202B35" />
+      <Setter Property="BorderBrush" Value="#3B4B5B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.host-move:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.host-move:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#18212A" />
+      <Setter Property="BorderBrush" Value="#667A90" />
+    </Style>
+    <Style Selector="Button.host-move:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+    </Style>
+    <Style Selector="TextBlock.host-move-icon">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="LineHeight" Value="18" />
     </Style>
   </Window.Styles>
 
@@ -113,13 +144,17 @@
         <Button Classes="host-move"
                 Click="MoveRightButton_OnClick"
                 IsEnabled="{Binding CanMoveRight}"
-                ToolTip.Tip="Add selected host to preferred order"
-                Content="▸" />
+                ToolTip.Tip="Add selected host to preferred order">
+          <TextBlock Classes="host-move-icon"
+                     Text="▸" />
+        </Button>
         <Button Classes="host-move"
                 Click="MoveLeftButton_OnClick"
                 IsEnabled="{Binding CanMoveLeft}"
-                ToolTip.Tip="Remove selected host from preferred order"
-                Content="◂" />
+                ToolTip.Tip="Remove selected host from preferred order">
+          <TextBlock Classes="host-move-icon"
+                     Text="◂" />
+        </Button>
       </StackPanel>
 
       <Grid Grid.Column="2"
@@ -156,13 +191,17 @@
           <Button Classes="host-move"
                   Click="MoveUpButton_OnClick"
                   IsEnabled="{Binding CanMoveUp}"
-                  ToolTip.Tip="Move selected host earlier"
-                  Content="▴" />
+                  ToolTip.Tip="Move selected host earlier">
+            <TextBlock Classes="host-move-icon"
+                       Text="▴" />
+          </Button>
           <Button Classes="host-move"
                   Click="MoveDownButton_OnClick"
                   IsEnabled="{Binding CanMoveDown}"
-                  ToolTip.Tip="Move selected host later"
-                  Content="▾" />
+                  ToolTip.Tip="Move selected host later">
+            <TextBlock Classes="host-move-icon"
+                       Text="▾" />
+          </Button>
         </StackPanel>
       </Grid>
     </Grid>

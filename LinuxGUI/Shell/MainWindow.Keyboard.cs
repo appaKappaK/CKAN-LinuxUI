@@ -119,6 +119,40 @@ namespace CKAN.LinuxGUI
         private bool IsEditableTextFocused()
             => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
 
+        private void Window_OnPointerPressed(object? sender,
+                                             PointerPressedEventArgs e)
+        {
+            RefreshMenuPopupPlacementIfNeeded(e.Source as Visual);
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (!ReferenceEquals(topLevel?.FocusManager?.GetFocusedElement(), SearchTextBox)
+                || e.Source is not Visual source
+                || IsInsideSearchBox(source))
+            {
+                return;
+            }
+
+            topLevel.FocusManager?.ClearFocus();
+        }
+
+        private bool IsInsideSearchBox(Visual source)
+            => ReferenceEquals(source, SearchTextBox)
+               || source.GetVisualAncestors().Any(ancestor => ReferenceEquals(ancestor, SearchTextBox));
+
+        private void RefreshMenuPopupPlacementIfNeeded(Visual? source)
+        {
+            if (!menuPopupPlacementDirty
+                || source == null
+                || !source.GetVisualAncestors().OfType<Menu>().Any())
+            {
+                return;
+            }
+
+            menuPopupPlacementDirty = false;
+            InvalidateMeasure();
+            UpdateLayout();
+        }
+
         private void OnDataContextChanged(object? sender,
                                           EventArgs e)
             => ObserveViewModel(DataContext as MainWindowViewModel);

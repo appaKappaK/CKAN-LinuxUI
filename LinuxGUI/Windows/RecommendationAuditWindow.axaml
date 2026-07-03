@@ -9,7 +9,7 @@
         MinHeight="520"
         WindowStartupLocation="CenterOwner"
         Title="Audit Recommendations"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />

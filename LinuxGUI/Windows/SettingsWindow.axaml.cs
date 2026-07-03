@@ -14,6 +14,8 @@ using ReactiveUI;
 
 using CKAN.Configuration;
 using CKAN.Extensions;
+using CKAN.LinuxGUI.Services;
+using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
 {
@@ -41,9 +43,10 @@ namespace CKAN.LinuxGUI
         public bool RepositoryMoved => viewModel.RepositoryMoved;
 
         public static bool CheckForUpdatesOnLaunchEnabled(GameInstance? instance)
-            => GetGuiSetting(instance,
-                             configuration => configuration.CheckForUpdatesOnLaunch,
-                             false);
+            => LinuxGuiUpdateService.SupportsReleaseChecks
+               && GetGuiSetting(instance,
+                                configuration => configuration.CheckForUpdatesOnLaunch,
+                                false);
 
         public static bool RefreshOnStartupEnabled(GameInstance? instance)
             => GetGuiSetting(instance,
@@ -54,6 +57,19 @@ namespace CKAN.LinuxGUI
             => GetGuiSetting(instance,
                              configuration => configuration.RefreshPaused,
                              false);
+
+        public static bool PruneInstallHistoryEnabled(GameInstance? instance)
+            => GetGuiSetting(instance,
+                             configuration => configuration.PruneInstallHistory,
+                             false);
+
+        public static void PruneInstallHistoryIfEnabled(GameInstance? instance)
+        {
+            if (PruneInstallHistoryEnabled(instance))
+            {
+                PruneInstallHistoryNow(instance);
+            }
+        }
 
         public static bool HideEpochsEnabled(GameInstance? instance)
             => GetGuiSetting(instance,
@@ -89,9 +105,40 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private static void PruneInstallHistoryNow(GameInstance? instance)
+        {
+            if (instance == null
+                || !Directory.Exists(instance.InstallHistoryDir))
+            {
+                return;
+            }
+
+            var cutoff = DateTime.UtcNow.AddDays(-30);
+            foreach (var file in instance.InstallHistoryFiles())
+            {
+                if (file.LastWriteTimeUtc >= cutoff)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    file.Delete();
+                }
+                catch
+                {
+                    // Keep the settings action non-blocking; locked files can be retried later.
+                }
+            }
+        }
+
         private async void CheckForUpdatesButton_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
             => await viewModel.CheckForUpdatesAsync();
+
+        private void OpenReleasesButton_OnClick(object? sender,
+                                                Avalonia.Interactivity.RoutedEventArgs e)
+            => viewModel.OpenLinuxGuiReleases();
 
         private async void AddRepositoryButton_OnClick(object? sender,
                                                        Avalonia.Interactivity.RoutedEventArgs e)
@@ -223,7 +270,10 @@ namespace CKAN.LinuxGUI
             private Registry? registry;
             private readonly GameInstance? instance;
             private readonly LinuxGuiConfiguration? guiConfiguration;
-            private string latestVersion = "Not checked";
+            private string latestLinuxGuiVersion = LinuxGuiUpdateService.SupportsReleaseChecks
+                ? "Not checked"
+                : "Not configured";
+            private string latestCoreVersion = "Not checked";
             private string updateErrorMessage = "";
             private string downloadCacheSummary = "Calculating...";
             private string cacheErrorMessage = "";
@@ -232,7 +282,6 @@ namespace CKAN.LinuxGUI
             private string authTokenStatusMessage = "";
             private string cacheSizeLimitMiBText = "";
             private string refreshRateText = "0";
-            private string? selectedLanguage;
             private RepositoryRow? selectedRepositoryRow;
             private AuthTokenRow? selectedAuthTokenRow;
             private ReleaseStatusOption? selectedStabilityTolerance;
@@ -253,15 +302,14 @@ namespace CKAN.LinuxGUI
                 RefreshRepositoryRows();
                 AuthTokenRows = new ObservableCollection<AuthTokenRow>();
                 RefreshAuthTokenRows();
-                LocalVersion = Meta.ReleaseVersion.ToString();
+                LinuxGuiVersion = "Not versioned";
+                BundledCoreVersion = Meta.ReleaseVersion.ToString();
                 DownloadCachePath = configuration?.DownloadCacheDir
                                     ?? GameInstanceManager.DefaultDownloadCacheDir;
                 cacheSizeLimitMiBText = configuration?.CacheSizeLimit is long bytes
                     ? (bytes / 1024 / 1024).ToString()
                     : "";
                 refreshRateText = configuration?.RefreshRate.ToString() ?? "0";
-                LanguageOptions = Utilities.AvailableLanguages;
-                selectedLanguage = configuration?.Language;
                 StabilityToleranceOptions = Enum.GetValues(typeof(ReleaseStatus))
                     .OfType<ReleaseStatus>()
                     .OrderBy(status => (int)status)
@@ -351,12 +399,20 @@ namespace CKAN.LinuxGUI
 
             public bool ShowAuthTokenStatus => !string.IsNullOrWhiteSpace(AuthTokenStatusMessage);
 
-            public string LocalVersion { get; }
+            public string LinuxGuiVersion { get; }
 
-            public string LatestVersion
+            public string BundledCoreVersion { get; }
+
+            public string LatestLinuxGuiVersion
             {
-                get => latestVersion;
-                private set => this.RaiseAndSetIfChanged(ref latestVersion, value);
+                get => latestLinuxGuiVersion;
+                private set => this.RaiseAndSetIfChanged(ref latestLinuxGuiVersion, value);
+            }
+
+            public string LatestCoreVersion
+            {
+                get => latestCoreVersion;
+                private set => this.RaiseAndSetIfChanged(ref latestCoreVersion, value);
             }
 
             public string UpdateErrorMessage
@@ -370,6 +426,8 @@ namespace CKAN.LinuxGUI
             }
 
             public bool ShowUpdateError => !string.IsNullOrWhiteSpace(UpdateErrorMessage);
+
+            public bool CanCheckLinuxGuiUpdates => LinuxGuiUpdateService.SupportsReleaseChecks;
 
             public bool UseDevBuilds
             {
@@ -386,10 +444,11 @@ namespace CKAN.LinuxGUI
 
             public bool CheckForUpdatesOnLaunch
             {
-                get => guiConfiguration?.CheckForUpdatesOnLaunch ?? false;
+                get => CanCheckLinuxGuiUpdates
+                       && (guiConfiguration?.CheckForUpdatesOnLaunch ?? false);
                 set
                 {
-                    if (guiConfiguration != null)
+                    if (CanCheckLinuxGuiUpdates && guiConfiguration != null)
                     {
                         guiConfiguration.CheckForUpdatesOnLaunch = value;
                         SaveGuiConfiguration();
@@ -539,21 +598,6 @@ namespace CKAN.LinuxGUI
                 }
             }
 
-            public IReadOnlyList<string> LanguageOptions { get; }
-
-            public string? SelectedLanguage
-            {
-                get => selectedLanguage;
-                set
-                {
-                    this.RaiseAndSetIfChanged(ref selectedLanguage, value);
-                    if (configuration != null)
-                    {
-                        configuration.Language = value;
-                    }
-                }
-            }
-
             public bool RefreshOnStartup
             {
                 get => guiConfiguration?.RefreshOnStartup ?? true;
@@ -563,6 +607,24 @@ namespace CKAN.LinuxGUI
                     {
                         guiConfiguration.RefreshOnStartup = value;
                         SaveGuiConfiguration();
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool PruneInstallHistory
+            {
+                get => guiConfiguration?.PruneInstallHistory ?? false;
+                set
+                {
+                    if (guiConfiguration != null)
+                    {
+                        guiConfiguration.PruneInstallHistory = value;
+                        SaveGuiConfiguration();
+                        if (value)
+                        {
+                            SettingsWindow.PruneInstallHistoryNow(instance);
+                        }
                         this.RaisePropertyChanged();
                     }
                 }
@@ -837,18 +899,37 @@ namespace CKAN.LinuxGUI
 
             public async Task CheckForUpdatesAsync()
             {
+                if (!CanCheckLinuxGuiUpdates)
+                {
+                    LatestLinuxGuiVersion = "Not configured";
+                    UpdateErrorMessage = "";
+                    return;
+                }
+
+                LatestLinuxGuiVersion = "Checking...";
+                LatestCoreVersion = "Checking...";
+                UpdateErrorMessage = "";
+
                 try
                 {
-                    LatestVersion = "Checking...";
-                    UpdateErrorMessage = "";
-                    var useDevBuilds = UseDevBuilds;
-                    var update = await Task.Run(() => new AutoUpdate().GetUpdate(useDevBuilds));
-                    LatestVersion = update.Version?.ToString() ?? "Unavailable";
+                    var update = await Task.Run(() => LinuxGuiUpdateService.GetLatest(includePrereleases: false,
+                                                                                       configuration));
+                    LatestLinuxGuiVersion = update.DisplayVersion;
                 }
                 catch (Exception ex)
                 {
-                    LatestVersion = "Unavailable";
+                    LatestLinuxGuiVersion = "Unavailable";
                     UpdateErrorMessage = ex.Message;
+                }
+
+                LatestCoreVersion = await GetLatestCoreVersionTextAsync(includePrereleases: false);
+            }
+
+            public void OpenLinuxGuiReleases()
+            {
+                if (!Utilities.ProcessStartURL(LinuxGuiUpdateService.ReleasesUrl))
+                {
+                    UpdateErrorMessage = $"Could not open {LinuxGuiUpdateService.ReleasesUrl}.";
                 }
             }
 
@@ -1081,6 +1162,27 @@ namespace CKAN.LinuxGUI
                     guiConfiguration.Save();
                 }
             }
+
+            private static async Task<string> GetLatestCoreVersionTextAsync(bool includePrereleases)
+            {
+                try
+                {
+                    var update = await Task.Run(() => new AutoUpdate().GetUpdate(includePrereleases));
+                    if (update.Version is not CkanModuleVersion version)
+                    {
+                        return "Unavailable";
+                    }
+
+                    return version.SameClientVersion(Meta.ReleaseVersion)
+                        ? $"{version} (current)"
+                        : version.ToString();
+                }
+                catch
+                {
+                    return "Unavailable";
+                }
+            }
+
         }
 
         private sealed class RepositoryRow
@@ -1173,6 +1275,12 @@ namespace CKAN.LinuxGUI
             {
                 get => GetBool(nameof(RefreshPaused), false);
                 set => SetBool(nameof(RefreshPaused), value);
+            }
+
+            public bool PruneInstallHistory
+            {
+                get => GetBool(nameof(PruneInstallHistory), false);
+                set => SetBool(nameof(PruneInstallHistory), value);
             }
 
             public bool AutoSortByUpdate

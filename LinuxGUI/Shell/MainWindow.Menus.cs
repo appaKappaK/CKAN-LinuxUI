@@ -51,13 +51,22 @@ namespace CKAN.LinuxGUI
             return await ShowOwnedDialogAsync<int>(dialog) == 0;
         }
 
+        private static async Task WaitForMenuPopupCloseAsync()
+            => await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background);
+
         private async void CompatibleGameVersionsMenuItem_OnClick(object? sender,
                                                                   Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenCompatibleGameVersionsAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenCompatibleGameVersionsAsync();
+        }
 
         private async void AboutMenuItem_OnClick(object? sender,
                                                  Avalonia.Interactivity.RoutedEventArgs e)
-            => await ShowOwnedDialogAsync(new AboutWindow());
+        {
+            await WaitForMenuPopupCloseAsync();
+            await ShowOwnedDialogAsync(new AboutWindow());
+        }
 
         private async Task OpenCompatibleGameVersionsAsync()
         {
@@ -76,11 +85,17 @@ namespace CKAN.LinuxGUI
 
         private async void DisplayScaleMenuItem_OnClick(object? sender,
                                                         Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenDisplayScaleAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenDisplayScaleAsync();
+        }
 
         private async void SettingsMenuItem_OnClick(object? sender,
                                                     Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenSettingsAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenSettingsAsync();
+        }
 
         private async Task OpenDisplayScaleAsync()
         {
@@ -113,7 +128,10 @@ namespace CKAN.LinuxGUI
 
         private async void GameCommandLinesMenuItem_OnClick(object? sender,
                                                             Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenGameCommandLinesAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenGameCommandLinesAsync();
+        }
 
         private async Task OpenGameCommandLinesAsync()
         {
@@ -133,7 +151,10 @@ namespace CKAN.LinuxGUI
 
         private async void PluginsMenuItem_OnClick(object? sender,
                                                    Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenPluginsAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenPluginsAsync();
+        }
 
         private async Task OpenPluginsAsync()
         {
@@ -155,7 +176,10 @@ namespace CKAN.LinuxGUI
 
         private async void PreferredHostsMenuItem_OnClick(object? sender,
                                                           Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenPreferredHostsAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenPreferredHostsAsync();
+        }
 
         private async Task OpenPreferredHostsAsync()
         {
@@ -172,7 +196,10 @@ namespace CKAN.LinuxGUI
 
         private async void InstallationFiltersMenuItem_OnClick(object? sender,
                                                                Avalonia.Interactivity.RoutedEventArgs e)
-            => await OpenInstallationFiltersAsync();
+        {
+            await WaitForMenuPopupCloseAsync();
+            await OpenInstallationFiltersAsync();
+        }
 
         private async Task OpenInstallationFiltersAsync()
         {
@@ -194,6 +221,8 @@ namespace CKAN.LinuxGUI
         private async void ManageGameInstancesMenuItem_OnClick(object? sender,
                                                                Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -216,9 +245,11 @@ namespace CKAN.LinuxGUI
             }
         }
 
-        private void InstallationHistoryMenuItem_OnClick(object? sender,
-                                                         Avalonia.Interactivity.RoutedEventArgs e)
+        private async void InstallationHistoryMenuItem_OnClick(object? sender,
+                                                               Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -230,6 +261,7 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            SettingsWindow.PruneInstallHistoryIfEnabled(viewModel.CurrentInstance);
             installationHistoryWindow = new InstallationHistoryWindow(viewModel.CurrentInstance);
             installationHistoryWindow.Closed += InstallationHistoryWindow_OnClosed;
             installationHistoryWindow.Show(this);
@@ -251,6 +283,8 @@ namespace CKAN.LinuxGUI
         private async void InstallFromCkanMenuItem_OnClick(object? sender,
                                                           Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -281,6 +315,8 @@ namespace CKAN.LinuxGUI
         private async void ImportDownloadedModsMenuItem_OnClick(object? sender,
                                                                 Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -311,6 +347,8 @@ namespace CKAN.LinuxGUI
         private async void DeduplicateInstalledFilesMenuItem_OnClick(object? sender,
                                                                      Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is MainWindowViewModel viewModel)
             {
                 var result = await viewModel.DeduplicateInstalledFilesAsync();
@@ -322,6 +360,8 @@ namespace CKAN.LinuxGUI
         private async void ExportModListMenuItem_OnClick(object? sender,
                                                          Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -344,6 +384,8 @@ namespace CKAN.LinuxGUI
         private async void ExportModpackMenuItem_OnClick(object? sender,
                                                         Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -372,6 +414,8 @@ namespace CKAN.LinuxGUI
         private async void AuditRecommendationsMenuItem_OnClick(object? sender,
                                                                 Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel
                 || viewModel.CurrentInstance == null)
             {
@@ -403,6 +447,8 @@ namespace CKAN.LinuxGUI
         private async void DownloadStatisticsMenuItem_OnClick(object? sender,
                                                               Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -416,6 +462,8 @@ namespace CKAN.LinuxGUI
         private async void PlayTimeMenuItem_OnClick(object? sender,
                                                     Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -429,6 +477,8 @@ namespace CKAN.LinuxGUI
         private async void UnmanagedFilesMenuItem_OnClick(object? sender,
                                                           Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await WaitForMenuPopupCloseAsync();
+
             if (DataContext is not MainWindowViewModel viewModel)
             {
                 return;
@@ -442,7 +492,7 @@ namespace CKAN.LinuxGUI
         private void ExitMenuItem_OnClick(object? sender,
                                           Avalonia.Interactivity.RoutedEventArgs e)
         {
-            Close();
+            Dispatcher.UIThread.Post(Close);
         }
 
         private static IReadOnlyList<FilePickerFileType> InstalledModListFileTypes { get; } = new[]

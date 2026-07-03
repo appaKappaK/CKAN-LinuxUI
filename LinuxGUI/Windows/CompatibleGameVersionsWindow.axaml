@@ -8,7 +8,7 @@
         MinHeight="520"
         WindowStartupLocation="CenterOwner"
         Title="Compatible Game Versions"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -67,16 +67,13 @@
     </Grid>
 
     <Grid Grid.Row="1"
-          RowDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+          RowDefinitions="*,Auto,Auto,Auto,Auto"
           Margin="0,18,0,0">
-      <TextBlock Text="Additionally install mods compatible with following game versions:" />
-
-      <Border Grid.Row="1"
+      <Border Grid.Row="0"
               Background="#161B21"
               BorderBrush="#2B323C"
               BorderThickness="1"
               CornerRadius="8"
-              Margin="0,12,0,0"
               Padding="12">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
@@ -99,7 +96,7 @@
         </ScrollViewer>
       </Border>
 
-      <Grid Grid.Row="2"
+      <Grid Grid.Row="1"
             ColumnDefinitions="Auto,*,Auto"
             Margin="0,12,0,0">
         <Button Classes="dialog-action"
@@ -122,14 +119,14 @@
                 Content="Add" />
       </Grid>
 
-      <TextBlock Grid.Row="3"
+      <TextBlock Grid.Row="2"
                  FontSize="12"
                  Margin="0,12,0,0"
                  Opacity="0.74"
                  TextWrapping="Wrap"
                  Text="{Binding CompatibilityHint}" />
 
-      <StackPanel Grid.Row="4"
+      <StackPanel Grid.Row="3"
                   Margin="0,12,0,0"
                   Spacing="8">
         <Border Background="#4A3920"

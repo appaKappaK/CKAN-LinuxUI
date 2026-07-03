@@ -389,10 +389,10 @@ namespace CKAN.LinuxGUI
 
             public string DetailText
                 => SelectedInstance == null
-                    ? "Select a registered install to review it."
+                    ? "Select a registered instance to review it."
                     : SelectedInstance.IsCurrent
-                        ? "This install is already active. Management changes are saved immediately."
-                        : "Switching instances reloads the mod catalog for the selected install. Management changes are saved immediately.";
+                        ? "This instance is already active. Management changes are saved immediately."
+                        : "Opening another instance reloads the mod catalog for that instance. Management changes are saved immediately.";
 
             public string FooterText
                 => statusMessage ?? "";

@@ -8,7 +8,7 @@
         MinHeight="400"
         WindowStartupLocation="CenterOwner"
         Title="Play Time"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -38,7 +38,7 @@
     <Style Selector="TextBox.playtime-hours">
       <Setter Property="MinHeight" Value="40" />
       <Setter Property="Padding" Value="10,7" />
-      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="Background" Value="#111820" />
       <Setter Property="BorderBrush" Value="#3D4E60" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="6" />
@@ -47,12 +47,23 @@
       <Setter Property="CaretBrush" Value="#F4F6F8" />
     </Style>
     <Style Selector="TextBox.playtime-hours:pointerover">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#131C25" />
       <Setter Property="BorderBrush" Value="#4B5D70" />
     </Style>
     <Style Selector="TextBox.playtime-hours:focus">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#151F29" />
       <Setter Property="BorderBrush" Value="#61758B" />
+    </Style>
+    <Style Selector="TextBlock.playtime-table-header">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+    </Style>
+    <Style Selector="Border.playtime-header-separator">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Margin" Value="0,8" />
+      <Setter Property="Background" Value="#2B4054" />
     </Style>
   </Window.Styles>
 
@@ -64,27 +75,44 @@
             BorderThickness="1"
             CornerRadius="10"
             Padding="12">
-      <Grid RowDefinitions="Auto,*">
-        <Grid ColumnDefinitions="2.2*,1.4*,0.8*">
-          <TextBlock FontWeight="SemiBold"
-                     Text="Instance" />
-          <TextBlock Grid.Column="1"
-                     FontWeight="SemiBold"
-                     Text="Path" />
-          <TextBlock Grid.Column="2"
-                     HorizontalAlignment="Right"
-                     FontWeight="SemiBold"
-                     Text="Hours" />
-        </Grid>
+      <Border Background="#111820"
+              BorderBrush="#3D4E60"
+              BorderThickness="1"
+              CornerRadius="8"
+              ClipToBounds="True">
+      <Grid RowDefinitions="38,*">
+        <Border Background="#16202A"
+                BorderBrush="#2A3A4B"
+                BorderThickness="0,0,0,1"
+                CornerRadius="8,8,0,0">
+          <Grid ColumnDefinitions="2.2*,1.4*,0.8*">
+            <TextBlock Classes="playtime-table-header"
+                       Margin="12,0"
+                       Text="Instance" />
+            <Border Grid.Column="1"
+                    Classes="playtime-header-separator" />
+            <TextBlock Grid.Column="1"
+                       Classes="playtime-table-header"
+                       Margin="12,0"
+                       Text="Path" />
+            <Border Grid.Column="2"
+                    Classes="playtime-header-separator" />
+            <TextBlock Grid.Column="2"
+                       Classes="playtime-table-header"
+                       Margin="12,0"
+                       Text="Hours" />
+          </Grid>
+        </Border>
 
         <ScrollViewer Grid.Row="1"
-                      Margin="0,12,0,0">
+                      Background="#111820">
           <ItemsControl ItemsSource="{Binding Entries}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Border BorderBrush="#242B33"
                         BorderThickness="0,0,0,1"
-                        Padding="0,10">
+                        Background="#111820"
+                        Padding="12,10">
                   <Grid ColumnDefinitions="2.2*,1.4*,0.8*">
                     <StackPanel Spacing="3">
                       <TextBlock FontWeight="SemiBold"
@@ -102,6 +130,7 @@
 
                     <TextBox Grid.Column="2"
                              Classes="playtime-hours"
+                             Margin="12,0,0,0"
                              HorizontalContentAlignment="Right"
                              Text="{Binding HoursText, Mode=TwoWay}" />
                   </Grid>
@@ -111,6 +140,7 @@
           </ItemsControl>
         </ScrollViewer>
       </Grid>
+      </Border>
     </Border>
 
     <Grid Grid.Row="1"

@@ -8,7 +8,7 @@
         MinHeight="480"
         WindowStartupLocation="CenterOwner"
         Title="Installation History"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -106,39 +106,45 @@
                        Text="{Binding SelectedSnapshotSubtitle}" />
           </StackPanel>
 
-          <ScrollViewer Grid.Row="1"
-                        Margin="0,12,12,0"
-                        VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Modules}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border BorderBrush="#242B33"
-                          BorderThickness="0,0,0,1"
-                          Padding="0,11,8,11">
-                    <Grid ColumnDefinitions="*,96">
-                      <StackPanel Spacing="3">
-                        <TextBlock FontWeight="SemiBold"
+          <Border Grid.Row="1"
+                  Background="#111820"
+                  BorderBrush="#252F3A"
+                  BorderThickness="1"
+                  Margin="0,12,2,0"
+                  Padding="0,0,14,0">
+            <ScrollViewer Margin="0"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding Modules}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border BorderBrush="#242B33"
+                            BorderThickness="0,0,0,1"
+                            Padding="10,11,12,11">
+                      <Grid ColumnDefinitions="*,96">
+                        <StackPanel Spacing="3">
+                          <TextBlock FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis"
+                                     Text="{Binding Name}" />
+                          <TextBlock FontSize="12"
+                                     Opacity="0.66"
+                                     TextTrimming="CharacterEllipsis"
+                                     Text="{Binding Identifier}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1"
+                                   Margin="16,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Opacity="0.76"
                                    TextTrimming="CharacterEllipsis"
-                                   Text="{Binding Name}" />
-                        <TextBlock FontSize="12"
-                                   Opacity="0.66"
-                                   TextTrimming="CharacterEllipsis"
-                                   Text="{Binding Identifier}" />
-                      </StackPanel>
-                      <TextBlock Grid.Column="1"
-                                 Margin="16,0,0,0"
-                                 VerticalAlignment="Center"
-                                 HorizontalAlignment="Right"
-                                 TextAlignment="Right"
-                                 Opacity="0.76"
-                                 TextTrimming="CharacterEllipsis"
-                                 Text="{Binding Version}" />
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+                                   Text="{Binding Version}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
         </Grid>
       </Border>
     </Grid>

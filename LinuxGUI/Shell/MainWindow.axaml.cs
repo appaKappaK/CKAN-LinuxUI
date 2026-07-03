@@ -17,7 +17,6 @@ using Avalonia.VisualTree;
 using CKAN.App.Models;
 using CKAN.App.Services;
 using CKAN.Types;
-using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
 {
@@ -51,11 +50,11 @@ namespace CKAN.LinuxGUI
         private bool hasPendingModListScrollRestore;
         private double pendingModListScrollOffsetY;
         private bool launchUpdateCheckStarted;
+        private bool menuPopupPlacementDirty;
         private const double OverlayWheelScrollPixels = 48;
         private const double BrowserWheelScrollPixels = 112;
         private const double QueueWheelScrollPixels = 120;
         private const double PreviewSectionWheelScrollPixels = 96;
-        private const string CkanReleasesUrl = "https://github.com/KSP-CKAN/CKAN/releases";
         private static readonly IBrush PreviewConflictRowBackground = Brush.Parse("#2A1820");
         private static readonly IBrush PreviewConflictRowBorder = Brush.Parse("#3C212B");
         private static readonly IBrush PreviewConflictSelectedRowBackground = Brush.Parse("#361B24");
@@ -67,6 +66,9 @@ namespace CKAN.LinuxGUI
             Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://CKAN-LinuxGUI/Assets/ckan.ico")));
             AddHandler(InputElement.PointerWheelChangedEvent,
                        Window_OnPointerWheelChanged,
+                       RoutingStrategies.Tunnel);
+            AddHandler(InputElement.PointerPressedEvent,
+                       Window_OnPointerPressed,
                        RoutingStrategies.Tunnel);
             Opened += OnOpened;
             Closing += OnClosing;

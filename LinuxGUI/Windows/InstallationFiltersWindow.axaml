@@ -8,7 +8,7 @@
         MinHeight="560"
         WindowStartupLocation="CenterOwner"
         Title="Installation Filters"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -65,7 +65,8 @@
         Margin="20">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16">
+      <StackPanel Spacing="16"
+                  Margin="0,0,12,0">
         <Border Background="#161B21"
                 BorderBrush="#2B323C"
                 BorderThickness="1"
@@ -76,7 +77,10 @@
                        FontWeight="SemiBold"
                        Text="{Binding GlobalFiltersTitle}" />
             <TextBox AcceptsReturn="True"
-                     MinHeight="170"
+                     Height="116"
+                     Background="#111820"
+                     BorderBrush="#3D4E60"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                      Text="{Binding GlobalFiltersText, Mode=TwoWay}"
                      TextWrapping="NoWrap"
                      VerticalContentAlignment="Top" />
@@ -114,7 +118,10 @@
                        FontWeight="SemiBold"
                        Text="{Binding InstanceFiltersTitle}" />
             <TextBox AcceptsReturn="True"
-                     MinHeight="170"
+                     Height="116"
+                     Background="#111820"
+                     BorderBrush="#3D4E60"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                      Text="{Binding InstanceFiltersText, Mode=TwoWay}"
                      TextWrapping="NoWrap"
                      VerticalContentAlignment="Top" />

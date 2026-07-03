@@ -8,7 +8,7 @@
         MinHeight="440"
         WindowStartupLocation="CenterOwner"
         Title="Download Statistics"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="Button.dialog-action">
       <Setter Property="MinHeight" Value="34" />
@@ -35,6 +35,17 @@
       <Setter Property="Foreground" Value="#7B8794" />
       <Setter Property="Opacity" Value="1" />
     </Style>
+    <Style Selector="TextBlock.download-table-header">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#F2F4F7" />
+    </Style>
+    <Style Selector="Border.download-header-separator">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Margin" Value="0,8" />
+      <Setter Property="Background" Value="#2B4054" />
+    </Style>
   </Window.Styles>
 
   <Grid RowDefinitions="*,Auto"
@@ -45,18 +56,30 @@
             BorderThickness="1"
             CornerRadius="10"
             Padding="12">
-      <Grid RowDefinitions="Auto,*">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock FontWeight="SemiBold"
-                     Text="Host" />
-          <TextBlock Grid.Column="1"
-                     HorizontalAlignment="Right"
-                     FontWeight="SemiBold"
-                     Text="Cached Size" />
-        </Grid>
-
+      <Border Background="#111820"
+              BorderBrush="#3D4E60"
+              BorderThickness="1"
+              CornerRadius="8"
+              ClipToBounds="True">
+      <Grid RowDefinitions="38,*">
+        <Border Background="#16202A"
+                BorderBrush="#2A3A4B"
+                BorderThickness="0,0,0,1"
+                CornerRadius="8,8,0,0">
+          <Grid ColumnDefinitions="*,140">
+            <TextBlock Classes="download-table-header"
+                       Margin="12,0"
+                       Text="Host" />
+            <Border Grid.Column="1"
+                    Classes="download-header-separator" />
+            <TextBlock Grid.Column="1"
+                       Classes="download-table-header"
+                       Margin="12,0"
+                       HorizontalAlignment="Right"
+                       Text="Cached Size" />
+          </Grid>
+        </Border>
         <TextBlock Grid.Row="1"
-                   Margin="0,18,0,0"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    FontSize="13"
@@ -65,17 +88,20 @@
                    IsVisible="{Binding ShowEmptyState}"
                    Text="{Binding SummaryText}" />
         <ScrollViewer Grid.Row="1"
-                      Margin="0,12,0,0"
+                      Background="#111820"
                       IsVisible="{Binding ShowRows}">
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Border BorderBrush="#242B33"
                         BorderThickness="0,0,0,1"
-                        Padding="0,10">
-                  <Grid ColumnDefinitions="*,Auto">
+                        Background="#111820"
+                        Padding="12,10">
+                  <Grid ColumnDefinitions="*,140">
                     <TextBlock Text="{Binding Host}" />
                     <TextBlock Grid.Column="1"
+                               HorizontalAlignment="Right"
+                               TextAlignment="Right"
                                Opacity="0.78"
                                Text="{Binding SizeLabel}" />
                   </Grid>
@@ -85,6 +111,7 @@
           </ItemsControl>
         </ScrollViewer>
       </Grid>
+      </Border>
     </Border>
 
     <StackPanel Grid.Row="1"

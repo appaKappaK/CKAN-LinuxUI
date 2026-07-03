@@ -10,7 +10,7 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Title="About"
-        Background="#171C22">
+        Background="#1B222A">
   <Window.Styles>
     <Style Selector="TextBlock.about-label">
       <Setter Property="FontSize" Value="12.5" />

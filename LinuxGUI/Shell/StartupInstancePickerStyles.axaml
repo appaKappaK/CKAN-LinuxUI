@@ -1,0 +1,95 @@
+<Styles xmlns="https://github.com/avaloniaui">
+  <Style Selector="Border.startup-instance-header">
+    <Setter Property="Background" Value="#111922" />
+    <Setter Property="BorderBrush" Value="#2E3C49" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="9,9,0,0" />
+  </Style>
+
+  <Style Selector="ListBox.startup-instance-list">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,4,1" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem /template/ Border">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <Style Selector="Border.startup-instance-row">
+    <Setter Property="Background" Value="#181D23" />
+    <Setter Property="BorderBrush" Value="#202A33" />
+    <Setter Property="BorderThickness" Value="0,1,1,1" />
+    <Setter Property="CornerRadius" Value="5" />
+  </Style>
+  <Style Selector="Border.startup-instance-edge">
+    <Setter Property="Background" Value="#2F84BF" />
+    <Setter Property="Width" Value="4" />
+    <Setter Property="CornerRadius" Value="5,0,0,5" />
+  </Style>
+
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:pointerover Border.startup-instance-row">
+    <Setter Property="Background" Value="#181D23" />
+    <Setter Property="BorderBrush" Value="#426485" />
+  </Style>
+  <Style Selector="Border.startup-instance-row:pointerover">
+    <Setter Property="Background" Value="#181D23" />
+    <Setter Property="BorderBrush" Value="#426485" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:pointerover Border.startup-instance-edge">
+    <Setter Property="Background" Value="#2F84BF" />
+  </Style>
+
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:selected Border.startup-instance-row">
+    <Setter Property="Background" Value="#181D23" />
+    <Setter Property="BorderBrush" Value="#5C86BE" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:selected Border.startup-instance-edge">
+    <Setter Property="Background" Value="#2F84BF" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:selected TextBlock.startup-instance-name">
+    <Setter Property="Foreground" Value="#FFFFFF" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:selected /template/ Border">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list > ListBoxItem:focus Border.startup-instance-row">
+    <Setter Property="BorderBrush" Value="#5C86BE" />
+  </Style>
+
+  <Style Selector="ListBox.startup-instance-list ScrollBar:vertical">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="MinWidth" Value="10" />
+    <Setter Property="Margin" Value="2,2,0,2" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list ScrollBar:vertical:pointerover">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="MinWidth" Value="10" />
+    <Setter Property="Margin" Value="2,2,0,2" />
+  </Style>
+  <Style Selector="ListBox.startup-instance-list ScrollBar:vertical:expanded">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="MinWidth" Value="10" />
+    <Setter Property="Margin" Value="2,2,0,2" />
+  </Style>
+</Styles>

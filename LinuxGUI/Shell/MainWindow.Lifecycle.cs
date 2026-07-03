@@ -16,8 +16,8 @@ using Avalonia.VisualTree;
 
 using CKAN.App.Models;
 using CKAN.App.Services;
+using CKAN.LinuxGUI.Services;
 using CKAN.Types;
-using CKAN.Versioning;
 
 namespace CKAN.LinuxGUI
 {
@@ -88,7 +88,27 @@ namespace CKAN.LinuxGUI
 
         private void OnPositionChanged(object? sender,
                                        PixelPointEventArgs e)
-            => CloseActiveModRowMenu();
+        {
+            menuPopupPlacementDirty = true;
+            CloseActiveModRowMenu();
+            CloseOpenMenuPopups();
+            Dispatcher.UIThread.Post(() =>
+            {
+                InvalidateMeasure();
+                UpdateLayout();
+            }, DispatcherPriority.Render);
+        }
+
+        private void CloseOpenMenuPopups()
+        {
+            foreach (var menuItem in this.GetVisualDescendants().OfType<MenuItem>())
+            {
+                if (menuItem.IsSubMenuOpen)
+                {
+                    menuItem.IsSubMenuOpen = false;
+                }
+            }
+        }
 
         private bool IsSavedPositionVisible(PixelPoint position)
             => Screens.All.Any(screen =>
@@ -136,10 +156,9 @@ namespace CKAN.LinuxGUI
 
             try
             {
-                var useDevBuilds = viewModel.CurrentConfiguration?.DevBuilds ?? false;
-                var update = await Task.Run(() => new AutoUpdate().GetUpdate(useDevBuilds));
-                if (update.Version is not CkanModuleVersion latestVersion
-                    || latestVersion.SameClientVersion(Meta.ReleaseVersion))
+                var update = await Task.Run(() => LinuxGuiUpdateService.GetLatest(includePrereleases: false,
+                                                                                   viewModel.CurrentConfiguration));
+                if (!LinuxGuiUpdateService.IsNewerThanCurrent(update.Version))
                 {
                     return;
                 }
@@ -153,21 +172,21 @@ namespace CKAN.LinuxGUI
                     return;
                 }
 
-                var channel = useDevBuilds ? "dev build" : "release";
+                var channel = update.Prerelease ? "prerelease" : "release";
                 var choice = await ShowOwnedDialogAsync<int>(
                     new SimplePromptWindow(
-                        $"A newer CKAN {channel} is available.\n\nCurrent version: {Meta.ReleaseVersion}\nLatest version: {latestVersion}\n\nThis Linux GUI build will not install updates automatically. Use your package/source workflow for this build, or open the CKAN releases page.",
+                        $"A newer CKAN Linux {channel} is available.\n\nCurrent CKAN Linux: {LinuxGuiUpdateService.CurrentVersion}\nLatest CKAN Linux: {update.DisplayVersion}\nBundled CKAN core: {Meta.ReleaseVersion}\n\nThis app will not install updates automatically. Open the CKAN Linux releases page to download the package you want.",
                         Array.Empty<string>(),
                         "Open Releases",
                         "Dismiss"));
 
                 if (choice == 0)
                 {
-                    if (!Utilities.ProcessStartURL(CkanReleasesUrl))
+                    if (!Utilities.ProcessStartURL(update.ReleaseUrl))
                     {
                         await ShowOwnedDialogAsync(
                             new MessageDialogWindow("Open Releases",
-                                                    $"Could not open the CKAN releases page.\n\n{CkanReleasesUrl}"));
+                                                    $"Could not open the CKAN Linux releases page.\n\n{update.ReleaseUrl}"));
                     }
                 }
             }

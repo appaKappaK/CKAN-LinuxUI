@@ -6,7 +6,7 @@
     <Style Selector="TextBox">
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="Padding" Value="10,6" />
-      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="Background" Value="#111820" />
       <Setter Property="BorderBrush" Value="#3D4E60" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="6" />
@@ -15,32 +15,56 @@
       <Setter Property="CaretBrush" Value="#F4F6F8" />
     </Style>
     <Style Selector="TextBox:pointerover">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#131C25" />
       <Setter Property="BorderBrush" Value="#4B5D70" />
     </Style>
     <Style Selector="TextBox:focus">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#151F29" />
       <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
     <Style Selector="TextBox /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#16202A" />
+      <Setter Property="Background" Value="#111820" />
       <Setter Property="BorderBrush" Value="#3D4E60" />
     </Style>
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#131C25" />
       <Setter Property="BorderBrush" Value="#4B5D70" />
     </Style>
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#151F29" />
       <Setter Property="BorderBrush" Value="#61758B" />
     </Style>
     <Style Selector="TextBox:focus-within /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#1B2631" />
+      <Setter Property="Background" Value="#151F29" />
       <Setter Property="BorderBrush" Value="#61758B" />
+    </Style>
+    <Style Selector="Button.dialog-action:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2E3C49" />
+      <Setter Property="BorderBrush" Value="#5B7084" />
+    </Style>
+    <Style Selector="Button.dialog-action:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#1D2730" />
+      <Setter Property="BorderBrush" Value="#6A7F94" />
+    </Style>
+    <Style Selector="Button.dialog-action:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
+    </Style>
+    <Style Selector="Button.preset-button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#294259" />
+      <Setter Property="BorderBrush" Value="#557595" />
+    </Style>
+    <Style Selector="Button.preset-button:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#172637" />
+      <Setter Property="BorderBrush" Value="#6384A5" />
+    </Style>
+    <Style Selector="Button.preset-button:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="#20262D" />
+      <Setter Property="BorderBrush" Value="#303A44" />
     </Style>
     <Style Selector="ListBox.utility-list">
       <Setter Property="Background" Value="#111820" />
-      <Setter Property="BorderBrush" Value="#252F3A" />
+      <Setter Property="BorderBrush" Value="#3D4E60" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
