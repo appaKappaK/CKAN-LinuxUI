@@ -37,9 +37,19 @@ detected, the browser falls back to `All`. Installed startup snapshots are
 sorted by mod name from A-Z before the full catalog data is available.
 
 If no active instance is selected, or if the saved/default instance cannot be
-activated, LinuxGUI opens the pre-browser instance selection surface. That
-screen uses the same installed app code as normal launches; the dev launcher
-only makes it easier to hit because it uses isolated dev configuration.
+activated, LinuxGUI opens a first-run instance picker over the normal browser
+shell. Pick a registered instance from the table, then use `Open Install` to
+load the mod browser. Invalid or unavailable instance paths are reported inline
+in the picker instead of taking over the app with a separate error page.
+
+The first-run picker can be stress-tested in development with fake entries:
+
+```bash
+CKAN_LINUX_DEV_FAKE_INSTANCES=1 ./scripts/run-linuxgui-dev.sh
+```
+
+Fake entries are only for dev UI testing; they are not written as real CKAN
+instances.
 
 Refreshing the catalog temporarily replaces the browser rows with the matching
 skeleton table until the reload finishes. During that work the header action
@@ -91,6 +101,17 @@ no longer required by anything that will remain installed.
 `Mods > Installation History` opens as a non-modal utility window. Keep it open
 while browsing the mod list to cross-reference saved snapshots against current
 mods without repeatedly closing and reopening the history window.
+
+Installation-history snapshots are kept unless you opt in to cleanup. In
+Settings, enable `Prune installation history older than 30 days` if you want
+CKAN Linux to remove old snapshot files when opening history or when the option
+is enabled.
+
+The active filter popout includes `External` for catalogued mods that are
+present locally but were not installed through CKAN. `Replaceable` appears only
+when replacements exist. Cache filters look at the download cache itself, so a
+mod can remain marked cached after uninstalling if a matching archive is still
+available in the cache.
 
 ## Build
 

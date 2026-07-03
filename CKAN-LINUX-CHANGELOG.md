@@ -3,6 +3,29 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-07-03
+
+### LinuxGUI First-Run and Dialog Polish
+- Replaced the first-run instance selection page with a modal picker over the normal browser shell, using the current header, skeleton browser background, table-style instance list, explicit selection state, and inline invalid-instance feedback.
+- Added development-only fake instance rows behind `CKAN_LINUX_DEV_FAKE_INSTANCES=1` so first-run list selection, scrolling, invalid paths, and boundary styling can be tested without changing real CKAN instances.
+- Updated top-level menu dropdown chrome and placement so File, Settings, and Help stay highlighted while open, align closer to the header buttons, and avoid stale popup positioning after opening owned dialogs.
+- Cleaned up first-run and no-instance menus by disabling unavailable instance-specific actions, removing the obsolete user-guide entry, and pointing CKAN Linux issue reporting at the CKAN Linux repository.
+- Removed the generic `Open ship directory` File menu action because ship folders are save-specific rather than instance-wide.
+- Disabled `Settings > Game command lines` while LinuxGUI launch handling remains unavailable.
+- Refreshed Settings, Compatible Game Versions, Installation Filters, Installation History, Download Statistics, Play Time, and related popup button hover states to use the newer two-tone dialog palette with darker content panels inside lighter dialog shells.
+- Standardized utility tables in Manage Game Instances, Play Time, Download Statistics, and Installation History with darker table bodies, header bands, aligned separators, rounded table corners, and scrollbar gutters where scrollbars would otherwise overlap text.
+- Made top-level menu popups recover their correct button-relative placement after the main window is moved, and clear the browser search focus when clicking outside the search field.
+- Shortened the Installation Filters editor height and added scrollbar gutter spacing so the warning and action buttons remain reachable without oversized editor panes.
+- Removed duplicate helper copy from Compatible Game Versions and Settings where controls or footer text already explained the action.
+
+### LinuxGUI Browser and Settings Behavior
+- Added an `External` filter for catalogued mods detected locally outside CKAN-managed installs, and moved `Replaceable` into the filter footer so it only appears when replacements exist.
+- Fixed cached-state detection so a mod still shows as cached when any available archive for that identifier remains in the download cache, even after the mod is uninstalled.
+- Reworked the Settings update panel for CKAN Linux packaging: CKAN Linux is shown as not versioned until release metadata exists, Linux GUI update checks are disabled, bundled/latest core versions are shown separately, and the releases page can be opened directly.
+- Added an opt-in Settings toggle to prune installation-history snapshots older than 30 days; history pruning is disabled by default.
+- Removed Settings controls that do not apply to the current LinuxGUI build, including language selection, tray behavior, unavailable auto-sort behavior, and dev-build update toggles.
+- Clarified Manage Game Instances copy and action labels now that instance-management changes save immediately and switching uses `Open Install`.
+
 ## 2026-06-28
 
 ### LinuxGUI Status and Dialog Fixes
