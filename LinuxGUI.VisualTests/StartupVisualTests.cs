@@ -80,7 +80,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -112,7 +112,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -172,7 +172,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1040,
@@ -212,6 +212,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 search,
                 changes,
                 actions,
+                new FakeDisabledModService(),
                 user);
             var window = new MainWindow(viewModel, settings);
 
@@ -232,7 +233,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -259,7 +260,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -284,7 +285,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -310,7 +311,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -335,7 +336,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -359,7 +360,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -399,7 +400,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 },
                 applyDelayMs: 1200);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -447,7 +448,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     },
                 });
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -492,7 +493,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     },
                 });
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -520,7 +521,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -545,7 +546,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -567,7 +568,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,
@@ -591,7 +592,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
             var window = new MainWindow(viewModel, settings)
             {
                 Width = 1200,

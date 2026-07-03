@@ -35,6 +35,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 new ModSearchService(settings),
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
 
             Assert.Multiple(() =>
@@ -156,6 +157,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     new ModSearchService(settings),
                     changes,
                     new FakeModActionService(changes),
+                    new FakeDisabledModService(),
                     new AvaloniaUser());
 
                 await WaitForAsync(() => viewModel.Mods.Count > 0);
@@ -180,6 +182,7 @@ namespace CKAN.LinuxGUI.VisualTests
                     new ModSearchService(settings),
                     changes,
                     new FakeModActionService(changes),
+                    new FakeDisabledModService(),
                     new AvaloniaUser());
 
                 await WaitForAsync(() => viewModel.HasQueuedActions);
@@ -253,6 +256,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 search,
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
             Assert.That(viewModel.FilterInstalledOnly, Is.True);
 
@@ -293,6 +297,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 search,
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
 
             await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
@@ -322,6 +327,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 search,
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
 
             await WaitForAsync(() => viewModel.Mods.Count == 2 && !viewModel.IsCatalogLoading);
@@ -357,6 +363,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 search,
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
             Assert.That(viewModel.AdvancedAuthorFilter, Is.EqualTo("Gameslinx"));
 
@@ -383,6 +390,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 new ModSearchService(settings),
                 changes,
                 new FakeModActionService(changes),
+                new FakeDisabledModService(),
                 new AvaloniaUser());
 
             await WaitForAsync(() => viewModel.IsReady && !viewModel.IsCatalogLoading);
@@ -703,7 +711,7 @@ namespace CKAN.LinuxGUI.VisualTests
             changes.QueueRemove(AutodetectedCatalogService.Item);
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, new FakeDisabledModService(), user);
 
             try
             {
@@ -1194,7 +1202,7 @@ namespace CKAN.LinuxGUI.VisualTests
             changes.QueueDownload(AutodetectedCatalogService.Item);
             var actions = new FakeModActionService(changes);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, new AutodetectedCatalogService(), search, changes, actions, new FakeDisabledModService(), user);
 
             try
             {
@@ -1650,7 +1658,7 @@ namespace CKAN.LinuxGUI.VisualTests
                                                    updateRecommendations: updateRecommendations,
                                                    updateSupporters: updateSupporters);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, new FakeDisabledModService(), user);
             return (viewModel, service);
         }
 
@@ -1664,7 +1672,7 @@ namespace CKAN.LinuxGUI.VisualTests
             var changes = new ChangesetService();
             var actions = new FakeModActionService(changes, applyResult);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, new FakeDisabledModService(), user);
             return (viewModel, service, user);
         }
 
