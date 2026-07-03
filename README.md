@@ -13,9 +13,10 @@ runs through the existing Mono `ckan.exe` command-line path. If no graphical
 display is available, a no-argument launch opens the console UI instead. If
 `ckan-linux` is unavailable, the wrapper falls back to the legacy `ckan.exe gui`
 path.
-### NOTES
-- The select instance page still needs work
-- Work in progress!
+### Status
+
+The LinuxGUI shell is still under active development.
+
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
 ## Desktop App Quick Start
@@ -76,7 +77,7 @@ workflow.
 [![Crowdin](https://img.shields.io/badge/Crowdin-2E3340.svg?plastic&logo=Crowdin&logoColor=white)](https://crowdin.com/project/ckan)
 
 
-[Click here to open a new CKAN issue][6]
+[Click here to report a CKAN Linux issue][6]
 
 [Click here to go to the CKAN wiki][5]
 
@@ -136,7 +137,7 @@ Note: Are you looking for the Open Data portal software called CKAN? If so, thei
  [3]: https://github.com/KSP-CKAN/CKAN/wiki/Adding-a-mod-to-the-CKAN#verifying-metadata-files
  [4]: https://github.com/KSP-CKAN/.github/blob/master/CONTRIBUTING.md
  [5]: https://github.com/KSP-CKAN/CKAN/wiki
- [6]: https://github.com/KSP-CKAN/CKAN/issues/new
+ [6]: https://github.com/appaKappaK/CKAN-LinuxUI/issues/new
  [7]: https://github.com/KSP-CKAN/NetKAN/issues/new
  [8]: https://schemastore.org/
  [9]: https://github.com/ckan/ckan
