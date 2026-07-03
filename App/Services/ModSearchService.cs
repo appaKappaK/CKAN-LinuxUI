@@ -60,6 +60,9 @@ namespace CKAN.App.Services
                && !filter.NotInstalledOnly
                && !filter.UpdatableOnly
                && !filter.NotUpdatableOnly
+               && !filter.DisabledOnly
+               && !filter.NotDisabledOnly
+               && !filter.ExternalOnly
                && !filter.NewOnly
                && !filter.CompatibleOnly
                && !filter.CachedOnly
@@ -89,6 +92,9 @@ namespace CKAN.App.Services
                && !filter.NotInstalledOnly
                && !filter.UpdatableOnly
                && !filter.NotUpdatableOnly
+               && !filter.DisabledOnly
+               && !filter.NotDisabledOnly
+               && !filter.ExternalOnly
                && !filter.NewOnly
                && !filter.CompatibleOnly
                && !filter.CachedOnly

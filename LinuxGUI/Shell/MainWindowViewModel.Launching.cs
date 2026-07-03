@@ -243,11 +243,6 @@ namespace CKAN.LinuxGUI
         internal void OpenSelectedModResourceLinkFromUi(ModResourceLinkItem? link)
             => OpenSelectedModResourceLink(link);
 
-        private void OpenUserGuide()
-            => LaunchExternal(HelpURLs.UserGuide,
-                              "Opened the CKAN user guide.",
-                              "Could not open the CKAN user guide.");
-
         private void OpenDiscord()
             => LaunchExternal(HelpURLs.CKANDiscord,
                               "Opened the CKAN Discord invite.",
@@ -266,9 +261,9 @@ namespace CKAN.LinuxGUI
         }
 
         private void ReportClientIssue()
-            => LaunchExternal(HelpURLs.CKANIssues,
-                              "Opened the CKAN client issue tracker.",
-                              "Could not open the CKAN client issue tracker.");
+            => LaunchExternal(LinuxGuiIssuesUrl,
+                              "Opened the CKAN Linux issue tracker.",
+                              "Could not open the CKAN Linux issue tracker.");
 
         private void ReportMetadataIssue()
         {

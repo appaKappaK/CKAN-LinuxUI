@@ -10,6 +10,10 @@ namespace CKAN.App.Models
 
         public int Disabled { get; init; }
 
+        public int NotDisabled { get; init; }
+
+        public int External { get; init; }
+
         public int Replaceable { get; init; }
 
         public int Cached { get; init; }

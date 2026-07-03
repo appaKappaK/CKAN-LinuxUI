@@ -112,6 +112,8 @@ namespace CKAN.App.Services
                 Installed    = CountForPreview(items, filter, WithInstalledOnly),
                 Updatable    = CountForPreview(items, filter, WithUpdatableOnly),
                 Disabled     = CountForPreview(items, filter, WithDisabledOnly),
+                NotDisabled  = CountForPreview(items, filter, WithNotDisabledOnly),
+                External     = CountForPreview(items, filter, WithExternalOnly),
                 Replaceable  = CountForPreview(items, filter, WithReplacementOnly),
                 Cached       = CountForPreview(items, filter, WithCachedOnly),
                 Uncached     = CountForPreview(items, filter, WithUncachedOnly),
@@ -205,7 +207,7 @@ namespace CKAN.App.Services
                     IsDisabled       = isDisabled,
                     HasUpdate        = hasUpdate,
                     HasVersionUpdate = hasVersionUpdate,
-                    IsCached         = IsCached(context, displayMod),
+                    IsCached         = IsIdentifierCached(context, identifier, installed),
                     IsIncompatible   = !IdentifierCompatible(registry, identifier, inst)
                                        && (installed == null || !installed.IsCompatible(inst.VersionCriteria())),
                     HasReplacement   = registry.GetReplacement(identifier,
@@ -422,7 +424,7 @@ namespace CKAN.App.Services
             bool isAutodetected = context.Registry.IsAutodetected(module.Identifier);
             bool isDisabled = context.DisabledMods.IsDisabled(module.Identifier);
             bool isInstalled = installedModule != null || isAutodetected;
-            bool isCached = installedCkanModule != null && IsCached(context, installedCkanModule);
+            bool isCached = IsIdentifierCached(context, module.Identifier, installedCkanModule);
             string primaryStateLabel = FormatPrimaryStateLabel(isInstalled,
                                                                isAutodetected,
                                                                isDisabled,
@@ -616,7 +618,7 @@ namespace CKAN.App.Services
             bool isAutodetected = context.Registry.IsAutodetected(displayMod.identifier);
             bool isDisabled = context.DisabledMods.IsDisabled(displayMod.identifier);
             bool isInstalled = installedModule != null || isAutodetected;
-            bool isCached = IsCached(context, displayMod);
+            bool isCached = IsIdentifierCached(context, displayMod.identifier, installedCkanModule);
             bool hasReplacement = context.Registry.GetReplacement(displayMod.identifier,
                                                                   context.Instance.StabilityToleranceConfig,
                                                                   context.Instance.VersionCriteria()) != null;
@@ -736,7 +738,10 @@ namespace CKAN.App.Services
                    && MatchesBooleanFilter(item.HasVersionUpdate,
                                            filter.UpdatableOnly,
                                            filter.NotUpdatableOnly)
-                   && (!filter.DisabledOnly || item.IsDisabled)
+                   && MatchesBooleanFilter(item.IsDisabled,
+                                           filter.DisabledOnly,
+                                           filter.NotDisabledOnly)
+                   && (!filter.ExternalOnly || item.IsAutodetected)
                    && MatchesBooleanFilter(!item.IsIncompatible,
                                            filter.CompatibleOnly,
                                            filter.IncompatibleOnly)
@@ -781,7 +786,8 @@ namespace CKAN.App.Services
         private static FilterState WithDisabledOnly(FilterState filter)
             => filter with
             {
-                DisabledOnly = true,
+                DisabledOnly    = true,
+                NotDisabledOnly = false,
             };
 
         private static FilterState WithCompatibleOnly(FilterState filter)
@@ -817,6 +823,19 @@ namespace CKAN.App.Services
             {
                 HasReplacementOnly = true,
                 NoReplacementOnly  = false,
+            };
+
+        private static FilterState WithNotDisabledOnly(FilterState filter)
+            => filter with
+            {
+                DisabledOnly    = false,
+                NotDisabledOnly = true,
+            };
+
+        private static FilterState WithExternalOnly(FilterState filter)
+            => filter with
+            {
+                ExternalOnly = true,
             };
 
         private static bool Contains(string text, string search)
@@ -976,6 +995,8 @@ namespace CKAN.App.Services
                 "updatable" or "update" or "update-available"
                                               => item.HasVersionUpdate,
                 "disabled"                    => item.IsDisabled,
+                "not-disabled" or "notdisabled" or "enabled"
+                                              => !item.IsDisabled,
                 "not-updatable" or "noupdate" or "notupdate"
                                               => !item.HasVersionUpdate,
                 "compatible"                 => !item.IsIncompatible,
@@ -1312,6 +1333,26 @@ namespace CKAN.App.Services
             => gameInstanceService.Manager.Cache != null
                && module.download is { Count: > 0 }
                && gameInstanceService.Manager.Cache.IsMaybeCachedZip(module);
+
+        private bool IsIdentifierCached(CatalogContext context,
+                                        string         identifier,
+                                        CkanModule?    installedModule)
+        {
+            if (installedModule != null && IsCached(context, installedModule))
+            {
+                return true;
+            }
+
+            try
+            {
+                return context.Registry.AvailableByIdentifier(identifier)
+                              .Any(module => IsCached(context, module));
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private static string FormatCompatibility(CkanModule module, GameInstance instance)
         {

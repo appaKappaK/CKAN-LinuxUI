@@ -500,11 +500,17 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(AllFilterButtonBackground));
             this.RaisePropertyChanged(nameof(AllFilterButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ShowDisabledFilter));
+            this.RaisePropertyChanged(nameof(ShowExternalFilter));
+            this.RaisePropertyChanged(nameof(ShowReplaceableFilter));
+            this.RaisePropertyChanged(nameof(ShowSplitFilterFooter));
+            this.RaisePropertyChanged(nameof(ShowFullFilterFooter));
             this.RaisePropertyChanged(nameof(FilterInstalledState));
             this.RaisePropertyChanged(nameof(FilterUpdatableState));
+            this.RaisePropertyChanged(nameof(FilterDisabledState));
             this.RaisePropertyChanged(nameof(FilterCompatibleState));
             this.RaisePropertyChanged(nameof(FilterCachedState));
             this.RaisePropertyChanged(nameof(FilterReplaceableState));
+            this.RaisePropertyChanged(nameof(FilterExternalOnly));
             this.RaisePropertyChanged(nameof(FilterInstalledTriStateIndex));
             this.RaisePropertyChanged(nameof(FilterUpdatableTriStateIndex));
             this.RaisePropertyChanged(nameof(FilterCompatibleTriStateIndex));
@@ -534,11 +540,17 @@ namespace CKAN.LinuxGUI
         private void PublishFilterOptionCountLabels()
         {
             this.RaisePropertyChanged(nameof(ShowDisabledFilter));
+            this.RaisePropertyChanged(nameof(ShowExternalFilter));
+            this.RaisePropertyChanged(nameof(ShowReplaceableFilter));
+            this.RaisePropertyChanged(nameof(ShowSplitFilterFooter));
+            this.RaisePropertyChanged(nameof(ShowFullFilterFooter));
             this.RaisePropertyChanged(nameof(AllFilterLabel));
             this.RaisePropertyChanged(nameof(CompatibleFilterLabel));
             this.RaisePropertyChanged(nameof(InstalledFilterLabel));
             this.RaisePropertyChanged(nameof(UpdatableFilterLabel));
             this.RaisePropertyChanged(nameof(DisabledFilterLabel));
+            this.RaisePropertyChanged(nameof(NotDisabledFilterLabel));
+            this.RaisePropertyChanged(nameof(ExternalFilterLabel));
             this.RaisePropertyChanged(nameof(ReplaceableFilterLabel));
             this.RaisePropertyChanged(nameof(CachedFilterLabel));
             this.RaisePropertyChanged(nameof(UncachedFilterLabel));

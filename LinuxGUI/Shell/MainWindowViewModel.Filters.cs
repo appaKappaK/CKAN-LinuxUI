@@ -230,6 +230,7 @@ namespace CKAN.LinuxGUI
                 if (notInstalledOnly)
                 {
                     changed |= SetFilterBackingField(ref filterUpdatableOnly, false, nameof(FilterUpdatableOnly));
+                    changed |= SetFilterBackingField(ref filterExternalOnly, false, nameof(FilterExternalOnly));
                 }
             }
             finally
@@ -303,6 +304,14 @@ namespace CKAN.LinuxGUI
             if (filterHasReplacementOnly && filterNoReplacementOnly)
             {
                 filterNoReplacementOnly = false;
+            }
+            if (filterDisabledOnly && filterNotDisabledOnly)
+            {
+                filterNotDisabledOnly = false;
+            }
+            if (filterExternalOnly && filterNotInstalledOnly)
+            {
+                filterNotInstalledOnly = false;
             }
         }
     }

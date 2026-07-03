@@ -15,7 +15,7 @@ namespace CKAN.App.Services
     public sealed class DisabledModService : IDisabledModService
     {
         private const string ManifestFileName = "disabled-mods.json";
-        private const string DefaultDisabledDirectoryName = "A-DISABLED";
+        private const string DefaultDisabledDirectoryName = "DISABLED";
 
         private readonly IGameInstanceService gameInstanceService;
 
@@ -164,7 +164,7 @@ namespace CKAN.App.Services
             if (string.IsNullOrWhiteSpace(snapshot.DisabledDirectoryPath))
             {
                 return DisablePlan.Blocked("Disable Unavailable",
-                                           "No uppercase DISABLED folder was found in the current GameData directory.");
+                                           "No uppercase DISABLED folder was found in the current game directory.");
             }
 
             var activeRegistry = CreateActiveRegistry(registry!, snapshot.Entries.Keys);
@@ -593,7 +593,7 @@ namespace CKAN.App.Services
                     string targetPath = instance.ToAbsoluteGameDir(relPath);
                     if (File.Exists(targetPath))
                     {
-                        collisions.Add($"GameData already contains {relPath}.");
+                        collisions.Add($"Game directory already contains {relPath}.");
                     }
                 }
             }
@@ -801,22 +801,22 @@ namespace CKAN.App.Services
         private static string? ResolveDisabledDirectory(GameInstance            instance,
                                                         StoredDisabledManifest manifest)
         {
-            string modRoot = instance.Game.PrimaryModDirectory(instance);
-            if (!Directory.Exists(modRoot))
+            string gameRoot = instance.GameDir;
+            if (!Directory.Exists(gameRoot))
             {
                 return null;
             }
 
             if (!string.IsNullOrWhiteSpace(manifest.DisabledDirectoryName))
             {
-                string configured = Path.Combine(modRoot, manifest.DisabledDirectoryName);
+                string configured = Path.Combine(gameRoot, manifest.DisabledDirectoryName);
                 if (Directory.Exists(configured))
                 {
                     return configured;
                 }
             }
 
-            return Directory.EnumerateDirectories(modRoot)
+            return Directory.EnumerateDirectories(gameRoot)
                             .FirstOrDefault(path => IsDisabledDirectoryName(Path.GetFileName(path)));
         }
 

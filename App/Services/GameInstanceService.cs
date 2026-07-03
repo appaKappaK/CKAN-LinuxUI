@@ -12,6 +12,7 @@ namespace CKAN.App.Services
     public sealed class GameInstanceService : IGameInstanceService
     {
         private readonly bool preferReadOnlyRegistry = Environment.GetEnvironmentVariable("CKAN_LINUX_DEV_NO_REGISTRY_LOCK") == "1";
+        private readonly bool showDevFakeInstances = Environment.GetEnvironmentVariable("CKAN_LINUX_DEV_FAKE_INSTANCES") == "1";
 
         public GameInstanceService(IConfiguration       configuration,
                                    RepositoryDataManager repositoryData,
@@ -39,11 +40,21 @@ namespace CKAN.App.Services
         public Registry? CurrentRegistry { get; private set; }
 
         public IReadOnlyList<InstanceSummary> Instances
-            => Manager.Instances.Values
-                      .Select(inst => InstanceSummary.From(inst,
-                                                           CurrentInstance?.Name,
-                                                           Configuration.AutoStartInstance))
-                      .ToList();
+        {
+            get
+            {
+                var instances = Manager.Instances.Values
+                                       .Select(inst => InstanceSummary.From(inst,
+                                                                            CurrentInstance?.Name,
+                                                                            Configuration.AutoStartInstance))
+                                       .ToList();
+                if (showDevFakeInstances)
+                {
+                    AddDevFakeInstances(instances);
+                }
+                return instances;
+            }
+        }
 
         public event Action<GameInstance?>? CurrentInstanceChanged;
 
@@ -70,6 +81,62 @@ namespace CKAN.App.Services
                 cancellationToken.ThrowIfCancellationRequested();
                 Manager.SetCurrentInstance(name);
             }, cancellationToken);
+
+        private static void AddDevFakeInstances(ICollection<InstanceSummary> instances)
+        {
+            string[] names =
+            {
+                "Dev Test Install",
+                "Dev RSS Sandbox",
+                "Dev RP-1 Career",
+                "Dev Modded Science",
+                "Dev Stock Baseline",
+                "Dev Steam Mirror",
+                "Dev GOG Mirror",
+                "Dev Portable Copy",
+                "Dev Broken Path",
+                "Dev Long Path Regression",
+                "Dev Minimal Mods",
+                "Dev Heavy Mods",
+                "Dev KSP 1.8 Compatibility",
+                "Dev KSP 1.10 Compatibility",
+                "Dev KSP 1.11 Compatibility",
+                "Dev KSP 1.12 Compatibility",
+                "Dev Localization Test",
+                "Dev Scroll Boundary",
+            };
+
+            foreach (string name in names)
+            {
+                AddDevFakeInstance(instances,
+                                   name,
+                                   $"/tmp/ckan-linux-dev/{SlugifyDevInstanceName(name)}");
+            }
+        }
+
+        private static void AddDevFakeInstance(ICollection<InstanceSummary> instances,
+                                               string                       name,
+                                               string                       gameDir)
+        {
+            if (instances.Any(inst => string.Equals(inst.Name, name, StringComparison.Ordinal)))
+            {
+                return;
+            }
+
+            instances.Add(new InstanceSummary
+            {
+                Name = name,
+                GameDir = gameDir,
+                GameName = "KSP",
+                VersionText = "1.12.5",
+            });
+        }
+
+        private static string SlugifyDevInstanceName(string name)
+            => name.ToLowerInvariant()
+                   .Replace("dev ", "", StringComparison.Ordinal)
+                   .Replace(" ", "-", StringComparison.Ordinal)
+                   .Replace(".", "-", StringComparison.Ordinal);
 
         public void Dispose()
         {

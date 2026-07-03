@@ -304,6 +304,8 @@ namespace CKAN.App.Services
                && (left?.UpdatableOnly ?? false) == (right?.UpdatableOnly ?? false)
                && (left?.NotUpdatableOnly ?? false) == (right?.NotUpdatableOnly ?? false)
                && (left?.DisabledOnly ?? false) == (right?.DisabledOnly ?? false)
+               && (left?.NotDisabledOnly ?? false) == (right?.NotDisabledOnly ?? false)
+               && (left?.ExternalOnly ?? false) == (right?.ExternalOnly ?? false)
                && (left?.NewOnly ?? false) == (right?.NewOnly ?? false)
                && (left?.CompatibleOnly ?? false) == (right?.CompatibleOnly ?? false)
                && (left?.CachedOnly ?? false) == (right?.CachedOnly ?? false)

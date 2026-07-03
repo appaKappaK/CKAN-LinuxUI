@@ -48,6 +48,10 @@ namespace CKAN.App.Models
 
         public bool DisabledOnly { get; init; }
 
+        public bool NotDisabledOnly { get; init; }
+
+        public bool ExternalOnly { get; init; }
+
         public bool NewOnly { get; init; }
 
         public bool CompatibleOnly { get; init; }

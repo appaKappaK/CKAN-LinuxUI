@@ -461,10 +461,12 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            var showInlineSelectionError = NeedsSelection;
             IsRefreshing = true;
             StatusMessage = $"Switching to {SelectedInstance.Name}…";
             StageTitle = "Switching Install";
-            StageDescription = "Reloading the selected install and refreshing the browser.";
+            StageDescription = "Reloading the selected instance and refreshing the browser.";
+            StartupSelectionError = "";
             try
             {
                 await gameInstanceService.SetCurrentInstanceAsync(SelectedInstance.Name, CancellationToken.None);
@@ -478,9 +480,21 @@ namespace CKAN.LinuxGUI
             {
                 Diagnostics = ex.Message;
                 StatusMessage = $"Failed to switch to {SelectedInstance.Name}.";
-                StageTitle = "Could Not Select Instance";
-                StageDescription = "The selected install could not be activated.";
-                StartupStage = StartupStage.Error;
+                if (showInlineSelectionError)
+                {
+                    StartupSelectionError = ex.Message;
+                    StageTitle = "Choose an Instance";
+                    StageDescription = Instances.Count == 1
+                        ? "Select the registered install to open the mod browser."
+                        : "Multiple installs are known, but none is active yet.";
+                    StartupStage = StartupStage.SelectionRequired;
+                }
+                else
+                {
+                    StageTitle = "Could Not Select Instance";
+                    StageDescription = "The selected instance could not be activated.";
+                    StartupStage = StartupStage.Error;
+                }
             }
             finally
             {
@@ -535,7 +549,6 @@ namespace CKAN.LinuxGUI
             {
                 SelectedInstance = Instances.FirstOrDefault(inst => inst.Name == previousSelectionName);
             }
-            SelectedInstance ??= Instances.FirstOrDefault();
             RefreshCompatibleGameVersionOptions();
 
             if (Instances.Count == 0)
@@ -545,7 +558,7 @@ namespace CKAN.LinuxGUI
                 StageTitle = "No Instances Found";
                 StageDescription = "No registered KSP installs were found for CKAN Linux.";
                 StatusMessage = "No known instances were found.";
-                SelectedActionLabel = "Open Selected Install";
+                SelectedActionLabel = "Open Install";
                 SelectedActionHint = "Add or register a KSP install before continuing.";
                 PublishInstanceStateLabels();
                 return;
@@ -560,7 +573,7 @@ namespace CKAN.LinuxGUI
                 {
                     StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")} and activated {gameInstanceService.CurrentInstance.Name}.";
                 }
-                SelectedActionLabel = "Open Selected Install";
+                SelectedActionLabel = "Open Install";
                 SelectedActionHint = "Choose a different install here if you want to switch contexts.";
                 RestorePersistedQueuedActions();
                 if (loadCatalog)
@@ -571,13 +584,14 @@ namespace CKAN.LinuxGUI
             else
             {
                 ClearCatalogState();
+                SelectedInstance = null;
                 StartupStage = StartupStage.SelectionRequired;
                 StageTitle = "Choose an Instance";
                 StageDescription = Instances.Count == 1
                     ? "Select the registered install to open the mod browser."
                     : "Multiple installs are known, but none is active yet.";
                 StatusMessage = $"Loaded {Instances.Count} instance{(Instances.Count == 1 ? "" : "s")}. Select one to continue.";
-                SelectedActionLabel = "Open Selected Install";
+                SelectedActionLabel = "Open Install";
                 SelectedActionHint = "Pick the install you want to browse and manage.";
             }
 
@@ -871,6 +885,8 @@ namespace CKAN.LinuxGUI
                 UpdatableOnly       = FilterUpdatableOnly,
                 NotUpdatableOnly    = FilterNotUpdatableOnly,
                 DisabledOnly        = FilterDisabledOnly,
+                NotDisabledOnly     = FilterNotDisabledOnly,
+                ExternalOnly        = FilterExternalOnly,
                 CompatibleOnly      = FilterCompatibleOnly,
                 CachedOnly          = FilterCachedOnly,
                 UncachedOnly        = FilterUncachedOnly,
@@ -933,6 +949,8 @@ namespace CKAN.LinuxGUI
             filterUpdatableOnly = filter.UpdatableOnly;
             filterNotUpdatableOnly = filter.NotUpdatableOnly;
             filterDisabledOnly = filter.DisabledOnly;
+            filterNotDisabledOnly = filter.NotDisabledOnly;
+            filterExternalOnly = filter.ExternalOnly;
             filterCompatibleOnly = filter.CompatibleOnly;
             filterCachedOnly = filter.CachedOnly;
             filterUncachedOnly = filter.UncachedOnly;
@@ -993,6 +1011,8 @@ namespace CKAN.LinuxGUI
                && !filter.UpdatableOnly
                && !filter.NotUpdatableOnly
                && !filter.DisabledOnly
+               && !filter.NotDisabledOnly
+               && !filter.ExternalOnly
                && !filter.NewOnly
                && !filter.CompatibleOnly
                && !filter.CachedOnly
@@ -1410,6 +1430,8 @@ namespace CKAN.LinuxGUI
             FilterUpdatableOnly = false;
             FilterNotUpdatableOnly = false;
             FilterDisabledOnly = false;
+            FilterNotDisabledOnly = false;
+            FilterExternalOnly = false;
             FilterCompatibleOnly = false;
             FilterCachedOnly = false;
             FilterUncachedOnly = false;

@@ -68,6 +68,7 @@ namespace CKAN.LinuxGUI
         private const int    CatalogLoadSettleDelayMs = 75;
         private const int    CatalogLoadingIndicatorDelayMs = 175;
         private const int    RecentCatalogReloadSuppressionMs = 500;
+        private const string LinuxGuiIssuesUrl = "https://github.com/appaKappaK/CKAN-LinuxUI/issues/new/choose";
 
         private readonly IAppSettingsService  appSettingsService;
         private readonly IGameInstanceService gameInstanceService;
@@ -87,8 +88,9 @@ namespace CKAN.LinuxGUI
         private string  selectedInstanceSummary = "Choose an install to inspect its path and game version.";
         private string  stageTitle          = "Loading";
         private string  stageDescription    = "Loading known game instances and startup state.";
-        private string  selectedActionLabel = "Open Selected Install";
+        private string  selectedActionLabel = "Open Install";
         private string  selectedActionHint  = "Choose the KSP install you want to manage.";
+        private string  startupSelectionError = "";
         private string  readyInstanceHint   = "Switch installs here without leaving the mod browser.";
         private string  modSearchText       = "";
         private string  advancedNameFilter = "";
@@ -149,6 +151,8 @@ namespace CKAN.LinuxGUI
         private bool    filterUpdatableOnly;
         private bool    filterNotUpdatableOnly;
         private bool    filterDisabledOnly;
+        private bool    filterNotDisabledOnly;
+        private bool    filterExternalOnly;
         private bool    filterCompatibleOnly;
         private bool    filterCachedOnly;
         private bool    filterUncachedOnly;
@@ -419,7 +423,6 @@ namespace CKAN.LinuxGUI
             OpenSelectedModCacheLocationCommand = ReactiveCommand.Create(
                 OpenSelectedModCacheLocation,
                 this.WhenAnyValue(vm => vm.ShowOpenSelectedModCacheLocationAction));
-            OpenUserGuideCommand = ReactiveCommand.Create(OpenUserGuide);
             OpenDiscordCommand = ReactiveCommand.Create(OpenDiscord);
             OpenGameSupportCommand = ReactiveCommand.Create(OpenGameSupport,
                                                            this.WhenAnyValue(vm => vm.HasCurrentInstance));
@@ -526,6 +529,8 @@ namespace CKAN.LinuxGUI
                     this.WhenAnyValue(vm => vm.FilterUpdatableOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterNotUpdatableOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterDisabledOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterNotDisabledOnly).Select(_ => Unit.Default),
+                    this.WhenAnyValue(vm => vm.FilterExternalOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCompatibleOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterCachedOnly).Select(_ => Unit.Default),
                     this.WhenAnyValue(vm => vm.FilterUncachedOnly).Select(_ => Unit.Default),
@@ -714,8 +719,6 @@ namespace CKAN.LinuxGUI
 
         public ReactiveCommand<Unit, Unit> OpenSelectedModCacheLocationCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> OpenUserGuideCommand { get; }
-
         public ReactiveCommand<Unit, Unit> OpenDiscordCommand { get; }
 
         public ReactiveCommand<Unit, Unit> OpenGameSupportCommand { get; }
@@ -801,6 +804,7 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(NeedsSelection));
                 this.RaisePropertyChanged(nameof(IsReady));
                 this.RaisePropertyChanged(nameof(HasError));
+                this.RaisePropertyChanged(nameof(ShowStartupModalBackground));
                 this.RaisePropertyChanged(nameof(ShowLegacyHeader));
                 this.RaisePropertyChanged(nameof(ShowReadyHeader));
                 this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
@@ -924,6 +928,18 @@ namespace CKAN.LinuxGUI
             get => selectedActionHint;
             private set => this.RaiseAndSetIfChanged(ref selectedActionHint, value);
         }
+
+        public string StartupSelectionError
+        {
+            get => startupSelectionError;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref startupSelectionError, value);
+                this.RaisePropertyChanged(nameof(HasStartupSelectionError));
+            }
+        }
+
+        public bool HasStartupSelectionError => !string.IsNullOrWhiteSpace(StartupSelectionError);
 
         public string ReadyInstanceHint
         {
@@ -1404,9 +1420,11 @@ namespace CKAN.LinuxGUI
         public bool IsReady => StartupStage == StartupStage.Ready;
         public bool HasError => StartupStage == StartupStage.Error;
 
-        public bool ShowLegacyHeader => !IsReady;
+        public bool ShowStartupModalBackground => NeedsSelection || HasError;
 
-        public bool ShowReadyHeader => IsReady;
+        public bool ShowLegacyHeader => IsLoading;
+
+        public bool ShowReadyHeader => !IsLoading;
 
         public bool ShowWorkspaceTabs => IsReady;
 
@@ -1414,11 +1432,12 @@ namespace CKAN.LinuxGUI
 
         public bool ShowHeaderStagePill => IsLoading || IsRefreshing;
 
-        public bool ShowHeaderInstanceSwitcher => IsReady && InstanceCount > 1;
+        public bool ShowHeaderInstanceSwitcher
+            => IsReady && InstanceCount > 1;
 
-        public bool ShowPassiveHeaderInstanceLabel => IsReady && InstanceCount <= 1;
+        public bool ShowPassiveHeaderInstanceLabel => ShowReadyHeader && !ShowHeaderInstanceSwitcher;
 
-        public bool ShowLegacyShell => !IsReady;
+        public bool ShowLegacyShell => false;
 
         public bool ShowReadyShell => IsReady;
 
@@ -1569,15 +1588,17 @@ namespace CKAN.LinuxGUI
                && !IsCatalogLoading;
 
         public bool CanSwitchInstances
-            => IsReady
-               && InstanceCount > 1
+            => InstanceCount > 0
+               && (NeedsSelection || (IsReady && InstanceCount > 1))
                && !IsRefreshing
                && !IsApplyingChanges
                && !IsCatalogLoading;
 
         public string SelectedInstanceContextTitle
-            => SelectedInstanceIsCurrent
-                ? "Current Install"
+            => NeedsSelection
+                ? "Selected Instance"
+                : SelectedInstanceIsCurrent
+                ? "Current Instance"
                 : "Switch Target";
 
         public bool IsCatalogLoading
@@ -2085,6 +2106,8 @@ namespace CKAN.LinuxGUI
             => HasAdvancedFilterText
                || FilterInstalledState.HasValue
                || FilterUpdatableState.HasValue
+               || FilterDisabledState.HasValue
+               || FilterExternalOnly
                || FilterCompatibleState.HasValue
                || FilterCachedState.HasValue
                || FilterReplaceableState.HasValue;
@@ -2120,7 +2143,8 @@ namespace CKAN.LinuxGUI
             => EnumerateAdvancedTextFilters().Count(filter => !string.IsNullOrWhiteSpace(filter.Value))
                + CountTriStateFilter(FilterInstalledState)
                + CountTriStateFilter(FilterUpdatableState)
-               + (FilterDisabledOnly ? 1 : 0)
+               + CountTriStateFilter(FilterDisabledState)
+               + (FilterExternalOnly ? 1 : 0)
                + CountTriStateFilter(FilterCompatibleState)
                + CountTriStateFilter(FilterCachedState)
                + CountTriStateFilter(FilterReplaceableState);
@@ -2163,6 +2187,10 @@ namespace CKAN.LinuxGUI
         public string UpdatableFilterLabel => FormatFilterOptionLabel("Updatable", filterOptionCounts.Updatable);
 
         public string DisabledFilterLabel => FormatFilterOptionLabel("Disabled", filterOptionCounts.Disabled);
+
+        public string NotDisabledFilterLabel => FormatFilterOptionLabel("Not Disabled", filterOptionCounts.NotDisabled);
+
+        public string ExternalFilterLabel => FormatFilterOptionLabel("External", filterOptionCounts.External);
 
         public string ReplaceableFilterLabel => FormatFilterOptionLabel("Replaceable", filterOptionCounts.Replaceable);
 
@@ -2253,6 +2281,7 @@ namespace CKAN.LinuxGUI
 
                 AddTriStateSummary(parts, "Installed", FilterInstalledState);
                 AddTriStateSummary(parts, "Updatable", FilterUpdatableState);
+                AddTriStateSummary(parts, "Disabled", FilterDisabledState);
                 AddTriStateSummary(parts, "Compatible", FilterCompatibleState);
                 AddTriStateSummary(parts, "Cached", FilterCachedState);
                 AddTriStateSummary(parts, "Replaceable", FilterReplaceableState);
@@ -2515,6 +2544,18 @@ namespace CKAN.LinuxGUI
         public bool ShowDisabledFilter
             => filterOptionCounts.Disabled > 0
                || !string.IsNullOrWhiteSpace(disabledModsDirectoryPath);
+
+        public bool ShowExternalFilter
+            => true;
+
+        public bool ShowReplaceableFilter
+            => FilterHasReplacementOnly || filterOptionCounts.Replaceable > 0;
+
+        public bool ShowSplitFilterFooter
+            => ShowReplaceableFilter;
+
+        public bool ShowFullFilterFooter
+            => !ShowReplaceableFilter;
 
         public bool ShowOpenDisabledModsDirectoryMenuItem
             => !string.IsNullOrWhiteSpace(disabledModsDirectoryPath);
@@ -3048,6 +3089,20 @@ namespace CKAN.LinuxGUI
                 if (this.RaiseAndSetIfChanged(ref filterDisabledOnly, value) && value)
                 {
                     ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
+                    ClearFilter(ref filterNotDisabledOnly, nameof(FilterNotDisabledOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
+        public bool FilterNotDisabledOnly
+        {
+            get => filterNotDisabledOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterNotDisabledOnly, value) && value)
+                {
+                    ClearFilter(ref filterDisabledOnly, nameof(FilterDisabledOnly));
                 }
                 PublishFilterStateLabels();
             }
@@ -3105,6 +3160,19 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public bool FilterExternalOnly
+        {
+            get => filterExternalOnly;
+            set
+            {
+                if (this.RaiseAndSetIfChanged(ref filterExternalOnly, value) && value)
+                {
+                    ClearFilter(ref filterNotInstalledOnly, nameof(FilterNotInstalledOnly));
+                }
+                PublishFilterStateLabels();
+            }
+        }
+
         public bool FilterHasReplacementOnly
         {
             get => filterHasReplacementOnly;
@@ -3152,6 +3220,17 @@ namespace CKAN.LinuxGUI
                                               ref filterIncompatibleOnly,
                                               nameof(FilterIncompatibleOnly),
                                               nameof(FilterCompatibleState));
+        }
+
+        public bool? FilterDisabledState
+        {
+            get => GetTriStateFilterValue(filterDisabledOnly, filterNotDisabledOnly);
+            set => SetExclusiveTriStateFilter(value,
+                                              ref filterDisabledOnly,
+                                              nameof(FilterDisabledOnly),
+                                              ref filterNotDisabledOnly,
+                                              nameof(FilterNotDisabledOnly),
+                                              nameof(FilterDisabledState));
         }
 
         public bool? FilterCachedState
@@ -3242,7 +3321,12 @@ namespace CKAN.LinuxGUI
             get => selectedInstance;
             set
             {
+                var previousName = selectedInstance?.Name;
                 this.RaiseAndSetIfChanged(ref selectedInstance, value);
+                if (!string.Equals(previousName, value?.Name, StringComparison.Ordinal))
+                {
+                    StartupSelectionError = "";
+                }
                 HasSelectedInstance = value != null;
                 UpdateSelectedInstanceSummary(value);
                 this.RaisePropertyChanged(nameof(SelectedInstanceIsCurrent));

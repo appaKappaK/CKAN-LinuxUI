@@ -54,7 +54,7 @@ namespace CKAN.LinuxGUI
             StageDescription = "";
             StatusMessage = $"Loading {warmInstanceName}…";
             CatalogStatusMessage = LoadingCatalogSourceMessage("Loading");
-            SelectedActionLabel = "Open Selected Install";
+            SelectedActionLabel = "Open Install";
             SelectedActionHint = "Choose a different install here if you want to switch contexts.";
             PublishInstanceStateLabels();
         }
