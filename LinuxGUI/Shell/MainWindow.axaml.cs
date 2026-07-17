@@ -52,6 +52,7 @@ namespace CKAN.LinuxGUI
         private bool launchUpdateCheckStarted;
         private bool menuPopupPlacementDirty;
         private bool suppressBrowserSelectionChanged;
+        private bool preserveBrowserDetailsOnNextSelectionChange;
         private const double OverlayWheelScrollPixels = 48;
         private const double BrowserWheelScrollPixels = 112;
         private const double QueueWheelScrollPixels = 120;

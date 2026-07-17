@@ -74,6 +74,8 @@ The mod browser supports normal desktop multi-selection. Shift-click selects a
 continuous range, while Ctrl-click adds or removes individual rows. When more
 than one mod is selected, the details pane offers separate bulk install, update,
 and remove buttons for whichever selected mods are eligible for each action.
+Modifier-clicking does not open the details pane. Plain-click an already selected
+row to open, switch, or close its details without clearing the larger selection.
 
 After an uninstall, CKAN may preserve directories containing unregistered
 configuration files. The completion dialog lists those directories and offers

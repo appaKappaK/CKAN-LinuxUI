@@ -97,8 +97,34 @@ namespace CKAN.LinuxGUI
             if (updateKind == PointerUpdateKind.LeftButtonPressed)
             {
                 CloseActiveModRowMenu();
-                viewModel.OpenModDetailsFromBrowser();
                 ModsListBox.Focus();
+
+                var selectionModifiers = e.KeyModifiers
+                                         & (KeyModifiers.Control
+                                            | KeyModifiers.Shift
+                                            | KeyModifiers.Meta);
+                if (selectionModifiers != KeyModifiers.None)
+                {
+                    preserveBrowserDetailsOnNextSelectionChange = true;
+                    Dispatcher.UIThread.Post(
+                        () => preserveBrowserDetailsOnNextSelectionChange = false,
+                        DispatcherPriority.Background);
+                    return;
+                }
+
+                var isSelected = ModsListBox.SelectedItems?.OfType<ModListItem>()
+                                                .Any(item => string.Equals(
+                                                    item.Identifier,
+                                                    mod.Identifier,
+                                                    StringComparison.OrdinalIgnoreCase)) == true;
+                if (isSelected)
+                {
+                    viewModel.ActivateModFromBrowser(mod);
+                    e.Handled = true;
+                    return;
+                }
+
+                viewModel.OpenModDetailsFromBrowser();
                 return;
             }
 
@@ -306,9 +332,28 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            var selectedMods = ModsListBox.SelectedItems?.OfType<ModListItem>()
+                                           .ToArray()
+                               ?? Array.Empty<ModListItem>();
             var activeMod = e.AddedItems.OfType<ModListItem>().LastOrDefault()
                             ?? ModsListBox.SelectedItem as ModListItem;
-            SyncBrowserSelection(viewModel, activeMod);
+            if (preserveBrowserDetailsOnNextSelectionChange)
+            {
+                preserveBrowserDetailsOnNextSelectionChange = false;
+                if (viewModel.SelectedMod is ModListItem detailMod
+                    && selectedMods.Any(item => string.Equals(item.Identifier,
+                                                               detailMod.Identifier,
+                                                               StringComparison.OrdinalIgnoreCase)))
+                {
+                    activeMod = detailMod;
+                }
+                else if (viewModel.ShowDetailsPane)
+                {
+                    viewModel.CloseModDetailsFromBrowser();
+                }
+            }
+
+            viewModel.UpdateBrowserSelection(selectedMods, activeMod);
         }
 
         private void SyncBrowserSelection(MainWindowViewModel viewModel,

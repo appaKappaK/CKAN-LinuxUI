@@ -103,17 +103,27 @@ namespace CKAN.LinuxGUI
                 && ShowDetailsPane
                 && string.Equals(SelectedMod.Identifier, mod.Identifier, StringComparison.OrdinalIgnoreCase))
             {
-                SelectedMod = null;
                 ShowDetailsPane = false;
                 return;
             }
 
-            UpdateBrowserSelection(new[] { mod }, mod);
+            updatingBrowserSelectionFromList = true;
+            try
+            {
+                SelectedMod = mod;
+            }
+            finally
+            {
+                updatingBrowserSelectionFromList = false;
+            }
             ShowDetailsPane = true;
         }
 
         public void OpenModDetailsFromBrowser()
             => ShowDetailsPane = true;
+
+        public void CloseModDetailsFromBrowser()
+            => ShowDetailsPane = false;
 
         public bool ShowQueueContextAction(ModListItem mod)
             => !IsApplyingChanges

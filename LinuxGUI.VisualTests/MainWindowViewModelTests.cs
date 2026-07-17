@@ -1486,7 +1486,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.SelectedMod, Is.Null);
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(initiallySelected.Identifier));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(1));
                     Assert.That(viewModel.ShowDetailsPane, Is.False);
                 });
 

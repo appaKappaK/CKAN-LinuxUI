@@ -136,12 +136,28 @@ namespace CKAN.LinuxGUI.VisualTests
                 await WaitForAsync(() => listBox.ContainerFromIndex(4) != null);
 
                 ClickListItem(window, listBox, 0, RawInputModifiers.None);
+                Assert.That(viewModel.ShowDetailsPane, Is.True);
+                ClickListItem(window, listBox, 0, RawInputModifiers.None);
+                Assert.That(viewModel.ShowDetailsPane, Is.False);
+
                 ClickListItem(window, listBox, 3, RawInputModifiers.Shift);
 
                 Assert.Multiple(() =>
                 {
                     Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
                     Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                });
+
+                var detailMod = viewModel.Mods[2];
+                ClickListItem(window, listBox, 2, RawInputModifiers.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(detailMod.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
                 });
 
                 ClickListItem(window, listBox, 1, RawInputModifiers.Control);
@@ -151,6 +167,34 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(listBox.SelectedItems, Has.Count.EqualTo(3));
                     Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
                     Assert.That(listBox.SelectedItems, Does.Not.Contain(viewModel.Mods[1]));
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(detailMod.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
+
+                ClickListItem(window, listBox, 2, RawInputModifiers.None);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(3));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                });
+
+                ClickListItem(window, listBox, 4, RawInputModifiers.Control);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                });
+
+                ClickListItem(window, listBox, 4, RawInputModifiers.None);
+                Assert.That(viewModel.ShowDetailsPane, Is.True);
+                ClickListItem(window, listBox, 4, RawInputModifiers.Control);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(3));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
+                    Assert.That(viewModel.ShowDetailsPane, Is.False);
                 });
 
                 var selectedIdentifiers = listBox.SelectedItems!
