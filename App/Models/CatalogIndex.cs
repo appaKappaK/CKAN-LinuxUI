@@ -42,6 +42,9 @@ namespace CKAN.App.Models
         [JsonProperty("kind")]
         public string? Kind { get; init; }
 
+        [JsonProperty("release_status")]
+        public ReleaseStatus ReleaseStatus { get; init; } = ReleaseStatus.stable;
+
         [JsonProperty("release_date")]
         public string? ReleaseDate { get; init; }
 
@@ -74,5 +77,14 @@ namespace CKAN.App.Models
 
         [JsonProperty("is_latest")]
         public bool IsLatest { get; init; }
+
+        [JsonProperty("is_latest_stable")]
+        public bool IsLatestStable { get; init; }
+
+        [JsonProperty("is_latest_testing")]
+        public bool IsLatestTesting { get; init; }
+
+        [JsonProperty("is_latest_development")]
+        public bool IsLatestDevelopment { get; init; }
     }
 }

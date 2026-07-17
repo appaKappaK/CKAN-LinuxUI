@@ -339,9 +339,10 @@ namespace CKAN.App.Services
             var inst            = context.Instance;
             var installedIdents = registry.InstalledModules.Select(im => im.identifier)
                                                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var latestModules = CatalogIndexService.LatestModules(index)
-                                                   .ToDictionary(module => module.Identifier,
-                                                                 StringComparer.OrdinalIgnoreCase);
+            var latestModules = CatalogIndexService
+                                .LatestModules(index, inst.StabilityToleranceConfig)
+                                .ToDictionary(module => module.Identifier,
+                                              StringComparer.OrdinalIgnoreCase);
             var items = new List<ModListItem>();
             int installedCount = 0;
 

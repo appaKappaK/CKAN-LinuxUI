@@ -202,6 +202,10 @@ Sidecar rows include browse-list metadata such as title, summary,
 relationships, compatibility, release date, and download count. CKAN's registry
 remains authoritative for details, installs, updates, and dependency
 resolution.
+Schema v2 sidecars also contain stable, testing, and development candidates;
+LinuxGUI selects them using the current instance's overall and per-mod stability
+tolerances. Schema v1 sidecars remain readable with their original latest-row
+behavior.
 
 To use the sidecar, generate the file with `ckan-meta-rs` and point the GUI at
 it:
@@ -226,6 +230,11 @@ ln -s /path/to/ckan-meta-rs/data/catalog-index-latest.json \
 
 If the sidecar is missing, invalid, or not configured, the browser uses the
 normal CKAN metadata loader.
+
+If a configured sidecar predates CKAN's last repository-content update, the
+browser also falls back to the normal metadata loader until the sidecar is
+regenerated. The `ckan-meta-rs` checkout includes
+`scripts/refresh-ckan-linux-sidecar.sh` for a validated atomic refresh.
 
 Catalog load timings are written to the dev session/debug logs. Look for these
 prefixes when comparing normal mode to sidecar mode:

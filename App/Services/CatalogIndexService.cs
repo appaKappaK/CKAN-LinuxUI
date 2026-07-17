@@ -6,6 +6,7 @@ using System.Linq;
 using Newtonsoft.Json;
 
 using CKAN.App.Models;
+using CKAN.Configuration;
 using CKAN.IO;
 using CKAN.Versioning;
 
@@ -23,7 +24,7 @@ namespace CKAN.App.Services
         {
             foreach (var path in CandidatePaths())
             {
-                var index = TryLoad(path);
+                var index = TryLoad(path, DefaultRepositoryCachePath());
                 if (index != null)
                 {
                     return index;
@@ -34,7 +35,15 @@ namespace CKAN.App.Services
 
         public bool HasCandidateFile()
             => CandidatePaths().Any(path => !string.IsNullOrWhiteSpace(path)
-                                            && File.Exists(path));
+                                            && File.Exists(path)
+                                            && IsCurrentWithRepositoryCache(path,
+                                                                            DefaultRepositoryCachePath()));
+
+        public CatalogIndex? TryLoad(string path,
+                                     string repositoryCachePath)
+            => IsCurrentWithRepositoryCache(path, repositoryCachePath)
+                ? TryLoad(path)
+                : null;
 
         public CatalogIndex? TryLoad(string path)
         {
@@ -62,7 +71,7 @@ namespace CKAN.App.Services
                     }
 
                     var index = JsonConvert.DeserializeObject<CatalogIndex>(File.ReadAllText(info.FullName));
-                    if (index?.SchemaVersion == 1 && index.Modules.Count > 0)
+                    if (index?.SchemaVersion is 1 or 2 && index.Modules.Count > 0)
                     {
                         cachedPath         = info.FullName;
                         cachedLastWriteUtc = info.LastWriteTimeUtc;
@@ -92,6 +101,42 @@ namespace CKAN.App.Services
             yield return Path.Combine(CKANPathUtils.AppDataPath, "catalog-index.json");
         }
 
+        private static string DefaultRepositoryCachePath()
+            => Path.Combine(CKANPathUtils.AppDataPath, "repos");
+
+        private static bool IsCurrentWithRepositoryCache(string indexPath,
+                                                         string repositoryCachePath)
+        {
+            try
+            {
+                var indexWriteUtc = LastWriteTimeUtcFollowingLink(indexPath);
+                var etagsPath = Path.Combine(repositoryCachePath, "etags.json");
+                var repositoryContentWriteUtc = File.Exists(etagsPath)
+                    ? File.GetLastWriteTimeUtc(etagsPath)
+                    : Directory.Exists(repositoryCachePath)
+                        ? Directory.EnumerateFiles(repositoryCachePath, "*.json")
+                                   .Select(File.GetLastWriteTimeUtc)
+                                   .DefaultIfEmpty(DateTime.MinValue)
+                                   .Max()
+                        : DateTime.MinValue;
+                return indexWriteUtc >= repositoryContentWriteUtc;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static DateTime LastWriteTimeUtcFollowingLink(string path)
+        {
+            #if NET8_0_OR_GREATER
+            var target = File.ResolveLinkTarget(path, returnFinalTarget: true);
+            return (target ?? new FileInfo(path)).LastWriteTimeUtc;
+            #else
+            return File.GetLastWriteTimeUtc(path);
+            #endif
+        }
+
         public static IReadOnlyList<string> LatestIdentifiers(CatalogIndex index)
             => index.Modules
                     .Where(module => module.IsLatest)
@@ -108,14 +153,42 @@ namespace CKAN.App.Services
                     .Where(module => !string.Equals(module.Kind, "dlc", StringComparison.OrdinalIgnoreCase))
                     .GroupBy(module => module.Identifier, StringComparer.OrdinalIgnoreCase)
                     .Select(SelectLatestModule)
+                    .OfType<CatalogIndexModule>()
                     .ToList();
 
-        private static CatalogIndexModule SelectLatestModule(IGrouping<string, CatalogIndexModule> group)
+        public static IReadOnlyList<CatalogIndexModule> LatestModules(
+            CatalogIndex             index,
+            StabilityToleranceConfig stabilityTolerance)
+            => index.SchemaVersion < 2
+                ? LatestModules(index)
+                : index.Modules
+                       .Where(module => !string.IsNullOrWhiteSpace(module.Identifier))
+                       .Where(module => !string.Equals(module.Kind, "dlc", StringComparison.OrdinalIgnoreCase))
+                       .GroupBy(module => module.Identifier, StringComparer.OrdinalIgnoreCase)
+                       .Select(group => SelectLatestModule(
+                                   group.Where(module => IsLatestForTolerance(
+                                       module,
+                                       stabilityTolerance.ModStabilityTolerance(group.Key)
+                                           ?? stabilityTolerance.OverallStabilityTolerance))))
+                       .OfType<CatalogIndexModule>()
+                       .ToList();
+
+        private static bool IsLatestForTolerance(CatalogIndexModule module,
+                                                 ReleaseStatus      tolerance)
+            => tolerance switch
+            {
+                ReleaseStatus.stable      => module.IsLatestStable,
+                ReleaseStatus.testing     => module.IsLatestTesting,
+                ReleaseStatus.development => module.IsLatestDevelopment || module.IsLatest,
+                _                         => false,
+            };
+
+        private static CatalogIndexModule? SelectLatestModule(IEnumerable<CatalogIndexModule> modules)
         {
-            using var enumerator = group.GetEnumerator();
+            using var enumerator = modules.GetEnumerator();
             if (!enumerator.MoveNext())
             {
-                throw new InvalidOperationException("Catalog index module group was empty.");
+                return null;
             }
 
             var best = enumerator.Current;
