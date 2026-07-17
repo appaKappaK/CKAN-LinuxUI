@@ -528,6 +528,8 @@ namespace CKAN.LinuxGUI.VisualTests
             await Task.Delay(300);
             viewModel.ApplyChangesCommand.Execute().Subscribe();
             await Task.Delay(120);
+            user.RaiseProgress("Applying Changes", 42);
+            await Task.Delay(20);
 
             VisualTestSupport.CaptureAndAssert(window, "preview-applying");
 

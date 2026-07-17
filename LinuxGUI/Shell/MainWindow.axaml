@@ -5375,15 +5375,66 @@
             Background="#C0141A22"
             IsVisible="{Binding ShowExecutionOverlay}">
       <Grid>
-        <Border Background="#14191F"
-                BorderBrush="#2B323C"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="8"
+        <Border Background="#223345"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                CornerRadius="0,10,10,10"
+                Padding="9"
                 Margin="8,96,8,8"
                 ClipToBounds="True">
           <Grid RowDefinitions="Auto,*"
                 MinHeight="0">
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  Margin="0,0,0,8">
+              <Border x:Name="ExecutionSkeletonSearchBar"
+                      Background="#16202A"
+                      BorderBrush="#3D4E60"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      MinHeight="34"
+                      Padding="12,0">
+                <TextBlock FontSize="12"
+                           Foreground="#7F8B98"
+                           VerticalAlignment="Center"
+                           Text="Search by mod name, author, or description" />
+              </Border>
+              <Border Grid.Column="1"
+                      Classes="browser-chip"
+                      Background="#20262D"
+                      Margin="8,0,0,0"
+                      MinWidth="84"
+                      Padding="14,0"
+                      VerticalAlignment="Center">
+                <TextBlock FontSize="12"
+                           HorizontalAlignment="Center"
+                           Opacity="0.7"
+                           Text="Loading…" />
+              </Border>
+              <Border Grid.Column="2"
+                      Background="#161B21"
+                      BorderBrush="#34404C"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      Margin="8,0,0,0"
+                      Width="152"
+                      Height="34">
+                <TextBlock FontSize="12"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Opacity="0.7"
+                           Text="More Filters" />
+              </Border>
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Background="#14191F"
+                    BorderBrush="#2B323C"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="8"
+                    ClipToBounds="True">
+              <Grid RowDefinitions="Auto,*"
+                    MinHeight="0">
             <Grid Margin="1,1,17,4">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="4" />
@@ -5575,6 +5626,8 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+              </Grid>
+            </Border>
           </Grid>
         </Border>
 
