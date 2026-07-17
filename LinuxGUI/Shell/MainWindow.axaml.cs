@@ -50,7 +50,6 @@ namespace CKAN.LinuxGUI
         private bool hasPendingModListScrollRestore;
         private double pendingModListScrollOffsetY;
         private bool launchUpdateCheckStarted;
-        private bool menuPopupPlacementDirty;
         private bool suppressBrowserSelectionChanged;
         private bool preserveBrowserDetailsOnNextSelectionChange;
         private const double OverlayWheelScrollPixels = 48;

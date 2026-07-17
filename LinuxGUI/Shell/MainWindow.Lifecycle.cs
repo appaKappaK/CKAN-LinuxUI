@@ -88,27 +88,7 @@ namespace CKAN.LinuxGUI
 
         private void OnPositionChanged(object? sender,
                                        PixelPointEventArgs e)
-        {
-            menuPopupPlacementDirty = true;
-            CloseActiveModRowMenu();
-            CloseOpenMenuPopups();
-            Dispatcher.UIThread.Post(() =>
-            {
-                InvalidateMeasure();
-                UpdateLayout();
-            }, DispatcherPriority.Render);
-        }
-
-        private void CloseOpenMenuPopups()
-        {
-            foreach (var menuItem in this.GetVisualDescendants().OfType<MenuItem>())
-            {
-                if (menuItem.IsSubMenuOpen)
-                {
-                    menuItem.IsSubMenuOpen = false;
-                }
-            }
-        }
+            => CloseActiveModRowMenu();
 
         private bool IsSavedPositionVisible(PixelPoint position)
             => Screens.All.Any(screen =>

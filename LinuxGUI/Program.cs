@@ -24,6 +24,11 @@ namespace CKAN.LinuxGUI
         public static AppBuilder BuildAvaloniaApp()
             => AppBuilder.Configure<App>()
                          .UsePlatformDetect()
+                         .With(new X11PlatformOptions
+                         {
+                             // Keep popups anchored to their controls when the main window moves.
+                             OverlayPopups = true,
+                         })
                          .LogToTrace()
                          .UseReactiveUI();
     }
