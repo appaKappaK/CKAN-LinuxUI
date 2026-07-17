@@ -85,6 +85,46 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task BrowserMultiSelection_QueuesEachEligibleActionType()
+        {
+            var (viewModel, service) = CreateViewModel();
+
+            try
+            {
+                viewModel.FilterInstalledOnly = false;
+                await WaitForAsync(() => viewModel.Mods.Count >= 5 && !viewModel.IsCatalogLoading);
+                var update = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                var install = viewModel.Mods.First(mod => mod.Identifier == "parallax");
+                var remove = viewModel.Mods.First(mod => mod.Identifier == "mechjeb2");
+
+                viewModel.UpdateBrowserSelection(new[] { update, install, remove }, remove);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
+                    Assert.That(viewModel.HasMultipleSelectedMods, Is.True);
+                    Assert.That(viewModel.BulkInstallCount, Is.EqualTo(1));
+                    Assert.That(viewModel.BulkUpdateCount, Is.EqualTo(1));
+                    Assert.That(viewModel.BulkRemoveCount, Is.EqualTo(1));
+                    Assert.That(viewModel.BulkInstallActionLabel, Is.EqualTo("Queue Install (1)"));
+                    Assert.That(viewModel.ShowPrimarySelectedModAction, Is.False);
+                });
+
+                viewModel.QueueInstallCommand.Execute().Subscribe(_ => { });
+                viewModel.QueueUpdateCommand.Execute().Subscribe(_ => { });
+                viewModel.QueueRemoveCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.QueuedActions.Count == 3);
+
+                Assert.That(viewModel.QueuedActions.Select(action => action.Identifier),
+                            Is.EquivalentTo(new[] { "parallax", "restock", "mechjeb2" }));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task QueueDrawer_AutoExpandsAndKeepsManualCollapseSticky()
         {
             var (viewModel, service) = CreateViewModel();
@@ -451,6 +491,52 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.IsQueueDrawerExpanded, Is.False);
                     Assert.That(viewModel.ShowExecutionResultOverlay, Is.True);
                     Assert.That(viewModel.ShowCollapsedApplyResultStub, Is.False);
+                });
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ApplyResultLeftoverAction_RemovesCandidatesAndUpdatesDialog()
+        {
+            var applyResult = new ApplyChangesResult
+            {
+                Kind    = ApplyResultKind.Warning,
+                Success = true,
+                Title   = "Apply Completed with Follow-Up",
+                Message = "Kept one config-only directory for manual review.",
+                FollowUpLines = new[]
+                {
+                    "Review leftover config-only directory: GameData/Restock/PluginData",
+                },
+                LeftoverConfigDirectories = new[]
+                {
+                    "/tmp/visual-test/GameData/Restock/PluginData",
+                },
+            };
+            var (viewModel, service) = CreateViewModel(applyResult);
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.PrimarySelectedModActionCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.HasQueuedActions);
+                viewModel.ApplyChangesCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.HasRemovableApplyResultLeftovers);
+
+                viewModel.RemoveApplyResultLeftoversCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.ApplyResultTitle == "Leftovers Removed");
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(viewModel.HasRemovableApplyResultLeftovers, Is.False);
+                    Assert.That(viewModel.ApplyResultMessage, Does.Contain("cleaned up empty parent folders"));
+                    Assert.That(viewModel.ApplyResultSummaryLines,
+                                Has.Some.Contains("GameData/Restock/PluginData"));
                 });
             }
             finally

@@ -25,5 +25,8 @@ namespace CKAN.App.Models
 
         public System.Collections.Generic.IReadOnlyList<string> FollowUpLines { get; init; }
             = System.Array.Empty<string>();
+
+        public System.Collections.Generic.IReadOnlyList<string> LeftoverConfigDirectories { get; init; }
+            = System.Array.Empty<string>();
     }
 }

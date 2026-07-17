@@ -108,9 +108,12 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            UpdateBrowserSelection(new[] { mod }, mod);
             ShowDetailsPane = true;
-            SelectedMod = mod;
         }
+
+        public void OpenModDetailsFromBrowser()
+            => ShowDetailsPane = true;
 
         public bool ShowQueueContextAction(ModListItem mod)
             => !IsApplyingChanges
@@ -1569,6 +1572,7 @@ namespace CKAN.LinuxGUI
             {
                 this.RaisePropertyChanged(nameof(SelectedMod));
             }
+            RequestBrowserSelectionRestore();
 
             ConsumePendingModListScrollReset();
         }
@@ -1594,6 +1598,11 @@ namespace CKAN.LinuxGUI
             hasFilterOptionCounts = true;
             countWatch.Stop();
 
+            if (preferredSelectionIdentifier == null && preferredSelectionIndex == null)
+            {
+                SelectedMod = null;
+            }
+
             var applyWatch = Stopwatch.StartNew();
             ReplaceVisibleMods(visibleItems);
             ReplaceAvailableTagOptions(Array.Empty<FilterTagOptionItem>());
@@ -1603,6 +1612,7 @@ namespace CKAN.LinuxGUI
 
             string? selectedIdentifier = preferredSelectionIdentifier ?? SelectedMod?.Identifier;
             SelectedMod = ResolveVisibleSelection(selectedIdentifier, preferredSelectionIndex);
+            RequestBrowserSelectionRestore();
 
             if (pendingModListScrollReset)
             {

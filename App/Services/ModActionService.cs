@@ -351,9 +351,12 @@ namespace CKAN.App.Services
                             : $"Applied {plan.RequestedActions.Count} queued action{Pluralize(plan.RequestedActions.Count)} successfully.",
                         SummaryLines = BuildSummaryLines(plan),
                         FollowUpLines = leftoverConfigDirs.Count > 0
-                            ? leftoverConfigDirs.Select(dir => $"Review leftover config-only directory: {dir}")
+                            ? leftoverConfigDirs.Select(dir => $"Review leftover config-only directory: {Platform.FormatPath(plan.Instance.ToRelativeGameDir(dir))}")
                                                .ToList()
                             : Array.Empty<string>(),
+                        LeftoverConfigDirectories = leftoverConfigDirs.OrderBy(dir => dir,
+                                                                               Platform.PathComparer)
+                                                                       .ToList(),
                     };
                 }
                 catch (CancelledActionKraken ex)
@@ -410,6 +413,101 @@ namespace CKAN.App.Services
                         gameInstanceService.RefreshCurrentRegistry();
                     }
                 }
+            }, cancellationToken);
+
+        public Task<ApplyChangesResult> RemoveLeftoverConfigDirectoriesAsync(
+            IReadOnlyList<string> directories,
+            CancellationToken    cancellationToken)
+            => Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var instance = gameInstanceService.CurrentInstance;
+                var registry = gameInstanceService.CurrentRegistry;
+                if (instance == null || registry == null)
+                {
+                    return new ApplyChangesResult
+                    {
+                        Kind    = ApplyResultKind.Blocked,
+                        Success = false,
+                        Title   = "Leftover Cleanup Unavailable",
+                        Message = "CKAN could not verify the current game install before removing leftover files.",
+                        FollowUpLines = new[]
+                        {
+                            "Reload the current install and try again.",
+                        },
+                    };
+                }
+
+                var requested = directories.Where(path => !string.IsNullOrWhiteSpace(path))
+                                           .Distinct(Platform.PathComparer)
+                                           .ToArray();
+                var removed = new List<string>();
+                var failures = new List<string>();
+                var retryable = new List<string>();
+
+                foreach (var requestedDirectory in requested.OrderByDescending(PathDepth))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (!TryGetSafeLeftoverDirectory(instance,
+                                                     requestedDirectory,
+                                                     out string directory,
+                                                     out string relativeDirectory,
+                                                     out string modRoot))
+                    {
+                        failures.Add($"Kept unrecognized path: {requestedDirectory}");
+                        continue;
+                    }
+
+                    if (!Directory.Exists(directory))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        if (Directory.EnumerateFileSystemEntries(directory,
+                                                                 "*",
+                                                                 SearchOption.AllDirectories)
+                                     .Select(instance.ToRelativeGameDir)
+                                     .Any(path => registry.FileOwner(path) != null))
+                        {
+                            failures.Add($"Kept {relativeDirectory} because it now contains files owned by an installed mod.");
+                            continue;
+                        }
+
+                        Directory.Delete(directory, true);
+                        removed.Add(relativeDirectory);
+                        RemoveEmptyModParents(instance, Path.GetDirectoryName(directory), modRoot);
+                    }
+                    catch (Exception ex)
+                    {
+                        failures.Add($"Could not remove {relativeDirectory}: {ex.Message}");
+                        retryable.Add(directory);
+                    }
+                }
+
+                var removedCount = removed.Count;
+                return new ApplyChangesResult
+                {
+                    Kind = failures.Count > 0
+                        ? ApplyResultKind.Warning
+                        : ApplyResultKind.Success,
+                    Success = failures.Count == 0,
+                    Title = failures.Count > 0
+                        ? "Some Leftovers Remain"
+                        : "Leftovers Removed",
+                    Message = failures.Count > 0
+                        ? $"Removed {removedCount} leftover director{(removedCount == 1 ? "y" : "ies")}; {failures.Count} item{Pluralize(failures.Count)} still need review."
+                        : removedCount > 0
+                            ? $"Removed {removedCount} leftover config director{(removedCount == 1 ? "y" : "ies")} and cleaned up empty parent folders."
+                            : "The selected leftover directories were already gone.",
+                    SummaryLines = removed.Select(path => $"Removed leftover directory: {path}")
+                                          .ToList(),
+                    FollowUpLines = failures,
+                    LeftoverConfigDirectories = retryable,
+                };
             }, cancellationToken);
 
         private ExecutionPlan BuildExecutionPlan(IReadOnlyList<QueuedActionModel> requestedActions,
@@ -1029,6 +1127,77 @@ namespace CKAN.App.Services
             return possibleConfigOnlyDirs;
         }
 
+        private static int PathDepth(string path)
+            => path.Count(ch => ch == Path.DirectorySeparatorChar
+                                || ch == Path.AltDirectorySeparatorChar);
+
+        private static bool TryGetSafeLeftoverDirectory(GameInstance instance,
+                                                        string       requestedDirectory,
+                                                        out string   directory,
+                                                        out string   relativeDirectory,
+                                                        out string   modRoot)
+        {
+            directory = "";
+            relativeDirectory = "";
+            modRoot = "";
+
+            try
+            {
+                var candidateDirectory = Path.GetFullPath(requestedDirectory);
+                directory = candidateDirectory;
+                modRoot = instance.Game.AlternateModDirectoriesRelative
+                                  .Prepend(instance.Game.PrimaryModDirectoryRelative)
+                                  .Select(instance.ToAbsoluteGameDir)
+                                  .Select(Path.GetFullPath)
+                                  .FirstOrDefault(root => IsPathBelow(candidateDirectory, root))
+                          ?? "";
+                if (string.IsNullOrEmpty(modRoot)
+                    || instance.Game.IsReservedDirectory(instance, directory)
+                    || Directory.Exists(directory)
+                       && (new DirectoryInfo(directory).Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    return false;
+                }
+
+                relativeDirectory = Platform.FormatPath(instance.ToRelativeGameDir(directory));
+                return true;
+            }
+            catch
+            {
+                directory = "";
+                relativeDirectory = "";
+                modRoot = "";
+                return false;
+            }
+        }
+
+        private static bool IsPathBelow(string path, string root)
+        {
+            var rootWithSeparator = root.TrimEnd(Path.DirectorySeparatorChar,
+                                                 Path.AltDirectorySeparatorChar)
+                                      + Path.DirectorySeparatorChar;
+            return path.StartsWith(rootWithSeparator, Platform.PathComparison);
+        }
+
+        private static void RemoveEmptyModParents(GameInstance instance,
+                                                  string?      directory,
+                                                  string       modRoot)
+        {
+            while (!string.IsNullOrWhiteSpace(directory)
+                   && IsPathBelow(directory, modRoot)
+                   && Directory.Exists(directory))
+            {
+                if (instance.Game.IsReservedDirectory(instance, directory)
+                    || Directory.EnumerateFileSystemEntries(directory).Any())
+                {
+                    break;
+                }
+
+                Directory.Delete(directory);
+                directory = Path.GetDirectoryName(directory);
+            }
+        }
+
         private static IReadOnlyList<string> VerifyAppliedPlan(ExecutionPlan plan,
                                                                Registry      registry)
         {
@@ -1165,6 +1334,7 @@ namespace CKAN.App.Services
                 Message       = GetInstallNowMessage(mod.Name, result),
                 SummaryLines  = summaryLines,
                 FollowUpLines = result.FollowUpLines,
+                LeftoverConfigDirectories = result.LeftoverConfigDirectories,
             };
         }
 
@@ -1188,6 +1358,7 @@ namespace CKAN.App.Services
                 Message       = GetRemoveNowMessage(mod.Name, result),
                 SummaryLines  = summaryLines,
                 FollowUpLines = result.FollowUpLines,
+                LeftoverConfigDirectories = result.LeftoverConfigDirectories,
             };
         }
 

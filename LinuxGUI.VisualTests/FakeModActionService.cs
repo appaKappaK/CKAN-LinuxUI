@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -153,5 +154,25 @@ namespace CKAN.LinuxGUI.VisualTests
                 Message = "Downloaded queued items for later install.",
             });
         }
+
+        public Task<ApplyChangesResult> RemoveLeftoverConfigDirectoriesAsync(
+            IReadOnlyList<string> directories,
+            CancellationToken    cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            RemovedLeftoverConfigDirectories = directories.ToArray();
+            return Task.FromResult(new ApplyChangesResult
+            {
+                Kind    = ApplyResultKind.Success,
+                Success = true,
+                Title   = "Leftovers Removed",
+                Message = $"Removed {directories.Count} leftover config director{(directories.Count == 1 ? "y" : "ies")} and cleaned up empty parent folders.",
+                SummaryLines = directories.Select(path => $"Removed leftover directory: {path}")
+                                          .ToArray(),
+            });
+        }
+
+        public IReadOnlyList<string> RemovedLeftoverConfigDirectories { get; private set; }
+            = System.Array.Empty<string>();
     }
 }

@@ -95,6 +95,76 @@ namespace CKAN.LinuxGUI.VisualTests
                 var listBox = window.FindControl<ListBox>("ModsListBox");
                 Assert.That(listBox, Is.Not.Null);
                 Assert.That(listBox!.AutoScrollToSelectedItem, Is.False);
+                Assert.That(listBox.SelectionMode.HasFlag(SelectionMode.Multiple), Is.True);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ModBrowser_SupportsShiftRangeAndControlToggleSelection()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var catalog = new FakeModCatalogService();
+            var search = new ModSearchService(settings);
+            var changes = new ChangesetService();
+            var actions = new FakeModActionService(changes);
+            var viewModel = new MainWindowViewModel(settings,
+                                                    service,
+                                                    catalog,
+                                                    search,
+                                                    changes,
+                                                    actions,
+                                                    new FakeDisabledModService(),
+                                                    new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings)
+            {
+                Width = 1200,
+                Height = 760,
+            };
+
+            viewModel.FilterInstalledState = null;
+            window.Show();
+
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count == 5);
+                var listBox = window.FindControl<ListBox>("ModsListBox")!;
+                await WaitForAsync(() => listBox.ContainerFromIndex(4) != null);
+
+                ClickListItem(window, listBox, 0, RawInputModifiers.None);
+                ClickListItem(window, listBox, 3, RawInputModifiers.Shift);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
+                });
+
+                ClickListItem(window, listBox, 1, RawInputModifiers.Control);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(3));
+                    Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
+                    Assert.That(listBox.SelectedItems, Does.Not.Contain(viewModel.Mods[1]));
+                });
+
+                var selectedIdentifiers = listBox.SelectedItems!
+                                                 .OfType<CKAN.App.Models.ModListItem>()
+                                                 .Select(mod => mod.Identifier)
+                                                 .ToArray();
+                viewModel.SelectedSortOption = viewModel.SortOptions.First(option =>
+                    option.Value == CKAN.App.Models.ModSortOption.UpdatesFirst);
+                await Task.Delay(100);
+
+                Assert.That(listBox.SelectedItems!
+                                       .OfType<CKAN.App.Models.ModListItem>()
+                                       .Select(mod => mod.Identifier),
+                            Is.EquivalentTo(selectedIdentifiers));
             }
             finally
             {
@@ -446,6 +516,10 @@ namespace CKAN.LinuxGUI.VisualTests
                     {
                         "Review leftover config-only directory: GameData/Restock/PluginData",
                     },
+                    LeftoverConfigDirectories = new[]
+                    {
+                        "/tmp/visual-test/GameData/Restock/PluginData",
+                    },
                 });
             var user = new AvaloniaUser();
             var viewModel = new MainWindowViewModel(settings, service, catalog, search, changes, actions, new FakeDisabledModService(), user);
@@ -490,6 +564,10 @@ namespace CKAN.LinuxGUI.VisualTests
                     FollowUpLines = new[]
                     {
                         "Review leftover config-only directory: GameData/Restock/PluginData",
+                    },
+                    LeftoverConfigDirectories = new[]
+                    {
+                        "/tmp/visual-test/GameData/Restock/PluginData",
                     },
                 });
             var user = new AvaloniaUser();
@@ -651,6 +729,17 @@ namespace CKAN.LinuxGUI.VisualTests
             }
 
             Assert.That(condition(), Is.True, "Timed out waiting for the expected visual state.");
+        }
+
+        private static void ClickListItem(Window            window,
+                                          ListBox           listBox,
+                                          int               index,
+                                          RawInputModifiers modifiers)
+        {
+            var item = (Control)listBox.ContainerFromIndex(index)!;
+            var point = item.TranslatePoint(new Point(20, item.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(point, MouseButton.Left, modifiers | RawInputModifiers.LeftMouseButton);
+            window.MouseUp(point, MouseButton.Left, modifiers);
         }
 
         private sealed class ErrorGameInstanceServiceWrapper : CKAN.App.Services.IGameInstanceService

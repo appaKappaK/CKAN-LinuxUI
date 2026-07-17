@@ -31,18 +31,25 @@ namespace CKAN.LinuxGUI
     {
         private void QueueInstallSelected()
         {
-            if (SelectedMod == null)
+            var targets = BrowserActionSelection.Where(CanQueueInstallFromSelection).ToArray();
+            if (targets.Length == 0)
             {
                 return;
             }
 
             ClearApplyResult();
-            changesetService.QueueInstall(SelectedMod,
-                                          SelectedModVersionChoice?.VersionKey,
-                                          QueueSourceForScopedBrowserMod(SelectedMod));
-            StatusMessage = SelectedModVersionChoice == null
-                ? $"Queued install for {SelectedMod.Name}."
-                : $"Queued install of {SelectedMod.Name} {SelectedModVersionChoice.VersionText}.";
+            foreach (var mod in targets)
+            {
+                changesetService.QueueInstall(
+                    mod,
+                    targets.Length == 1 ? SelectedModVersionChoice?.VersionKey : null,
+                    QueueSourceForScopedBrowserMod(mod));
+            }
+            StatusMessage = targets.Length == 1
+                ? SelectedModVersionChoice == null
+                    ? $"Queued install for {targets[0].Name}."
+                    : $"Queued install of {targets[0].Name} {SelectedModVersionChoice.VersionText}."
+                : $"Queued installs for {targets.Length} selected mods.";
         }
 
         private bool QueueInstallCandidate(CkanModule module)
@@ -72,28 +79,42 @@ namespace CKAN.LinuxGUI
 
         private void QueueUpdateSelected()
         {
-            if (SelectedMod == null)
+            var targets = BrowserActionSelection.Where(CanQueueUpdateFromSelection).ToArray();
+            if (targets.Length == 0)
             {
                 return;
             }
 
             ClearApplyResult();
-            changesetService.QueueUpdate(SelectedMod, SelectedModVersionChoice?.VersionKey);
-            StatusMessage = SelectedModVersionChoice == null
-                ? $"Queued update for {SelectedMod.Name}."
-                : $"Queued version change for {SelectedMod.Name} to {SelectedModVersionChoice.VersionText}.";
+            foreach (var mod in targets)
+            {
+                changesetService.QueueUpdate(
+                    mod,
+                    targets.Length == 1 ? SelectedModVersionChoice?.VersionKey : null);
+            }
+            StatusMessage = targets.Length == 1
+                ? SelectedModVersionChoice == null
+                    ? $"Queued update for {targets[0].Name}."
+                    : $"Queued version change for {targets[0].Name} to {SelectedModVersionChoice.VersionText}."
+                : $"Queued updates for {targets.Length} selected mods.";
         }
 
         private void QueueRemoveSelected()
         {
-            if (SelectedMod == null)
+            var targets = BrowserActionSelection.Where(CanQueueRemoveFromSelection).ToArray();
+            if (targets.Length == 0)
             {
                 return;
             }
 
             ClearApplyResult();
-            changesetService.QueueRemove(SelectedMod);
-            StatusMessage = $"Queued removal for {SelectedMod.Name}.";
+            foreach (var mod in targets)
+            {
+                changesetService.QueueRemove(mod);
+            }
+            StatusMessage = targets.Length == 1
+                ? $"Queued removal for {targets[0].Name}."
+                : $"Queued removals for {targets.Length} selected mods.";
         }
 
         private async Task QueueRemoveAllInstalledModsAsync()

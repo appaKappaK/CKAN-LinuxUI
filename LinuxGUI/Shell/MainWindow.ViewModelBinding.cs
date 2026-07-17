@@ -126,6 +126,11 @@ namespace CKAN.LinuxGUI
                 pendingModListScrollOffsetY = 0;
                 ResetModListScrollToTop();
             }
+            else if (e.PropertyName == nameof(MainWindowViewModel.BrowserSelectionRestoreRequestId)
+                     && sender is MainWindowViewModel selectionViewModel)
+            {
+                RestoreBrowserSelection(selectionViewModel);
+            }
             else if (e.PropertyName == nameof(MainWindowViewModel.IsCatalogLoading)
                      && sender is MainWindowViewModel loadingViewModel)
             {
@@ -145,6 +150,26 @@ namespace CKAN.LinuxGUI
                                           viewModel.CurrentUser);
                 RefreshPluginControllerForCurrentInstance(viewModel.CurrentInstance);
             }
+        }
+
+        private void RestoreBrowserSelection(MainWindowViewModel viewModel)
+        {
+            var selectedMods = viewModel.SelectedBrowserMods.ToArray();
+            var activeMod = viewModel.SelectedMod;
+            suppressBrowserSelectionChanged = true;
+            try
+            {
+                ModsListBox.UnselectAll();
+                foreach (var mod in selectedMods.Where(ModsListBox.Items.Contains))
+                {
+                    ModsListBox.SelectedItems?.Add(mod);
+                }
+            }
+            finally
+            {
+                suppressBrowserSelectionChanged = false;
+            }
+            viewModel.UpdateBrowserSelection(selectedMods.Where(ModsListBox.Items.Contains), activeMod);
         }
 
         private void ResetModListScrollToTop()

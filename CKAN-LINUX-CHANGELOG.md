@@ -11,6 +11,8 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Ported upstream CKAN fixes for stability-aware compatibility sorting, duplicate relationship-resolver inputs, defensive stability snapshots, shared-disk free-space checks, and BOM-free UTF-8 registry/repository writes.
 - Merged official CKAN through `0daeea8d` (the v1.36.5 development branch tip from 2026-07-02) into the Linux `dev` line while preserving the .NET 8 Linux targets and fork-specific instance and URL-launch behavior.
 - Updated Linux-only callers and test fakes for the merged core APIs, and aligned the catalog benchmark harness with upstream's SharpZipLib 1.4.2 dependency.
+- Added an uninstall-completion action to remove reported config-only leftovers after rechecking their paths and CKAN ownership, including cleanup of newly empty parent mod folders.
+- Added standard Shift-range and Ctrl-toggle mod selection with eligible bulk install, update, and removal actions in the details pane and row context menu.
 
 ## 2026-07-03
 

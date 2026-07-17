@@ -70,6 +70,17 @@ what CKAN Linux is about to do:
 - conflicts or provider choices that need user input
 - optional recommendations, suggestions, and supported integration mods
 
+The mod browser supports normal desktop multi-selection. Shift-click selects a
+continuous range, while Ctrl-click adds or removes individual rows. When more
+than one mod is selected, the details pane offers separate bulk install, update,
+and remove buttons for whichever selected mods are eligible for each action.
+
+After an uninstall, CKAN may preserve directories containing unregistered
+configuration files. The completion dialog lists those directories and offers
+`Remove Leftover` or `Remove Leftovers`. Cleanup rechecks that the directories
+are inside a mod folder and contain no files owned by an installed mod, then
+removes the leftovers and any empty parent mod folders.
+
 Optional recommendations, suggestions, and supported mods are informational.
 Use the `View` button on each optional section to open Browse filtered to those
 mods, queue any extras you want, then use the `Close` button in the notice above

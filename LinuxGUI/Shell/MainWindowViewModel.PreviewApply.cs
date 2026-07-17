@@ -761,6 +761,16 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBackground));
             this.RaisePropertyChanged(nameof(PrimarySelectedModActionBorderBrush));
             this.RaisePropertyChanged(nameof(SelectedModQueueStatus));
+            this.RaisePropertyChanged(nameof(ShowBulkSelectionActions));
+            this.RaisePropertyChanged(nameof(ShowBulkInstallAction));
+            this.RaisePropertyChanged(nameof(ShowBulkUpdateAction));
+            this.RaisePropertyChanged(nameof(ShowBulkRemoveAction));
+            this.RaisePropertyChanged(nameof(BulkInstallCount));
+            this.RaisePropertyChanged(nameof(BulkUpdateCount));
+            this.RaisePropertyChanged(nameof(BulkRemoveCount));
+            this.RaisePropertyChanged(nameof(BulkInstallActionLabel));
+            this.RaisePropertyChanged(nameof(BulkUpdateActionLabel));
+            this.RaisePropertyChanged(nameof(BulkRemoveActionLabel));
         }
 
         private void PublishCompatibleGameVersionState()
@@ -836,6 +846,7 @@ namespace CKAN.LinuxGUI
             ApplyResultMessage = result.Message;
             ReplacePreviewCollection(ApplyResultSummaryLines, result.SummaryLines);
             ReplacePreviewCollection(ApplyResultFollowUpLines, result.FollowUpLines);
+            applyResultLeftoverConfigDirectories = result.LeftoverConfigDirectories.ToArray();
 
             (ApplyResultBackground, ApplyResultBorderBrush) = result.Kind switch
             {
@@ -859,7 +870,44 @@ namespace CKAN.LinuxGUI
             ApplyResultBorderBrush = "#2F3741";
             ReplacePreviewCollection(ApplyResultSummaryLines, Array.Empty<string>());
             ReplacePreviewCollection(ApplyResultFollowUpLines, Array.Empty<string>());
+            applyResultLeftoverConfigDirectories = Array.Empty<string>();
             PublishApplyResultStateLabels();
+        }
+
+        private async Task RemoveApplyResultLeftoversAsync()
+        {
+            var directories = applyResultLeftoverConfigDirectories.ToArray();
+            if (directories.Length == 0)
+            {
+                return;
+            }
+
+            IsRemovingApplyResultLeftovers = true;
+            try
+            {
+                var result = await modActionService.RemoveLeftoverConfigDirectoriesAsync(
+                    directories,
+                    CancellationToken.None);
+                SetApplyResult(result);
+                StatusMessage = result.Message;
+            }
+            catch (Exception ex)
+            {
+                SetApplyResult(new ApplyChangesResult
+                {
+                    Kind    = ApplyResultKind.Error,
+                    Success = false,
+                    Title   = "Leftover Cleanup Failed",
+                    Message = ex.Message,
+                    LeftoverConfigDirectories = directories,
+                });
+                Diagnostics = ex.Message;
+                StatusMessage = "Leftover cleanup failed.";
+            }
+            finally
+            {
+                IsRemovingApplyResultLeftovers = false;
+            }
         }
 
         private void PublishApplyResultStateLabels()
@@ -870,6 +918,8 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(ShowReviewWorkspaceTab));
             this.RaisePropertyChanged(nameof(HasApplyResultSummaryLines));
             this.RaisePropertyChanged(nameof(HasApplyResultFollowUpLines));
+            this.RaisePropertyChanged(nameof(HasRemovableApplyResultLeftovers));
+            this.RaisePropertyChanged(nameof(RemoveApplyResultLeftoversLabel));
             this.RaisePropertyChanged(nameof(ShowInlineApplyResult));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBackground));
             this.RaisePropertyChanged(nameof(PreviewSurfaceButtonBorderBrush));

@@ -3617,10 +3617,11 @@
                                    MinHeight="0"
                                    ItemsSource="{Binding Mods}"
                                    AutoScrollToSelectedItem="False"
+                                   SelectionMode="Multiple"
+                                   SelectionChanged="ModsListBox_OnSelectionChanged"
                                    ScrollViewer.VerticalScrollBarVisibility="Visible"
                                    PointerPressed="ModsListBox_OnPointerPressed"
-                                   PointerWheelChanged="ModsListBox_OnPointerWheelChanged"
-                                   SelectedItem="{Binding SelectedMod}">
+                                   PointerWheelChanged="ModsListBox_OnPointerWheelChanged">
                             <ListBox.ItemTemplate>
                               <DataTemplate DataType="models:ModListItem"
                                             x:CompileBindings="False">
@@ -4119,6 +4120,18 @@
                             </Border>
                           </WrapPanel>
 
+                          <Border Background="#1B2732"
+                                  BorderBrush="#47627A"
+                                  BorderThickness="1"
+                                  CornerRadius="8"
+                                  Padding="10,7"
+                                  IsVisible="{Binding HasMultipleSelectedMods}">
+                            <TextBlock FontSize="12"
+                                       Foreground="#DDEAF6"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding BulkSelectionSummary}" />
+                          </Border>
+
                           <WrapPanel IsVisible="{Binding ShowSelectedModActionRow}">
                             <Button Classes="command-button primary"
                                     HorizontalAlignment="Left"
@@ -4132,6 +4145,42 @@
                                     IsVisible="{Binding ShowPrimarySelectedModAction}"
                                     Command="{Binding PrimarySelectedModActionCommand}"
                                     Content="{Binding PrimarySelectedModActionLabel}" />
+                            <Button Classes="command-button primary"
+                                    HorizontalAlignment="Left"
+                                    MinHeight="32"
+                                    Margin="0,0,10,6"
+                                    Padding="10,6"
+                                    CornerRadius="7"
+                                    Background="#2B6A98"
+                                    BorderBrush="#2B6A98"
+                                    Foreground="#F7FAFD"
+                                    IsVisible="{Binding ShowBulkInstallAction}"
+                                    Command="{Binding QueueInstallCommand}"
+                                    Content="{Binding BulkInstallActionLabel}" />
+                            <Button Classes="command-button primary"
+                                    HorizontalAlignment="Left"
+                                    MinHeight="32"
+                                    Margin="0,0,10,6"
+                                    Padding="10,6"
+                                    CornerRadius="7"
+                                    Background="#6A952B"
+                                    BorderBrush="#6A952B"
+                                    Foreground="#F7FAFD"
+                                    IsVisible="{Binding ShowBulkUpdateAction}"
+                                    Command="{Binding QueueUpdateCommand}"
+                                    Content="{Binding BulkUpdateActionLabel}" />
+                            <Button Classes="command-button primary"
+                                    HorizontalAlignment="Left"
+                                    MinHeight="32"
+                                    Margin="0,0,10,6"
+                                    Padding="10,6"
+                                    CornerRadius="7"
+                                    Background="#9A485C"
+                                    BorderBrush="#9A485C"
+                                    Foreground="#F7FAFD"
+                                    IsVisible="{Binding ShowBulkRemoveAction}"
+                                    Command="{Binding QueueRemoveCommand}"
+                                    Content="{Binding BulkRemoveActionLabel}" />
                           </WrapPanel>
 
                           <Border Background="#3B2B1B"
@@ -5620,14 +5669,25 @@
               </StackPanel>
             </Border>
 
-            <Button Classes="preview-action"
-                    HorizontalAlignment="Right"
-                    Margin="0"
-                    Background="#355779"
-                    BorderBrush="#5A86B4"
-                    Foreground="#F4F6F8"
-                    Command="{Binding AcknowledgeExecutionResultCommand}"
-                    Content="{Binding ExecutionResultAcknowledgeLabel}" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="10">
+              <Button Classes="preview-action"
+                      Margin="0"
+                      Background="#67332D"
+                      BorderBrush="#A65B50"
+                      Foreground="#F4F6F8"
+                      IsVisible="{Binding HasRemovableApplyResultLeftovers}"
+                      Command="{Binding RemoveApplyResultLeftoversCommand}"
+                      Content="{Binding RemoveApplyResultLeftoversLabel}" />
+              <Button Classes="preview-action"
+                      Margin="0"
+                      Background="#355779"
+                      BorderBrush="#5A86B4"
+                      Foreground="#F4F6F8"
+                      Command="{Binding AcknowledgeExecutionResultCommand}"
+                      Content="{Binding ExecutionResultAcknowledgeLabel}" />
+            </StackPanel>
           </StackPanel>
           </ScrollViewer>
         </Border>

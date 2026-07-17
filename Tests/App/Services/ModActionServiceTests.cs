@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -147,6 +148,123 @@ namespace Tests.App.Services
                     Assert.That(result.Success, Is.True);
                     Assert.That(regMgr.registry.InstalledVersion("StaleCatalogMod")?.ToString(),
                                 Is.EqualTo("2.0"));
+                });
+            }
+        }
+
+        [Test]
+        public async Task RemoveLeftoverConfigDirectories_RemovesFilesAndEmptyModParents()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(RemovingModMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var modDirectory = Path.Combine(inst.KSP.GameDir, "GameData", "LeftoverMod");
+                var configDirectory = Path.Combine(modDirectory, "PluginData");
+                Directory.CreateDirectory(configDirectory);
+                File.WriteAllText(Path.Combine(configDirectory, "settings.cfg"), "setting = old");
+
+                var actions = new ModActionService(gameService, new ChangesetService(), user);
+                var result = await actions.RemoveLeftoverConfigDirectoriesAsync(
+                    new[] { configDirectory },
+                    CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Success, Is.True);
+                    Assert.That(result.Kind, Is.EqualTo(ApplyResultKind.Success));
+                    Assert.That(Directory.Exists(configDirectory), Is.False);
+                    Assert.That(Directory.Exists(modDirectory), Is.False);
+                    Assert.That(Directory.Exists(Path.Combine(inst.KSP.GameDir, "GameData")), Is.True);
+                    Assert.That(result.SummaryLines, Has.Some.Contains("GameData"));
+                    Assert.That(result.LeftoverConfigDirectories, Is.Empty);
+                });
+            }
+        }
+
+        [Test]
+        public async Task RemoveLeftoverConfigDirectories_KeepsDirectoryWithRegisteredFiles()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(RemovingModMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var modDirectory = Path.Combine(inst.KSP.GameDir, "GameData", "ProtectedMod");
+                Directory.CreateDirectory(modDirectory);
+                var ownedFile = Path.Combine(modDirectory, "owned.cfg");
+                File.WriteAllText(ownedFile, "owned = true");
+                File.WriteAllText(Path.Combine(modDirectory, "leftover.cfg"), "old = true");
+                regMgr.registry.RegisterModule(
+                    regMgr.registry.GetModuleByVersion("RemovingMod", "1.0")!,
+                    new[] { ownedFile },
+                    inst.KSP,
+                    false);
+
+                var actions = new ModActionService(gameService, new ChangesetService(), user);
+                var result = await actions.RemoveLeftoverConfigDirectoriesAsync(
+                    new[] { modDirectory },
+                    CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Success, Is.False);
+                    Assert.That(result.Kind, Is.EqualTo(ApplyResultKind.Warning));
+                    Assert.That(Directory.Exists(modDirectory), Is.True);
+                    Assert.That(File.Exists(ownedFile), Is.True);
+                    Assert.That(result.FollowUpLines, Has.Some.Contains("owned by an installed mod"));
+                    Assert.That(result.LeftoverConfigDirectories, Is.Empty);
+                });
+            }
+        }
+
+        [Test]
+        public async Task RemoveLeftoverConfigDirectories_RefusesPathsOutsideModDirectories()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(RemovingModMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var outsideDirectory = Path.Combine(inst.KSP.GameDir, "saves", "ProtectedSave");
+                Directory.CreateDirectory(outsideDirectory);
+                var saveFile = Path.Combine(outsideDirectory, "persistent.sfs");
+                File.WriteAllText(saveFile, "GAME { }");
+
+                var actions = new ModActionService(gameService, new ChangesetService(), user);
+                var result = await actions.RemoveLeftoverConfigDirectoriesAsync(
+                    new[] { outsideDirectory },
+                    CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Success, Is.False);
+                    Assert.That(result.Kind, Is.EqualTo(ApplyResultKind.Warning));
+                    Assert.That(Directory.Exists(outsideDirectory), Is.True);
+                    Assert.That(File.Exists(saveFile), Is.True);
+                    Assert.That(result.FollowUpLines, Has.Some.Contains("unrecognized path"));
                 });
             }
         }

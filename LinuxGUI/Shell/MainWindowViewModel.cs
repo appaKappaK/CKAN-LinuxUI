@@ -142,6 +142,7 @@ namespace CKAN.LinuxGUI
         private string  applyResultMessage = "";
         private string  applyResultBackground = "#20262D";
         private string  applyResultBorderBrush = "#2F3741";
+        private IReadOnlyList<string> applyResultLeftoverConfigDirectories = Array.Empty<string>();
         private string  transientNoticeMessage = "";
         private int     progressPercent;
         private int     instanceCount;
@@ -169,6 +170,7 @@ namespace CKAN.LinuxGUI
         private bool    isSelectedModLoading;
         private bool    isPreviewLoading;
         private bool    isApplyingChanges;
+        private bool    isRemovingApplyResultLeftovers;
         private bool    isUserBusy;
         private bool    showSortOptions;
         private bool    showAdvancedFilters;
@@ -203,6 +205,8 @@ namespace CKAN.LinuxGUI
         private DateTime lastCatalogLoadCompletedUtc = DateTime.MinValue;
         private bool    pendingModListScrollReset;
         private bool    preserveSelectedModDuringSortReorder;
+        private int     browserSelectionRestoreRequestId;
+        private bool    updatingBrowserSelectionFromList;
         private bool    suppressFilterAutoRefresh;
         private bool    hasRestoredQueuedActionSnapshot;
         private bool    hasSeededDevQueueSmoke;
@@ -226,6 +230,7 @@ namespace CKAN.LinuxGUI
         private IReadOnlyDictionary<string, string> relationshipBrowserScopeQueueSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private bool relationshipBrowserScopeReturnsToPreview;
         private ModDetailsModel? selectedModDetails;
+        private IReadOnlyList<ModListItem> browserSelectedMods = Array.Empty<ModListItem>();
         private FilterOptionCounts filterOptionCounts = new FilterOptionCounts();
         private ModDetailsSection selectedModDetailsSection = ModDetailsSection.Overview;
         private InstanceSummary? selectedInstance;
@@ -304,21 +309,15 @@ namespace CKAN.LinuxGUI
                                                    vm => vm.IsApplyingChanges,
                                                    vm => vm.IsCatalogLoading,
                                                    (inst, refreshing, applying, loading) => inst != null && !refreshing && !applying && !loading);
-            var canQueueInstall = this.WhenAnyValue(vm => vm.SelectedMod,
+            var canQueueInstall = this.WhenAnyValue(vm => vm.BulkInstallCount,
                                                     vm => vm.IsApplyingChanges,
-                                                    (mod, applying) => mod != null
-                                                                       && !applying
-                                                                       && !mod.IsInstalled
-                                                                       && !mod.IsIncompatible);
-            var canQueueUpdate = this.WhenAnyValue(vm => vm.SelectedMod,
+                                                    (count, applying) => count > 0 && !applying);
+            var canQueueUpdate = this.WhenAnyValue(vm => vm.BulkUpdateCount,
                                                    vm => vm.IsApplyingChanges,
-                                                   (mod, applying) => mod?.IsInstalled == true
-                                                                      && mod.HasVersionUpdate
-                                                                      && !applying);
-            var canQueueRemove = this.WhenAnyValue(vm => vm.SelectedMod,
+                                                   (count, applying) => count > 0 && !applying);
+            var canQueueRemove = this.WhenAnyValue(vm => vm.BulkRemoveCount,
                                                    vm => vm.IsApplyingChanges,
-                                                   (mod, applying) => mod?.IsInstalled == true
-                                                                      && !applying);
+                                                   (count, applying) => count > 0 && !applying);
             var canRemoveQueuedAction = this.WhenAnyValue(vm => vm.SelectedQueuedAction,
                                                           vm => vm.IsApplyingChanges,
                                                           (action, applying) => action != null
@@ -364,6 +363,10 @@ namespace CKAN.LinuxGUI
             var canDownloadQueued = this.WhenAnyValue(vm => vm.HasQueuedDownloadActions,
                                                       vm => vm.IsApplyingChanges,
                                                       (hasDownloads, applying) => hasDownloads && !applying);
+            var canRemoveApplyResultLeftovers = this.WhenAnyValue(
+                vm => vm.HasRemovableApplyResultLeftovers,
+                vm => vm.IsRemovingApplyResultLeftovers,
+                (hasLeftovers, removing) => hasLeftovers && !removing);
             var canPlayDirect = this.WhenAnyValue(vm => vm.CanPlayDirect);
             var canPlayViaSteam = this.WhenAnyValue(vm => vm.CanPlayViaSteam);
             RefreshCommand = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
@@ -412,6 +415,9 @@ namespace CKAN.LinuxGUI
                                                                                    canApplyChanges);
             DismissApplyResultCommand = ReactiveCommand.Create(DismissApplyResult);
             AcknowledgeExecutionResultCommand = ReactiveCommand.Create(AcknowledgeExecutionResult);
+            RemoveApplyResultLeftoversCommand = ReactiveCommand.CreateFromTask(
+                RemoveApplyResultLeftoversAsync,
+                canRemoveApplyResultLeftovers);
             OpenCurrentGameDirectoryCommand = ReactiveCommand.Create(OpenCurrentGameDirectory,
                                                                     this.WhenAnyValue(vm => vm.HasCurrentInstance));
             OpenCurrentShipDirectoryCommand = ReactiveCommand.Create(OpenCurrentShipDirectory,
@@ -708,6 +714,8 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> DismissApplyResultCommand { get; }
 
         public ReactiveCommand<Unit, Unit> AcknowledgeExecutionResultCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> RemoveApplyResultLeftoversCommand { get; }
 
         public ReactiveCommand<Unit, Unit> OpenCurrentGameDirectoryCommand { get; }
 
@@ -1679,6 +1687,64 @@ namespace CKAN.LinuxGUI
 
         public bool HasSelectedMod => SelectedMod != null;
 
+        public int SelectedModCount
+            => browserSelectedMods.Count > 0
+                ? browserSelectedMods.Count
+                : SelectedMod == null ? 0 : 1;
+
+        public bool HasMultipleSelectedMods => SelectedModCount > 1;
+
+        public IReadOnlyList<ModListItem> SelectedBrowserMods => BrowserActionSelection;
+
+        public int BrowserSelectionRestoreRequestId
+            => browserSelectionRestoreRequestId;
+
+        public string BulkSelectionSummary
+            => $"{SelectedModCount} mods selected. Actions below apply to every eligible selected mod.";
+
+        public int BulkInstallCount => BrowserActionSelection.Count(CanQueueInstallFromSelection);
+
+        public int BulkUpdateCount => BrowserActionSelection.Count(CanQueueUpdateFromSelection);
+
+        public int BulkRemoveCount => BrowserActionSelection.Count(CanQueueRemoveFromSelection);
+
+        public bool ShowBulkInstallAction => HasMultipleSelectedMods && BulkInstallCount > 0;
+
+        public bool ShowBulkUpdateAction => HasMultipleSelectedMods && BulkUpdateCount > 0;
+
+        public bool ShowBulkRemoveAction => HasMultipleSelectedMods && BulkRemoveCount > 0;
+
+        public bool ShowBulkSelectionActions
+            => ShowBulkInstallAction || ShowBulkUpdateAction || ShowBulkRemoveAction;
+
+        public string BulkInstallActionLabel => $"Queue Install ({BulkInstallCount})";
+
+        public string BulkUpdateActionLabel => $"Queue Update ({BulkUpdateCount})";
+
+        public string BulkRemoveActionLabel => $"Queue Remove ({BulkRemoveCount})";
+
+        private IReadOnlyList<ModListItem> BrowserActionSelection
+            => browserSelectedMods.Count > 0
+                ? browserSelectedMods
+                : SelectedMod == null
+                    ? Array.Empty<ModListItem>()
+                    : new[] { SelectedMod };
+
+        private bool CanQueueInstallFromSelection(ModListItem mod)
+            => HasMultipleSelectedMods
+                ? CanQueueInstall(mod)
+                : !mod.IsInstalled && !mod.IsIncompatible;
+
+        private bool CanQueueUpdateFromSelection(ModListItem mod)
+            => HasMultipleSelectedMods
+                ? CanQueueUpdate(mod)
+                : mod.IsInstalled && mod.HasVersionUpdate;
+
+        private bool CanQueueRemoveFromSelection(ModListItem mod)
+            => HasMultipleSelectedMods
+                ? CanQueueRemove(mod)
+                : mod.IsInstalled;
+
         public bool IsSelectedModLoading
         {
             get => isSelectedModLoading;
@@ -2328,17 +2394,20 @@ namespace CKAN.LinuxGUI
                && changesetService.FindQueuedDownloadAction(SelectedMod.Identifier) != null;
 
         public bool ShowInstallNowAction
-            => ShowInstallAction
+            => !HasMultipleSelectedMods
+               && ShowInstallAction
                && !HasSelectedModQueuedAction
                && !IsApplyingChanges;
 
         public bool ShowRemoveNowAction
-            => ShowRemoveAction
+            => !HasMultipleSelectedMods
+               && ShowRemoveAction
                && !HasSelectedModQueuedAction
                && !IsApplyingChanges;
 
         public bool ShowPrimarySelectedModAction
-            => !IsSelectedModLoading
+            => !HasMultipleSelectedMods
+               && !IsSelectedModLoading
                && (HasSelectedModQueuedAction
                || ShowInstallAction
                || ShowUpdateAction
@@ -2347,7 +2416,8 @@ namespace CKAN.LinuxGUI
         public bool ShowSelectedModActionRow
             => ShowInstallNowAction
                || ShowRemoveNowAction
-               || ShowPrimarySelectedModAction;
+               || ShowPrimarySelectedModAction
+               || ShowBulkSelectionActions;
 
         public bool ShowOpenSelectedModCacheLocationAction
             => !IsSelectedModLoading
@@ -2355,6 +2425,7 @@ namespace CKAN.LinuxGUI
 
         public bool ShowSelectedModActionUnavailableNote
             => !IsSelectedModLoading
+               && (!HasMultipleSelectedMods || !ShowBulkSelectionActions)
                && !ShowInstallNowAction
                && !ShowPrimarySelectedModAction
                && (SelectedMod?.IsDisabled == true
@@ -2362,7 +2433,9 @@ namespace CKAN.LinuxGUI
                || !SelectedModSelectedVersionIsCompatible);
 
         public string SelectedModActionUnavailableNote
-            => SelectedMod?.IsDisabled == true
+            => HasMultipleSelectedMods
+                ? "None of the selected mods currently have an install, update, or removal action available. Disabled and externally managed mods are skipped."
+                : SelectedMod?.IsDisabled == true
                 ? "This mod is currently disabled. Use the browser context menu to enable it again."
                 : SelectedMod?.IsAutodetected == true
                 ? "This mod is managed outside CKAN. CKAN can use it for dependency checks, but removal must be done manually from GameData."
@@ -2603,6 +2676,26 @@ namespace CKAN.LinuxGUI
         public bool HasApplyResultSummaryLines => ApplyResultSummaryLines.Count > 0;
 
         public bool HasApplyResultFollowUpLines => ApplyResultFollowUpLines.Count > 0;
+
+        public bool HasRemovableApplyResultLeftovers
+            => applyResultLeftoverConfigDirectories.Count > 0;
+
+        public bool IsRemovingApplyResultLeftovers
+        {
+            get => isRemovingApplyResultLeftovers;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref isRemovingApplyResultLeftovers, value);
+                this.RaisePropertyChanged(nameof(RemoveApplyResultLeftoversLabel));
+            }
+        }
+
+        public string RemoveApplyResultLeftoversLabel
+            => IsRemovingApplyResultLeftovers
+                ? "Removing…"
+                : applyResultLeftoverConfigDirectories.Count == 1
+                    ? "Remove Leftover"
+                    : "Remove Leftovers";
 
         public bool ShowInlineApplyResult => HasApplyResult && !ShowExecutionResultOverlay;
 
@@ -2989,6 +3082,11 @@ namespace CKAN.LinuxGUI
         {
             get
             {
+                if (HasMultipleSelectedMods)
+                {
+                    return BulkSelectionSummary;
+                }
+
                 if (SelectedMod == null)
                 {
                     return "Choose a mod to queue an install, update, or removal. Right-click a mod to add it to cache.";
@@ -3348,13 +3446,89 @@ namespace CKAN.LinuxGUI
                     return;
                 }
 
+                var selectionChanged = !ReferenceEquals(selectedMod, value);
                 this.RaiseAndSetIfChanged(ref selectedMod, value);
                 this.RaisePropertyChanged(nameof(HasSelectedMod));
                 this.RaisePropertyChanged(nameof(ShowDetailsSidebar));
                 PublishSelectedModDisplayState();
                 PublishSelectedModActionState();
+                if (value == null)
+                {
+                    browserSelectedMods = Array.Empty<ModListItem>();
+                    PublishBrowserSelectionState();
+                }
+                else if (!browserSelectedMods.Any(mod => string.Equals(mod.Identifier,
+                                                                        value.Identifier,
+                                                                        StringComparison.OrdinalIgnoreCase)))
+                {
+                    browserSelectedMods = new[] { value };
+                    PublishBrowserSelectionState();
+                }
                 _ = LoadModDetailsAsync(value?.Identifier);
+                if (selectionChanged && !updatingBrowserSelectionFromList)
+                {
+                    RequestBrowserSelectionRestore();
+                }
             }
+        }
+
+        public void UpdateBrowserSelection(IEnumerable<ModListItem> selectedMods,
+                                           ModListItem?             activeMod)
+        {
+            if (preserveSelectedModDuringSortReorder)
+            {
+                return;
+            }
+
+            browserSelectedMods = selectedMods.DistinctBy(mod => mod.Identifier,
+                                                          StringComparer.OrdinalIgnoreCase)
+                                               .ToArray();
+            if (activeMod == null
+                || !browserSelectedMods.Any(mod => string.Equals(mod.Identifier,
+                                                                 activeMod.Identifier,
+                                                                 StringComparison.OrdinalIgnoreCase)))
+            {
+                activeMod = browserSelectedMods.LastOrDefault();
+            }
+
+            if (activeMod == null)
+            {
+                ShowDetailsPane = false;
+            }
+            updatingBrowserSelectionFromList = true;
+            try
+            {
+                SelectedMod = activeMod;
+            }
+            finally
+            {
+                updatingBrowserSelectionFromList = false;
+            }
+            PublishBrowserSelectionState();
+        }
+
+        private void PublishBrowserSelectionState()
+        {
+            this.RaisePropertyChanged(nameof(SelectedModCount));
+            this.RaisePropertyChanged(nameof(HasMultipleSelectedMods));
+            this.RaisePropertyChanged(nameof(BulkSelectionSummary));
+            this.RaisePropertyChanged(nameof(BulkInstallCount));
+            this.RaisePropertyChanged(nameof(BulkUpdateCount));
+            this.RaisePropertyChanged(nameof(BulkRemoveCount));
+            this.RaisePropertyChanged(nameof(ShowBulkInstallAction));
+            this.RaisePropertyChanged(nameof(ShowBulkUpdateAction));
+            this.RaisePropertyChanged(nameof(ShowBulkRemoveAction));
+            this.RaisePropertyChanged(nameof(ShowBulkSelectionActions));
+            this.RaisePropertyChanged(nameof(BulkInstallActionLabel));
+            this.RaisePropertyChanged(nameof(BulkUpdateActionLabel));
+            this.RaisePropertyChanged(nameof(BulkRemoveActionLabel));
+            PublishSelectedModActionState();
+        }
+
+        private void RequestBrowserSelectionRestore()
+        {
+            browserSelectionRestoreRequestId++;
+            this.RaisePropertyChanged(nameof(BrowserSelectionRestoreRequestId));
         }
 
         public QueuedActionModel? SelectedQueuedAction

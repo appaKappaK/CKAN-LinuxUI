@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,5 +19,9 @@ namespace CKAN.App.Services
         Task<ApplyChangesResult> RemoveNowAsync(ModListItem mod, CancellationToken cancellationToken);
 
         Task<ApplyChangesResult> DownloadQueuedAsync(CancellationToken cancellationToken);
+
+        Task<ApplyChangesResult> RemoveLeftoverConfigDirectoriesAsync(
+            IReadOnlyList<string> directories,
+            CancellationToken    cancellationToken);
     }
 }

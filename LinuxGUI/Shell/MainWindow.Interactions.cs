@@ -97,16 +97,16 @@ namespace CKAN.LinuxGUI
             if (updateKind == PointerUpdateKind.LeftButtonPressed)
             {
                 CloseActiveModRowMenu();
-                viewModel.ActivateModFromBrowser(mod);
+                viewModel.OpenModDetailsFromBrowser();
                 ModsListBox.Focus();
-                e.Handled = true;
                 return;
             }
 
             if (updateKind == PointerUpdateKind.MiddleButtonPressed)
             {
                 CloseActiveModRowMenu();
-                viewModel.SelectedMod = null;
+                ModsListBox.UnselectAll();
+                viewModel.UpdateBrowserSelection(Array.Empty<ModListItem>(), null);
                 ModsListBox.Focus();
                 e.Handled = true;
                 return;
@@ -117,7 +117,15 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
-            viewModel.SelectedMod = mod;
+            if (ModsListBox.SelectedItems?.OfType<ModListItem>()
+                           .Any(item => string.Equals(item.Identifier,
+                                                      mod.Identifier,
+                                                      StringComparison.OrdinalIgnoreCase)) != true)
+            {
+                ModsListBox.UnselectAll();
+                ModsListBox.SelectedItems?.Add(mod);
+            }
+            SyncBrowserSelection(viewModel, mod);
             ModsListBox.Focus();
             CloseActiveModRowMenu();
 
@@ -128,7 +136,22 @@ namespace CKAN.LinuxGUI
             menu.Classes.Add("mod-row-menu");
             menu.Closed += ModRowMenu_OnClosed;
 
-            if (viewModel.ShowQueueContextAction(mod))
+            if (viewModel.HasMultipleSelectedMods)
+            {
+                AddBulkQueueContextItem(menu,
+                                        viewModel.ShowBulkInstallAction,
+                                        viewModel.BulkInstallActionLabel,
+                                        viewModel.QueueInstallCommand);
+                AddBulkQueueContextItem(menu,
+                                        viewModel.ShowBulkUpdateAction,
+                                        viewModel.BulkUpdateActionLabel,
+                                        viewModel.QueueUpdateCommand);
+                AddBulkQueueContextItem(menu,
+                                        viewModel.ShowBulkRemoveAction,
+                                        viewModel.BulkRemoveActionLabel,
+                                        viewModel.QueueRemoveCommand);
+            }
+            else if (viewModel.ShowQueueContextAction(mod))
             {
                 var queueItem = new MenuItem
                 {
@@ -234,6 +257,25 @@ namespace CKAN.LinuxGUI
             e.Handled = true;
         }
 
+        private static void AddBulkQueueContextItem(ContextMenu                     menu,
+                                                    bool                            isVisible,
+                                                    string                          label,
+                                                    System.Windows.Input.ICommand   command)
+        {
+            if (!isVisible)
+            {
+                return;
+            }
+
+            var item = new MenuItem
+            {
+                Header  = label,
+                Command = command,
+            };
+            item.Classes.Add("mod-row-menu-item");
+            menu.Items.Add(item);
+        }
+
         private void ModsListBox_OnPointerPressed(object? sender,
                                                   PointerPressedEventArgs e)
         {
@@ -249,10 +291,33 @@ namespace CKAN.LinuxGUI
             }
 
             CloseActiveModRowMenu();
-            viewModel.SelectedMod = null;
+            ModsListBox.UnselectAll();
+            viewModel.UpdateBrowserSelection(Array.Empty<ModListItem>(), null);
             ModsListBox.Focus();
             e.Handled = true;
         }
+
+        private void ModsListBox_OnSelectionChanged(object? sender,
+                                                    SelectionChangedEventArgs e)
+        {
+            if (suppressBrowserSelectionChanged
+                || DataContext is not MainWindowViewModel viewModel)
+            {
+                return;
+            }
+
+            var activeMod = e.AddedItems.OfType<ModListItem>().LastOrDefault()
+                            ?? ModsListBox.SelectedItem as ModListItem;
+            SyncBrowserSelection(viewModel, activeMod);
+        }
+
+        private void SyncBrowserSelection(MainWindowViewModel viewModel,
+                                          ModListItem?        activeMod)
+            => viewModel.UpdateBrowserSelection(
+                ModsListBox.SelectedItems?.OfType<ModListItem>()
+                           .ToArray()
+                ?? Array.Empty<ModListItem>(),
+                activeMod);
 
         private void PreviewQueueRow_OnPointerPressed(object? sender,
                                                       PointerPressedEventArgs e)
