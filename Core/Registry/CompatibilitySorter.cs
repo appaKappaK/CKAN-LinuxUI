@@ -128,7 +128,7 @@ namespace CKAN
         /// <returns>
         /// Mapping from identifiers to compatible mods providing those identifiers
         /// </returns>
-        private static Dictionary<string, HashSet<AvailableModule>> CompatibleProviders(
+        private Dictionary<string, HashSet<AvailableModule>> CompatibleProviders(
             GameVersionCriteria                    crit,
             IDictionary<string, AvailableModule[]> providers)
             => providers
@@ -138,7 +138,9 @@ namespace CKAN
                     kvp.Value.Where(availMod => availMod.AllAvailable()
                                                         .Any(ckm => !ckm.IsDLC
                                                                     && ckm.ProvidesList.Contains(kvp.Key)
-                                                                    && ckm.IsCompatible(crit)))
+                                                                    && ckm.IsCompatible(crit)
+                                                                    && ckm.release_status <= (StabilityTolerance.ModStabilityTolerance(ckm.identifier)
+                                                                                              ?? StabilityTolerance.OverallStabilityTolerance)))
                              .ToHashSet()))
                 .Where(kvp => kvp.Value.Count > 0)
                 .ToDictionary();
@@ -154,7 +156,9 @@ namespace CKAN
                         // Group into trivially [in]compatible (false/true) and indeterminate (null)
                         .AsParallel()
                         .GroupBy(kvp => kvp.Value.AllAvailable()
-                                                 .All(m => !m.IsCompatible(CompatibleVersions))
+                                                 .All(m => !m.IsCompatible(CompatibleVersions)
+                                                           || m.release_status > (StabilityTolerance.ModStabilityTolerance(m.identifier)
+                                                                                 ?? StabilityTolerance.OverallStabilityTolerance))
                                             // No versions compatible == incompatible
                                             ? false
                                             : kvp.Value.AllAvailable()
@@ -185,7 +189,9 @@ namespace CKAN
                 return;
             }
             investigating.Push(identifier);
-            foreach (CkanModule m in am.AllAvailable().Where(m => m.IsCompatible(CompatibleVersions)))
+            foreach (CkanModule m in am.AllAvailable().Where(m => m.IsCompatible(CompatibleVersions)
+                                                                  && m.release_status <= (StabilityTolerance.ModStabilityTolerance(m.identifier)
+                                                                                          ?? StabilityTolerance.OverallStabilityTolerance)))
             {
                 log.DebugFormat("What about {0}?", m.version);
                 bool installable = true;

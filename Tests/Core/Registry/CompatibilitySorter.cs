@@ -9,6 +9,7 @@ using CKAN.Configuration;
 using CKAN.Versioning;
 
 using Tests.Data;
+using Tests.Core.Relationships;
 
 namespace Tests.Core.Registry
 {
@@ -98,6 +99,66 @@ namespace Tests.Core.Registry
                 Assert.AreEqual(highPrio!.ToJson(),
                                 sorter.LatestCompatible.First(m => m.identifier == identifier).ToJson());
             }
+        }
+
+        [Test]
+        public void Constructor_OnlyCompatibleIsPrerelease_Incompatible()
+        {
+            var avail = new AvailableModule(
+                            "BDArmoryContinued",
+                            new string[]
+                            {
+                                @"{
+                                    ""identifier"":     ""BDArmoryContinued"",
+                                    ""version"":        ""2.0"",
+                                    ""ksp_version"":    ""1.12"",
+                                    ""release_status"": ""testing""
+                                }",
+                                @"{
+                                    ""identifier"":  ""BDArmoryContinued"",
+                                    ""version"":     ""1.1"",
+                                    ""ksp_version"": ""1.9""
+                                }",
+                                @"{
+                                    ""identifier"":  ""BDArmoryContinued"",
+                                    ""version"":     ""1.0"",
+                                    ""ksp_version"": ""1.9""
+                                }",
+                            }.Select(RelationshipResolverTests.MergeWithDefaults)
+                             .Select(CkanModule.FromJson)
+                             .ToArray());
+            var ident     = avail.AllAvailable().First().identifier;
+            var versCrit  = new GameVersionCriteria(GameVersion.Parse("1.12.5"));
+            var providers = new Dictionary<string, AvailableModule[]>
+            {
+                { ident, new[] { avail } }
+            };
+            var allAvailable = new Dictionary<string, AvailableModule>[]
+            {
+                new Dictionary<string, AvailableModule>
+                {
+                    { ident, avail }
+                }
+            };
+            var installed = new Dictionary<string, InstalledModule>();
+            var dlls      = new Dictionary<string, string>().Keys;
+            var dlcs      = new Dictionary<string, UnmanagedModuleVersion>();
+            var stability = new StabilityToleranceConfig("");
+
+            var sorter = new CompatibilitySorter(stability, versCrit,
+                                                 allAvailable, providers,
+                                                 installed, dlls, dlcs);
+
+            CollectionAssert.IsEmpty(sorter.Compatible,
+                                     "No compatible available modules");
+            CollectionAssert.IsEmpty(sorter.LatestCompatible,
+                                     "No latest compatible module");
+            CollectionAssert.AreEquivalent(Enumerable.Repeat(ident, 1),
+                                           sorter.Incompatible.Keys,
+                                           "Incompatible available module");
+            CollectionAssert.AreEquivalent(Enumerable.Repeat(ident, 1),
+                                           sorter.LatestIncompatible.Select(m => m.identifier),
+                                           "Incompatible latest module");
         }
     }
 }

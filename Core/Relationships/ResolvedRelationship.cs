@@ -240,7 +240,8 @@ namespace CKAN
              : this(source, relationship, reason,
                     providers.ToDictionary(prov => prov,
                                            prov => ResolvedRelationshipsTree.ResolveModule(
-                                                       prov, definitelyInstalling, allInstalling, registry, dlls, installed, stabilityTolerance, crit,
+                                                       prov, definitelyInstalling, allInstalling, registry, dlls, installed,
+                                                       new StabilityToleranceConfig(stabilityTolerance), crit,
                                                        relationship.suppress_recommendations
                                                            ? optRels & ~OptionalRelationships.Recommendations
                                                                      & ~OptionalRelationships.Suggestions
