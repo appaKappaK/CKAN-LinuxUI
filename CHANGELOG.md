@@ -2,7 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-## v1.36.3
+## v1.36.5
+
+### Features
+
+- [GUI] Relationships tab improvements (#4631 by: HebaruSan)
+- [Core] Improve error messages for provide conflicts (#4608 by: Phantomical; reviewed: HebaruSan)
+- [Multiple] Support Windows text scaling setting on net10 (#4677 by: HebaruSan)
+
+### Bugfixes
+
+- [Multiple] Fix installation of unrecognized imported ZIPs (#4628, #4636 by: HebaruSan)
+- [Multiple] Auto-size grid rows to ensure high-DPI visibility of checkboxes (#4630 by: HebaruSan)
+- [GUI] Replace NavigationHistory.IsReadOnly with same-value check (#4641 by: HebaruSan)
+- [GUI] Fix ckan://identifier (#4603 by: Halbann; reviewed: HebaruSan)
+- [Multiple] Don't close 416 responses on dotnet (#4646 by: HebaruSan)
+- [GUI] Avoid null values for auto-sized columns (#4657 by: HebaruSan)
+- [Multiple] Better partial upgrade checking (#4669, #4671, #4686 by: HebaruSan)
+
+### Internal
+
+- [Netkan] Apply all subdocuments of internal .ckans (#4640 by: HebaruSan)
+- [Build] Sync certs from newer location in RPM package (#4642 by: HebaruSan)
+
+## v1.36.4
 
 ### Features
 
@@ -11,7 +34,14 @@ All notable changes to this project will be documented in this file.
 - [Build] Don't leave launch shell waiting for CKAN to close on Linux (#4517 by: nuew; reviewed: HebaruSan)
 - [GUI] Sort Contents tab alphanumerically, folders first (#4529 by: HebaruSan)
 - [GUI] Auto-size new repo popup to fit rows in list (#4543 by: HebaruSan)
-- [GUI] DPI-based font scaling for Mono (#4566 by: HebaruSan)
+- [GUI] DPI-based font scaling for Mono (#4566, #4617 by: HebaruSan)
+- [Core] Purge ZIPs corrupted after downloading (#4577 by: HebaruSan)
+- [Multiple] Translation updates from Crowdin (#4578, #4614 by: gongass_, Champ0999, Giuseppe499, ambition, Damian Gorol (GinoMoses), Polpolando; reviewed: HebaruSan)
+- [ConsoleUI] Game instance cloning for ConsoleUI (#4593 by: HebaruSan)
+- [GUI] Windows dark mode in .NET 10 build (#4594, #4610 by: HebaruSan)
+- [Multiple] Leave mod files alone for relationship-only metadata changes (#4599 by: HebaruSan)
+- [Multiple] Better free space check for single disk systems (#4604 by: HebaruSan)
+- [GUI] Add edit labels option to labels filter dropdown (#4616 by: HebaruSan)
 
 ### Bugfixes
 
@@ -32,12 +62,15 @@ All notable changes to this project will be documented in this file.
 - [Core] Fix item with the same key exception (#4569 by: HebaruSan)
 - [Core] Silently skip Steam libraries on missing drives (#4570 by: HebaruSan)
 - [ConsoleUI] Fit mod choice prompt to screen height in ConsoleUI (#4573 by: HebaruSan)
+- [Build] Remove symlink-based DLL deduplication from MacOS build (#4557 by: HebaruSan)
+- [Multiple] Layout and scaling related fixes (#4591 by: HebaruSan)
+- [Multiple] Non-Latin letter search (#4605 by: HebaruSan)
+- [Build] Automatically pull focus for the Terminal window on MacOS (#4606 by: cheesebellies; reviewed: HebaruSan)
+- [GUI] Resets Play Button state if the game launch is cancelled (#4607 by: neilsapno; reviewed: HebaruSan)
+- [GUI] Don't revert removals on providing mod choice (#4609 by: HebaruSan)
 
 ### Internal
 
-- [LinuxGUI] Rename the local installer script and improve terminal progress output
-- [LinuxGUI] Organize the Avalonia shell into Shell, Windows, Models, and Services folders
-- [LinuxGUI] Load Rust catalog sidecar rows directly and cache parsed sidecar files for faster mod browser startup
 - [Docs] Update download count image for Minkowski² (#4474 by: Clayell; reviewed: HebaruSan)
 - [Netkan] Fix `x_netkan_epoch` not applied before unreliable server check (#4477 by: HebaruSan)
 - [Netkan] Gitea kref (#4494, #4498 by: HebaruSan)
@@ -48,7 +81,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - [Multiple] Mod file deduplication across game instances (#4358, #4440, #4453, #4468 by: HebaruSan)
-- [Multiple] Translation updates from Crowdin (#4359, #4422, #4443 by: HebaruSan)
+- [Multiple] Translation updates from Crowdin (#4359, #4422, #4443 by: vinix38, ambition, 3meraldK; reviewed: HebaruSan)
 - [Multiple] Make global install filters and presets game-specific (#4361 by: HebaruSan)
 - [GUI] Add download count to Metadata Tab (#4363, #4368 by: averageksp; reviewed: HebaruSan)
 - [GUI] Calculate size of cached files per host (#4377 by: HebaruSan)

@@ -38,6 +38,7 @@ namespace CKAN.GUI
             ToolTip.SetToolTip(ResetCacheButton,  Properties.Resources.SettingsToolTipResetCacheButton);
             ToolTip.SetToolTip(OpenCacheButton,   Properties.Resources.SettingsToolTipOpenCacheButton);
             ToolTip.SetToolTip(ClearCacheButton,  Properties.Resources.SettingsToolTipClearCacheButton);
+            ToolTip.ScaleFonts();
 
             this.coreConfig = coreConfig;
             this.guiConfig  = guiConfig;
@@ -45,10 +46,7 @@ namespace CKAN.GUI
             this.updater    = updater;
             this.user       = user;
             this.userAgent  = userAgent;
-            if (Platform.IsMono)
-            {
-                ClearCacheMenu.Renderer = new FlatToolStripRenderer();
-            }
+            ClearCacheMenu.Renderer = new FlatToolStripRenderer();
             CachePathEditButton.Height = CachePathSaveButton.Height =
                 CachePathCancelButton.Height = CachePathTextBox.Height;
         }
@@ -446,8 +444,9 @@ namespace CKAN.GUI
         private void NewRepoButton_Click(object? sender, EventArgs? e)
         {
             if (manager?.CurrentInstance != null
-                && RepositoryList.DefaultRepositories(manager.CurrentInstance.Game, userAgent)?.repositories
-                   is Repository[] repos)
+                && RepositoryList.DefaultRepositories(manager.CurrentInstance.Game, userAgent)
+                   is { repositories: Repository[]     repos,
+                        blacklist:    BlacklistEntry[] blacklist })
             {
                 var dialog = new NewRepoDialog(repos);
                 if (dialog.ShowDialog(this) == DialogResult.OK)
@@ -457,6 +456,15 @@ namespace CKAN.GUI
                     if (registry.Repositories.Values.Any(other => other.uri == repo.uri))
                     {
                         user.RaiseError(Properties.Resources.SettingsDialogRepoAddDuplicateURL, repo.uri);
+                        return;
+                    }
+                    if (blacklist.Where(ble => ble.uri_regex.IsMatch(repo.uri.OriginalString))
+                                 .ToArray()
+                        is { Length: > 0 } matches)
+                    {
+                        user.RaiseError(Properties.Resources.SettingsDialogRepoAddBlacklist,
+                                        string.Join(Environment.NewLine,
+                                                    matches.Select(m => m.description)));
                         return;
                     }
                     if (registry.Repositories.TryGetValue(repo.name, out Repository? existing))
@@ -691,13 +699,12 @@ namespace CKAN.GUI
 
         #region CKAN updates
 
-        private void UpdateAutoUpdate()
+        private void UpdateAutoUpdate(bool bypassCache = false)
         {
             LocalVersionLabel.Text = Meta.GetVersion();
             try
             {
-                if (updater.GetUpdate(coreConfig.DevBuilds ?? false,
-                                      userAgent)
+                if (updater.GetUpdate(coreConfig.DevBuilds ?? false, bypassCache)
                            .Version
                     is CkanModuleVersion latestVersion)
                 {
@@ -720,7 +727,7 @@ namespace CKAN.GUI
         {
             try
             {
-                UpdateAutoUpdate();
+                UpdateAutoUpdate(true);
             }
             catch (Exception exc)
             {
@@ -734,10 +741,6 @@ namespace CKAN.GUI
             {
                 Hide();
                 Main.Instance.UpdateCKAN();
-            }
-            else
-            {
-                user.RaiseError(Properties.Resources.SettingsDialogUpdateFailed);
             }
         }
 

@@ -37,7 +37,7 @@ namespace CKAN.GUI
         public GameInstance? CurrentInstance => Manager.CurrentInstance;
         private readonly RepositoryDataManager repoData;
         private readonly string? userAgent;
-        private readonly AutoUpdate updater = new AutoUpdate();
+        private readonly AutoUpdate updater;
         public bool Waiting => Wait.Busy;
 
         // Stuff we set when the game instance changes
@@ -68,24 +68,30 @@ namespace CKAN.GUI
             log.Info("Starting the GUI");
             if (//cmdlineArgs is [_, string focusIdent, ..]
                 cmdlineArgs.Length > 1
-                && cmdlineArgs[1] is string focusIdentArg)
+                && cmdlineArgs[1] is string { Length: >= 2 } focusIdentArg)
             {
                 focusIdent = focusIdentArg;
 
-                if (//focusIdent is ['/', '/', .. var rest]
-                    focusIdent.Length > 2)
+                // Strip any leading "//" or any leading "ckan://".
+                if (//focusIdentArg is ['/', '/', .. var rest]
+                    focusIdentArg.Length > 2
+                    && focusIdentArg.StartsWith("//"))
                 {
-                    focusIdent = focusIdent[2..];
+                    focusIdent = focusIdentArg[2..];
                 }
-                else if (//focusIdent is ['c', 'k', 'a', 'n', ':', '/', '/', .. var rest2]
-                    focusIdent.StartsWith("ckan://"))
+                else if (//focusIdenArg is ['c', 'k', 'a', 'n', ':', '/', '/', .. var rest2]
+                    focusIdentArg.Length > 7
+                    && focusIdentArg.StartsWith("ckan://"))
                 {
-                    focusIdent = focusIdent[7..];
+                    focusIdent = focusIdentArg[7..];
                 }
+
+                // Strip any trailing forward slashes.
                 if (//focusIdent is [.. var start, '/']
-                    focusIdent.EndsWith("/"))
+                    focusIdent is { Length: > 1 }
+                    && focusIdent.EndsWith("/"))
                 {
-                    focusIdent = focusIdent[..^1];
+                    focusIdent = focusIdent.TrimEnd('/');
                 }
             }
 
@@ -113,24 +119,25 @@ namespace CKAN.GUI
             StatusInstanceLabel.ScaleFonts();
             StatusProgress.ScaleFonts();
             minimizedContextMenuStrip.ScaleFonts();
-            this.ScaleFonts();
+            if (Platform.IsMono)
+            {
+                // This breaks ModInfo scaling on Windows
+                this.ScaleFonts();
+            }
             // React when the user clicks a tag or filter link in mod info
             ModInfo.OnChangeFilter += ManageMods.Filter;
             ModInfo.ModuleDoubleClicked += ManageMods.ResetFilterAndSelectModOnList;
             repoData = ServiceLocator.Container.Resolve<RepositoryDataManager>();
             this.userAgent = userAgent;
+            updater = new AutoUpdate(userAgent);
 
             Instance = this;
 
-            // Replace mono's broken, ugly toolstrip renderer
-            if (Platform.IsMono)
-            {
-                MainMenu.Renderer = new FlatToolStripRenderer();
-                FileToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
-                settingsToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
-                helpToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
-                minimizedContextMenuStrip.Renderer = new FlatToolStripRenderer();
-            }
+            MainMenu.Renderer = new FlatToolStripRenderer();
+            FileToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
+            settingsToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
+            helpToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
+            minimizedContextMenuStrip.Renderer = new FlatToolStripRenderer();
 
             // Initialize all user interaction dialogs.
             RecreateDialogs();
@@ -459,6 +466,9 @@ namespace CKAN.GUI
                                             .Resolve<IConfiguration>(),
                               configuration);
 
+            gameDiscordToolStripMenuItem.Text = string.Format("{0} Discord",
+                                                              CurrentInstance.Game.ShortName);
+
             if (configuration.CheckForUpdatesOnLaunch && CheckForCKANUpdate())
             {
                 UpdateCKAN();
@@ -709,6 +719,7 @@ namespace CKAN.GUI
 
             var installed = registry_manager.registry.InstalledModules.Select(inst => inst.Module).ToList();
             var toInstall = new List<CkanModule>();
+            bool? overrideVersions = null;
             foreach (string path in files)
             {
                 CkanModule module;
@@ -718,6 +729,21 @@ namespace CKAN.GUI
                     module = CkanModule.FromFile(path);
                     if (module.IsMetapackage && module.depends != null)
                     {
+                        if (module.depends.OfType<ModuleRelationshipDescriptor>()
+                                  .Where(rel => rel.version != null)
+                                  .ToArray()
+                            is { Length: > 0 } versionSpecificRels)
+                        {
+                            if (overrideVersions ??= YesNoDialog(Properties.Resources.MetapackageRelationshipVersionsPrompt,
+                                                                 Properties.Resources.MetapackagePurgeRelationshipVersions,
+                                                                 Properties.Resources.MetapackageKeepRelationshipVersions))
+                            {
+                                foreach (var rel in versionSpecificRels)
+                                {
+                                    rel.version = null;
+                                }
+                            }
+                        }
                         // Add metapackage dependencies to the changeset so we can skip compat checks for them
                         toInstall.AddRange(module.depends
                             .Where(rel => !rel.MatchesAny(installed, null, null))
@@ -726,7 +752,7 @@ namespace CKAN.GUI
                                 // Metapackages aren't intending to prompt users to choose providing mods
                                 rel.ExactMatch(registry_manager.registry, stabilityTolerance, crit, installed, toInstall)
                                 // Otherwise look for incompatible
-                                ?? rel.ExactMatch(registry_manager.registry, stabilityTolerance, null, installed, toInstall))
+                                ?? rel.ExactMatch(registry_manager.registry, stabilityTolerance, null, null, null))
                             .OfType<CkanModule>());
                     }
                     toInstall.Add(module);
@@ -736,7 +762,6 @@ namespace CKAN.GUI
                     currentUser.RaiseError("{0}", kraken.InnerException == null
                         ? kraken.Message
                         : $"{kraken.Message}: {kraken.InnerException.Message}");
-
                     continue;
                 }
                 catch (Exception ex)
@@ -752,9 +777,8 @@ namespace CKAN.GUI
                 }
             }
 
-            var modpacks = toInstall.Where(m => m.IsMetapackage)
-                                    .ToArray();
-            if (modpacks.Any())
+            if (toInstall.Where(m => m.IsMetapackage).ToArray()
+                is { Length: > 0 } modpacks)
             {
                 CkanModule.GetMinMaxVersions(modpacks,
                                              out _, out _,
@@ -763,15 +787,15 @@ namespace CKAN.GUI
                                                       maxGame ?? GameVersion.Any);
                 var instRanges = crit.Versions.Select(gv => gv.ToVersionRange())
                                               .ToList();
-                var missing = CurrentInstance.Game
-                                             .KnownVersions
-                                             .Where(gv => filesRange.Contains(gv)
-                                                          && !instRanges.Any(ir => ir.Contains(gv)))
-                                             // Use broad Major.Minor group for each specific version
-                                             .Select(gv => new GameVersion(gv.Major, gv.Minor))
-                                             .Distinct()
-                                             .ToList();
-                if (missing.Count != 0
+                if (CurrentInstance.Game
+                                   .KnownVersions
+                                   .Where(gv => filesRange.Contains(gv)
+                                                && !instRanges.Any(ir => ir.Contains(gv)))
+                                   // Use broad Major.Minor group for each specific version
+                                   .Select(gv => new GameVersion(gv.Major, gv.Minor))
+                                   .Distinct()
+                                   .ToList()
+                    is { Count: > 0 } missing
                     && YesNoDialog(string.Format(Properties.Resources.MetapackageAddCompatibilityPrompt,
                                                  filesRange.ToSummaryString(CurrentInstance.Game),
                                                  crit.ToSummaryString(CurrentInstance.Game)),
@@ -799,10 +823,13 @@ namespace CKAN.GUI
                                Properties.Resources.AllModVersionsInstallYes,
                                Properties.Resources.AllModVersionsInstallNo))
             {
-                UpdateChangesDialog(toInstall.Select(m => new ModChange(m, GUIModChangeType.Install,
-                                                                        ServiceLocator.Container.Resolve<IConfiguration>()))
-                                             .ToList(),
-                                    null);
+                var tuple = ModList.ComputeFullChangeSetFromUserChangeSet(
+                    registry_manager.registry,
+                    toInstall.Select(m => new ModChange(m, GUIModChangeType.Install,
+                                                        ServiceLocator.Container.Resolve<IConfiguration>()))
+                             .ToHashSet(),
+                    ServiceLocator.Container.Resolve<IConfiguration>(), CurrentInstance);
+                UpdateChangesDialog(tuple.Item1.ToList(), tuple.Item2);
                 tabController.ShowTab(ChangesetTabPage.Name, 1);
             }
         }
@@ -979,6 +1006,7 @@ namespace CKAN.GUI
                         Properties.Resources.MainGoBack);
                     if (result.Item1 != DialogResult.Yes)
                     {
+                        ManageMods.OnGameExit();
                         return;
                     }
                     else if (result.Item2)
@@ -990,6 +1018,7 @@ namespace CKAN.GUI
                 }
 
                 CurrentInstance.PlayGame(command,
+                                         currentUser,
                                          () =>
                                          {
                                              ManageMods.OnGameExit();

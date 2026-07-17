@@ -186,7 +186,7 @@ namespace CKAN.LinuxGUI.VisualTests
             File.WriteAllText(Path.Combine(dir, "KSP.x86_64"), string.Empty);
             File.WriteAllText(Path.Combine(dir, "buildID64.txt"), "3190");
             File.WriteAllText(Path.Combine(dir, "readme.txt"), "Kerbal Space Program");
-            return new GameInstance(new KerbalSpaceProgram(), dir, name, new NullUser());
+            return new GameInstance(new KerbalSpaceProgram(), dir, name);
         }
 
         private void RebuildInstances(string currentName)

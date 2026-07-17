@@ -22,6 +22,7 @@ using CKAN.Games.KerbalSpaceProgram2;
 
 using Tests.Core.Configuration;
 using Tests.Data;
+using Tests.Core.Relationships;
 
 namespace Tests.Core.IO
 {
@@ -755,7 +756,7 @@ namespace Tests.Core.IO
         {
             // Arrange
             var crit = new GameVersionCriteria(new GameVersion(1, 12, 5));
-            using (var repo     = new TemporaryRepository(availableModules.Select(Relationships.RelationshipResolverTests.MergeWithDefaults)
+            using (var repo     = new TemporaryRepository(availableModules.Select(RelationshipResolverTests.MergeWithDefaults)
                                                                           .ToArray()))
             using (var repoData = new TemporaryRepositoryData(nullUser, repo.repo))
             using (var inst     = new DisposableKSP())
@@ -805,7 +806,7 @@ namespace Tests.Core.IO
         {
             // Arrange
             var crit = new GameVersionCriteria(new GameVersion(1, 12, 5));
-            using (var repo     = new TemporaryRepository(availableModules.Select(Relationships.RelationshipResolverTests.MergeWithDefaults)
+            using (var repo     = new TemporaryRepository(availableModules.Select(RelationshipResolverTests.MergeWithDefaults)
                                                                           .ToArray()))
             using (var repoData = new TemporaryRepositoryData(nullUser, repo.repo))
             using (var inst     = new DisposableKSP())
@@ -843,7 +844,7 @@ namespace Tests.Core.IO
             // Arrange
             using (var inst     = new DisposableKSP())
             using (var repo     = new TemporaryRepository(
-                                      Relationships.RelationshipResolverTests.MergeWithDefaults(
+                                      RelationshipResolverTests.MergeWithDefaults(
                                           @"{
                                               ""identifier"": ""InstallingMod"",
                                               ""suggests"": [ { ""name"": ""SuggestedMod"" } ]
@@ -903,7 +904,7 @@ namespace Tests.Core.IO
             // Arrange
             using (var inst     = new DisposableKSP())
             using (var repo     = new TemporaryRepository(
-                                      Relationships.RelationshipResolverTests.MergeWithDefaults(
+                                      RelationshipResolverTests.MergeWithDefaults(
                                           @"{
                                               ""identifier"": ""Parallax"",
                                               ""depends"": [ { ""name"": ""ParallaxTextures"" } ]
@@ -1050,7 +1051,7 @@ namespace Tests.Core.IO
         {
             // Arrange
             using (var inst     = new DisposableKSP())
-            using (var repo     = new TemporaryRepository(Relationships.RelationshipResolverTests
+            using (var repo     = new TemporaryRepository(RelationshipResolverTests
                                                                        .MergeWithDefaults(availableModules)
                                                                        .ToArray()))
             using (var repoData = new TemporaryRepositoryData(nullUser, repo.repo))
@@ -1068,6 +1069,7 @@ namespace Tests.Core.IO
                                                                                                   inst.KSP.VersionCriteria()))
                                                                              .OfType<CkanModule>()
                                                                              .ToArray(),
+                                                           registry.InstalledModules.Select(im => im.Module).ToArray(),
                                                            opts, registry, inst.KSP.Game, inst.KSP.VersionCriteria()));
             }
         }
@@ -1504,10 +1506,10 @@ namespace Tests.Core.IO
         {
             // Arrange
             var user = new NullUser();
-            using (var cacheDir = new TemporaryDirectory())
             using (var inst     = new DisposableKSP())
             using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
             using (var regMgr   = RegistryManager.Instance(inst.KSP, new RepositoryDataManager()))
+            using (var cacheDir = new TemporaryDirectory())
             using (var cache    = new NetModuleCache(cacheDir))
             {
                 var installer = new ModuleInstaller(inst.KSP, cache, config, user);
@@ -1567,6 +1569,51 @@ namespace Tests.Core.IO
                 {
                     DirectoryAssert.Exists(absPath);
                 }
+            }
+        }
+
+        [TestCase(true), TestCase(false)]
+        public void UninstallList_ModInStockFolder_DoesNotOfferToDeleteStockFolder(bool stockDirEmpty)
+        {
+            // Arrange
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, new RepositoryDataManager()))
+            using (var cacheDir = new TemporaryDirectory())
+            using (var cache    = new NetModuleCache(cacheDir))
+            {
+                var installer = new ModuleInstaller(inst.KSP, cache, config, user);
+                var mod = CkanModule.FromJson(RelationshipResolverTests.MergeWithDefaults(
+                    @"{
+                        ""identifier"": ""KSPArtemisSuit""
+                    }"));
+                var absPaths = new string[]
+                               {
+                                   "GameData/Squad/Artemis_Suit/README.txt",
+                                   "GameData/Squad/Artemis_Suit/Config/SUITCOMBOS.cfg",
+                                   "GameData/Squad/Artemis_Suit/Icons/icon1.png",
+                                   "GameData/Squad/Artemis_Suit/Icons/icon2.png",
+                                   "GameData/Squad/Artemis_Suit/Textures/SoupAerospace.png",
+                               }.Select(inst.KSP.ToAbsoluteGameDir)
+                                .ToArray();
+                foreach (var f in stockDirEmpty
+                                      ? absPaths
+                                      : absPaths.Prepend(inst.KSP.ToAbsoluteGameDir("GameData/Squad/stockstuff.txt")))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(f)!);
+                    File.WriteAllText(f, "");
+                }
+                regMgr.registry.RegisterModule(mod, absPaths, inst.KSP, false);
+
+                // Act
+                HashSet<string>? possibleConfigOnlyDirs = null;
+                installer.UninstallList(new string[] { "KSPArtemisSuit" },
+                                        ref possibleConfigOnlyDirs, regMgr, false);
+
+                // Assert
+                DirectoryAssert.Exists(inst.KSP.ToAbsoluteGameDir("GameData/Squad"));
+                Assert.That(possibleConfigOnlyDirs, Is.Null.Or.Empty);
             }
         }
 
@@ -1657,7 +1704,7 @@ namespace Tests.Core.IO
                                       registry.LatestAvailable(ident, inst.KSP.StabilityToleranceConfig, inst.KSP.VersionCriteria()))
                                                     .OfType<CkanModule>()
                                                     .ToArray(),
-                                  downloader, ref possibleConfigOnlyDirs, regMgr, null, null, false);
+                                  downloader, ref possibleConfigOnlyDirs, regMgr, null, null, null, false);
 
                 // Assert
                 CollectionAssert.AreEquivalent(correctRemainingIdentifiers,
@@ -1755,7 +1802,7 @@ namespace Tests.Core.IO
                     installer.Upgrade(toUpgrade.Select(CkanModule.FromJson)
                                                .ToArray(),
                                       downloader, ref possibleConfigOnlyDirs,
-                                      regMgr, null, null, false);
+                                      regMgr, null, null, null, false);
                 });
                 CollectionAssert.AreEquivalent(registry.InstalledModules.Select(im => im.Module),
                                                autoInstalled.Select(CkanModule.FromJson)
@@ -1832,6 +1879,100 @@ namespace Tests.Core.IO
                                       regMgr,
                                       ConfirmPrompt: false);
                 });
+            }
+        }
+
+        [Test]
+        public void Upgrade_WithSkipFiles_FilesNotTouched()
+        {
+            // Arrange
+            var repo = new Repository("test", "https://github.com/");
+            using (var inst     = new DisposableKSP(TestData.TestRegistry()))
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, new RepositoryDataManager(),
+                                                           new Repository[] { repo }))
+            using (var cacheDir = new TemporaryDirectory())
+            using (var cache    = new NetModuleCache(cacheDir))
+            {
+                var registry  = regMgr.registry;
+                var installer = new ModuleInstaller(inst.KSP, cache, config, nullUser);
+                var module    = TestData.DogeCoinFlag_101_module_find();
+
+                // Act
+                HashSet<string>? possibleConfigOnlyDirs = null;
+                installer.Upgrade(new CkanModule[] { module },
+                                  new NetAsyncModulesDownloader(nullUser, cache),
+                                  ref possibleConfigOnlyDirs, regMgr,
+                                  null, null,
+                                  new HashSet<CkanModule> { module });
+
+                // Assert
+                var gameDataPath = Path.Combine(inst.KSP.GameDir, "GameData");
+                CollectionAssert.AreEquivalent(new string[]
+                                               {
+                                                   CKANPathUtils.NormalizePath(Path.Combine(gameDataPath, "README.md"))
+                                               },
+                                               new DirectoryInfo(gameDataPath).EnumerateFileSystemInfos()
+                                                                              .Select(fsi => fsi.FullName)
+                                                                              .Select(CKANPathUtils.NormalizePath));
+            }
+        }
+
+        [Test]
+        public void Upgrade_WithSkipFiles_DependingModsUpgraded()
+        {
+            // Arrange
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var cacheDir = new TemporaryDirectory())
+            using (var cache    = new NetModuleCache(cacheDir))
+            using (var server   = DogeCoinFlagServer())
+            using (var repo     = new TemporaryRepository(RelationshipResolverTests.MergeWithDefaults(
+                                      @"{
+                                          ""identifier"": ""A"",
+                                          ""version"":    ""1.0""
+                                      }",
+                                      @"{
+                                          ""identifier"": ""B"",
+                                          ""version"":    ""1.0"",
+                                          ""depends"": [ { ""name"": ""A"" } ]
+                                      }",
+                                      $@"{{
+                                          ""identifier"": ""B"",
+                                          ""version"":    ""2.0"",
+                                          ""depends"": [ {{ ""name"": ""A"" }} ],
+                                          ""install"": [ {{
+                                              ""find"": ""DogeCoinFlag"",
+                                              ""install_to"": ""GameData""
+                                          }} ],
+                                          ""download"":   ""{server.Url}/DogeCoinFlag-1.01.zip""
+                                      }}"
+                                  ).ToArray()))
+            using (var repoData = new TemporaryRepositoryData(nullUser, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            {
+                var installer = new ModuleInstaller(inst.KSP, cache, config, nullUser);
+                var registry = regMgr.registry;
+                var ver1 = new ModuleVersion("1.0");
+                var ver2 = new ModuleVersion("2.0");
+                var modA  = registry.GetModuleByVersion("A", ver1)!;
+                var modB1 = registry.GetModuleByVersion("B", ver1)!;
+                var modB2 = registry.GetModuleByVersion("B", ver2)!;
+                registry.RegisterModule(modA,  Array.Empty<string>(), inst.KSP, false);
+                registry.RegisterModule(modB1, Array.Empty<string>(), inst.KSP, false);
+
+                // Act / Assert
+                HashSet<string>? possibleConfigOnlyDirs = null;
+                Assert.DoesNotThrow(() => installer.Upgrade(
+                                              new CkanModule[] { modA, modB2 },
+                                              new NetAsyncModulesDownloader(nullUser, cache),
+                                              ref possibleConfigOnlyDirs, regMgr,
+                                              null, null,
+                                              new HashSet<CkanModule> { modA }));
+
+                // Assert
+                Assert.AreEqual(ver2, registry.InstalledModule("B")!.Module.version);
             }
         }
 
@@ -2287,7 +2428,7 @@ namespace Tests.Core.IO
             // Arrange
             using (var inst     = new DisposableKSP("TestInstance", new KerbalSpaceProgram2()))
             using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
-            using (var repo     = new TemporaryRepository(Relationships.RelationshipResolverTests.MergeWithDefaults(
+            using (var repo     = new TemporaryRepository(RelationshipResolverTests.MergeWithDefaults(
                                       @"{
                                           ""identifier"": ""SpaceWarp"",
                                           ""install"": [

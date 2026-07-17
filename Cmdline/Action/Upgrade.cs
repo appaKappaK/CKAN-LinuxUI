@@ -73,16 +73,15 @@ namespace CKAN.CmdLine
                                                              repoData);
                 if (options.upgrade_all)
                 {
-                    var to_upgrade = registry
-                                     .CheckUpgradeable(instance, new HashSet<string>())
-                                     [true];
-                    if (to_upgrade.Count == 0)
+                    var to_upgrade = registry.UpgradeableModules(instance, new HashSet<string>())
+                                             .ToArray();
+                    if (to_upgrade.Length == 0)
                     {
                         user.RaiseMessage(Properties.Resources.UpgradeAllUpToDate);
                     }
                     else if (manager.Cache != null)
                     {
-                        UpgradeModules(manager.Cache, options.NetUserAgent, user, instance, deduper, to_upgrade);
+                        UpgradeModules(manager.Cache, options.NetUserAgent, user, instance, deduper, to_upgrade.ToList());
                     }
                 }
                 else
@@ -137,9 +136,8 @@ namespace CKAN.CmdLine
             user.RaiseMessage(Properties.Resources.UpgradeQueryingCKAN);
             try
             {
-                var upd = new AutoUpdate();
-                var update = upd.GetUpdate(config.DevBuilds ?? false,
-                                           options.NetUserAgent);
+                var upd = new AutoUpdate(options.NetUserAgent);
+                var update = upd.GetUpdate(config.DevBuilds ?? false);
                 if (update.Version is CkanModuleVersion latestVersion
                     && !latestVersion.SameClientVersion(Meta.ReleaseVersion))
                 {
@@ -190,7 +188,7 @@ namespace CKAN.CmdLine
                 (ModuleInstaller installer, NetAsyncModulesDownloader downloader, RegistryManager regMgr, ref HashSet<string>? possibleConfigOnlyDirs, ISet<CkanModule> autoInstalled) =>
                     installer.Upgrade(modules, downloader,
                                       ref possibleConfigOnlyDirs,
-                                      regMgr, deduper, autoInstalled, true, true),
+                                      regMgr, deduper, autoInstalled, null, true, true),
                 modules.Add);
         }
 
@@ -228,11 +226,9 @@ namespace CKAN.CmdLine
                                                     .OfType<CkanModule>()
                                                     .ToList();
                     // Modules allowed by THOSE modules' relationships
-                    var upgradeable = registry
-                                      .CheckUpgradeable(instance, heldIdents, limiters)
-                                      [true]
-                                      .ToDictionary(m => m.identifier,
-                                                    m => m);
+                    var upgradeable = registry.UpgradeableModulesWithConstraints(instance, limiters, heldIdents)
+                                              .ToDictionary(m => m.identifier,
+                                                            m => m);
                     // Substitute back in the ident=ver requested versions
                     var to_upgrade = new List<CkanModule>();
                     foreach (var request in identsAndVersions)
@@ -251,7 +247,7 @@ namespace CKAN.CmdLine
                     if (to_upgrade.Count > 0)
                     {
                         installer.Upgrade(to_upgrade, downloader,
-                                          ref possibleConfigOnlyDirs, regMgr, deduper, autoInstalled, true);
+                                          ref possibleConfigOnlyDirs, regMgr, deduper, autoInstalled, null, true);
                     }
                 },
                 m => identsAndVersions.Add(m.identifier));

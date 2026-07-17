@@ -16,11 +16,24 @@ namespace CKAN.GUI
     {
         public ThemedListView() : base()
         {
+            #if !NET10_0_OR_GREATER
             // Tell the base class that we want to draw things ourselves
             OwnerDraw = true;
+            #endif
 
             // Don't flicker the entire listview when we change one row's background
             DoubleBuffered = true;
+        }
+
+        public void EnsureReadableGroupHeaders()
+        {
+            if (Platform.IsWindows && !BackColor.IsLight()
+                && Groups.Count > 0)
+            {
+                // Windows forces ListViewGroup headers to use blue text, which is not readable on a dark background
+                // 117,117,117 is the lightest dark gray, so it fits white text while also making the blue readable
+                BackColor = Color.FromArgb(117, 117, 117);
+            }
         }
 
         protected override void OnDrawColumnHeader(DrawListViewColumnHeaderEventArgs e)
@@ -33,21 +46,16 @@ namespace CKAN.GUI
             rect.Offset(0, -1);
             e.Graphics.DrawRectangle(SystemPens.ControlDark, rect);
             // Text
-            if (Platform.IsMono
-                && (int)e.Graphics.DpiX is int dpi
-                && dpi != 96
-                && e.Font is Font f)
-            {
-                var replacementEventArgs = new DrawListViewColumnHeaderEventArgs(
-                                               e.Graphics, e.Bounds, e.ColumnIndex, e.Header,
-                                               e.State, e.ForeColor, e.BackColor,
-                                               f.Scale(dpi));
-                replacementEventArgs.DrawText(TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-            }
-            else
-            {
-                e.DrawText(TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-            }
+            var replacementEventArgs = new DrawListViewColumnHeaderEventArgs(
+                                           e.Graphics, e.Bounds, e.ColumnIndex, e.Header, e.State,
+                                           e.BackColor.ForeColorForBackColor() ?? e.ForeColor, e.BackColor,
+                                           Platform.IsMono
+                                           && (int)e.Graphics.DpiX is int dpi
+                                           && dpi != 96
+                                           && e.Font is Font f
+                                               ? f.Scale(dpi)
+                                               : e.Font);
+            replacementEventArgs.DrawText(TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
             // Alert event subscribers
             base.OnDrawColumnHeader(e);
         }

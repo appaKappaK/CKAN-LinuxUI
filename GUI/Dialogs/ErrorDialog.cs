@@ -43,10 +43,9 @@ namespace CKAN.GUI
                     ClientSize.Width,
                     Math.Min(
                         maxHeight,
-                        padding + Util.StringHeight(CreateGraphics(),
-                                                    ErrorMessage.Text,
-                                                    ErrorMessage.Font,
-                                                    ErrorMessage.Width - 4)));
+                        padding + CreateGraphics().StringHeight(ErrorMessage.Text,
+                                                                ErrorMessage.Font,
+                                                                ErrorMessage.Width - 4)));
                 if (!Visible)
                 {
                     StartPosition = mainForm.actuallyVisible
@@ -62,8 +61,9 @@ namespace CKAN.GUI
             Close();
         }
 
-        protected override void OnClosed(EventArgs e)
+        protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            base.OnFormClosing(e);
             // Clear message on close so we start blank next time
             ErrorMessage.Text = "";
         }

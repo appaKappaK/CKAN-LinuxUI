@@ -11,6 +11,7 @@ using Tests.Data;
 using CKAN;
 using CKAN.Configuration;
 using CKAN.Versioning;
+using Tests.Core.Relationships;
 
 namespace Tests.Core.Registry
 {
@@ -56,6 +57,27 @@ namespace Tests.Core.Registry
                 {
                     registry.LatestAvailable("ToTheMun", stabilityTolerance, v0_24_2);
                 });
+            }
+        }
+
+        [Test]
+        public void LatestAvailableWithProvides_SameIdentifierInMultipleRepos_SinglePerIdentifier()
+        {
+            // Arrange
+            var user = new NullUser();
+            using (var repo1 = new TemporaryRepository(TestData.kOS_014()))
+            using (var repo2 = new TemporaryRepository(TestData.kOS_014_epoch()))
+            using (var repoData = new TemporaryRepositoryData(user, repo1.repo, repo2.repo))
+            {
+                repo2.repo.name = "temp2";
+                var registry = new CKAN.Registry(repoData.Manager, repo1.repo, repo2.repo);
+
+                // Act
+                var found = registry.LatestAvailableWithProvides("kOS", stabilityTolerance, null);
+
+                // Assert
+                CollectionAssert.AreEquivalent(new CkanModule[] { TestData.kOS_014_epoch_module() },
+                                               found);
             }
         }
 
@@ -266,6 +288,26 @@ namespace Tests.Core.Registry
         }
 
         [Test]
+        public void ReregisterModule_WithInstalledModule_Works()
+        {
+            // Arrange
+            var repo = new Repository("test", "https://github.com/");
+            using (var inst   = new DisposableKSP(TestData.TestRegistry()))
+            using (var regMgr = RegistryManager.Instance(inst.KSP, new RepositoryDataManager(),
+                                                         new Repository[] { repo }))
+            {
+                var registry = regMgr.registry;
+                Assert.IsNull(registry.InstalledModule("DogeCoinFlag")?.Module.install?[0].find);
+
+                // Act
+                registry.ReregisterModule(inst.KSP, TestData.DogeCoinFlag_101_module_find());
+
+                // Assert
+                Assert.AreEqual("DogeCoinFlag", registry.InstalledModule("DogeCoinFlag")?.Module.install?[0].find);
+            }
+        }
+
+        [Test]
         public void HasUpdate_WithUpgradeableManuallyInstalledMod_ReturnsTrue()
         {
             // Arrange
@@ -359,6 +401,77 @@ namespace Tests.Core.Registry
 
                 // Assert
                 Assert.IsFalse(has, "Upgrade allowed that would break another mod's dependency");
+            }
+        }
+
+        [TestCase(new string[] { },
+                  new string[] { },
+                  new string[] { }),
+         TestCase(new string[]
+                  {
+                      @"{
+                          ""identifier"": ""RasterPropMonitor"",
+                          ""version"":    ""2.0"",
+                          ""conflicts"":  [ { ""name"": ""MechJeb2"" } ]
+                      }",
+                      @"{
+                          ""identifier"": ""MechJeb2-dev"",
+                          ""version"":    ""2.0"",
+                          ""provides"":   [ ""MechJeb2"" ]
+                      }",
+                      @"{
+                          ""identifier"": ""MakingHistory-DLC"",
+                          ""version"":    ""2.0"",
+                          ""kind"":       ""dlc""
+                      }",
+                  },
+                  new string[]
+                  {
+                      @"{
+                          ""identifier"": ""RasterPropMonitor"",
+                          ""version"":    ""1.0""
+                      }",
+                      @"{
+                          ""identifier"": ""MechJeb2-dev"",
+                          ""version"":    ""1.0"",
+                          ""provides"":   [ ""MechJeb2"" ]
+                      }",
+                  },
+                  new string[] { "MechJeb2-dev 2.0" }),
+        ]
+        public void UpgradeableModules_RPMAndMechJeb2Dev_UpgradesMechJeb2Dev(
+                string[] availableModules,
+                string[] installedModules,
+                string[] expectedUpgradeable)
+        {
+            // Arrange
+            var user = new NullUser();
+            using (var gameInstWrapper = new DisposableKSP())
+            using (var repo = new TemporaryRepository(RelationshipResolverTests.MergeWithDefaults(availableModules)
+                                                                               .ToArray()))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            {
+                var registry = new CKAN.Registry(repoData.Manager, repo.repo);
+                registry.SetDlcs(new Dictionary<string, UnmanagedModuleVersion>()
+                                 {
+                                     {
+                                         "MakingHistory-DLC",
+                                         new UnmanagedModuleVersion("1.0")
+                                     },
+                                 });
+                foreach (var m in RelationshipResolverTests.MergeWithDefaults(installedModules)
+                                                           .Select(CkanModule.FromJson))
+                {
+                    registry.RegisterModule(m, Array.Empty<string>(), gameInstWrapper.KSP, false);
+                }
+
+                // Act
+                var upgradeable = registry.UpgradeableModules(gameInstWrapper.KSP,
+                                                              new HashSet<string>());
+
+                // Assert
+                CollectionAssert.AreEquivalent(expectedUpgradeable,
+                                               upgradeable.Select(m => m.ToString()));
             }
         }
 

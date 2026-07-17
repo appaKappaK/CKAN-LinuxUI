@@ -43,7 +43,7 @@ namespace CKAN.NetKAN.Services
         /// <param name="module">The CkanModule associated with the ZIP, so we can tell which files would be installed</param>
         /// <param name="zipPath">Where the ZIP file is</param>
         /// <param name="inst">Game instance for generating InstallableFiles</param>
-        /// <returns>Parsed contents of the files, or empty if none found</returns>
+        /// <returns>Parsed contents of the file, or null if none found</returns>
         public IEnumerable<JObject> GetInternalCkans(CkanModule module, string zipPath)
             => GetInternalCkans(module, new ZipFile(zipPath), game);
 
@@ -55,7 +55,7 @@ namespace CKAN.NetKAN.Services
         /// <param name="module">The CkanModule associated with the ZIP, so we can tell which files would be installed</param>
         /// <param name="zip">The ZipFile to search</param>
         /// <param name="inst">Game instance for generating InstallableFiles</param>
-        /// <returns>Parsed contents of the files, or empty if none found</returns>
+        /// <returns>Parsed contents of the file, or null if none found</returns>
         private static IEnumerable<JObject> GetInternalCkans(CkanModule module, ZipFile zip, IGame game)
             => (module.install != null
                     // Find embedded .ckan files that would be included in the install

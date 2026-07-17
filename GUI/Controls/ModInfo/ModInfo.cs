@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
 #if NET5_0_OR_GREATER
@@ -29,6 +30,7 @@ namespace CKAN.GUI
             tagsLabelsLinkList.AddRemoveModuleLabel += l => AddRemoveModuleLabel?.Invoke(l);
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public GUIMod? SelectedModule
         {
             set
@@ -122,8 +124,8 @@ namespace CKAN.GUI
 
         private int TextBoxStringHeight(TextBox tb)
             => tb.Padding.Vertical + tb.Margin.Vertical
-                + Util.StringHeight(CreateGraphics(), tb.Text, tb.Font,
-                                    tb.Width - tb.Padding.Horizontal - tb.Margin.Horizontal);
+                + tb.CreateGraphics().StringHeight(tb.Text, tb.Font,
+                                                   tb.Width - tb.Padding.Horizontal - tb.Margin.Horizontal);
 
         private int DescriptionHeight => TextBoxStringHeight(MetadataModuleDescriptionTextBox);
 

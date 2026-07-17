@@ -248,13 +248,10 @@ Overwrite?</value></data>
   <data name="ModuleInstallerRemovingMod" xml:space="preserve"><value>Removing {0}...</value></data>
   <data name="ModuleInstallerRemovedMod" xml:space="preserve"><value>Finished removing {0}</value></data>
   <data name="ModuleInstallerAboutToUpgrade" xml:space="preserve"><value>About to upgrade:</value></data>
-  <data name="ModuleInstallerUpgradeInstallingResuming" xml:space="preserve"><value> * Install: {0} {1} ({2}, {3} remaining)</value></data>
-  <data name="ModuleInstallerUpgradeInstallingUncached" xml:space="preserve"><value> * Install: {0} {1} ({2}, {3})</value></data>
-  <data name="ModuleInstallerUpgradeInstallingCached" xml:space="preserve"><value> * Install: {0} {1} (cached)</value></data>
-  <data name="ModuleInstallerUpgradeReinstalling" xml:space="preserve"><value> * Re-install: {0} {1}</value></data>
+  <data name="ModuleInstallerUpgradeInstalling" xml:space="preserve"><value> * Install: {0}</value></data>
+  <data name="ModuleInstallerUpgradeReinstalling" xml:space="preserve"><value> * Re-install: {0}</value></data>
   <data name="ModuleInstallerUpgradeDowngrading" xml:space="preserve"><value> * Downgrade: {0} from {1} to {2}</value></data>
-  <data name="ModuleInstallerUpgradeUpgradingUncached" xml:space="preserve"><value> * Upgrade: {0} {1} to {2} ({3}, {4})</value></data>
-  <data name="ModuleInstallerUpgradeUpgradingCached" xml:space="preserve"><value> * Upgrade: {0} {1} to {2} (cached)</value></data>
+  <data name="ModuleInstallerUpgradeUpgrading" xml:space="preserve"><value> * Upgrade: {0} {1} to {2}</value></data>
   <data name="ModuleInstallerUpgradeAutoRemoving" xml:space="preserve"><value> * Auto-remove: {0} {1}</value></data>
   <data name="ModuleInstallerUpgradeUserDeclined" xml:space="preserve"><value>User declined upgrade list</value></data>
   <data name="ModuleInstallerReplaceAutodetected" xml:space="preserve"><value>Can't replace {0} as it was not installed by CKAN.
@@ -265,6 +262,10 @@ Please remove manually before trying to install it.</value></data>
   <data name="ModuleInstallerImportNotFound" xml:space="preserve"><value>Not found in index: {0}</value></data>
   <data name="ModuleInstallerImportInstallPrompt" xml:space="preserve"><value>Install {0} compatible imported mods in game instance {1} ({2})?</value></data>
   <data name="ModuleInstallerImportDeletePrompt" xml:space="preserve"><value>Scanning complete. Delete {0} old files after import?</value></data>
+  <data name="ModuleInstallerCorruptInCache" xml:space="preserve"><value>Download for {0} was corrupted and has been purged.
+This may be due to a failing storage device; you should back up all important data, scan your storage device for errors, and replace it as soon as you can.
+If you try installing this module again, it will be re-downloaded and may succeed.
+Exception details: {1}</value></data>
   <data name="KrakenDependencyNotSatisfied" xml:space="preserve"><value>Dependency on {0} version {1} not satisfied</value></data>
   <data name="KrakenDependencyModuleNotFound" xml:space="preserve"><value>Module not found: {0} {1}</value></data>
   <data name="KrakenProvidedByMoreThanOne" xml:space="preserve"><value>{1} requires {0}, which can be provided by multiple mods.
@@ -278,7 +279,10 @@ Which {0} provider would you like to install?</value></data>
 If the game is still running, close it and try again. Otherwise check the permissions.</value></data>
   <data name="KrakenMissingDependency" xml:space="preserve"><value>Unsatisfied dependency {1} needed for: {0}</value></data>
   <data name="KrakenMissingDependencyNeededFor" xml:space="preserve"><value>needed for {0}</value></data>
-  <data name="KrakenRejectedProvidesConflict" xml:space="preserve"><value>{0} is needed for {3}, but cannot be installed because it conflicts with {2} which also provides {1}</value></data>
+  <data name="KrakenRejectedProvidesConflict" xml:space="preserve"><value>{0} is needed for {3}, but cannot be installed because it conflicts with {2}, which also provides {1}</value></data>
+  <data name="KrakenRejectedConflict" xml:space="preserve"><value>{0} is needed for {2}, but cannot be installed because it conflicts with {1}</value></data>
+  <data name="KrakenRejectedVersionMismatch" xml:space="preserve"><value>Version conflict: {0} is needed for {2}, but {1} is already being installed</value></data>
+  <data name="KrakenRejectedVersionMismatchFor" xml:space="preserve"><value>Version conflict: {0} is needed for {2}, and {1} is needed for {3}, but both cannot be installed at the same time</value></data>
   <data name="KrakenConflictsWith" xml:space="preserve"><value>{0} conflicts with {1}</value></data>
   <data name="KrakenFileExistsWithOwner" xml:space="preserve"><value>Oh no! We tried to overwrite a file owned by another mod!
 
@@ -360,7 +364,6 @@ Free up space on that device or change your settings to use another location.
   <data name="NetModuleCacheModuleCached" xml:space="preserve"><value>{0} {1} (cached)</value></data>
   <data name="NetModuleCacheModuleHostSize" xml:space="preserve"><value>{0} {1} ({2}, {3})</value></data>
   <data name="NetModuleCacheModuleResuming" xml:space="preserve"><value>{0} {1} ({2}, {3} remaining)</value></data>
-  <data name="ModuleInstallerUpgradeUpgradingResuming" xml:space="preserve"><value> * Upgrade: {0} {1} to {2} ({3}, {4} remaining)</value></data>
   <data name="ModpackName" xml:space="preserve"><value>installed-{0}</value></data>
   <data name="InstalledModuleToString" xml:space="preserve"><value>{0} (installed {1})</value></data>
   <data name="InstalledModuleToStringAutoInstalled" xml:space="preserve"><value>{0} (installed {1}, auto-installed)</value></data>

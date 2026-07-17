@@ -33,22 +33,22 @@ namespace CKAN.GUI
         /// <param name="instance">Game instance for getting labels</param>
         /// <param name="allLabels">All label definitions</param>
         /// <param name="allTags">All tag definitions</param>
-        /// <param name="coreConfig">Core configuration</param>
         /// <param name="guiConfig">GUI configuration</param>
+        /// <param name="graphics">Graphics object for calculating word wrap</param>
         /// <param name="mc">Changes the user has made</param>
         /// <returns>The mod list</returns>
         public ModList(IReadOnlyCollection<GUIMod> modules,
                        GameInstance                instance,
                        ModuleLabelList             allLabels,
                        ModuleTagList               allTags,
-                       IConfiguration              coreConfig,
                        GUIConfiguration            guiConfig,
+                       Graphics                    graphics,
                        List<ModChange>?            mc = null)
         {
             this.allLabels        = allLabels;
             this.allTags          = allTags;
-            this.coreConfig       = coreConfig;
             this.guiConfig        = guiConfig;
+            this.graphics         = graphics;
             activeSearches        = guiConfig.DefaultSearches
                                              ?.Select(s => ModSearch.Parse(allLabels, instance, s))
                                               .OfType<ModSearch>()
@@ -100,31 +100,29 @@ namespace CKAN.GUI
                                                       NetModuleCache        cache,
                                                       bool                  hideEpochs,
                                                       bool                  hideV)
-            => registry.CheckUpgradeable(inst,
-                                         allLabels.HeldIdentifiers(inst)
-                                                  .ToHashSet(),
-                                         allLabels.IgnoreMissingIdentifiers(inst)
-                                                  .ToHashSet())
-                       .SelectMany(kvp => kvp.Value
-                                             .Select(mod => registry.IsAutodetected(mod.identifier)
-                                                            ? new GUIMod(mod, repoData, registry,
-                                                                         inst.StabilityToleranceConfig,
-                                                                         inst, cache, null,
-                                                                         hideEpochs, hideV)
-                                                              {
-                                                                  HasUpdate = kvp.Key,
-                                                              }
-                                                            : registry.InstalledModule(mod.identifier)
-                                                              is InstalledModule found
-                                                              ? new GUIMod(found,
-                                                                           repoData, registry,
-                                                                           inst.StabilityToleranceConfig,
-                                                                           inst, cache, null,
-                                                                           hideEpochs, hideV)
-                                                              {
-                                                                  HasUpdate = kvp.Key,
-                                                              }
-                                                              : null))
+            => registry.InstalledModulesByUpgradeability(inst,
+                                                         allLabels.HeldIdentifiers(inst)
+                                                                  .ToHashSet(),
+                                                         allLabels.IgnoreMissingIdentifiers(inst)
+                                                                  .ToHashSet())
+                       .Select(tuple => registry.IsAutodetected(tuple.module.identifier)
+                                            ? new GUIMod(tuple.module, repoData, registry,
+                                                         inst.StabilityToleranceConfig,
+                                                         inst, cache, null,
+                                                         hideEpochs, hideV)
+                                              {
+                                                  HasUpdate = tuple.upgradeable,
+                                              }
+                                            : registry.InstalledModule(tuple.module.identifier)
+                                              is InstalledModule found
+                                                  ? new GUIMod(found, repoData, registry,
+                                                               inst.StabilityToleranceConfig,
+                                                               inst, cache, null,
+                                                               hideEpochs, hideV)
+                                                    {
+                                                        HasUpdate = tuple.upgradeable,
+                                                    }
+                                                  : null)
                        .OfType<GUIMod>()
                        .Concat(registry.CompatibleModules(inst.StabilityToleranceConfig, inst.VersionCriteria())
                                        .Where(m => !installedIdents.Contains(m.identifier))
@@ -207,26 +205,26 @@ namespace CKAN.GUI
                     Value = "-"
                 };
 
-            var name   = new DataGridViewTextBoxCell { Value = ToGridText(mod.Name)                       };
-            var author = new DataGridViewTextBoxCell { Value = ToGridText(string.Join(", ", mod.Authors)) };
-
-            var installVersion = new DataGridViewTextBoxCell()
-            {
-                Value = mod.InstalledVersion
-            };
-
-            var latestVersion = new DataGridViewTextBoxCell()
-            {
-                Value = mod.LatestVersion
-            };
-
-            var downloadCount = new DataGridViewTextBoxCell { Value = $"{mod.DownloadCount:N0}"   };
-            var compat        = new DataGridViewTextBoxCell { Value = mod.GameCompatibility       };
-            var downloadSize  = new DataGridViewTextBoxCell { Value = mod.DownloadSize            };
-            var installSize   = new DataGridViewTextBoxCell { Value = mod.InstallSize             };
-            var releaseDate   = new DataGridViewTextBoxCell { Value = mod.Module.release_date?.ToLocalTime() };
-            var installDate   = new DataGridViewTextBoxCell { Value = mod.InstallDate             };
-            var desc          = new DataGridViewTextBoxCell { Value = ToGridText(mod.Abstract)    };
+            var name           = new DataGridViewTextBoxCell { Value = ToGridText(mod.Name)                                  };
+            var author         = new DataGridViewTextBoxCell { Value = ToGridText(string.Join(", ", mod.Authors))            };
+            var installVersion = new DataGridViewTextBoxCell { Value = mod.InstalledVersion ?? ""                            };
+            var latestVersion  = new DataGridViewTextBoxCell { Value = mod.LatestVersion                                     };
+            var compat         = new DataGridViewTextBoxCell { Value = mod.GameCompatibility ?? ""                           };
+            var downloadSize   = new DataGridViewTextBoxCell { Value = mod.DownloadSize ?? ""                                };
+            var installSize    = new DataGridViewTextBoxCell { Value = mod.InstallSize                                       };
+            var releaseDate    = new DataGridViewTextBoxCell { Value = (object?)mod.Module.release_date?.ToLocalTime() ?? "" };
+            var installDate    = new DataGridViewTextBoxCell { Value = (object?)mod.InstallDate?.ToLocalTime() ?? ""         };
+            var downloadCount  = new DataGridViewTextBoxCell { Value = $"{mod.DownloadCount:N0}"                             };
+            var desc           = new DataGridViewTextBoxCell
+                                 {
+                                     Value       = ToGridText(mod.Abstract),
+                                     ToolTipText = mod.Description is { Length: > 0 }
+                                                       ? string.Join(Environment.NewLine,
+                                                                     graphics.WordWrap(mod.Description, 600)
+                                                                             .Prepend("")
+                                                                             .Prepend(mod.Abstract))
+                                                       : mod.Abstract,
+                                 };
 
             item.Cells.AddRange(selecting, autoInstalled, updating, replacing, name, author, installVersion, latestVersion, compat, downloadSize, installSize, releaseDate, installDate, downloadCount, desc);
 
@@ -340,7 +338,7 @@ namespace CKAN.GUI
 
         private Color GetRowBackground(GUIMod mod, bool conflicted, GameInstance instance)
             => conflicted
-                   ? conflictColor
+                   ? ConflictBackColor
                    : Util.BlendColors(allLabels.LabelsFor(instance.Name)
                                                .Where(l => l.ContainsModule(instance.Game,
                                                                             mod.Identifier))
@@ -403,15 +401,14 @@ namespace CKAN.GUI
                           .ToArray()
                 is { Length: > 0 } upgrades)
             {
-                var upgradeable = registry.CheckUpgradeable(instance,
-                                                            // Hold identifiers not chosen for upgrading
-                                                            registry.Installed(false)
-                                                                    .Select(kvp => kvp.Key)
-                                                                    .Except(upgrades.Select(ch => ch.Mod.identifier))
-                                                                    .ToHashSet(),
-                                                            allLabels.IgnoreMissingIdentifiers(instance)
-                                                                     .ToHashSet())
-                                          [true]
+                var upgradeable = registry.UpgradeableModules(instance,
+                                                              // Hold identifiers not chosen for upgrading
+                                                              registry.Installed(false)
+                                                                      .Select(kvp => kvp.Key)
+                                                                      .Except(upgrades.Select(ch => ch.Mod.identifier))
+                                                                      .ToHashSet(),
+                                                              allLabels.IgnoreMissingIdentifiers(instance)
+                                                                       .ToHashSet())
                                           .ToDictionary(m => m.identifier,
                                                         m => m);
                 foreach (var change in upgrades)
@@ -440,18 +437,28 @@ namespace CKAN.GUI
             => row.Tag is GUIMod gmod
                    ? gmod.GetModChanges(upgradeCol?.Visible == true
                                         && row.Cells[upgradeCol.Index] is DataGridViewCheckBoxCell upgradeCell
-                                        && (bool)upgradeCell.Value,
+                                        && upgradeCell.Value is true,
                                         replaceCol?.Visible == true
                                         && row.Cells[replaceCol.Index] is DataGridViewCheckBoxCell replaceCell
-                                        && (bool)replaceCell.Value,
-                                        registry.MetadataChanged(gmod.Identifier))
+                                        && replaceCell.Value is true,
+                                        registry.MetadataChanged(gmod.Identifier, out bool installedFilesChanged),
+                                        installedFilesChanged)
                    : Enumerable.Empty<ModChange>();
+
+        public static Tuple<ICollection<ModChange>, Dictionary<CkanModule, string>, List<string>> ComputeFullChangeSetFromUserChangeSet(
+            IRegistryQuerier         registry,
+            HashSet<ModChange>       changeSet,
+            IConfiguration           coreConfig,
+            GameInstance             instance)
+            => ComputeFullChangeSetFromUserChangeSet(registry, changeSet, coreConfig,
+                                                     instance.Game, instance.StabilityToleranceConfig, instance.VersionCriteria());
 
         /// <summary>
         /// Returns a changeset and conflicts based on the selections of the user.
         /// </summary>
         /// <param name="registry">The registry for getting available mods</param>
         /// <param name="changeSet">User's choices of installation and removal</param>
+        /// <param name="coreConfig">Core configuration</param>
         /// <param name="game">Game of the game instance</param>
         /// <param name="stabilityTolerance">Prerelease configuration</param>
         /// <param name="version">The version of the current game instance</param>
@@ -461,9 +468,10 @@ namespace CKAN.GUI
         /// 2. Mapping from conflicting mods to description of the conflict
         /// 3. Descriptions of all conflicts
         /// </returns>
-        public Tuple<ICollection<ModChange>, Dictionary<CkanModule, string>, List<string>> ComputeFullChangeSetFromUserChangeSet(
+        public static Tuple<ICollection<ModChange>, Dictionary<CkanModule, string>, List<string>> ComputeFullChangeSetFromUserChangeSet(
             IRegistryQuerier         registry,
             HashSet<ModChange>       changeSet,
+            IConfiguration           coreConfig,
             IGame                    game,
             StabilityToleranceConfig stabilityTolerance,
             GameVersionCriteria      version)
@@ -506,37 +514,45 @@ namespace CKAN.GUI
                 }
             }
 
-            var installedModules = registry.InstalledModules
-                                           .ToDictionary(imod => imod.Module.identifier,
-                                                         imod => imod.Module);
-
-            foreach (var dependent in registry.FindReverseDependencies(
-                                          toRemove.Select(mod => mod.identifier)
-                                                  .Except(toInstall.Select(m => m.identifier))
-                                                  .ToList(),
-                                          toInstall))
+            // Check for depending mods if any are still left
+            if (!registry.InstalledModules.Select(im => im.Module)
+                                          .All(toRemove.Contains))
             {
-                if (!changeSet.Any(ch => ch.ChangeType == GUIModChangeType.Replace
-                                         && ch.Mod.identifier == dependent)
-                    && installedModules.TryGetValue(dependent, out CkanModule? depMod)
-                    && (registry.GetModuleByVersion(depMod.identifier, depMod.version)
-                        ?? registry.InstalledModule(dependent)?.Module)
-                        is CkanModule modByVer)
+                var installedModules = registry.InstalledModules.ToDictionary(
+                                           imod => imod.Module.identifier,
+                                           imod => imod.Module);
+                foreach (var dependent in registry.FindReverseDependencies(
+                                              toRemove.Select(mod => mod.identifier)
+                                                      .Except(toInstall.Select(m => m.identifier))
+                                                      .ToList(),
+                                              toInstall))
                 {
-                    changeSet.Add(new ModChange(modByVer, GUIModChangeType.Remove,
-                                                new SelectionReason.DependencyRemoved(),
-                                                coreConfig));
-                    toRemove.Add(modByVer);
+                    if (!changeSet.Any(ch => ch.ChangeType == GUIModChangeType.Replace
+                                             && ch.Mod.identifier == dependent)
+                        && installedModules.TryGetValue(dependent, out CkanModule? depMod)
+                        && (registry.GetModuleByVersion(depMod.identifier, depMod.version)
+                            ?? registry.InstalledModule(dependent)?.Module)
+                            is CkanModule modByVer)
+                    {
+                        changeSet.Add(new ModChange(modByVer, GUIModChangeType.Remove,
+                                                    new SelectionReason.DependencyRemoved(),
+                                                    coreConfig));
+                        toRemove.Add(modByVer);
+                    }
                 }
-            }
-
-            foreach (var im in registry.FindRemovableAutoInstalled(
-                InstalledAfterChanges(registry, changeSet).ToArray(),
-                Array.Empty<CkanModule>(), game, stabilityTolerance, version))
-            {
-                changeSet.Add(new ModChange(im.Module, GUIModChangeType.Remove, new SelectionReason.NoLongerUsed(),
-                                            coreConfig));
-                toRemove.Add(im.Module);
+                // Check for auto-installed dependencies if any mods are still left
+                if (!registry.InstalledModules.Select(im => im.Module)
+                                              .All(toRemove.Contains))
+                {
+                    foreach (var im in registry.FindRemovableAutoInstalled(
+                        InstalledAfterChanges(registry, changeSet).ToArray(),
+                        Array.Empty<CkanModule>(), game, stabilityTolerance, version))
+                    {
+                        changeSet.Add(new ModChange(im.Module, GUIModChangeType.Remove, new SelectionReason.NoLongerUsed(),
+                                                    coreConfig));
+                        toRemove.Add(im.Module);
+                    }
+                }
             }
 
             // Get as many dependencies as we can, but leave decisions and prompts for installation time
@@ -612,26 +628,25 @@ namespace CKAN.GUI
                                    List<ModChange>?          ChangeSet,
                                    DataGridViewRowCollection rows)
         {
-            var upgGroups = registry.CheckUpgradeable(inst,
+            var dlls = registry.InstalledDlls.ToList();
+            bool hasUpgradeable = false;
+            foreach (var (upgradeable, module) in registry.InstalledModulesByUpgradeability(
+                                                      inst,
                                                       allLabels.HeldIdentifiers(inst)
                                                                .ToHashSet(),
                                                       allLabels.IgnoreMissingIdentifiers(inst)
-                                                               .ToHashSet());
-            var dlls = registry.InstalledDlls.ToList();
-            foreach ((var upgradeable, var mods) in upgGroups)
+                                                               .ToHashSet()))
             {
-                foreach (var ident in mods.Select(m => m.identifier))
-                {
-                    dlls.Remove(ident);
-                    CheckRowUpgradeable(inst, ChangeSet, rows, ident, upgradeable);
-                }
+                hasUpgradeable = hasUpgradeable || upgradeable;
+                dlls.Remove(module.identifier);
+                CheckRowUpgradeable(inst, ChangeSet, rows, module.identifier, upgradeable);
             }
             // AD mods don't have CkanModules in the return value of CheckUpgradeable
             foreach (var ident in dlls)
             {
                 CheckRowUpgradeable(inst, ChangeSet, rows, ident, false);
             }
-            return upgGroups[true].Count > 0;
+            return hasUpgradeable;
         }
 
         private void CheckRowUpgradeable(GameInstance              inst,
@@ -672,11 +687,12 @@ namespace CKAN.GUI
 
         private readonly ModuleLabelList                allLabels;
         private readonly ModuleTagList                  allTags;
-        private readonly IConfiguration                 coreConfig;
         private readonly GUIConfiguration               guiConfig;
+        private readonly Graphics                       graphics;
         private          IReadOnlyCollection<ModSearch> activeSearches;
 
-        private static readonly Color conflictColor = Color.FromArgb(255, 64, 64);
+        public  static readonly Color ConflictBackColor = Color.FromArgb(255, 64, 64);
+        public  static readonly Color ConflictForeColor = ConflictBackColor.ForeColorForBackColor() ?? SystemColors.WindowText;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(ModList));
     }

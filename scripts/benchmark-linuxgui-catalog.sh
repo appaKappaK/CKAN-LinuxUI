@@ -157,7 +157,7 @@ cat > "$TMP_DIR/CatalogBench.csproj" <<EOF
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Autofac" Version="4.9.4" />
-    <PackageReference Include="SharpZipLib" Version="1.3.3" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
     <PackageReference Include="TxFileManager" Version="1.5.0.1" />
     <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

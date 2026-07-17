@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Net;
 using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -57,11 +59,8 @@ namespace CKAN.GUI
         {
             InitializeComponent();
             GridContextMenuStrip.ScaleFonts();
+            GridContextMenuStrip.Renderer = new FlatToolStripRenderer();
             this.ScaleFonts();
-            if (Platform.IsMono)
-            {
-                GridContextMenuStrip.Renderer = new FlatToolStripRenderer();
-            }
             ExplanationLabel.Text = TopLabelMessage;
             ModColumn.HeaderText  = ModuleColumnHeader;
             AbortButton.Text      = AbortButtonCaption;
@@ -153,18 +152,20 @@ namespace CKAN.GUI
         /// </summary>
         private void DownloadsGrid_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            var binding = (BindingList<DownloadRow>)DownloadsGrid.DataSource;
-            var retry   = rows[e.RowIndex].Retry;
-            // Update all rows with this download
-            for (int i = 0; i < rows.Count; ++i)
+            if (DownloadsGrid.DataSource is BindingList<DownloadRow> binding)
             {
-                if (rowsLinked(rows[e.RowIndex].Data, rows[i].Data))
+                var retry   = rows[e.RowIndex].Retry;
+                // Update all rows with this download
+                for (int i = 0; i < rows.Count; ++i)
                 {
-                    if (i != e.RowIndex)
+                    if (rowsLinked(rows[e.RowIndex].Data, rows[i].Data))
                     {
-                        rows[i].Retry = retry;
+                        if (i != e.RowIndex)
+                        {
+                            rows[i].Retry = retry;
+                        }
+                        binding.ResetItem(i);
                     }
-                    binding.ResetItem(i);
                 }
             }
         }
@@ -221,7 +222,15 @@ namespace CKAN.GUI
         {
             Retry = true;
             Data  = data;
-            Error = exc.GetBaseException().Message;
+            Error = exc.GetBaseException() switch
+                    {
+                        // For actual download errors, just report the summary
+                        Kraken       k  => k.Message,
+                        WebException we => we.Message,
+                        IOException  ie => ie.Message,
+                        // If something truly unexpected happens, show the stack trace
+                        var          e  => e.ToString(),
+                    };
         }
 
         /// <summary>

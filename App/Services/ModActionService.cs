@@ -281,6 +281,7 @@ namespace CKAN.App.Services
                                                       registryManager,
                                                       deduper,
                                                       autoInstalled,
+                                                      null,
                                                       true,
                                                       false);
                                     toUpgrade.Clear();

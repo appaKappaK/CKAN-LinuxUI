@@ -1167,7 +1167,8 @@ namespace CKAN.LinuxGUI
             {
                 try
                 {
-                    var update = await Task.Run(() => new AutoUpdate().GetUpdate(includePrereleases));
+                    var update = await Task.Run(() => new AutoUpdate(Net.UserAgentString)
+                                                          .GetUpdate(includePrereleases));
                     if (update.Version is not CkanModuleVersion version)
                     {
                         return "Unavailable";

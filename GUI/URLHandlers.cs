@@ -149,7 +149,6 @@ namespace CKAN.GUI
             log.InfoFormat("Trying to register URL handler");
 
             var handlerPath = Path.Combine(ApplicationsPath, HandlerFileName);
-
             #if NET5_0_OR_GREATER
             var desiredExec = "\"" + PathToRunningExe() + "\" gui %u";
             #else

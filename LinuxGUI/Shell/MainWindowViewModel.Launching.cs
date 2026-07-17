@@ -142,6 +142,7 @@ namespace CKAN.LinuxGUI
             }
 
             instance.PlayGame(command,
+                              user,
                               () => Dispatcher.UIThread.Post(() =>
                               {
                                   RefreshInstanceSummaries();

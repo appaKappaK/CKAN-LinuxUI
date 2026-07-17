@@ -25,7 +25,7 @@ namespace CKAN
     // Base class for both modules (installed via the CKAN) and bundled
     // modules (which are more lightweight)
     [JsonObject(MemberSerialization.OptIn)]
-    public class CkanModule : IEquatable<CkanModule>
+    public class CkanModule : IEquatable<CkanModule?>
     {
 
         #region Fields
@@ -216,6 +216,9 @@ namespace CKAN
         [JsonIgnore]
         public static readonly Regex nonAlphaNums = new Regex("[^a-zA-Z0-9]", RegexOptions.Compiled);
 
+        [JsonIgnore]
+        public static readonly Regex nonAlphaNumsAnyLanguage = new Regex(@"[^\p{L}0-9]", RegexOptions.Compiled);
+
         #endregion
 
         #region Constructors
@@ -384,10 +387,10 @@ namespace CKAN
         private void CalculateSearchables()
         {
             SearchableIdentifier  = identifier  == null ? "" : nonAlphaNums.Replace(identifier, "");
-            SearchableName        = name        == null ? "" : nonAlphaNums.Replace(name, "");
-            SearchableAbstract    = @abstract   == null ? "" : nonAlphaNums.Replace(@abstract, "");
-            SearchableDescription = description == null ? "" : nonAlphaNums.Replace(description, "");
-            SearchableAuthors     = author?.Select(auth => nonAlphaNums.Replace(auth, ""))
+            SearchableName        = name        == null ? "" : nonAlphaNumsAnyLanguage.Replace(name, "");
+            SearchableAbstract    = @abstract   == null ? "" : nonAlphaNumsAnyLanguage.Replace(@abstract, "");
+            SearchableDescription = description == null ? "" : nonAlphaNumsAnyLanguage.Replace(description, "");
+            SearchableAuthors     = author?.Select(auth => nonAlphaNumsAnyLanguage.Replace(auth, ""))
                                            .ToList()
                                           ?? new List<string> { "" };
         }
@@ -472,7 +475,10 @@ namespace CKAN
                 writer.Formatting  = Formatting.Indented;
                 writer.Indentation = 4;
                 writer.IndentChar  = ' ';
-                new JsonSerializer().Serialize(writer, this);
+                new JsonSerializer()
+                {
+                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                }.Serialize(writer, this);
             }
             return sw + Environment.NewLine;
         }
@@ -566,8 +572,15 @@ namespace CKAN
                 && (ReferenceEquals(this, obj)
                     || (obj.GetType() == GetType() && Equals((CkanModule)obj)));
 
-        public bool MetadataEquals(CkanModule other)
+        public static bool operator ==(CkanModule? m1, CkanModule? m2)
+            => Equals(m1, m2);
+
+        public static bool operator !=(CkanModule? m1, CkanModule? m2)
+            => !Equals(m1, m2);
+
+        public bool MetadataEquals(CkanModule other, out bool installedFilesChanged)
         {
+            installedFilesChanged = true;
             if ((install == null) != (other.install == null)
                     || (install != null && other.install != null
                         && install.Length != other.install.Length))
@@ -599,6 +612,10 @@ namespace CKAN
             {
                 return false;
             }
+
+            // Conditions above this line affect the files that get installed for this mod;
+            // conditions after this line do not.
+            installedFilesChanged = false;
 
             if (!RelationshipsAreEquivalent(conflicts,  other.conflicts))
             {
@@ -677,7 +694,7 @@ namespace CKAN
         public override int GetHashCode()
             => (identifier, version).GetHashCode();
 
-        bool IEquatable<CkanModule>.Equals(CkanModule? other)
+        bool IEquatable<CkanModule?>.Equals(CkanModule? other)
             => Equals(other);
 
         /// <summary>

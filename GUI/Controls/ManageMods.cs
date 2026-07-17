@@ -30,15 +30,17 @@ namespace CKAN.GUI
             ModGrid.ScaleFonts();
             ModListContextMenuStrip.ScaleFonts();
             ModListHeaderContextMenuStrip.ScaleFonts();
-            uninstallingFont = new Font(SystemFonts.DefaultFont, FontStyle.Strikeout);
-            if (Platform.IsMono
-                && (int)CreateGraphics().DpiX is int dpi
-                && dpi != 96)
+            if (Util.DarkMode)
             {
-                uninstallingFont = uninstallingFont.Scale(dpi);
+                ModGrid.BorderStyle = BorderStyle.None;
             }
+            uninstallingStyle = new DataGridViewCellStyle()
+            {
+                Font = new Font(ModGrid.Font, FontStyle.Strikeout),
+            };
 
             ToolTip.SetToolTip(InstallAllCheckbox, Properties.Resources.ManageModsInstallAllCheckboxTooltip);
+            ToolTip.ScaleFonts();
             FilterCompatibleButton.ToolTipText      = Properties.Resources.FilterLinkToolTip;
             FilterInstalledButton.ToolTipText       = Properties.Resources.FilterLinkToolTip;
             FilterInstalledUpdateButton.ToolTipText = Properties.Resources.FilterLinkToolTip;
@@ -49,6 +51,7 @@ namespace CKAN.GUI
             FilterNotInstalledButton.ToolTipText    = Properties.Resources.FilterLinkToolTip;
             FilterIncompatibleButton.ToolTipText    = Properties.Resources.FilterLinkToolTip;
 
+            Toolbar.GotFocus += new EventHandler((sender, args) => ModGrid.Select());
             FilterToolButton.MouseHover += (sender, args) => FilterToolButton.ShowDropDown();
             ApplyToolButton.MouseHover += (sender, args) => ApplyToolButton.ShowDropDown();
             ApplyToolButton.Enabled = false;
@@ -59,27 +62,49 @@ namespace CKAN.GUI
                                                                      (sender, e) => Util.Invoke(this, () => ModGrid_SelectionChanged(sender, e)),
                                                                      100));
 
+            ModGrid.Resize += new EventHandler(Util.Debounce<EventArgs>(
+                                  (sender, e) => Util.Invoke(this, () =>
+                                  {
+                                      // Expand/contract large columns to use the available space efficiently
+                                      ModName.AutoSizeMode       = DataGridViewAutoSizeColumnMode.Fill;
+                                      Author.AutoSizeMode        = DataGridViewAutoSizeColumnMode.Fill;
+                                      LatestVersion.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                                      Description.AutoSizeMode   = DataGridViewAutoSizeColumnMode.Fill;
+                                  }),
+                                  (sender, e) => false,
+                                  (sender, e) => false,
+                                  (sender, e) => Util.Invoke(this, () =>
+                                  {
+                                      // Now make them resizable again
+                                      ModName.AutoSizeMode       = DataGridViewAutoSizeColumnMode.NotSet;
+                                      Author.AutoSizeMode        = DataGridViewAutoSizeColumnMode.NotSet;
+                                      LatestVersion.AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet;
+                                      Description.AutoSizeMode   = DataGridViewAutoSizeColumnMode.NotSet;
+                                  }),
+                                  250));
+
             repoData = ServiceLocator.Container.Resolve<RepositoryDataManager>();
 
-            // History is read-only until the UI is started. We switch
-            // out of it at the end of OnLoad() when we call NavInit().
-            navHistory = new NavigationHistory<GUIMod> { IsReadOnly = true };
+            navHistory = new NavigationHistory<GUIMod>();
 
             // Initialize navigation. This should be called as late as
             // possible, once the UI is "settled" from its initial load.
             NavInit();
 
+            Toolbar.Renderer = new FlatToolStripRenderer();
+            FilterToolButton.DropDown.Renderer = new FlatToolStripRenderer();
+            FilterTagsToolButton.DropDown.Renderer = new FlatToolStripRenderer();
+            FilterLabelsToolButton.DropDown.Renderer = new FlatToolStripRenderer();
+            LaunchGameToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
+            ModListContextMenuStrip.Renderer = new FlatToolStripRenderer();
+            ModListHeaderContextMenuStrip.Renderer = new FlatToolStripRenderer();
+            LabelsContextMenuStrip.Renderer = new FlatToolStripRenderer();
+
             if (Platform.IsMono)
             {
-                Toolbar.Renderer = new FlatToolStripRenderer();
-                FilterToolButton.DropDown.Renderer = new FlatToolStripRenderer();
-                FilterTagsToolButton.DropDown.Renderer = new FlatToolStripRenderer();
-                FilterLabelsToolButton.DropDown.Renderer = new FlatToolStripRenderer();
-                LaunchGameToolStripMenuItem.DropDown.Renderer = new FlatToolStripRenderer();
-                ModListContextMenuStrip.Renderer = new FlatToolStripRenderer();
-                ModListHeaderContextMenuStrip.Renderer = new FlatToolStripRenderer();
-                LabelsContextMenuStrip.Renderer = new FlatToolStripRenderer();
-
+                // Mono renders all blank cells if we add padding
+                ModGrid.DefaultCellStyle.Padding = new Padding(0);
+                // Mono doesn't resize column headers correctly
                 ModGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
                 ResizeColumnHeaders();
                 ModGrid.ColumnWidthChanged += (sender, e) => ResizeColumnHeaders();
@@ -91,9 +116,11 @@ namespace CKAN.GUI
             var g = CreateGraphics();
             ModGrid.ColumnHeadersHeight = ModGrid.Columns.OfType<DataGridViewColumn>().Max(col =>
                 ModGrid.ColumnHeadersDefaultCellStyle.Padding.Vertical
-                + Util.StringHeight(g, col.HeaderText,
-                                    col.HeaderCell?.Style?.Font ?? ModGrid.ColumnHeadersDefaultCellStyle.Font,
-                                    col.Width - (2 * ModGrid.ColumnHeadersDefaultCellStyle.Padding.Horizontal)));
+                + g.StringHeight(col.HeaderText,
+                                 col.HeaderCell?.Style?.Font
+                                               ?? ModGrid.ColumnHeadersDefaultCellStyle.Font
+                                               ?? SystemFonts.DefaultFont,
+                                 col.Width - (2 * ModGrid.ColumnHeadersDefaultCellStyle.Padding.Horizontal)));
         }
 
         private static readonly ILog log = LogManager.GetLogger(typeof(ManageMods));
@@ -101,7 +128,7 @@ namespace CKAN.GUI
         private DateTime lastSearchTime;
         private string? lastSearchKey;
         private readonly NavigationHistory<GUIMod> navHistory;
-        private readonly Font uninstallingFont;
+        private readonly DataGridViewCellStyle uninstallingStyle;
 
         private List<ModChange>?            currentChangeSet;
         private Dictionary<GUIMod, string>? conflicts;
@@ -122,7 +149,15 @@ namespace CKAN.GUI
             private set;
         }
 
-        private List<string> SortColumns
+        private IEnumerable<(DataGridViewColumn, bool)> SortColumnsAndDescending
+            => SortColumnNames.Zip(descending)
+                              .Select(tuple => ModGrid.Columns[tuple.First]
+                                               is DataGridViewColumn col
+                                                   ? ((DataGridViewColumn, bool)?)(col, tuple.Second)
+                                                   : null)
+                              .OfType<(DataGridViewColumn, bool)>();
+
+        private List<string> SortColumnNames
         {
             get
             {
@@ -203,12 +238,12 @@ namespace CKAN.GUI
                         if (removing.Contains(ident))
                         {
                             // Set strikeout font for rows being uninstalled
-                            row.DefaultCellStyle.Font = uninstallingFont;
+                            row.DefaultCellStyle = uninstallingStyle;
                         }
-                        else if (row.DefaultCellStyle.Font != null)
+                        else if (row.DefaultCellStyle == uninstallingStyle)
                         {
                             // Clear strikeout font for rows not being uninstalled
-                            row.DefaultCellStyle.Font = ModGrid.DefaultCellStyle.Font;
+                            row.DefaultCellStyle = null;
                         }
                     }
                 }
@@ -277,7 +312,8 @@ namespace CKAN.GUI
                 && ModGrid.Rows.Contains(row)
                 && row.Index >= 0)
             {
-                foreach (DataGridViewCell cell in row.Cells)
+                foreach (var cell in row.Cells.OfType<DataGridViewCell>()
+                                              .Where(c => c.ColumnIndex != Description.Index))
                 {
                     cell.ToolTipText = tooltip;
                 }
@@ -311,22 +347,20 @@ namespace CKAN.GUI
                 FilterTagsToolButton.DropDownItems.Clear();
                 FilterTagsToolButton.DropDownItems.AddRange(
                     registry.Tags.OrderBy(kvp => kvp.Key)
-                                 .Select(kvp => new ToolStripMenuItem(
-                                                    $"{kvp.Key} ({kvp.Value.ModuleIdentifiers.Count})",
-                                                    null, tagFilterButton_Click)
+                                 .Select(kvp => AddMouseDownHandler(new ToolStripMenuItem(
+                                                    $"{kvp.Key} ({kvp.Value.ModuleIdentifiers.Count})")
                                                 {
                                                     Tag         = kvp.Value,
                                                     ToolTipText = Properties.Resources.FilterLinkToolTip,
-                                                })
+                                                }, tagFilterButton_Click))
                                  .OfType<ToolStripItem>()
                                  .Append(untaggedFilterToolStripSeparator)
-                                 .Append(new ToolStripMenuItem(
+                                 .Append(AddMouseDownHandler(new ToolStripMenuItem(
                                              string.Format(Properties.Resources.MainLabelsUntagged,
-                                                           registry.Untagged.Count),
-                                             null, tagFilterButton_Click)
+                                                           registry.Untagged.Count))
                                          {
                                              Tag = null
-                                         })
+                                         }, tagFilterButton_Click))
                                  .ToArray());
             }
         }
@@ -339,17 +373,18 @@ namespace CKAN.GUI
                 FilterLabelsToolButton.DropDownItems.AddRange(
                     ModuleLabelList.ModuleLabels
                                    .LabelsFor(currentInstance.Name)
-                                   .Select(mlbl => new ToolStripMenuItem(
-                                                       $"{mlbl.Name} ({mlbl.ModuleCount(currentInstance.Game)})",
-                                                       null, customFilterButton_Click)
+                                   .Select(mlbl => AddMouseDownHandler(new ToolStripMenuItem(
+                                                       $"{mlbl.Name} ({mlbl.ModuleCount(currentInstance.Game)})")
                                                    {
                                                        Tag         = mlbl,
                                                        BackColor   = mlbl.Color ?? Color.Transparent,
                                                        ForeColor   = mlbl.Color?.ForeColorForBackColor()
                                                                                ?? SystemColors.ControlText,
                                                        ToolTipText = Properties.Resources.FilterLinkToolTip,
-                                                   })
+                                                   }, customFilterButton_Click))
                                    .ToArray());
+                FilterLabelsToolButton.DropDownItems.Add(FilterLabelsToolStripSeparator);
+                FilterLabelsToolButton.DropDownItems.Add(FilterLabelsEditToolStripMenuItem);
             }
         }
 
@@ -392,7 +427,7 @@ namespace CKAN.GUI
                             });
                     }
                 }
-                LabelsContextMenuStrip.Items.Add(labelToolStripSeparator);
+                LabelsContextMenuStrip.Items.Add(labelsToolStripSeparator);
                 LabelsContextMenuStrip.Items.Add(editLabelsToolStripMenuItem);
                 e.Cancel = false;
             }
@@ -430,77 +465,83 @@ namespace CKAN.GUI
             }
         }
 
+        private static ToolStripMenuItem AddMouseDownHandler(ToolStripMenuItem item, MouseEventHandler handler)
+        {
+            item.MouseDown += handler;
+            return item;
+        }
+
         #endregion
 
-        private void tagFilterButton_Click(object? sender, EventArgs? e)
+        private void tagFilterButton_Click(object? sender, MouseEventArgs? e)
         {
             var clicked = sender as ToolStripMenuItem;
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Tag, ModuleLabelList.ModuleLabels, clicked?.Tag as ModuleTag, null), merge);
         }
 
-        private void customFilterButton_Click(object? sender, EventArgs? e)
+        private void customFilterButton_Click(object? sender, MouseEventArgs? e)
         {
             var clicked = sender as ToolStripMenuItem;
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.CustomLabel, ModuleLabelList.ModuleLabels, null, clicked?.Tag as ModuleLabel), merge);
         }
 
-        private void FilterCompatibleButton_Click(object? sender, EventArgs? e)
+        private void FilterCompatibleButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Compatible, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterInstalledButton_Click(object? sender, EventArgs? e)
+        private void FilterInstalledButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Installed, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterInstalledUpdateButton_Click(object? sender, EventArgs? e)
+        private void FilterInstalledUpdateButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.InstalledUpdateAvailable, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterReplaceableButton_Click(object? sender, EventArgs? e)
+        private void FilterReplaceableButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Replaceable, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterCachedButton_Click(object? sender, EventArgs? e)
+        private void FilterCachedButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Cached, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterUncachedButton_Click(object? sender, EventArgs? e)
+        private void FilterUncachedButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Uncached, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterNewButton_Click(object? sender, EventArgs? e)
+        private void FilterNewButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.NewInRepository, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterNotInstalledButton_Click(object? sender, EventArgs? e)
+        private void FilterNotInstalledButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.NotInstalled, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterIncompatibleButton_Click(object? sender, EventArgs? e)
+        private void FilterIncompatibleButton_Click(object? sender, MouseEventArgs? e)
         {
-            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift);
+            var merge = ModifierKeys.HasAnyFlag(Keys.Control, Keys.Shift) || e?.Button == MouseButtons.Middle;
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.Incompatible, ModuleLabelList.ModuleLabels), merge);
         }
 
-        private void FilterAllButton_Click(object? sender, EventArgs? e)
+        private void FilterAllButton_Click(object? sender, MouseEventArgs? e)
         {
             Filter(ModList.FilterToSavedSearch(currentInstance!, GUIModFilter.All, ModuleLabelList.ModuleLabels), false);
         }
@@ -551,7 +592,7 @@ namespace CKAN.GUI
             {
                 // Some columns are always shown, and others are handled by UpdateModsList()
                 if (col.Name != "Installed" && col.Name != "UpdateCol" && col.Name != "ReplaceCol"
-                    && !installedColumnNames.Contains(col.Name))
+                    && !installedColumns.Contains(col))
                 {
                     col.Visible = !guiConfig?.HiddenColumnNames.Contains(col.Name) ?? true;
                 }
@@ -563,9 +604,9 @@ namespace CKAN.GUI
                                        && MainModList.HasVisibleInstalled());
         }
 
-        private static readonly string[] installedColumnNames = new string[]
+        private DataGridViewColumn[] installedColumns => new DataGridViewColumn[]
         {
-            "AutoInstalled", "InstalledVersion", "InstallDate"
+            AutoInstalled, InstalledVersion, InstallDate,
         };
 
         private void setInstalledColumnsVisible(bool visible)
@@ -573,9 +614,9 @@ namespace CKAN.GUI
             if (guiConfig != null)
             {
                 var hiddenColumnNames = guiConfig.HiddenColumnNames;
-                foreach (var colName in installedColumnNames.Where(ModGrid.Columns.Contains))
+                foreach (var col in installedColumns)
                 {
-                    ModGrid.Columns[colName].Visible = visible && !hiddenColumnNames.Contains(colName);
+                    col.Visible = visible && !hiddenColumnNames.Contains(col.Name);
                 }
             }
         }
@@ -753,6 +794,17 @@ namespace CKAN.GUI
             }
         }
 
+        private void ModGrid_DataError(object? sender, DataGridViewDataErrorEventArgs e)
+        {
+            // The grid sometimes raises this after a column becomes visible when some of its cells have null values.
+            // Log and ignore it.
+            log.Debug(string.Format("ModGrid_DataError: row {0}, col {1}, value {2}",
+                                    ModGrid.Rows[e.RowIndex].Tag,
+                                    ModGrid.Columns[e.ColumnIndex].HeaderText,
+                                    Utilities.DefaultIfThrows(() => ModGrid.Rows[e.RowIndex].Cells[e.ColumnIndex])?.Value),
+                      e.Exception);
+        }
+
         private void ShowHeaderContextMenu(bool columns = true,
                                            bool tags    = true)
         {
@@ -850,9 +902,19 @@ namespace CKAN.GUI
         /// </summary>
         private void ModGrid_KeyDown(object? sender, KeyEventArgs? e)
         {
-            switch (e?.KeyCode)
+            switch (e)
             {
-                case Keys.Home:
+                case { KeyCode: Keys.A, Control: true}:
+                    for (int row = 0; row <  ModGrid.Rows.Count; ++row)
+                    {
+                        ModGrid.Rows[row].Selected = true;
+                    }
+                    e.Handled = true;
+                    break;
+
+                case { KeyCode: Keys.Home, Control: var c, Shift: var s }:
+                    var origSel1 = ModGrid.SelectedRows.OfType<DataGridViewRow>().ToArray();
+                    var bottomRow = ModGrid.CurrentRow;
                     // First row.
                     // Handles for empty filters
                     if (//ModGrid.Rows is [DataGridViewRow top, ..]
@@ -861,11 +923,20 @@ namespace CKAN.GUI
                     {
                         ModGrid.CurrentCell = top.Cells[SelectableColumnIndex()];
                     }
-
+                    if (s && bottomRow is { Index: int maxIndex })
+                    {
+                        ModGrid.SelectRows(0, maxIndex);
+                    }
+                    if (c)
+                    {
+                        ModGrid.SelectRows(origSel1);
+                    }
                     e.Handled = true;
                     break;
 
-                case Keys.End:
+                case { KeyCode: Keys.End, Control: var c, Shift: var s }:
+                    var origSel2 = ModGrid.SelectedRows.OfType<DataGridViewRow>().ToArray();
+                    var topRow = ModGrid.CurrentRow;
                     // Last row.
                     // Handles for empty filters
                     if (//ModGrid.Rows is [.., DataGridViewRow bottom]
@@ -874,11 +945,18 @@ namespace CKAN.GUI
                     {
                         ModGrid.CurrentCell = bottom.Cells[SelectableColumnIndex()];
                     }
-
+                    if (s && topRow is { Index: int minIndex })
+                    {
+                        ModGrid.SelectRows(minIndex, ModGrid.Rows.Count - 1);
+                    }
+                    if (c)
+                    {
+                        ModGrid.SelectRows(origSel2);
+                    }
                     e.Handled = true;
                     break;
 
-                case Keys.Space:
+                case { KeyCode: Keys.Space }:
                     // If they've selected one row and focused one of the checkbox columns,
                     // don't intercept
                     if (ModGrid.SelectedRows   is { Count: > 1 }
@@ -901,7 +979,7 @@ namespace CKAN.GUI
                                     is DataGridViewCheckBoxCell cell)
                                 {
                                     // Need to change the state here, because the user hasn't clicked on a checkbox
-                                    cell.Value = !(bool)cell.Value;
+                                    cell.Value = cell.Value is false;
                                 }
                             }
                         });
@@ -910,7 +988,7 @@ namespace CKAN.GUI
                     }
                     break;
 
-                case Keys.Apps:
+                case { KeyCode: Keys.Apps }:
                     ShowModContextMenu();
                     e.Handled = true;
                     break;
@@ -926,18 +1004,13 @@ namespace CKAN.GUI
         /// </summary>
         private void ModGrid_KeyPress(object? sender, KeyPressEventArgs? e)
         {
-            if (e != null)
+            // Only search for letters and numbers
+            if (e is { KeyChar: char c }
+                && c.ToString() is string key
+                && !CkanModule.nonAlphaNumsAnyLanguage.IsMatch(key))
             {
-                // Don't search for spaces or newlines
-                if (e.KeyChar is ((char)Keys.Space) or ((char)Keys.Enter))
-                {
-                    return;
-                }
-
-                var key = e.KeyChar.ToString();
                 // Determine time passed since last key press.
-                TimeSpan interval = DateTime.Now - lastSearchTime;
-                if (interval.TotalSeconds < 1)
+                if (DateTime.Now - lastSearchTime is { TotalSeconds: < 1 })
                 {
                     // Last keypress was < 1 sec ago, so combine the last and current keys.
                     key = lastSearchKey + key;
@@ -986,7 +1059,7 @@ namespace CKAN.GUI
             }
 
             // Need to change the state here, because the user hasn't clicked on a checkbox.
-            cell.Value = !(bool)cell.Value;
+            cell.Value = cell.Value is false;
             ModGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
 
@@ -999,8 +1072,7 @@ namespace CKAN.GUI
                 {
                     case DataGridViewLinkCell linkCell:
                         // Launch URLs if found in grid
-                        var cmd = linkCell.Value.ToString();
-                        if (!string.IsNullOrEmpty(cmd))
+                        if (linkCell.Value?.ToString() is { Length: > 0 } cmd)
                         {
                             Utilities.ProcessStartURL(cmd);
                         }
@@ -1008,7 +1080,7 @@ namespace CKAN.GUI
 
                     case DataGridViewCheckBoxCell checkCell:
                         // checked is a keyword in C#
-                        var nowChecked = (bool)checkCell.Value;
+                        var nowChecked = checkCell.Value is true;
                         if (row?.Tag is GUIMod gmod)
                         {
                             switch (ModGrid.Columns[e.ColumnIndex].Name)
@@ -1066,7 +1138,7 @@ namespace CKAN.GUI
                             if (row.Cells[Installed.Index] is DataGridViewCheckBoxCell instCell)
                             {
                                 bool newVal = gmod.SelectedMod != null;
-                                if ((bool)instCell.Value != newVal)
+                                if (instCell.Value is bool b && b != newVal)
                                 {
                                     instCell.Value = newVal;
                                 }
@@ -1076,7 +1148,7 @@ namespace CKAN.GUI
                                 bool newVal = gmod.SelectedMod != null
                                               && (gmod.InstalledMod == null
                                                   || gmod.InstalledMod.Module.version < gmod.SelectedMod.version);
-                                if ((bool)upgCell.Value != newVal)
+                                if (upgCell.Value is bool b && b != newVal)
                                 {
                                     upgCell.Value = newVal;
                                 }
@@ -1282,14 +1354,14 @@ namespace CKAN.GUI
             if (freezeChangeSet)
             {
                 // Already frozen by some outer block, let it handle the cleanup
-                action?.Invoke();
+                action.Invoke();
             }
             else
             {
                 freezeChangeSet = true;
                 try
                 {
-                    action?.Invoke();
+                    action.Invoke();
                 }
                 finally
                 {
@@ -1324,65 +1396,67 @@ namespace CKAN.GUI
 
         public void FocusMod(string key, bool exactMatch, bool showAsFirst = false)
         {
-            DataGridViewRow current_row = ModGrid.CurrentRow;
-            int currentIndex = current_row?.Index ?? 0;
-            DataGridViewRow? first_match = null;
-
-            var does_name_begin_with_key = new Func<DataGridViewRow, bool>(row =>
+            if (ModGrid.CurrentRow is { Index: var currentIndex })
             {
-                var mod = row.Tag as GUIMod;
-                bool row_match;
-                if (exactMatch)
+                DataGridViewRow? first_match = null;
+
+                var does_name_begin_with_key = new Func<DataGridViewRow, bool>(row =>
                 {
-                    row_match = mod?.Name == key || mod?.Identifier == key;
+                    var mod = row.Tag as GUIMod;
+                    bool row_match;
+                    if (exactMatch)
+                    {
+                        row_match = mod?.Name == key
+                                    || string.Equals(mod?.Identifier, key, StringComparison.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        row_match = mod != null
+                                    && (mod.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase)
+                                        || mod.Abbrevation.StartsWith(key, StringComparison.OrdinalIgnoreCase)
+                                        || mod.Identifier.StartsWith(key, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (row_match && first_match == null)
+                    {
+                        // Remember the first match to allow cycling back to it if necessary.
+                        first_match = row;
+                    }
+
+                    if (key.Length == 1 && row_match && row.Index <= currentIndex)
+                    {
+                        // Keep going forward if it's a single key match and not ahead of the current row.
+                        return false;
+                    }
+
+                    return row_match;
+                });
+
+                ModGrid.ClearSelection();
+                var match = ModGrid.Rows
+                                   .OfType<DataGridViewRow>()
+                                   .Where(row => row.Visible)
+                                   .FirstOrDefault(does_name_begin_with_key);
+                if (match == null && first_match != null)
+                {
+                    // If there were no matches after the first match, cycle over to the beginning.
+                    match = first_match;
+                }
+
+                if (match != null)
+                {
+                    match.Selected = true;
+
+                    ModGrid.CurrentCell = match.Cells[SelectableColumnIndex()];
+                    if (showAsFirst)
+                    {
+                        ModGrid.FirstDisplayedScrollingRowIndex = match.Index;
+                    }
                 }
                 else
                 {
-                    row_match = mod != null
-                                && (mod.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase)
-                                    || mod.Abbrevation.StartsWith(key, StringComparison.OrdinalIgnoreCase)
-                                    || mod.Identifier.StartsWith(key, StringComparison.OrdinalIgnoreCase));
+                    RaiseMessage?.Invoke(Properties.Resources.MainNotFound);
                 }
-
-                if (row_match && first_match == null)
-                {
-                    // Remember the first match to allow cycling back to it if necessary.
-                    first_match = row;
-                }
-
-                if (key.Length == 1 && row_match && row.Index <= currentIndex)
-                {
-                    // Keep going forward if it's a single key match and not ahead of the current row.
-                    return false;
-                }
-
-                return row_match;
-            });
-
-            ModGrid.ClearSelection();
-            var match = ModGrid.Rows
-                               .OfType<DataGridViewRow>()
-                               .Where(row => row.Visible)
-                               .FirstOrDefault(does_name_begin_with_key);
-            if (match == null && first_match != null)
-            {
-                // If there were no matches after the first match, cycle over to the beginning.
-                match = first_match;
-            }
-
-            if (match != null)
-            {
-                match.Selected = true;
-
-                ModGrid.CurrentCell = match.Cells[SelectableColumnIndex()];
-                if (showAsFirst)
-                {
-                    ModGrid.FirstDisplayedScrollingRowIndex = match.Index;
-                }
-            }
-            else
-            {
-                RaiseMessage?.Invoke(Properties.Resources.MainNotFound);
             }
         }
 
@@ -1445,7 +1519,7 @@ namespace CKAN.GUI
                                                       registry.GetModuleByVersion(module.identifier,
                                                                                   module.version)
                                                               ?? module,
-                                                      true, false, config)
+                                                      true, false, true, config)
                                        as ModChange)
                            .ToList(),
                     null);
@@ -1649,7 +1723,8 @@ namespace CKAN.GUI
             // Update our mod listing
             MainModList = new ModList(guiMods, currentInstance,
                                       ModuleLabelList.ModuleLabels, ModuleTagList.ModuleTags,
-                                      ServiceLocator.Container.Resolve<IConfiguration>(), guiConfig, ChangeSet);
+                                      guiConfig,
+                                      CreateGraphics(), ChangeSet);
             MainModList.ModFiltersUpdated += UpdateFilters;
 
             UpdateChangeSetAndConflicts(currentInstance, registry);
@@ -1686,11 +1761,20 @@ namespace CKAN.GUI
 
             UpdateFilters();
 
-            // Hide update and replacement columns if not needed.
-            // Write it to the configuration, else they are hidden again after a filter change.
-            // After the update / replacement, they are hidden again.
             Util.Invoke(ModGrid, () =>
             {
+                // Fit small columns to their contents at load
+                ModGrid.AutoResizeColumn(InstalledVersion.Index,  DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(GameCompatibility.Index, DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(DownloadSize.Index,      DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(InstallSize.Index,       DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(ReleaseDate.Index,       DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(InstallDate.Index,       DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+                ModGrid.AutoResizeColumn(DownloadCount.Index,     DataGridViewAutoSizeColumnMode.AllCellsExceptHeader);
+
+                // Hide update and replacement columns if not needed.
+                // Write it to the configuration, else they are hidden again after a filter change.
+                // After the update / replacement, they are hidden again.
                 UpdateCol.Visible  = has_unheld_updates;
                 ReplaceCol.Visible = MainModList.Modules.Any(mod => mod.IsInstalled && mod.HasReplacement);
             });
@@ -1739,16 +1823,16 @@ namespace CKAN.GUI
 
         private void SetSort(DataGridViewColumn col)
         {
-            if (//SortColumns is [string colName]
-                SortColumns.Count == 1
-                && SortColumns[0] is string colName
+            if (//SortColumnNames is [string colName]
+                SortColumnNames.Count == 1
+                && SortColumnNames[0] is string colName
                 && colName == col.Name)
             {
                 descending[0] = !descending[0];
             }
             else
             {
-                SortColumns.Clear();
+                SortColumnNames.Clear();
                 descending.Clear();
                 AddSort(col);
             }
@@ -1756,26 +1840,26 @@ namespace CKAN.GUI
 
         private void AddSort(DataGridViewColumn col, bool atStart = false)
         {
-            if (SortColumns.Count > 0 && SortColumns[^1] == col.Name)
+            if (SortColumnNames.Count > 0 && SortColumnNames[^1] == col.Name)
             {
                 descending[^1] = !descending[^1];
             }
             else
             {
-                int middlePosition = SortColumns.IndexOf(col.Name);
+                int middlePosition = SortColumnNames.IndexOf(col.Name);
                 if (middlePosition > -1)
                 {
-                    SortColumns.RemoveAt(middlePosition);
+                    SortColumnNames.RemoveAt(middlePosition);
                     descending.RemoveAt(middlePosition);
                 }
                 if (atStart)
                 {
-                    SortColumns.Insert(0, col.Name);
+                    SortColumnNames.Insert(0, col.Name);
                     descending.Insert(0, false);
                 }
                 else
                 {
-                    SortColumns.Add(col.Name);
+                    SortColumnNames.Add(col.Name);
                     descending.Add(false);
                 }
             }
@@ -1794,26 +1878,23 @@ namespace CKAN.GUI
             {
                 col.HeaderCell.SortGlyphDirection = SortOrder.None;
             }
-            for (int i = 0; i < SortColumns.Count; ++i)
+            for (int i = 0; i < SortColumnNames.Count; ++i)
             {
-                if (!ModGrid.Columns.Contains(SortColumns[i]))
+                if (ModGrid.Columns[SortColumnNames[i]] is DataGridViewColumn col)
                 {
-                    // Shouldn't be possible, but better safe than sorry.
-                    continue;
+                    col.HeaderCell.SortGlyphDirection = descending[i]
+                        ? SortOrder.Descending : SortOrder.Ascending;
                 }
-                ModGrid.Columns[SortColumns[i]].HeaderCell.SortGlyphDirection = descending[i]
-                    ? SortOrder.Descending : SortOrder.Ascending;
             }
         }
 
         private int CompareRows(DataGridViewRow a, DataGridViewRow b)
         {
-            for (int i = 0; i < SortColumns.Count; ++i)
+            foreach (var (col, desc) in SortColumnsAndDescending)
             {
-                var val = CompareColumn(a, b, ModGrid.Columns[SortColumns[i]]);
-                if (val != 0)
+                if (CompareColumn(a, b, col) is not 0 and var val)
                 {
-                    return descending[i] ? -val : val;
+                    return desc ? -val : val;
                 }
             }
             return CompareColumn(a, b, ModName);
@@ -1830,50 +1911,41 @@ namespace CKAN.GUI
         /// </returns>
         private int CompareColumn(DataGridViewRow a, DataGridViewRow b, DataGridViewColumn col)
         {
-            var gmodA = a.Tag as GUIMod;
-            var gmodB = b.Tag as GUIMod;
-            var modA = gmodA?.Module;
-            var modB = gmodB?.Module;
             var cellA = a.Cells[col.Index];
             var cellB = b.Cells[col.Index];
             if (col is DataGridViewCheckBoxColumn)
             {
                 // Checked < non-"-" text < unchecked < "-" text
-                if (cellA is DataGridViewCheckBoxCell checkboxA)
+                if (cellA is DataGridViewCheckBoxCell checkboxA
+                    && checkboxA.Value is bool valA)
                 {
                     return cellB is DataGridViewCheckBoxCell checkboxB
-                            ? -((bool)checkboxA.Value).CompareTo((bool)checkboxB.Value)
-                        : (bool)checkboxA.Value || ((string)cellB.Value == "-") ? -1
-                        : 1;
+                           && checkboxB.Value is bool valB
+                               ? -valA.CompareTo(valB)
+                               : valA || (cellB.Value is "-") ? -1 : 1;
                 }
                 else
                 {
                     return cellB is DataGridViewCheckBoxCell ? -CompareColumn(b, a, col)
-                        : (string)cellA.Value == (string)cellB.Value ? 0
-                        : (string)cellA.Value == "-" ? 1
-                        : (string)cellB.Value == "-" ? -1
-                        : ((string)cellA.Value).CompareTo((string)cellB.Value);
+                         : cellA.Value == cellB.Value ? 0
+                         : cellA.Value is "-" ? 1
+                         : cellB.Value is "-" ? -1
+                         : (cellA.Value as string ?? "").CompareTo(cellB.Value as string ?? "");
                 }
             }
-            else if (gmodA != null && gmodB != null && modA != null && modB != null)
+            else if (a.Tag is GUIMod gmodA && b.Tag is GUIMod gmodB)
             {
-                switch (col.Name)
+                return col.Name switch
                 {
-                    case "ModName":           return gmodA.Name.CompareTo(gmodB.Name);
-                    case "GameCompatibility": return GameCompatComparison(a, b);
-                    case "InstallDate":       return CompareToNullable(gmodA.InstallDate,
-                                                                       gmodB.InstallDate);
-                    case "ReleaseDate":       return CompareToNullable(modA.release_date,
-                                                                       modB.release_date);
-                    case "DownloadSize":      return modA.download_size.CompareTo(modB.download_size);
-                    case "InstallSize":       return modA.install_size.CompareTo(modB.install_size);
-                    case "DownloadCount":     return CompareToNullable(gmodA.DownloadCount,
-                                                                       gmodB.DownloadCount);
-                    default:
-                        var valA = (cellA.Value as string) ?? "";
-                        var valB = (cellB.Value as string) ?? "";
-                        return valA.CompareTo(valB);
-                }
+                    "ModName"           => gmodA.Name.CompareTo(gmodB.Name),
+                    "GameCompatibility" => GameCompatComparison(a, b),
+                    "InstallDate"       => CompareToNullable(gmodA.InstallDate, gmodB.InstallDate),
+                    "ReleaseDate"       => CompareToNullable(gmodA.Module.release_date, gmodB.Module.release_date),
+                    "DownloadSize"      => gmodA.Module.download_size.CompareTo(gmodB.Module.download_size),
+                    "InstallSize"       => gmodA.Module.install_size.CompareTo(gmodB.Module.install_size),
+                    "DownloadCount"     => CompareToNullable(gmodA.DownloadCount, gmodB.DownloadCount),
+                    _                   => ((cellA.Value as string) ?? "").CompareTo(((cellB.Value as string) ?? "")),
+                };
             }
             return 0;
         }
@@ -2077,7 +2149,6 @@ namespace CKAN.GUI
         private void NavInit()
         {
             navHistory.OnHistoryChange += NavOnHistoryChange;
-            navHistory.IsReadOnly = false;
             var currentMod = SelectedModule;
             if (currentMod != null)
             {
@@ -2110,9 +2181,7 @@ namespace CKAN.GUI
         {
             // Focusing on a mod also causes navigation, but we don't want
             // this to affect the history, so we switch to read-only mode.
-            navHistory.IsReadOnly = true;
             FocusMod(module.Name, true);
-            navHistory.IsReadOnly = false;
         }
 
         private void NavOnHistoryChange()
@@ -2224,9 +2293,8 @@ namespace CKAN.GUI
                        gmod.SelectedMod = ch.targetMod;
                     }
                 }
-                var gameVersion = inst.VersionCriteria();
-                var tuple = MainModList.ComputeFullChangeSetFromUserChangeSet(registry, user_change_set, inst.Game,
-                                                                              inst.StabilityToleranceConfig, gameVersion);
+                var tuple = ModList.ComputeFullChangeSetFromUserChangeSet(registry, user_change_set,
+                                                                          ServiceLocator.Container.Resolve<IConfiguration>(), inst);
                 full_change_set = tuple.Item1.ToList();
                 new_conflicts = tuple.Item2.ToDictionary(
                     item => new GUIMod(item.Key, repoData, registry, inst.StabilityToleranceConfig,

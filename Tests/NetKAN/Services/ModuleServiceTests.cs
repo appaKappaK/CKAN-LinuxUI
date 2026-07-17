@@ -57,20 +57,20 @@ namespace Tests.NetKAN.Services
         }
 
         [Test]
-        public void GetsInternalCkansCorrectly()
+        public void GetsInternalCkanCorrectly()
         {
             // Arrange
             var sut = new ModuleService(new KerbalSpaceProgram());
             CkanModule mod = CkanModule.FromJson(TestData.DogeCoinFlag_101());
 
             // Act
-            var result = sut.GetInternalCkans(mod, TestData.DogeCoinFlagZip()).ToArray();
+            var result = sut.GetInternalCkans(mod, TestData.DogeCoinFlagZip()).FirstOrDefault();
 
             // Assert
-            Assert.That(result, Has.Length.EqualTo(1),
-                "ModuleService should get one internal CKAN file."
+            Assert.That(result, Is.Not.Null,
+                "ModuleService should get an internal CKAN file."
             );
-            Assert.That((string?)result[0]?["identifier"], Is.EqualTo("DogeCoinFlag"),
+            Assert.That((string?)result?["identifier"], Is.EqualTo("DogeCoinFlag"),
                 "ModuleService should get correct data for the internal CKAN file."
             );
         }

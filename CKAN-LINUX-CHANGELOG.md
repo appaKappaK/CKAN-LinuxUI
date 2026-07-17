@@ -5,11 +5,12 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## 2026-07-17
 
-### Catalog Freshness and Upstream Core Audit
+### Catalog Freshness and Upstream CKAN Integration
 - Ignored Rust catalog sidecar files older than CKAN's repository cache so stale sidecar data cannot hide newly indexed mods or versions.
 - Added Rust catalog schema v2 support so sidecar rows honor CKAN's instance-wide and per-mod stable, testing, and development release tolerances while remaining compatible with schema v1 indexes.
 - Ported upstream CKAN fixes for stability-aware compatibility sorting, duplicate relationship-resolver inputs, defensive stability snapshots, shared-disk free-space checks, and BOM-free UTF-8 registry/repository writes.
-- Audited official CKAN through `0daeea8d` (the v1.36.5 development branch tip from 2026-07-02) as the comparison baseline for future core updates.
+- Merged official CKAN through `0daeea8d` (the v1.36.5 development branch tip from 2026-07-02) into the Linux `dev` line while preserving the .NET 8 Linux targets and fork-specific instance and URL-launch behavior.
+- Updated Linux-only callers and test fakes for the merged core APIs, and aligned the catalog benchmark harness with upstream's SharpZipLib 1.4.2 dependency.
 
 ## 2026-07-03
 

@@ -39,6 +39,7 @@ namespace CKAN.GUI
             this.ScaleFonts();
 
             ToolTip.SetToolTip(checkBoxShareStock, Properties.Resources.CloneGameInstanceToolTipShareStock);
+            ToolTip.ScaleFonts();
 
             // Populate the instances combobox with names of known instances
             comboBoxKnownInstance.DataSource =
@@ -157,7 +158,7 @@ namespace CKAN.GUI
                                           ? instFromBox
                                           : manager.DetermineGame(new DirectoryInfo(existingPath), user) is IGame sourceGame
                                               ? new GameInstance(sourceGame, existingPath,
-                                                                 "irrelevant", user)
+                                                                 "irrelevant")
                                               : null;
                 if (instanceToClone == null)
                 {

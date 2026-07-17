@@ -1709,8 +1709,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Manager = new GameInstanceManager(new NullUser(), Configuration);
                 CurrentInstance = new GameInstance(new KerbalSpaceProgram(),
                                                    gameDir,
-                                                   "Missing Registry Test",
-                                                   new NullUser());
+                                                   "Missing Registry Test");
                 CurrentInstance.SetCompatibleVersions(new[] { new GameVersion(1, 12, 5) });
                 CurrentRegistryManager = RegistryManager.Instance(CurrentInstance, RepositoryData);
                 CurrentRegistry = CurrentRegistryManager.registry;

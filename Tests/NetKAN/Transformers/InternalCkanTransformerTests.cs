@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 
 using Moq;
@@ -17,14 +18,16 @@ namespace Tests.NetKAN.Transformers
         private readonly TransformOptions opts = new TransformOptions(1, null, null, null, false, null);
 
         [Test]
-        public void AddsMissingProperties()
+        public void Transform_WithMissingProperties_Adds()
         {
             // Arrange
             const string filePath = "/DoesNotExist.zip";
 
-            var internalCkan = new JObject();
-            internalCkan["spec_version"] = 1;
-            internalCkan["foo"] = "bar";
+            var internalCkan = new JObject()
+            {
+                { "spec_version", 1 },
+                { "foo",          "bar" },
+            };
 
             var mHttp = new Mock<IHttpService>();
             var mModuleService = new Mock<IModuleService>();
@@ -34,16 +37,18 @@ namespace Tests.NetKAN.Transformers
 
             mModuleService.Setup(i => i.GetInternalCkans(
                     It.IsAny<CkanModule>(), It.IsAny<string>()))
-                .Returns(new[] { internalCkan });
+                .Returns(new JObject[] { internalCkan });
 
             var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
 
-            var json = new JObject();
-            json["spec_version"] = 1;
-            json["identifier"] = "DoesNotExist";
-            json["author"] = "DidNotCreate";
-            json["version"] = "1.0";
-            json["download"] = "https://awesomemod.example/AwesomeMod.zip";
+            var json = new JObject()
+            {
+                { "spec_version", 1 },
+                { "identifier",   "DoesNotExist" },
+                { "author",       "DidNotCreate" },
+                { "version",      "1.0" },
+                { "download",     "https://awesomemod.example/AwesomeMod.zip" },
+            };
 
             // Act
             var result = sut.Transform(new Metadata(json), opts).First();
@@ -56,14 +61,17 @@ namespace Tests.NetKAN.Transformers
         }
 
         [Test]
-        public void DoesNotOverrideExistingProperties()
+        public void Transform_WithExistingProperties_DoesNotOverride()
         {
             // Arrange
             const string filePath = "/DoesNotExist.zip";
 
-            var internalCkan = new JObject();
-            internalCkan["spec_version"] = 1;
-            internalCkan["foo"] = "bar";
+            var internalCkan = new JObject()
+            {
+                { "spec_version", 1 },
+                { "foo",          "bar" },
+                { "$kref",        "#/ckan/github/ThisShould/BeIgnored"},
+            };
 
             var mHttp = new Mock<IHttpService>();
             var mModuleService = new Mock<IModuleService>();
@@ -73,17 +81,19 @@ namespace Tests.NetKAN.Transformers
 
             mModuleService.Setup(i => i.GetInternalCkans(
                     It.IsAny<CkanModule>(), It.IsAny<string>()))
-                .Returns(new[] { internalCkan });
+                .Returns(new JObject[] { internalCkan });
 
             var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
 
-            var json = new JObject();
-            json["spec_version"] = 1;
-            json["identifier"] = "DoesNotExist";
-            json["author"] = "DidNotCreate";
-            json["version"] = "1.0";
-            json["foo"] = "baz";
-            json["download"] = "https://awesomemod.example/AwesomeMod.zip";
+            var json = new JObject()
+            {
+                { "spec_version", 1 },
+                { "identifier",   "DoesNotExist" },
+                { "author",       "DidNotCreate" },
+                { "version",      "1.0" },
+                { "foo",          "baz" },
+                { "download",     "https://awesomemod.example/AwesomeMod.zip" },
+            };
 
             // Act
             var result = sut.Transform(new Metadata(json), opts).First();
@@ -93,21 +103,14 @@ namespace Tests.NetKAN.Transformers
             Assert.That((string?)transformedJson["foo"], Is.EqualTo("baz"),
                 "InternalCkanTransformer should not override existing properties."
             );
+            Assert.IsFalse(transformedJson.ContainsKey("$kref"));
         }
 
         [Test]
-        public void MergesMultipleInternalCkans()
+        public void Transform_NoInternalCkan_DoesNothing()
         {
             // Arrange
             const string filePath = "/DoesNotExist.zip";
-
-            var first = new JObject();
-            first["spec_version"] = 1;
-            first["foo"] = "bar";
-
-            var second = new JObject();
-            second["spec_version"] = 1;
-            second["baz"] = "qux";
 
             var mHttp = new Mock<IHttpService>();
             var mModuleService = new Mock<IModuleService>();
@@ -117,24 +120,26 @@ namespace Tests.NetKAN.Transformers
 
             mModuleService.Setup(i => i.GetInternalCkans(
                     It.IsAny<CkanModule>(), It.IsAny<string>()))
-                .Returns(new[] { first, second });
+                .Returns(Array.Empty<JObject>());
 
             var sut = new InternalCkanTransformer(mHttp.Object, mModuleService.Object);
 
-            var json = new JObject();
-            json["spec_version"] = 1;
-            json["identifier"] = "DoesNotExist";
-            json["author"] = "DidNotCreate";
-            json["version"] = "1.0";
-            json["download"] = "https://awesomemod.example/AwesomeMod.zip";
+            var json = new JObject()
+            {
+                { "spec_version", 1 },
+                { "identifier",   "DoesNotExist" },
+                { "author",       "DidNotCreate" },
+                { "version",      "1.0" },
+                { "foo",          "baz" },
+                { "download",     "https://awesomemod.example/AwesomeMod.zip" },
+            };
 
             // Act
             var result = sut.Transform(new Metadata(json), opts).First();
             var transformedJson = result.Json();
 
             // Assert
-            Assert.That((string?)transformedJson["foo"], Is.EqualTo("bar"));
-            Assert.That((string?)transformedJson["baz"], Is.EqualTo("qux"));
+            Assert.AreEqual(json, transformedJson);
         }
     }
 }

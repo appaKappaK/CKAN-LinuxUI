@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Timer = System.Timers.Timer;
 #if NET5_0_OR_GREATER
@@ -14,6 +16,10 @@ using log4net;
 
 namespace CKAN.GUI
 {
+    #if NET6_0_OR_GREATER
+    using WinReg = Microsoft.Win32.Registry;
+    #endif
+
     #if NET5_0_OR_GREATER
     [SupportedOSPlatform("windows")]
     #endif
@@ -178,6 +184,7 @@ namespace CKAN.GUI
             switch (e?.Button)
             {
                 case MouseButtons.Left:
+                case MouseButtons.Middle:
                     OpenLinkFromLinkLabel(url);
                     if (e.Link != null)
                     {
@@ -212,11 +219,10 @@ namespace CKAN.GUI
             var copyLink = new ToolStripMenuItem(Properties.Resources.UtilCopyLink);
             copyLink.Click += (sender, ev) => Clipboard.SetText(url);
 
-            var menu = new ContextMenuStrip();
-            if (Platform.IsMono)
+            var menu = new ContextMenuStrip
             {
-                menu.Renderer = new FlatToolStripRenderer();
-            }
+                Renderer = new FlatToolStripRenderer(),
+            };
             menu.Items.Add(copyLink);
             menu.ScaleFonts();
             menu.Show(where ?? Cursor.Position);
@@ -318,7 +324,7 @@ namespace CKAN.GUI
 
         #region Color manipulation
 
-        public static Color BlendColors(Color[] colors)
+        public static Color BlendColors(params Color[] colors)
             => colors.Length <  1 ? Color.Empty
              //: colors is [var c] ? c
              : colors.Length == 1 && colors[0] is var c ? c
@@ -345,8 +351,31 @@ namespace CKAN.GUI
 
         public static Color? ForeColorForBackColor(this Color backColor)
             => backColor == Color.Transparent || backColor == Color.Empty ? null
-             : backColor.GetLuminance() >= luminanceThreshold             ? Color.Black
-             :                                                              Color.White;
+             : backColor == SystemColors.Window  ? SystemColors.WindowText
+             : backColor == SystemColors.Control ? SystemColors.ControlText
+             : foreColorCache.GetOrAdd(backColor, c => c.IsLight()
+                                                           ? Color.Black
+                                                           : Color.White);
+
+        private static readonly ConcurrentDictionary<Color, Color> foreColorCache = new ConcurrentDictionary<Color, Color>();
+
+        public static Color LinkColorForBackColor(this Color backColor)
+            => backColor == Color.Transparent || backColor == Color.Empty ? Color.Blue
+             : linkColorCache.GetOrAdd(backColor, c => c.IsLight()
+                                                           ? Color.Blue
+                                                           : BlendColors(Color.Blue, Color.White));
+
+        private static readonly ConcurrentDictionary<Color, Color> linkColorCache = new ConcurrentDictionary<Color, Color>();
+
+        public static void NormalizeForeColor(this Control control)
+        {
+            control.ForeColor = control.BackColor.ForeColorForBackColor()
+                                ?? control.ForeColor;
+        }
+
+        public static string ToHex(this Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+        public static bool IsLight(this Color c) => c.GetLuminance() >= luminanceThreshold;
 
         /// <summary>
         /// Below this is considered "dark," above is considered "light"
@@ -419,8 +448,15 @@ namespace CKAN.GUI
         /// <returns>
         /// Number of pixels needed vertically to fit the string
         /// </returns>
-        public static int StringHeight(Graphics g, string text, Font font, int maxWidth)
-            => (int)g.MeasureString(text, font, (int)(maxWidth / XScale(g))).Height;
+        [ExcludeFromCodeCoverage]
+        public static int StringHeight(this Graphics g, string text, Font font, int maxWidth)
+            => Platform.IsMono ? (int)g.MeasureString(text, font, (int)(maxWidth / XScale(g))).Height
+                               : (int)g.MeasureString(text, font, maxWidth).Height;
+
+        [ExcludeFromCodeCoverage]
+        public static int StringHeight<T>(this T c, int maxWidth)
+            where T : Control
+            => c.CreateGraphics().StringHeight(c.Text, c.Font, maxWidth);
 
         /// <summary>
         /// Calculate how much vertical space is needed to display a label's text
@@ -430,13 +466,67 @@ namespace CKAN.GUI
         /// <returns>
         /// Number of pixels needed vertically to show the label's full text
         /// </returns>
-        public static int LabelStringHeight(Graphics g, Label lbl)
+        [ExcludeFromCodeCoverage]
+        public static int LabelStringHeight(this Graphics g, Label lbl)
             => (int)(YScale(g) * (lbl.Margin.Vertical + lbl.Padding.Vertical
-                                  + StringHeight(g, lbl.Text, lbl.Font,
-                                                 (lbl.Width - lbl.Margin.Horizontal
-                                                            - lbl.Padding.Horizontal))));
+                                  + g.StringHeight(lbl.Text, lbl.Font,
+                                                   (lbl.Width - lbl.Margin.Horizontal
+                                                              - lbl.Padding.Horizontal))));
 
         #endregion
+
+        #pragma warning disable IDE0075
+        public static bool DarkMode => Platform.IsWindows
+                                           #if NET10_0_OR_GREATER
+                                           ? Platform.IsWindows11
+                                             && WinReg.GetValue(DarkModeKey, "AppsUseLightTheme", 1) is not 1
+                                           #else
+                                           ? false
+                                           #endif
+                                     : Platform.IsUnix
+                                           ? (CommandOutputContains("gsettings",
+                                                                    "get org.gnome.desktop.interface color-scheme",
+                                                                    "prefer-dark")
+                                              ?? CommandOutputContains("kreadconfig5",
+                                                                       "--group Colors --key ColorScheme",
+                                                                       "Dark")
+                                              ?? false)
+                                     : Platform.IsMac
+                                           && (CommandOutputContains("defaults",
+                                                                     "read -g AppleInterfaceStyle",
+                                                                     "Dark")
+                                               ?? false);
+        #pragma warning restore IDE0075
+
+        [ExcludeFromCodeCoverage]
+        public static float TextScaleFactor
+            #if NET6_0_OR_GREATER
+            => Platform.IsWindows
+               && WinReg.GetValue(TextScaleFactorKey, "TextScaleFactor", 100)
+                  is >= 100 and <= 300 and int f
+                      ? f / 100f : 1;
+            #else
+            => 1;
+            #endif
+
+        private static bool? CommandOutputContains(string command, string args, string checkFor)
+            => Utilities.DefaultIfThrows(() => Process.Start(new ProcessStartInfo()
+                                                             {
+                                                                 FileName               = command,
+                                                                 Arguments              = args,
+                                                                 UseShellExecute        = false,
+                                                                 RedirectStandardOutput = true,
+                                                                 CreateNoWindow         = true,
+                                                             }))
+                        ?.StandardOutput.ReadToEnd().Contains(checkFor);
+
+        #if NET10_0_OR_GREATER
+        private const string DarkModeKey = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+        #endif
+
+        #if NET6_0_OR_GREATER
+        private const string TextScaleFactorKey = @"HKEY_CURRENT_USER\Software\Microsoft\Accessibility";
+        #endif
 
         // Hides the console window on Windows
         // useful when running the GUI
@@ -452,7 +542,10 @@ namespace CKAN.GUI
             }
         }
 
+        [ExcludeFromCodeCoverage]
         private static float XScale(Graphics g) => g.DpiX / 96f;
+
+        [ExcludeFromCodeCoverage]
         private static float YScale(Graphics g) => g.DpiY / 96f;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(Util));

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ComponentModel;
+using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Threading;
@@ -18,6 +19,7 @@ using CKAN;
 using CKAN.IO;
 using CKAN.GUI;
 using Tests.Core.Configuration;
+using Tests.Core.Relationships;
 using Tests.Data;
 
 namespace Tests.GUI
@@ -28,6 +30,11 @@ namespace Tests.GUI
     [TestFixture]
     public class ModListTests
     {
+        public ModListTests()
+        {
+            this.graphics = Graphics.FromImage(EmbeddedImages.apply);
+        }
+
         [Test]
         public void IsVisible_WithAllAndNoNameFilter_ReturnsTrueForCompatible()
         {
@@ -45,7 +52,7 @@ namespace Tests.GUI
 
                 var item = new ModList(Array.Empty<GUIMod>(), tidy.KSP,
                                        ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                       config, new GUIConfiguration());
+                                       new GUIConfiguration(), graphics);
                 Assert.That(item.IsVisible(
                     new GUIMod(ckan_mod!, repoData.Manager, registry,
                                tidy.KSP.StabilityToleranceConfig, tidy.KSP, cache,
@@ -63,7 +70,7 @@ namespace Tests.GUI
             using (var inst     = new DisposableKSP())
             using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
             using (var repo     = new TemporaryRepository(
-                                      Core.Relationships.RelationshipResolverTests.MergeWithDefaults(
+                                      RelationshipResolverTests.MergeWithDefaults(
                                           @"{
                                               ""identifier"": ""HiddenMod"",
                                               ""tags"":       [ ""library"" ]
@@ -87,7 +94,7 @@ namespace Tests.GUI
                 }
                 var modlist   = new ModList(modules, inst.KSP,
                                             labels, tags,
-                                            config, guiConfig);
+                                            guiConfig, graphics);
 
                 // Act / Assert
                 Assert.AreEqual(!hide, modlist.IsVisible(modules.First(), inst.KSP, registry));
@@ -105,7 +112,7 @@ namespace Tests.GUI
             {
                 var item = new ModList(Array.Empty<GUIMod>(), tidy.KSP,
                                        ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                       config, new GUIConfiguration());
+                                       new GUIConfiguration(), graphics);
                 Assert.That(item.CountModsByFilter(tidy.KSP, filter), Is.EqualTo(0));
             }
         }
@@ -136,8 +143,7 @@ namespace Tests.GUI
                     },
                     tidy.KSP,
                     ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                    config, new GUIConfiguration()
-                );
+                    new GUIConfiguration(), graphics);
                 Assert.That(main_mod_list.full_list_of_mod_rows.Values, Has.Count.EqualTo(2));
             }
         }
@@ -152,7 +158,7 @@ namespace Tests.GUI
                 var guiConfig = new GUIConfiguration();
                 var modlist   = new ModList(Array.Empty<GUIMod>(), inst.KSP,
                                             ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                            config, guiConfig);
+                                            guiConfig, graphics);
                 bool called   = false;
                 modlist.ModFiltersUpdated += () => { called = true; };
                 var nonEmptySearches = new List<ModSearch>
@@ -239,7 +245,7 @@ namespace Tests.GUI
                                       .ToArray();
                 var modlist  = new ModList(mods, inst.KSP,
                                            labels, new ModuleTagList(),
-                                           config, new GUIConfiguration());
+                                           new GUIConfiguration(), graphics);
                 var mod      = mods.First();
 
                 // Act
@@ -280,7 +286,7 @@ namespace Tests.GUI
                                       .ToArray();
                 var modlist = new ModList(mods, inst.KSP,
                                           labels, new ModuleTagList(),
-                                          config, new GUIConfiguration());
+                                          new GUIConfiguration(), graphics);
                 var grid = new DataGridView();
                 grid.Columns.AddRange(StandardColumns);
                 grid.Rows.AddRange(modlist.full_list_of_mod_rows.Values.ToArray());
@@ -301,7 +307,7 @@ namespace Tests.GUI
             using (var inst     = new DisposableKSP())
             using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
             using (var repo     = new TemporaryRepository(
-                                      Core.Relationships.RelationshipResolverTests.MergeWithDefaults(
+                                      RelationshipResolverTests.MergeWithDefaults(
                                           @"{
                                               ""identifier"": ""AnchorMod"",
                                               ""depends"": [
@@ -342,7 +348,7 @@ namespace Tests.GUI
                                        .ToArray();
                 var modlist   = new ModList(modules, inst.KSP,
                                             labels, tags,
-                                            config, guiConfig);
+                                            guiConfig, graphics);
                 var grid      = new DataGridView();
                 grid.Columns.AddRange(StandardColumns);
                 grid.Rows.AddRange(modlist.full_list_of_mod_rows.Values.ToArray());
@@ -616,7 +622,7 @@ namespace Tests.GUI
                                       .ToArray();
                 var modlist  = new ModList(mods, instance.KSP,
                                            ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                           config, new GUIConfiguration());
+                                           new GUIConfiguration(), graphics);
 
                 // Act
                 foreach (var mod in mods.OrderBy(m => m.Identifier).Take(5))
@@ -648,7 +654,7 @@ namespace Tests.GUI
             {
                 var item = new ModList(Array.Empty<GUIMod>(), tidy.KSP,
                                        ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                       config, new GUIConfiguration());
+                                       new GUIConfiguration(), graphics);
                 Assert.That(item.ComputeUserChangeSet(Registry.Empty(repoData.Manager), tidy.KSP, null, null), Is.Empty);
             }
         }
@@ -682,16 +688,14 @@ namespace Tests.GUI
                                        .ToArray();
                 var modlist   = new ModList(mods, inst.KSP,
                                             labels, new ModuleTagList(),
-                                            config, guiConfig);
+                                            guiConfig, graphics);
 
                 // Act
                 var b9         = mods.First(m => m.Identifier == "B9");
                 b9.SelectedMod = b9.LatestCompatibleMod;
                 var changes    = modlist.ComputeUserChangeSet(registry, inst.KSP, null, null);
-                var full       = modlist.ComputeFullChangeSetFromUserChangeSet(registry, changes,
-                                                                               inst.KSP.Game,
-                                                                               inst.KSP.StabilityToleranceConfig,
-                                                                               inst.KSP.VersionCriteria());
+                var full       = ModList.ComputeFullChangeSetFromUserChangeSet(registry, changes,
+                                                                               config, inst.KSP);
 
                 // Assert
                 CollectionAssert.AreEquivalent(new string[]
@@ -707,6 +711,64 @@ namespace Tests.GUI
                                                    "VirginKalactic-NodeToggle",
                                                },
                                                full.Item1.Select(ch => ch.Mod.identifier).Order());
+            }
+        }
+
+        [Test]
+        public void ComputeFullChangeSetFromUserChangeSet_WithAutoRemovable_Removes()
+        {
+            // Arrange
+            var installed = new string[]
+            {
+                @"{
+                    ""identifier"": ""Mod1""
+                }",
+                @"{
+                    ""identifier"": ""Mod2"",
+                    ""depends"":    [ { ""name"": ""Mod1"" } ]
+                }",
+                @"{
+                    ""identifier"": ""Mod3"",
+                    ""depends"":    [ { ""name"": ""Mod2"" } ]
+                }",
+            };
+            var user      = new NullUser();
+            var repo      = new Repository("test", "https://github.com/");
+            var guiConfig = new GUIConfiguration();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repoData = new TemporaryRepositoryData(user))
+            using (var cacheDir = new TemporaryDirectory())
+            using (var cache    = new NetModuleCache(cacheDir))
+            {
+                var registry = new CKAN.Registry(repoData.Manager, repo);
+                foreach (var m in installed.Select(RelationshipResolverTests.MergeWithDefaults)
+                                           .Select(CkanModule.FromJson))
+                {
+                    registry.RegisterModule(m, Array.Empty<string>(), inst.KSP, true);
+                }
+                var labels  = ModuleLabelList.GetDefaultLabels();
+                var mods    = ModList.GetGUIMods(registry, repoData.Manager, inst.KSP, labels, cache, guiConfig)
+                                     .ToArray();
+                var modlist = new ModList(mods, inst.KSP,
+                                          labels, new ModuleTagList(),
+                                          guiConfig, graphics);
+
+                // Act
+                var changes = modlist.ComputeUserChangeSet(registry, inst.KSP, null, null);
+                var full    = ModList.ComputeFullChangeSetFromUserChangeSet(registry, changes,
+                                                                            config, inst.KSP);
+
+                // Assert
+                CollectionAssert.AreEquivalent(new string[]
+                                               {
+                                                   "Mod1",
+                                                   "Mod2",
+                                                   "Mod3",
+                                               },
+                                               full.Item1.Where(ch => ch.ChangeType == GUIModChangeType.Remove)
+                                                         .Select(ch => ch.Mod.identifier)
+                                                         .Order());
             }
         }
 
@@ -800,7 +862,7 @@ namespace Tests.GUI
 
                 var modList = new ModList(modules, instance.KSP,
                                           ModuleLabelList.GetDefaultLabels(), new ModuleTagList(),
-                                          config, new GUIConfiguration());
+                                          new GUIConfiguration(), graphics);
                 Assert.IsFalse(modList.HasVisibleInstalled());
 
                 listGui.Rows.AddRange(modList.full_list_of_mod_rows.Values.ToArray());
@@ -843,6 +905,8 @@ namespace Tests.GUI
         private const int numCheckboxCols = 4;
 
         private const int numTextCols     = 11;
+
+        private readonly Graphics graphics;
 
         private static DataGridViewColumn[] StandardColumns
             => Enumerable.Range(1, numCheckboxCols)

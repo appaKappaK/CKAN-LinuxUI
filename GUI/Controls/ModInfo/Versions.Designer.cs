@@ -59,6 +59,8 @@ namespace CKAN.GUI
             //
             // VersionsListView
             //
+            this.VersionsListView.BackColor = System.Drawing.SystemColors.Window;
+            this.VersionsListView.ForeColor = System.Drawing.SystemColors.WindowText;
             this.VersionsListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.VersionsListView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.VersionsListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -205,7 +207,6 @@ namespace CKAN.GUI
             this.Controls.Add(this.OverallSummaryLabel);
             this.Controls.Add(this.LabelTable);
             this.Name = "Versions";
-            this.Padding = new System.Windows.Forms.Padding(6);
             this.Size = new System.Drawing.Size(500, 500);
             resources.ApplyResources(this, "$this");
             this.LabelTable.ResumeLayout(false);

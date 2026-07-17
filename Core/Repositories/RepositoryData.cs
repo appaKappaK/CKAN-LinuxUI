@@ -123,7 +123,10 @@ namespace CKAN
                 Indentation = 0,
             })
             {
-                JsonSerializer serializer = new JsonSerializer();
+                JsonSerializer serializer = new JsonSerializer()
+                {
+                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                };
                 serializer.Serialize(writer, this);
             }
             var txFileMgr = new TxFileManager();
@@ -239,7 +242,11 @@ namespace CKAN
 
             byte[] buffer = new byte[buffer_size];
 
-            stream.Read(buffer, 0, buffer_size);
+            var len = stream.Read(buffer, 0, buffer_size);
+            if (len != buffer_size)
+            {
+                throw new Exception($"TarInputStream.Read returned {len} bytes, requested {buffer_size}");
+            }
 
             // Convert the buffer data to a string.
             return Encoding.UTF8.GetString(buffer);
