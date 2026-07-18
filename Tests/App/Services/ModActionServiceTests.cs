@@ -234,6 +234,46 @@ namespace Tests.App.Services
         }
 
         [Test]
+        public async Task RemoveLeftoverConfigDirectories_ExplainsOpenFuseFileOnceForNestedCandidates()
+        {
+            var user = new NullUser();
+            using (var inst     = new DisposableKSP())
+            using (var config   = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo     = new TemporaryRepository(RemovingModMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr   = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                           new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP,
+                                                                 config,
+                                                                 repoData.Manager,
+                                                                 regMgr))
+            {
+                var modDirectory = Path.Combine(inst.KSP.GameDir, "GameData", "BusyMod");
+                var configDirectory = Path.Combine(modDirectory, "PluginData");
+                Directory.CreateDirectory(configDirectory);
+                File.WriteAllText(Path.Combine(configDirectory, ".fuse_hidden00000001"), "pending delete");
+
+                var actions = new ModActionService(gameService, new ChangesetService(), user);
+                var result = await actions.RemoveLeftoverConfigDirectoriesAsync(
+                    new[] { configDirectory, modDirectory },
+                    CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Success, Is.False);
+                    Assert.That(result.Kind, Is.EqualTo(ApplyResultKind.Warning));
+                    Assert.That(Directory.Exists(configDirectory), Is.True);
+                    Assert.That(result.Message, Does.Contain("1 item"));
+                    Assert.That(result.FollowUpLines, Has.Count.EqualTo(1));
+                    Assert.That(result.FollowUpLines[0], Does.Contain("Close KSP"));
+                    Assert.That(result.FollowUpLines[0], Does.Contain("Remove Leftovers again"));
+                    Assert.That(result.FollowUpLines[0], Does.Not.Contain("Directory not empty"));
+                    Assert.That(result.LeftoverConfigDirectories, Is.EqualTo(new[] { modDirectory }));
+                });
+            }
+        }
+
+        [Test]
         public async Task RemoveLeftoverConfigDirectories_RefusesPathsOutsideModDirectories()
         {
             var user = new NullUser();

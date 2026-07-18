@@ -445,8 +445,9 @@ namespace CKAN.App.Services
                 var removed = new List<string>();
                 var failures = new List<string>();
                 var retryable = new List<string>();
+                var candidates = new List<(string Directory, string RelativeDirectory, string ModRoot)>();
 
-                foreach (var requestedDirectory in requested.OrderByDescending(PathDepth))
+                foreach (var requestedDirectory in requested)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -460,6 +461,24 @@ namespace CKAN.App.Services
                         continue;
                     }
 
+                    candidates.Add((directory, relativeDirectory, modRoot));
+                }
+
+                var collapsedCandidates = new List<(string Directory, string RelativeDirectory, string ModRoot)>();
+                foreach (var candidate in candidates.OrderBy(item => PathDepth(item.Directory)))
+                {
+                    if (!collapsedCandidates.Any(parent => IsPathBelow(candidate.Directory,
+                                                                        parent.Directory)))
+                    {
+                        collapsedCandidates.Add(candidate);
+                    }
+                }
+
+                foreach (var candidate in collapsedCandidates.OrderByDescending(item => PathDepth(item.Directory)))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var (directory, relativeDirectory, modRoot) = candidate;
                     if (!Directory.Exists(directory))
                     {
                         continue;
@@ -477,13 +496,22 @@ namespace CKAN.App.Services
                             continue;
                         }
 
+                        if (ContainsFuseHiddenFile(directory))
+                        {
+                            failures.Add(BusyLeftoverDirectoryMessage(relativeDirectory));
+                            retryable.Add(directory);
+                            continue;
+                        }
+
                         Directory.Delete(directory, true);
                         removed.Add(relativeDirectory);
                         RemoveEmptyModParents(instance, Path.GetDirectoryName(directory), modRoot);
                     }
                     catch (Exception ex)
                     {
-                        failures.Add($"Could not remove {relativeDirectory}: {ex.Message}");
+                        failures.Add(ContainsFuseHiddenFile(directory)
+                            ? BusyLeftoverDirectoryMessage(relativeDirectory)
+                            : $"Could not remove {relativeDirectory}: {ex.Message}");
                         retryable.Add(directory);
                     }
                 }
@@ -509,6 +537,25 @@ namespace CKAN.App.Services
                     LeftoverConfigDirectories = retryable,
                 };
             }, cancellationToken);
+
+        private static bool ContainsFuseHiddenFile(string directory)
+        {
+            try
+            {
+                return Directory.Exists(directory)
+                       && Directory.EnumerateFiles(directory,
+                                                   ".fuse_hidden*",
+                                                   SearchOption.AllDirectories)
+                                   .Any();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string BusyLeftoverDirectoryMessage(string relativeDirectory)
+            => $"Kept {relativeDirectory} because KSP or another process still has a deleted file open. Close KSP, then choose Remove Leftovers again.";
 
         private ExecutionPlan BuildExecutionPlan(IReadOnlyList<QueuedActionModel> requestedActions,
                                                  CancellationToken            cancellationToken,
