@@ -146,7 +146,8 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
                     Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
-                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(viewModel.Mods[0].Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
                 });
 
                 var detailMod = viewModel.Mods[2];
@@ -184,17 +185,24 @@ namespace CKAN.LinuxGUI.VisualTests
                 {
                     Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
                     Assert.That(viewModel.SelectedModCount, Is.EqualTo(4));
-                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(detailMod.Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
                 });
 
                 ClickListItem(window, listBox, 4, RawInputModifiers.None);
-                Assert.That(viewModel.ShowDetailsPane, Is.True);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(listBox.SelectedItems, Has.Count.EqualTo(4));
+                    Assert.That(viewModel.SelectedMod?.Identifier, Is.EqualTo(viewModel.Mods[4].Identifier));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
+                });
                 ClickListItem(window, listBox, 4, RawInputModifiers.Control);
                 Assert.Multiple(() =>
                 {
                     Assert.That(listBox.SelectedItems, Has.Count.EqualTo(3));
                     Assert.That(viewModel.SelectedModCount, Is.EqualTo(3));
-                    Assert.That(viewModel.ShowDetailsPane, Is.False);
+                    Assert.That(listBox.SelectedItems, Does.Contain(viewModel.SelectedMod));
+                    Assert.That(viewModel.ShowDetailsPane, Is.True);
                 });
 
                 var selectedIdentifiers = listBox.SelectedItems!

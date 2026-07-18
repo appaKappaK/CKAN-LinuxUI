@@ -105,6 +105,7 @@ namespace CKAN.LinuxGUI
                                             | KeyModifiers.Meta);
                 if (selectionModifiers != KeyModifiers.None)
                 {
+                    viewModel.OpenModDetailsFromBrowser();
                     preserveBrowserDetailsOnNextSelectionChange = true;
                     Dispatcher.UIThread.Post(
                         () => preserveBrowserDetailsOnNextSelectionChange = false,
@@ -346,10 +347,6 @@ namespace CKAN.LinuxGUI
                                                                StringComparison.OrdinalIgnoreCase)))
                 {
                     activeMod = detailMod;
-                }
-                else if (viewModel.ShowDetailsPane)
-                {
-                    viewModel.CloseModDetailsFromBrowser();
                 }
             }
 
