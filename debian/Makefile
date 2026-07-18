@@ -1,128 +1,34 @@
-.PHONY: clean linuxgui-package test repo sign
+.PHONY: package clean test
 
 DESTDIR:=../_build/deb/fakeroot
 CONFIGURATION?=Release
-EXESRC:=../_build/repack/$(CONFIGURATION)/ckan.exe
-EXEDEST:=$(DESTDIR)/usr/lib/ckan/ckan.exe
-SCRIPTSRC:=ckan
-SCRIPTDEST:=$(DESTDIR)/usr/bin/ckan
 LINUXGUISTAGE:=../_build/package/ckan-linux/linux-x64/usr
-LINUXGUISCRIPTDEST:=$(DESTDIR)/usr/bin/ckan-linux
-LINUXGUILIBSTAMP:=$(DESTDIR)/usr/lib/ckan-linux/.installed
+PACKAGESTAMP:=../_build/deb/package.stamp
 CONTROLSRC:=control.in
 CONTROLDEST:=$(DESTDIR)/DEBIAN/control
-CHANGELOGSRC:=../CHANGELOG.md
-CHANGELOGDEST:=$(DESTDIR)/usr/share/doc/ckan/changelog.gz
-DEBCHANGESRC:=changelog
-DEBCHANGEDEST:=$(DESTDIR)/usr/share/doc/ckan/changelog.Debian.gz
-MANSRC:=ckan.1
-MANDEST:=$(DESTDIR)/usr/share/man/man1/ckan.1.gz
-ICONSIZES=16 32 48 64 96 128 256
-ICONDEST:=$(foreach size,$(ICONSIZES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/ckan.png)
-LINUXGUIICONNAMES=ckan-linux CKAN-LinuxGUI ckan-linuxgui
-LINUXGUIICONDEST:=$(foreach size,$(ICONSIZES),$(foreach name,$(LINUXGUIICONNAMES),$(DESTDIR)/usr/share/icons/hicolor/$(size)x$(size)/apps/$(name).png))
+CHANGELOGSRC:=../CKAN-LINUX-CHANGELOG.md
+CHANGELOGDEST:=$(DESTDIR)/usr/share/doc/ckan-linux/changelog.gz
 COPYRIGHTSRC:=copyright
-COPYRIGHTDEST:=$(DESTDIR)/usr/share/doc/ckan/copyright
-DESKTOPSRC:=ckan.desktop
-DESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan.desktop
-LINUXGUIDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-linux.desktop
-CONSOLEUIDESKTOPSRC:=ckan-consoleui.desktop
-CONSOLEUIDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-consoleui.desktop
-CMDPROMPTDESKTOPSRC:=ckan-cmdprompt.desktop
-CMDPROMPTDESKTOPDEST:=$(DESTDIR)/usr/share/applications/ckan-cmdprompt.desktop
-VERSION:=$(shell egrep '^\s*\#\#\s+v.*$$' $(CHANGELOGSRC) | head -1 | sed -e 's/^\s*\#\#\s\+v//' ).$(shell git show -s --format='%cd' --date=format:'%y%j')
-DEB:=../_build/deb/ckan_$(VERSION)_amd64.deb
+COPYRIGHTDEST:=$(DESTDIR)/usr/share/doc/ckan-linux/copyright
+VERSION:=$(shell sed -n -E 's/^..[[:space:]]+v([^[:space:]]+).*/\1/p' ../CHANGELOG.md | head -1).$(shell git show -s --format='%cd' --date=format:'%y%j')
+DEB:=../_build/deb/ckan-linux_$(VERSION)_amd64.deb
 
-# Files for /deb/ (the .deb file)
-APT_REPO_ROOT:=../_build/deb/apt-repo-root
-REPODEB:=$(APT_REPO_ROOT)/pool/ckan_$(VERSION)_amd64.deb
+package: $(DEB)
 
-# Files for /deb/dists/{stable,nightly}/
-# (Release, main/binary-amd64/Release, main/binary-amd64/Packages.gz,
-#  actual path to be determined by yml files)
-APT_REPO_DIST:=../_build/deb/apt-repo-dist
-RELEASESRC:=Release.in
-DISTRELEASEDEST:=$(APT_REPO_DIST)/Release
-SIGNEDDISTRELEASEDEST:=$(DISTRELEASEDEST).gpg
-ARCHRELEASEDEST:=$(APT_REPO_DIST)/main/binary-amd64/Release
-INRELEASE:=$(APT_REPO_DIST)/InRelease
-PACKAGES:=$(APT_REPO_DIST)/main/binary-amd64/Packages.gz
-
-repo: $(REPODEB) $(PACKAGES) $(DISTRELEASEDEST) $(ARCHRELEASEDEST)
-
-sign: $(INRELEASE) $(SIGNEDDISTRELEASEDEST)
-
-$(REPODEB): $(DEB)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(DISTRELEASEDEST): $(RELEASESRC) $(PACKAGES)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && sed -e 's/@VERSION@/$(VERSION)/' \
-	-e "s/@CODENAME@/$${CODENAME-nightly}/" \
-	-e 's/@PACKAGESPATH@/main\/binary-amd64\//' \
-	-e "s/@DATE@/$$(date -R -u)/" \
-	-e 's/@RAWHASH@/'$$(zcat $(PACKAGES) | sha256sum -t | cut -d' ' -f1)/ \
-	-e 's/@RAWSIZE@/'$$(zcat $(PACKAGES) | wc -c)/ \
-	-e 's/@GZHASH@/'$$(sha256sum -t < $(PACKAGES) | cut -d' ' -f1)/ \
-	-e 's/@GZSIZE@/'$$(stat -c %s $(PACKAGES))/ $< > $@
-
-$(ARCHRELEASEDEST): $(RELEASESRC) $(PACKAGES)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && sed -e 's/@VERSION@/$(VERSION)/' \
-	-e "s/@CODENAME@/$${CODENAME-nightly}/" \
-	-e 's/@PACKAGESPATH@//' \
-	-e "s/@DATE@/$$(date -R -u)/" \
-	-e 's/@RAWHASH@/'$$(zcat $(PACKAGES) | sha256sum -t | cut -d' ' -f1)/ \
-	-e 's/@RAWSIZE@/'$$(zcat $(PACKAGES) | wc -c)/ \
-	-e 's/@GZHASH@/'$$(sha256sum -t < $(PACKAGES) | cut -d' ' -f1)/ \
-	-e 's/@GZSIZE@/'$$(stat -c %s $(PACKAGES))/ $< > $@
-
-$(PACKAGES): $(REPODEB)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && (cd $(APT_REPO_ROOT) && dpkg-scanpackages -m pool) | gzip -c > $@
-
-$(INRELEASE): $(DISTRELEASEDEST)
-	gpg --clearsign -o $@ $<
-
-$(SIGNEDDISTRELEASEDEST): $(DISTRELEASEDEST)
-	gpg -abs -o $@ $<
-
-$(DEB): $(EXEDEST) $(SCRIPTDEST) $(LINUXGUISCRIPTDEST) $(LINUXGUILIBSTAMP) $(CONTROLDEST) $(CHANGELOGDEST) $(DEBCHANGEDEST) $(MANDEST) $(ICONDEST) $(LINUXGUIICONDEST) $(COPYRIGHTDEST) $(DESKTOPDEST) $(LINUXGUIDESKTOPDEST) $(CONSOLEUIDESKTOPDEST) $(CMDPROMPTDESKTOPDEST)
+$(DEB): $(PACKAGESTAMP) $(CONTROLDEST) $(CHANGELOGDEST) $(COPYRIGHTDEST)
 	umask 0022 && mkdir -p $(shell dirname $@)
 	fakeroot dpkg-deb --build $(DESTDIR)/ $@
 
-$(SCRIPTDEST): $(SCRIPTSRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(EXEDEST): $(EXESRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(EXESRC):
-	cd .. && ./build.sh --configuration=$(CONFIGURATION)
-
-linuxgui-package:
+$(LINUXGUISTAGE)/bin/ckan-linux:
 	cd .. && ./build.sh LinuxGUIPackage --configuration=$(CONFIGURATION)
 
-$(LINUXGUISTAGE)/bin/ckan-linux: linuxgui-package
-
-$(LINUXGUISTAGE)/lib/ckan-linux/CKAN-LinuxGUI: $(LINUXGUISTAGE)/bin/ckan-linux
-
-$(LINUXGUISTAGE)/share/applications/ckan-linux.desktop: $(LINUXGUISTAGE)/bin/ckan-linux
-
-$(LINUXGUISCRIPTDEST): $(LINUXGUISTAGE)/bin/ckan-linux
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(LINUXGUILIBSTAMP): $(LINUXGUISTAGE)/lib/ckan-linux/CKAN-LinuxGUI
-	umask 0022 && mkdir -p $(DESTDIR)/usr/lib
-	rm -rf $(DESTDIR)/usr/lib/ckan-linux
-	umask 0022 && cp -a $(LINUXGUISTAGE)/lib/ckan-linux $(DESTDIR)/usr/lib/
+$(PACKAGESTAMP): $(LINUXGUISTAGE)/bin/ckan-linux
+	rm -rf $(DESTDIR)/usr
+	umask 0022 && mkdir -p $(DESTDIR)
+	umask 0022 && cp -a $(LINUXGUISTAGE) $(DESTDIR)/
 	touch $@
 
-$(CONTROLDEST): $(CONTROLSRC) $(CHANGELOGSRC)
+$(CONTROLDEST): $(CONTROLSRC) ../CHANGELOG.md
 	umask 0022 && mkdir -p $(shell dirname $@)
 	umask 0022 && sed -e 's/@VERSION@/$(VERSION)/' $< > $@
 
@@ -130,47 +36,7 @@ $(CHANGELOGDEST): $(CHANGELOGSRC)
 	umask 0022 && mkdir -p $(shell dirname $@)
 	umask 0022 && gzip --best -n -c $< > $@
 
-$(DEBCHANGEDEST): $(DEBCHANGESRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && gzip --best -n -c $< > $@
-
-$(MANDEST): $(MANSRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && gzip --best -n -c $< > $@
-
-define icon_rule_template =
-$$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/ckan.png: ../assets/ckan-$(1).png
-	umask 0022 && mkdir -p $$(shell dirname $$@)
-	umask 0022 && cp $$< $$@
-endef
-$(foreach size,$(ICONSIZES),$(eval $(call icon_rule_template,$(size))))
-
-define linuxgui_icon_rule_template =
-$$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/$(2).png: $$(LINUXGUISTAGE)/bin/ckan-linux
-
-$$(DESTDIR)/usr/share/icons/hicolor/$(1)x$(1)/apps/$(2).png: $$(LINUXGUISTAGE)/share/icons/hicolor/$(1)x$(1)/apps/$(2).png
-	umask 0022 && mkdir -p $$(shell dirname $$@)
-	umask 0022 && cp $$< $$@
-endef
-$(foreach size,$(ICONSIZES),$(foreach name,$(LINUXGUIICONNAMES),$(eval $(call linuxgui_icon_rule_template,$(size),$(name)))))
-
 $(COPYRIGHTDEST): $(COPYRIGHTSRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(DESKTOPDEST): $(DESKTOPSRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(LINUXGUIDESKTOPDEST): $(LINUXGUISTAGE)/share/applications/ckan-linux.desktop
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(CONSOLEUIDESKTOPDEST): $(CONSOLEUIDESKTOPSRC)
-	umask 0022 && mkdir -p $(shell dirname $@)
-	umask 0022 && cp $< $@
-
-$(CMDPROMPTDESKTOPDEST): $(CMDPROMPTDESKTOPSRC)
 	umask 0022 && mkdir -p $(shell dirname $@)
 	umask 0022 && cp $< $@
 
@@ -178,4 +44,5 @@ clean:
 	rm -rf ../_build/deb
 
 test: $(DEB)
-	lintian $<
+	dpkg-deb --info $<
+	dpkg-deb --contents $<

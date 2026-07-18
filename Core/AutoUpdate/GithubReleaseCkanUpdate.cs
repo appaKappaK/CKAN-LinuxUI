@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 
 using Autofac;
 using Newtonsoft.Json;
@@ -35,8 +33,7 @@ namespace CKAN
             if (releaseJson is null
                 || releaseJson.tag_name is null
                 || releaseJson.name is null
-                || releaseJson.body is null
-                || releaseJson.assets is null)
+                || releaseJson.body is null)
             {
                 throw new Kraken(Properties.Resources.AutoUpdateNotFetched);
             }
@@ -45,37 +42,7 @@ namespace CKAN
                                             releaseJson.name.ToString());
             ReleaseNotes = ExtractReleaseNotes(releaseJson.body.ToString());
 
-            var releaseAsset = releaseJson.assets.First(asset => asset.browser_download_url
-                                                                      ?.ToString()
-                                                                       .EndsWith(ExeName)
-                                                                      ?? false);
-            var updaterAsset = releaseJson.assets.First(asset => asset.browser_download_url
-                                                                      ?.ToString()
-                                                                       .EndsWith("AutoUpdater.exe")
-                                                                      ?? false);
-            if (releaseAsset.browser_download_url is null
-                || updaterAsset.browser_download_url is null)
-            {
-                throw new Kraken(Properties.Resources.AutoUpdateNotFetched);
-            }
-            ReleaseDownload = releaseAsset.browser_download_url;
-            ReleaseSize     = releaseAsset.size;
-            UpdaterDownload = updaterAsset.browser_download_url;
-            UpdaterSize     = updaterAsset.size;
         }
-
-        public override IReadOnlyCollection<NetAsyncDownloader.DownloadTarget> Targets => new[]
-        {
-            new NetAsyncDownloader.DownloadTargetFile(
-                UpdaterDownload, updaterFilename, UpdaterSize),
-            new NetAsyncDownloader.DownloadTargetFile(
-                ReleaseDownload, ckanFilename, ReleaseSize),
-        };
-
-        private Uri  ReleaseDownload { get; set; }
-        private long ReleaseSize     { get; set; }
-        private Uri  UpdaterDownload { get; set; }
-        private long UpdaterSize     { get; set; }
 
         /// <summary>
         /// Extracts release notes from the body of text provided by the github API.

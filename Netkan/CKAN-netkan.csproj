@@ -12,15 +12,14 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>CKAN.NetKAN</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
-    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <StartupObject>CKAN.NetKAN.Program</StartupObject>
     <ApplicationIcon>..\assets\ckan.ico</ApplicationIcon>
-    <TargetFrameworks>net481;net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -29,7 +28,6 @@
     <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
     <NoWarn>IDE1006,NU1701</NoWarn>
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
-    <AppConfig>App.config</AppConfig>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Autofac" Version="9.1.0" />
@@ -45,13 +43,8 @@
     <PackageReference Include="IndexRange" Version="1.1.1" />
     <PackageReference Include="LazyCache" Version="2.4.0" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net481' ">
-    <Reference Include="System" />
-    <Reference Include="System.ServiceModel" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\CKAN-core.csproj">
-      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
       <Project>{3B9AEA22-FA3B-4E43-9283-EABDD81CF271}</Project>
       <Name>CKAN-core</Name>
     </ProjectReference>
@@ -67,10 +60,7 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
-          WorkingDirectory=".."
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
     <Exec Command="sh ../build.sh Generate-GlobalAssemblyVersionInfo"
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs')" />
   </Target>
 </Project>

@@ -20,10 +20,6 @@ namespace Tests
                   {
                       typeof(CKAN.IUser),
                       typeof(CKAN.CmdLine.ConsoleUser),
-                      typeof(CKAN.ConsoleUI.Toolkit.ConsoleScreen),
-                      #if NETFRAMEWORK || WINDOWS
-                      typeof(CKAN.GUI.GUIUser),
-                      #endif
                       typeof(CKAN.NetKAN.ConsoleUser),
                   })]
         public void AssemblyModule_StringSyntaxCompositeFormat_SameOrLiteralsOnly(object[] types)

@@ -4,8 +4,8 @@ This folder stores baseline screenshots for CKAN Linux visual regression tests.
 
 Commands from repo root:
 
-- `CKAN_LINUX_UPDATE_BASELINES=1 dotnet test LinuxGUI.VisualTests/CKAN-LinuxGUI.VisualTests.csproj -c NoGUI`
-- `dotnet test LinuxGUI.VisualTests/CKAN-LinuxGUI.VisualTests.csproj -c NoGUI`
+- `CKAN_LINUX_UPDATE_BASELINES=1 dotnet test LinuxGUI.VisualTests/CKAN-LinuxGUI.VisualTests.csproj -c Release`
+- `dotnet test LinuxGUI.VisualTests/CKAN-LinuxGUI.VisualTests.csproj -c Release`
 
 Notes:
 

@@ -23,11 +23,8 @@ namespace Tests.CmdLine
         [TestCase("", ExpectedResult = new string[]
                                        {
                                            "authtoken", "available", "cache",     "clean",
-                                           "compare",   "compat",    "consoleui", "dedup",
+                                           "compare",   "compat",    "dedup",
                                            "exit",      "filter",
-                                           #if NETFRAMEWORK || WINDOWS
-                                           "gui",
-                                           #endif
                                            "help",    "import",  "install",   "instance",
                                            "list",    "mark",    "prompt",    "remove",
                                            "repair",  "replace", "repo",      "scan",

@@ -148,9 +148,6 @@ Use 'ckan instance help' para ter uma assistência em configurar isso.</value>
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Atenção: CKAN esta rodando no modo administrador!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Atenção: Mono {0} Detectado, versão recomendada é {1} ou mais recente!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instância e --gamedir não podem ser especificados ao mesmo tempo</value>
   </data>

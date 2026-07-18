@@ -12,18 +12,15 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Tests</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <Deterministic>true</Deterministic>
-    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS0436,NU1901,NU1902,NU1903,NU1904</WarningsNotAsErrors>
     <NoWarn>IDE1006,NU1701</NoWarn>
-    <TargetFrameworks>net481;net8.0;net8.0-windows;net10.0;net10.0-windows</TargetFrameworks>
-    <BaseTargetFramework>$(TargetFramework.Replace("-windows", ""))</BaseTargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
@@ -39,15 +36,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="WireMock.Net.Minimal" Version="2.2.0" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net481' ">
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Windows.Forms" />
-    <PackageReference Include="Nullable" Version="1.3.1" PrivateAssets="all" />
-    <PackageReference Include="StringSyntaxAttribute" Version="1.0.0" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\_build\meta\GlobalAssemblyVersionInfo.cs">
       <Link>Properties\GlobalAssemblyVersionInfo.cs</Link>
@@ -58,54 +46,30 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\CKAN-core.csproj">
-      <SetTargetFramework>TargetFramework=$(BaseTargetFramework)</SetTargetFramework>
       <Project>{3B9AEA22-FA3B-4E43-9283-EABDD81CF271}</Project>
       <Name>CKAN-core</Name>
     </ProjectReference>
     <ProjectReference Include="..\App\CKAN-App.csproj">
-      <SetTargetFramework>TargetFramework=$(BaseTargetFramework)</SetTargetFramework>
       <Project>{327E0822-9295-4572-9262-A8DDE4EC14AA}</Project>
       <Name>CKAN-App</Name>
     </ProjectReference>
     <ProjectReference Include="..\Cmdline\CKAN-cmdline.csproj">
-      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
       <Project>{E97D81F6-85E2-4F1F-906D-BE21766602E5}</Project>
       <Name>CKAN-CmdLine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ConsoleUI\CKAN-ConsoleUI.csproj">
-      <SetTargetFramework>TargetFramework=$(BaseTargetFramework)</SetTargetFramework>
-      <Project>{DA5C7023-9A3B-4204-AE2F-BBA6C388B436}</Project>
-      <Name>CKAN-ConsoleUI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GUI\CKAN-GUI.csproj"
-                      Condition=" '$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net10.0' ">
-      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
-      <Project>{A79F9D54-315C-472B-928F-713A5860B2BE}</Project>
-      <Name>CKAN-GUI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\AutoUpdate\CKAN-autoupdate.csproj"
-                      Condition=" '$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net10.0' ">
-      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
-      <Project>{E5B1C768-349E-4DAF-A134-56E4ECF1EEEF}</Project>
-      <Name>CKAN-AutoUpdateHelper</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Netkan\CKAN-netkan.csproj">
-      <SetTargetFramework>TargetFramework=$(BaseTargetFramework)</SetTargetFramework>
       <Project>{4336F356-33DB-442A-BF74-5E89AF47A5B9}</Project>
       <Name>CKAN-NetKAN</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LinuxGUI\CKAN-LinuxGUI.csproj"
-                      Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <ProjectReference Include="..\LinuxGUI\CKAN-LinuxGUI.csproj">
       <Project>{4D44AF4C-1B12-4A7D-962C-C16E2B89C899}</Project>
       <Name>CKAN-LinuxGUI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PluginCompat\CKAN-GUI.PluginCompat.csproj"
-                      Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <ProjectReference Include="..\PluginCompat\CKAN-GUI.PluginCompat.csproj">
       <Project>{63E20B7C-B5C0-4F79-8AD2-74F1E9294421}</Project>
       <Name>CKAN-GUI.PluginCompat</Name>
     </ProjectReference>
     <ProjectReference Include="..\PluginCompat\SamplePlugin\PluginSmokePlugin.csproj"
-                      Condition=" '$(TargetFramework)' == 'net8.0' "
                       ReferenceOutputAssembly="false">
       <Project>{F58C4456-D86D-4250-9A54-E4CC20CD59F6}</Project>
       <Name>PluginSmokePlugin</Name>
@@ -116,10 +80,7 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
-          WorkingDirectory=".."
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
     <Exec Command="sh ../build.sh Generate-GlobalAssemblyVersionInfo"
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs')" />
   </Target>
 </Project>

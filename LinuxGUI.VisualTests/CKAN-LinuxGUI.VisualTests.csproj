@@ -13,7 +13,7 @@
     <RootNamespace>CKAN.LinuxGUI.VisualTests</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
-    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
@@ -40,17 +40,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LinuxGUI\CKAN-LinuxGUI.csproj">
-      <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>
       <Project>{4D44AF4C-1B12-4A7D-962C-C16E2B89C899}</Project>
       <Name>CKAN-LinuxGUI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
-          WorkingDirectory=".."
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
     <Exec Command="sh ../build.sh Generate-GlobalAssemblyVersionInfo"
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs')" />
   </Target>
 </Project>

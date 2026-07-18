@@ -12,7 +12,7 @@ namespace Tests.App.Services
     public sealed class ModSearchServiceTests
     {
         [Test]
-        public void Constructor_DefaultsSavedClearAllFilterToInstalled()
+        public void Constructor_DefaultsSavedClearAllFilterToNameSortedInstalled()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), $"ckan-linux-search-tests-{Guid.NewGuid():N}");
             string settingsPath = Path.Combine(tempDir, "linuxgui.settings.json");
@@ -33,8 +33,8 @@ namespace Tests.App.Services
                 {
                     Assert.That(search.Current.InstalledOnly, Is.True);
                     Assert.That(search.Current.NotInstalledOnly, Is.False);
-                    Assert.That(search.Current.SortOption, Is.EqualTo(ModSortOption.Popularity));
-                    Assert.That(search.Current.SortDescending, Is.True);
+                    Assert.That(search.Current.SortOption, Is.EqualTo(ModSortOption.Name));
+                    Assert.That(search.Current.SortDescending, Is.False);
                 });
             }
             finally

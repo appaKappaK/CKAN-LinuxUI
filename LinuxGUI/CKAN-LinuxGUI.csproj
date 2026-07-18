@@ -13,7 +13,7 @@
     <RootNamespace>CKAN.LinuxGUI</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
-    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
@@ -33,12 +33,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\App\CKAN-App.csproj">
-      <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>
       <Project>{327E0822-9295-4572-9262-A8DDE4EC14AA}</Project>
       <Name>CKAN-App</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\CKAN-core.csproj">
-      <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>
       <Project>{3B9AEA22-FA3B-4E43-9283-EABDD81CF271}</Project>
       <Name>CKAN-core</Name>
     </ProjectReference>
@@ -64,10 +62,7 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
-          WorkingDirectory=".."
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
     <Exec Command="sh ../build.sh Generate-GlobalAssemblyVersionInfo"
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs')" />
   </Target>
 </Project>

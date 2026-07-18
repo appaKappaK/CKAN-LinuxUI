@@ -4,56 +4,13 @@ using System.Collections.Generic;
 using Cake.Common;
 using Cake.Core.IO;
 using Cake.Frosting;
-using Cake.Common.Tools.DotNet;
-using Cake.Common.Tools.DotNet.Publish;
 
 namespace Build;
 
-[TaskName("osx-app")]
-[TaskDescription("Build the macOS(OSX) app bundle.")]
-[IsDependentOn(typeof(CkanTask))]
-public sealed class OsxAppTask() : MakeTask("macosx", "app")
-{
-    public override void Run(BuildContext context)
-    {
-        // Publish Cmdline for Mac arm64
-        context.DotNetPublish(context.Paths.CmdlineProject.FullPath, new DotNetPublishSettings
-        {
-            Configuration  = context.BuildConfiguration,
-            Framework      = context.BuildDotNet,
-            Runtime        = "osx-arm64",
-            SelfContained  = true,
-        });
-        // Publish Cmdline for Mac x64
-        context.DotNetPublish(context.Paths.CmdlineProject.FullPath, new DotNetPublishSettings
-        {
-            Configuration  = context.BuildConfiguration,
-            Framework      = context.BuildDotNet,
-            Runtime        = "osx-x64",
-            SelfContained  = true,
-        });
-        base.Run(context);
-    }
-}
-
-[TaskName("osx-dmg")]
-[TaskDescription("Build the macOS(OSX) dmg package.")]
-[IsDependentOn(typeof(OsxAppTask))]
-public sealed class OsxDmgTask() : MakeTask("macosx");
-
-[TaskName("osx-clean")]
-[TaskDescription("Clean the output directory of the macOS(OSX) package.")]
-public sealed class OsxCleanTask() : MakeTask("macosx", "clean");
-
 [TaskName("deb")]
-[TaskDescription("Build the deb package for Debian-based distros.")]
-[IsDependentOn(typeof(CkanTask))]
-public sealed class DebTask() : MakeTask("debian");
-
-[TaskName("deb-sign")]
-[TaskDescription("Build the deb package for Debian-based distros.")]
-[IsDependentOn(typeof(DebTask))]
-public sealed class DebSignTask() : MakeTask("debian", "sign");
+[TaskDescription("Build the CKAN Linux deb package for Debian-based distros.")]
+[IsDependentOn(typeof(LinuxGuiPackageTask))]
+public sealed class DebTask() : MakeTask("debian", "package");
 
 [TaskName("deb-test")]
 [TaskDescription("Test the deb packaging.")]
@@ -65,14 +22,9 @@ public sealed class DebTestTask() : MakeTask("debian", "test");
 public sealed class DebCleanTask() : MakeTask("debian", "clean");
 
 [TaskName("rpm")]
-[TaskDescription("Build the rpm package for RPM-based distros.")]
-[IsDependentOn(typeof(CkanTask))]
-public sealed class RpmTask() : MakeTask("rpm");
-
-[TaskName("rpm-repo")]
-[TaskDescription("Build the rpm repository for RPM-based distros.")]
-[IsDependentOn(typeof(CkanTask))]
-public sealed class RpmRepoTask() : MakeTask("rpm", "repo");
+[TaskDescription("Build the CKAN Linux rpm package for RPM-based distros.")]
+[IsDependentOn(typeof(LinuxGuiPackageTask))]
+public sealed class RpmTask() : MakeTask("rpm", "package");
 
 [TaskName("rpm-test")]
 [TaskDescription("Test the rpm packaging.")]

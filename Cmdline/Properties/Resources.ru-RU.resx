@@ -152,10 +152,6 @@
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Внимание: CKAN запущен с правами администратора!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Винмание. Обнаруженная версия mono {0} ниже, чем рекомендуемая версия {1}.
-Рекомендовано обновление!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance и --gamedir не могут быть заданы одновременно</value>
   </data>
@@ -639,21 +635,6 @@
   </data>
   <data name="UpdateSummary" xml:space="preserve">
     <value>Обновлены сведения о {0} совместимых модулях</value>
-  </data>
-  <data name="UpgradeQueryingCKAN" xml:space="preserve">
-    <value>Запрос последней версии CKAN</value>
-  </data>
-  <data name="UpgradeNewCKANAvailable" xml:space="preserve">
-    <value>Доступна новая версия CKAN - {0}</value>
-  </data>
-  <data name="UpgradeProceed" xml:space="preserve">
-    <value>Продолжить установку?</value>
-  </data>
-  <data name="UpgradePleaseWait" xml:space="preserve">
-    <value>Обновление CKAN, пожалуйста, подождите...</value>
-  </data>
-  <data name="UpgradeAlreadyHaveLatest" xml:space="preserve">
-    <value>Ваша версия уже является последней</value>
   </data>
   <data name="UpgradeAborted" xml:space="preserve">
     <value>Обновление отменено: {0}</value>

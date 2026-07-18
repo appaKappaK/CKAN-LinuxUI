@@ -163,9 +163,6 @@ Wenn Sie als Administrator ausgeführt werden müssen, wird der `--asroot` Param
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Warnung: CKAN läuft als Administrator!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Warnung: Mono {0} erkannt, empfohlene Version ist {1} oder neuer!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance und --gamedir können nicht gleichzeitig angegeben werden</value>
   </data>

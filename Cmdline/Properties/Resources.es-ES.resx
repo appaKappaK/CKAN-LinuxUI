@@ -161,9 +161,6 @@ Ejecute CKAN sin permisos de administrador para proteger su sistema de estos rie
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Advertencia: ¡CKAN se está ejecutando con permisos de administrador!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Advertencia: ¡Mono {0} detectado, la versión recomendada es {1} o más reciente!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance y --gamedir no pueden especificarse al mismo tiempo</value>
   </data>
@@ -694,35 +691,8 @@ Para obtener ayuda, escriba help y presione enter. Para salir, escriba {0} y pre
   <data name="UpdateSummary" xml:space="preserve">
     <value>Información de {0} módulos actualizada.</value>
   </data>
-  <data name="UpgradeCannotCombineFlags" xml:space="preserve">
-    <value>¡Los argumentos `--dev-build` y `--stable-release` no se pueden combinar!</value>
-  </data>
-  <data name="UpgradeSwitchingToDevBuilds" xml:space="preserve">
-    <value>Cambiando a versiones de desarrollo</value>
-  </data>
-  <data name="UpgradeSwitchingToStableReleases" xml:space="preserve">
-    <value>Cambiando a versiones estables</value>
-  </data>
-  <data name="UpgradeQueryingCKAN" xml:space="preserve">
-    <value>Consultando la última versión de CKAN</value>
-  </data>
-  <data name="UpgradeNewCKANAvailable" xml:space="preserve">
-    <value>Nueva versión de CKAN disponible - {0}</value>
-  </data>
-  <data name="UpgradeProceed" xml:space="preserve">
-    <value>¿Proceder con la instalación?</value>
-  </data>
-  <data name="UpgradePleaseWait" xml:space="preserve">
-    <value>Actualizando CKAN, por favor espere...</value>
-  </data>
-  <data name="UpgradeAlreadyHaveLatest" xml:space="preserve">
-    <value>Ya tiene la última versión</value>
-  </data>
   <data name="UpgradeAborted" xml:space="preserve">
     <value>Actualización abortada: {0}</value>
-  </data>
-  <data name="UpgradeFailed" xml:space="preserve">
-    <value>Actualización fallida: {0}"</value>
   </data>
   <data name="UpgradeAlreadyUpToDate" xml:space="preserve">
     <value>El módulo {0} ya está actualizado</value>

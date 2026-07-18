@@ -7,9 +7,6 @@ using System.Linq;
 using System.Diagnostics;
 using System.Threading;
 using System.Security.Cryptography;
-#if NETFRAMEWORK
-using System.Security.Permissions;
-#endif
 
 using log4net;
 using ChinhDo.Transactions;
@@ -26,11 +23,6 @@ namespace CKAN
     /// URL.
     /// </summary>
 
-    // We require fancy permissions to use the FileSystemWatcher
-    // (No longer supported by .NET Core/Standard/5/6/7/etc.)
-    #if NETFRAMEWORK
-    [PermissionSet(SecurityAction.Demand, Name="FullTrust")]
-    #endif
     public class NetFileCache : IDisposable
     {
         private readonly FileSystemWatcher watcher;

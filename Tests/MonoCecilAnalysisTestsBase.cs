@@ -102,29 +102,6 @@ namespace Tests
         private static MethodDefinition? FindStartNewArgument(Instruction instr)
             => FindFuncArguments(instr).FirstOrDefault();
 
-        protected static IEnumerable<MethodCall> FindDebouncedTasks(MethodDefinition md)
-            => DebounceCalls(md).SelectMany(db =>
-                   db.Operand is MethodReference dbMethod
-                       ? FindDebounceArguments(db)
-                             .Select(dbArg => new MethodCall() { md, dbMethod.Resolve(), dbArg, })
-                       : Enumerable.Empty<MethodCall>());
-
-        private static IEnumerable<Instruction> DebounceCalls(MethodDefinition md)
-            => md.Body?.Instructions.Where(instr => callOpCodes.Contains(instr.OpCode.Name)
-                                                    && instr.Operand is MethodReference mr
-                                                    && isDebounce(mr))
-                      ?? Enumerable.Empty<Instruction>();
-
-        private static bool isDebounce(MethodReference mr)
-            => mr is
-               {
-                   DeclaringType: { Namespace: "CKAN.GUI", Name: "Util" },
-                   Name:          "Debounce",
-               };
-
-        private static IEnumerable<MethodDefinition> FindDebounceArguments(Instruction instr)
-            => FindFuncArguments(instr).Take(4);
-
         private static IEnumerable<MethodDefinition> FindFuncArguments(Instruction instr)
             => instr.TraverseNodes(i => i.Previous)
                     .Where(i => i.OpCode.Name == "ldftn")

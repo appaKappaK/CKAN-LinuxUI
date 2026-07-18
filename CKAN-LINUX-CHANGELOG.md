@@ -3,6 +3,17 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## 2026-07-18
+
+### Linux-First Product Cleanup
+- Retired the inherited WinForms GUI, terminal ConsoleUI, WinForms updater helper, and macOS ConsoleUI bundle so the repository now has one supported graphical interface: CKAN LinuxGUI.
+- Kept a decoupled, net8-only command-line client for scripting and headless recovery while removing its GUI dispatch commands and obsolete upstream executable self-updater.
+- Made the LinuxGUI package the default build output and replaced the Mono/ILRepack build graph with focused .NET 8 LinuxGUI, CLI, NetKAN, and test targets.
+- Converted Debian and RPM packaging to stage the self-contained `ckan-linux` app directly, without a Mono dispatcher or legacy desktop launchers.
+- Removed unused CLI, metadata-tester, and NetKAN bot Docker deployment files; retained command-line tools build directly through `build.sh` when needed.
+- Removed the obsolete PowerShell build path, upstream maintainer and release scripts, legacy GUI screenshots and badges, copied metadata-policy pages, Crowdin configuration, macOS icon, and end-of-build quote hook.
+- Reduced the supported project and test graph to .NET 8 while retaining CKAN Core, App services, NetKAN maintainer tooling, and the `CKAN-GUI` plugin compatibility bridge required by LinuxGUI.
+
 ## 2026-07-17
 
 ### Catalog Freshness and Upstream CKAN Integration

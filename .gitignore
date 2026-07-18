@@ -20,6 +20,8 @@ node_modules/
 venv/
 .vscode/
 **/.idea/
+/.agents/
+/.codex/
 
 # Build results
 [Dd]ebug/
@@ -41,9 +43,6 @@ BenchmarkDotNet.Artifacts/
 *.received.*
 *.verified.*
 
-# Don't ignore the root bin folder
-!/bin/
-
 .config/
 .mypy_cache/
 
@@ -61,8 +60,6 @@ BenchmarkDotNet.Artifacts/
 
 # Python won't let me install packages globally anymore
 /.venv/
-
-quotes.txt.dat
 
 ### macOS template
 # General

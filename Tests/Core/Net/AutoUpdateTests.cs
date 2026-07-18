@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.IO;
 using System.Net;
 
@@ -55,19 +54,6 @@ namespace Tests.Core.Net.AutoUpdateTests
             const string releaseJSON = @"{
                 ""name"": ""Wallops"",
                 ""tag_name"": ""v1.25.0"",
-                ""assets"": [ {
-                    ""size"": 414208,
-                    ""browser_download_url"": ""https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/AutoUpdater.exe""
-                }, {
-                    ""size"": 6789120,
-                    ""browser_download_url"": ""https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/CKAN.dmg""
-                }, {
-                    ""size"": 6651392,
-                    ""browser_download_url"": ""https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/ckan.exe""
-                }, {
-                    ""size"": 660764,
-                    ""browser_download_url"": ""https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/ckan_1.25.0_all.deb""
-                } ],
                 ""body"": ""[![](https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/NASA_Wallops_Flight_Facility%2C_2010.jpg/780px-NASA_Wallops_Flight_Facility%2C_2010.jpg)](https://en.wikipedia.org/wiki/Wallops_Flight_Facility)\r\n\r\n---\r\nGreatest release notes of all time""
             }";
 
@@ -78,12 +64,7 @@ namespace Tests.Core.Net.AutoUpdateTests
             // Assert
             Assert.AreEqual("v1.25.0", relInfo?.tag_name);
             Assert.AreEqual("Wallops", relInfo?.name);
-            CollectionAssert.AreEqual(
-                new Uri[]
-                {
-                    new Uri("https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/AutoUpdater.exe"),
-                    new Uri("https://github.com/KSP-CKAN/CKAN/releases/download/v1.25.0/ckan.exe"),
-                }, upd.Targets.SelectMany(t => t.urls));
+            Assert.AreEqual("v1.25.0 aka Wallops", upd.Version?.ToString());
             Assert.AreEqual("Greatest release notes of all time", upd.ReleaseNotes);
         }
 
@@ -96,13 +77,6 @@ namespace Tests.Core.Net.AutoUpdateTests
                     File.ReadAllText(TestData.DataFile("version.json"))));
 
             // Assert
-            CollectionAssert.AreEqual(
-                new []
-                {
-                    new Uri("https://ksp-ckan.s3-us-west-2.amazonaws.com/AutoUpdater.exe"),
-                    new Uri("https://ksp-ckan.s3-us-west-2.amazonaws.com/ckan.exe"),
-                }, upd.Targets.SelectMany(t => t.urls));
-
             Assert.AreEqual("v1.34.5.24015 aka dev",
                             upd.Version?.ToString());
             Assert.AreEqual("### Internal\n\n- [Policy] Fix #3518 rewrite de-indexing policy (#3993 by: JonnyOThan; reviewed: HebaruSan)",

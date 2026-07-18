@@ -160,9 +160,6 @@ Si vous n'avez vraiment pas le choix, le paramètre "--asroot" permet d'utiliser
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Attention : CKAN est exécuté en tant qu'administrateur !</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Attention : Mono {0} détecté, la version recommandée est {1} ou plus récente !</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance et --gamedir ne peuvent pas être spécifiées en même temps</value>
   </data>
@@ -695,35 +692,8 @@ Appuyez sur tabulation pour compléter les commandes et les modules.
   <data name="UpdateSummary" xml:space="preserve">
     <value>Informations sur {0} modules mises à jour.</value>
   </data>
-  <data name="UpgradeCannotCombineFlags" xml:space="preserve">
-    <value>Les arguments `--dev-build` et `--stable-release` ne peuvent pas être utilisés ensemble !</value>
-  </data>
-  <data name="UpgradeSwitchingToDevBuilds" xml:space="preserve">
-    <value>Basculer vers les versions de développement</value>
-  </data>
-  <data name="UpgradeSwitchingToStableReleases" xml:space="preserve">
-    <value>Basculer aux versions stables</value>
-  </data>
-  <data name="UpgradeQueryingCKAN" xml:space="preserve">
-    <value>Requête de la dernière version de CKAN</value>
-  </data>
-  <data name="UpgradeNewCKANAvailable" xml:space="preserve">
-    <value>Nouvelle version de CKAN disponible - {0}</value>
-  </data>
-  <data name="UpgradeProceed" xml:space="preserve">
-    <value>Poursuivre l'installation ?</value>
-  </data>
-  <data name="UpgradePleaseWait" xml:space="preserve">
-    <value>Mise à niveau de CKAN, veuillez patienter...</value>
-  </data>
-  <data name="UpgradeAlreadyHaveLatest" xml:space="preserve">
-    <value>Vous avez déjà la dernière version</value>
-  </data>
   <data name="UpgradeAborted" xml:space="preserve">
     <value>Mise à niveau annulée : {0}</value>
-  </data>
-  <data name="UpgradeFailed" xml:space="preserve">
-    <value>Échec de la mise à jour : {0}"</value>
   </data>
   <data name="UpgradeAlreadyUpToDate" xml:space="preserve">
     <value>Le module {0} est déjà à jour</value>

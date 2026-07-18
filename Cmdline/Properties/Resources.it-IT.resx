@@ -155,10 +155,6 @@ Usa "ckan instance help" per ottenere aiuto con questa configurazione.</value>
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Attenzione: Stai eseguendo CKAN come amministratore!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Attenzione. È stato rilevato un runtime Mono {0}, inferiore alla versione consigliata {1}.
-Aggiornamento consigliato!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance e --gamedir non possono essere specificati nello stesso momento</value>
   </data>
@@ -680,32 +676,8 @@ Premi tab per il completamento automatico dei comandi e dei moduli.
   <data name="UpdateSummary" xml:space="preserve">
     <value>Aggiornamento delle informazioni sui moduli compatibili con {0}</value>
   </data>
-  <data name="UpgradeCannotCombineFlags" xml:space="preserve">
-    <value>I flag `--dev-build` e `--stable-release` non possono essere combinate!</value>
-  </data>
-  <data name="UpgradeSwitchingToStableReleases" xml:space="preserve">
-    <value>Passaggio a versioni stabili</value>
-  </data>
-  <data name="UpgradeQueryingCKAN" xml:space="preserve">
-    <value>Verifica la versione più recente di CKAN</value>
-  </data>
-  <data name="UpgradeNewCKANAvailable" xml:space="preserve">
-    <value>Nuova versione di CKAN disponibile - {0}</value>
-  </data>
-  <data name="UpgradeProceed" xml:space="preserve">
-    <value>Procedi con l'installazione?</value>
-  </data>
-  <data name="UpgradePleaseWait" xml:space="preserve">
-    <value>Aggiornamento di CKAN, attendere...</value>
-  </data>
-  <data name="UpgradeAlreadyHaveLatest" xml:space="preserve">
-    <value>Hai già la versione più aggiornata</value>
-  </data>
   <data name="UpgradeAborted" xml:space="preserve">
     <value>Aggiornamento interrotto: {0}</value>
-  </data>
-  <data name="UpgradeFailed" xml:space="preserve">
-    <value>Aggiornamento fallito: {0}"</value>
   </data>
   <data name="UpgradeAlreadyUpToDate" xml:space="preserve">
     <value>Il Modulo {0} è già aggiornato</value>

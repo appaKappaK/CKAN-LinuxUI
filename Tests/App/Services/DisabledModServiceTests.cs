@@ -35,7 +35,7 @@ namespace Tests.App.Services
                                                                  repoData.Manager,
                                                                  regMgr))
             {
-                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "GameData", "A-DISABLED"));
+                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "DISABLED"));
                 string sourceFile = Path.Combine(inst.KSP.GameDir, "GameData", "SingleMod", "single.txt");
                 Directory.CreateDirectory(Path.GetDirectoryName(sourceFile)!);
                 File.WriteAllText(sourceFile, "managed");
@@ -50,8 +50,7 @@ namespace Tests.App.Services
 
                 var disable = await service.DisableAsync("SingleMod", CancellationToken.None);
                 string storedFile = Path.Combine(inst.KSP.GameDir,
-                                                "GameData",
-                                                "A-DISABLED",
+                                                "DISABLED",
                                                 "SingleMod",
                                                 "GameData",
                                                 "SingleMod",
@@ -96,7 +95,7 @@ namespace Tests.App.Services
                                                                  repoData.Manager,
                                                                  regMgr))
             {
-                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "GameData", "A-DISABLED"));
+                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "DISABLED"));
                 regMgr.registry.RegisterModule(regMgr.registry.GetModuleByVersion("BaseMod", "1.0")!,
                                                Array.Empty<string>(),
                                                inst.KSP,
@@ -134,7 +133,7 @@ namespace Tests.App.Services
                                                                  repoData.Manager,
                                                                  regMgr))
             {
-                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "GameData", "A-DISABLED"));
+                Directory.CreateDirectory(Path.Combine(inst.KSP.GameDir, "DISABLED"));
 
                 string dependencyFile = CreateManagedFile(inst.KSP, "GameData/DependencyMod/dep.txt", "dep");
                 string parentFile = CreateManagedFile(inst.KSP, "GameData/ParentMod/parent.txt", "parent");

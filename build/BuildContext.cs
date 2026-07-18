@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 using Cake.Common;
 using Cake.Common.Diagnostics;
 using Cake.Common.IO;
-using Cake.Common.Tools.ILMerge;
-using Cake.Common.Tools.ILRepack;
 using Cake.Core;
 using Cake.Core.IO;
 using Cake.Frosting;
@@ -20,15 +18,11 @@ namespace Build;
 
 public partial class BuildContext : FrostingContext
 {
-    public string BuildNetFramework => "net481";
-    public string BuildDotNet       => "net10.0";
-
     public string Target { get; }
 
-    // Named to avoid conflict with ICakeContext.Configuration
-    public string? BuildConfiguration { get; set; }
+    // Named to avoid conflict with ICakeContext.Configuration.
+    public string BuildConfiguration { get; set; }
     public string Solution { get; }
-
     public BuildPaths Paths { get; }
 
     public BuildContext(ICakeContext context)
@@ -37,40 +31,39 @@ public partial class BuildContext : FrostingContext
         var rootDir = context.Environment.WorkingDirectory.GetParent();
 
         Target = context.Argument("target", "Default");
-        BuildConfiguration = context.Argument<string?>("configuration", null);
+        var requestedConfiguration = context.Argument<string?>("configuration", null);
         Solution = context.Argument("solution", rootDir.CombineWithFilePath("CKAN.sln").FullPath);
 
         if (string.Equals(Target, "Release", StringComparison.OrdinalIgnoreCase))
         {
-            if (BuildConfiguration != null)
+            if (requestedConfiguration != null)
             {
-                context.Warning($"Ignoring configuration argument: '{BuildConfiguration}'");
+                context.Warning($"Ignoring configuration argument: '{requestedConfiguration}'");
             }
-
             BuildConfiguration = "Release";
         }
         else if (string.Equals(Target, "Debug", StringComparison.OrdinalIgnoreCase))
         {
-            if (BuildConfiguration != null)
+            if (requestedConfiguration != null)
             {
-                context.Warning($"Ignoring configuration argument: '{BuildConfiguration}'");
+                context.Warning($"Ignoring configuration argument: '{requestedConfiguration}'");
             }
-
             BuildConfiguration = "Debug";
         }
+        else
+        {
+            BuildConfiguration = requestedConfiguration ?? "Debug";
+        }
 
-        BuildConfiguration ??= "Debug";
-        Paths = new BuildPaths(rootDir, BuildConfiguration, GetVersion(false));
+        Paths = new BuildPaths(rootDir);
     }
 
     public SemVersion GetVersion(bool withBuild = true)
     {
         var rootDirectory = Environment.WorkingDirectory.GetParent();
-
-        var versionMatch = File
-            .ReadAllLines(rootDirectory.CombineWithFilePath("CHANGELOG.md").FullPath)
-            .Select(i => VersionRegex().Match(i))
-            .First(i => i.Success);
+        var versionMatch = File.ReadAllLines(rootDirectory.CombineWithFilePath("CHANGELOG.md").FullPath)
+                               .Select(line => VersionRegex().Match(line))
+                               .First(match => match.Success);
 
         if (!SemVersion.TryParse(versionMatch.Groups["version"].Value, out var version))
         {
@@ -81,146 +74,54 @@ public partial class BuildContext : FrostingContext
         {
             var commitDate = this.GitLogTip(rootDirectory).Committer.When;
             version = new SemVersion(version.Major,
-                version.Minor,
-                version.Patch,
-                version.PreRelease,
-                "." + commitDate.ToString("yy") + commitDate.DayOfYear.ToString("000"));
+                                     version.Minor,
+                                     version.Patch,
+                                     version.PreRelease,
+                                     "." + commitDate.ToString("yy")
+                                         + commitDate.DayOfYear.ToString("000"));
         }
 
         return version;
     }
-
-    public void ReportRepacking(FilePath target, FilePath log)
-    {
-        // ILRepack is extremely noisy by default and has no options to
-        // make it quieter other than shutting it up completely.
-        //
-        using (this.NormalVerbosity())
-        {
-            this.Information("Repacking {0}, logging details to {1}...",
-                Paths.RootDirectory.GetRelativePath(target),
-                Paths.RootDirectory.GetRelativePath(log));
-        }
-    }
-
-    public void Repack(FilePath               target,
-                       DirectoryPath          assembliesPath,
-                       string                 sourceFilename,
-                       TargetPlatformVersion? targetPlatform,
-                       FilePath               logFile)
-    {
-        this.CreateDirectory(target.GetDirectory());
-        this.CreateDirectory(logFile.GetDirectory());
-        var source     = assembliesPath.CombineWithFilePath(sourceFilename);
-        var assemblyPaths = this.GetFiles($"{assembliesPath}/*.dll");
-        // Need facade to instantiate types from netstandard2.0 DLLs on Mono
-        assemblyPaths.Add(FacadesDirectory().CombineWithFilePath("netstandard.dll"));
-        assemblyPaths.Add(this.GetFiles($"{assembliesPath}/*/*.resources.dll"));
-        if (target.FullPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-        {
-            assemblyPaths.Add(this.GetFiles($"{assembliesPath}/*.exe"));
-        }
-        assemblyPaths.Remove(source);
-        ReportRepacking(target, logFile);
-        this.ILRepack(target, source, assemblyPaths,
-                      new ILRepackSettings
-                      {
-                          Libs                 = [assembliesPath, ApiDirectory()],
-                          TargetPlatform       = targetPlatform,
-                          Parallel             = true,
-                          Verbose              = false,
-                          SetupProcessSettings = RepackSilently,
-                          Log                  = logFile.FullPath,
-                      });
-    }
-
-    public static void RepackSilently(ProcessSettings settings)
-        => settings.SetRedirectStandardOutput(true)
-                   .SetRedirectedStandardOutputHandler(s => "")
-                   .SetRedirectStandardError(true)
-                   .SetRedirectedStandardErrorHandler(s => "");
 
     public static void ChmodExecutable(FilePath path)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
             || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            var proc = Process.Start(new ProcessStartInfo("chmod",
-                                                          $"+x \"{path}\"")
+            var process = Process.Start(new ProcessStartInfo("chmod", $"+x \"{path}\"")
             {
                 UseShellExecute = false,
             });
-            proc?.WaitForExit();
+            process?.WaitForExit();
         }
     }
 
-    public string? GetQuote(FilePath file)
-    {
-        if (!this.FileExists(file))
-        {
-            return null;
-        }
-
-        var quotes = File.ReadAllText(file.FullPath)
-                         .Split("%", StringSplitOptions.RemoveEmptyEntries);
-
-        return quotes.Length > 0 ? quotes[new Random().Next(quotes.Length)] : null;
-    }
-
-    public IEnumerable<string> RunExecutable(FilePath executable, string arguments)
+    public IReadOnlyList<string> RunExecutable(FilePath                     executable,
+                                               string                       arguments,
+                                               Dictionary<string, string?>? environmentVariables = null,
+                                               DirectoryPath?               workingDirectory = null)
     {
         var exitCode = this.StartProcess(
             executable,
-            new ProcessSettings { Arguments = arguments, RedirectStandardOutput = true },
-            out IEnumerable<string> output
-        );
+            new ProcessSettings
+            {
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                EnvironmentVariables = environmentVariables ?? new Dictionary<string, string?>(),
+                WorkingDirectory = workingDirectory,
+            },
+            out IEnumerable<string> output);
 
+        var lines = output.ToArray();
         if (exitCode != 0)
         {
-            throw new Exception("Process failed with exit code: " + exitCode);
+            throw new Exception($"Process failed with exit code {exitCode}: {string.Join(System.Environment.NewLine, lines)}");
         }
 
-        return output;
-    }
-
-    public void RunAltCover(params string[] args)
-    {
-        if (this.StartProcess(Paths.AltCoverPath,
-                              new ProcessSettings
-                              {
-                                  WorkingDirectory = Paths.CoverageOutputDirectory,
-                                  Arguments        = string.Join(" ", args),
-                              })
-            is int exitCode and not 0)
-        {
-            throw new Exception($"AltCover failed with exit code: {exitCode}");
-        }
+        return lines;
     }
 
     [GeneratedRegex(@"^\s*##\s+v(?<version>\S+)\s?.*$")]
     private static partial Regex VersionRegex();
-
-    private DirectoryPath ApiDirectory()
-        => this.IsRunningOnWindows()
-               ? Environment.GetSpecialPath(SpecialPath.ProgramFilesX86)
-                            .Combine("Reference Assemblies")
-                            .Combine("Microsoft")
-                            .Combine("Framework")
-                            .Combine(".NETFramework")
-                            .Combine("v4.8")
-
-         : this.IsRunningOnMacOs()
-               ? new DirectoryPath("/Library").Combine("Frameworks")
-                                              .Combine("Mono.framework")
-                                              .Combine("Versions")
-                                              .Combine("Current")
-                                              .Combine("lib")
-                                              .Combine("mono")
-                                              .Combine("4.8-api")
-
-         : new DirectoryPath("/usr").Combine("lib")
-                                    .Combine("mono")
-                                    .Combine("4.8-api");
-
-    private DirectoryPath FacadesDirectory() => ApiDirectory().Combine("Facades");
 }

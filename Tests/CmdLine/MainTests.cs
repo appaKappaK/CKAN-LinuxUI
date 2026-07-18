@@ -13,6 +13,22 @@ namespace Tests.CmdLine
     public class MainTests
     {
         [Test]
+        public void Execute_NoArguments_ShowsHelpInsteadOfLaunchingAUserInterface()
+        {
+            var user = new CapturingUser(false, q => true, (msg, objs) => 0);
+            using (var inst    = new DisposableKSP())
+            using (var config  = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var manager = new GameInstanceManager(user, config))
+            {
+                var exitCode = MainClass.Execute(manager, new CommonOptions(), new string[] { }, user);
+
+                Assert.AreEqual(Exit.BADOPT, exitCode);
+                Assert.That(user.RaisedMessages,
+                            Has.Some.Contains(Meta.ReleaseVersion.ToString()));
+            }
+        }
+
+        [Test]
         public void Execute_Version_Works()
         {
             // Arrange

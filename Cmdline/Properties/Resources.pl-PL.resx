@@ -155,10 +155,6 @@ To zły pomysł i lepiej tego nie rób. Proszę uruchomić program z konta użyt
   <data name="OptionsRootWarning" xml:space="preserve">
     <value>Ostrzeżenie: CKAN uruchomiony jako root!</value>
   </data>
-  <data name="OptionsMonoWarning" xml:space="preserve">
-    <value>Ostrzeżenie. Wykryto wersję mono {0} która jest starsza niż zalecana wersja {1}.
-Zalecana aktualizacja!</value>
-  </data>
   <data name="OptionsInstanceAndGameDir" xml:space="preserve">
     <value>--instance i --gamedir nie mogę być użyte w tym samym czasie</value>
   </data>
@@ -679,30 +675,6 @@ Naciśnij tab, aby automatycznie uzupełniać polecenia i moduły.
   </data>
   <data name="UpdateSummary" xml:space="preserve">
     <value>Zaktualizowano informacje o kompatybilnych modułach {0}</value>
-  </data>
-  <data name="UpgradeCannotCombineFlags" xml:space="preserve">
-    <value>Flagi `--dev-build` i `--stable-release` nie mogą być połączone!</value>
-  </data>
-  <data name="UpgradeSwitchingToDevBuilds" xml:space="preserve">
-    <value>Przełączanie do wersji deweloperskich</value>
-  </data>
-  <data name="UpgradeSwitchingToStableReleases" xml:space="preserve">
-    <value>Przełączanie do stabilnych wersji</value>
-  </data>
-  <data name="UpgradeQueryingCKAN" xml:space="preserve">
-    <value>Sprawdzanie najnowszej wersji CKAN</value>
-  </data>
-  <data name="UpgradeNewCKANAvailable" xml:space="preserve">
-    <value>Dostępna jest nowa wersja CKAN - {0}</value>
-  </data>
-  <data name="UpgradeProceed" xml:space="preserve">
-    <value>Kontynuować instalację?</value>
-  </data>
-  <data name="UpgradePleaseWait" xml:space="preserve">
-    <value>Aktualizowanie CKAN, proszę czekać...</value>
-  </data>
-  <data name="UpgradeAlreadyHaveLatest" xml:space="preserve">
-    <value>Posiadasz już najnowszą wersję</value>
   </data>
   <data name="UpgradeAborted" xml:space="preserve">
     <value>Aktualizacja przerwana: {0}</value>

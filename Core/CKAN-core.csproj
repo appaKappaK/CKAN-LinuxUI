@@ -12,9 +12,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>CKAN</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
-    <Configurations>Debug;Release;NoGUI</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
@@ -22,7 +21,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>SYSLIB0050,IDE0090,NU1901,NU1902,NU1903,NU1904</WarningsNotAsErrors>
     <NoWarn>IDE1006,CS1591</NoWarn>
-    <TargetFrameworks>netstandard2.0;net481;net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <CoreCompileDependsOn>PrepareResources;$(CompileDependsOn)</CoreCompileDependsOn>
   </PropertyGroup>
   <PropertyGroup>
@@ -98,10 +97,7 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="MakeAssemblyInfo" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -Command &quot;.\build.ps1 Generate-GlobalAssemblyVersionInfo&quot;"
-          WorkingDirectory=".."
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Windows_NT'" />
     <Exec Command="sh ../build.sh Generate-GlobalAssemblyVersionInfo"
-          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs') And '$(OS)' == 'Unix'" />
+          Condition="!Exists('../_build/meta/GlobalAssemblyVersionInfo.cs')" />
   </Target>
 </Project>

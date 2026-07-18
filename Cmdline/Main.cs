@@ -8,10 +8,6 @@ using System.Net;
 using System.Diagnostics;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
-#if WINDOWS && NET5_0_OR_GREATER
-using System.Runtime.Versioning;
-#endif
-
 using Autofac;
 using log4net;
 using log4net.Core;
@@ -26,15 +22,6 @@ namespace CKAN.CmdLine
     {
         private static readonly ILog log = LogManager.GetLogger(typeof (MainClass));
 
-        /*
-         * When the STAThread is applied, it changes the apartment state of the current thread to be single threaded.
-         * Without getting into a huge discussion about COM and threading,
-         * this attribute ensures the communication mechanism between the current thread an
-         * other threads that may want to talk to it via COM.  When you're using Windows Forms,
-         * depending on the feature you're using, it may be using COM interop in order to communicate with
-         * operating system components.  Good examples of this are the Clipboard and the File Dialogs.
-         */
-        [STAThread]
         [ExcludeFromCodeCoverage]
         public static int Main(string[] args)
         {
@@ -44,17 +31,6 @@ namespace CKAN.CmdLine
             if (args.Any(i => i == "--debugger"))
             {
                 Debugger.Launch();
-            }
-
-            // Default to GUI if there are no command line args or if the only args are flags rather than commands.
-            if (args.All(a => a is "--verbose"
-                                or "--debug"
-                                or "--asroot"
-                                or "--show-console"))
-            {
-                var guiCommand = args.ToList();
-                guiCommand.Insert(0, "gui");
-                args = guiCommand.ToArray();
             }
 
             Logging.Initialize();
@@ -172,7 +148,7 @@ namespace CKAN.CmdLine
                     return exitCode;
                 }
                 // Don't bother with instances or registries yet because some commands don't need them.
-                return RunSimpleAction(cmdline, options, args, user, manager);
+                return RunSimpleAction(options, user, manager);
             }
             finally
             {
@@ -207,9 +183,7 @@ namespace CKAN.CmdLine
         /// </summary>
         /// <returns>The exit status that should be returned to the system.</returns>
         [ExcludeFromCodeCoverage]
-        private static int RunSimpleAction(Options             cmdline,
-                                           CommonOptions       options,
-                                           string[]            args,
+        private static int RunSimpleAction(CommonOptions       options,
                                            IUser               user,
                                            GameInstanceManager manager)
         {
@@ -218,18 +192,6 @@ namespace CKAN.CmdLine
             {
                 return options switch
                 {
-                    #if NETFRAMEWORK || WINDOWS
-                        GuiOptions opts =>
-                        #if NET6_0_OR_GREATER
-                            Platform.IsWindows ?
-                        #endif
-                            Gui(manager, opts, args)
-                        #if NET6_0_OR_GREATER
-                            : Exit.ERROR
-                        #endif
-                        ,
-                    #endif
-                    ConsoleUIOptions   opts => ConsoleUi(manager, opts),
                     PromptOptions      opts => new Prompt(manager, repoData, user).RunCommand(opts),
                     VersionOptions     opts => Version(user),
                     UpdateOptions      opts => new Update(repoData, user, manager)
@@ -284,36 +246,6 @@ namespace CKAN.CmdLine
         {
             user.RaiseMessage(Properties.Resources.MainMissingInstance);
             return Exit.ERROR;
-        }
-
-        #if NETFRAMEWORK || WINDOWS
-        #if NET5_0_OR_GREATER
-        [SupportedOSPlatform("windows")]
-        #endif
-        [ExcludeFromCodeCoverage]
-        private static int Gui(GameInstanceManager manager, GuiOptions options, string[] args)
-        {
-            // TODO: Sometimes when the GUI exits, we get a System.ArgumentException,
-            // but trying to catch it here doesn't seem to help. Dunno why.
-
-            // GUI expects its first param to be an identifier, don't confuse it
-            GUI.GUI.Main_(args.Except(new string[] {"--verbose", "--debug", "--show-console", "--asroot"})
-                              .ToArray(),
-                          options.NetUserAgent, manager,
-                          options.ShowConsole || options.Debug || options.Verbose);
-
-            return Exit.OK;
-        }
-        #endif
-
-        [ExcludeFromCodeCoverage]
-        private static int ConsoleUi(GameInstanceManager manager, ConsoleUIOptions opts)
-        {
-            // Debug/verbose output just messes up the screen
-            LogManager.GetRepository().Threshold = Level.Warn;
-            return ConsoleUI.ConsoleUI.Main_(manager,
-                opts.Theme ?? Environment.GetEnvironmentVariable("CKAN_CONSOLEUI_THEME") ?? "default",
-                opts.NetUserAgent, opts.Debug);
         }
 
         private static int Version(IUser user)

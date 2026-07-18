@@ -12,10 +12,9 @@ The app binary starts in `LinuxGUI/Program.cs`, which initializes LinuxGUI
 logging and starts Avalonia with the classic desktop lifetime. `App.axaml.cs`
 then registers the app services and opens `Shell/MainWindow.axaml`.
 
-When this repository's Debian package installs `/usr/bin/ckan-linux`, the
-`/usr/bin/ckan` wrapper uses it as the replacement UI for graphical no-argument
-launches. Command line arguments still run through the existing Mono `ckan.exe`
-path, and no-display launches continue to use `ckan consoleui`.
+Debian and RPM packages built from this repository install this app directly as
+`ckan-linux`. They do not install the retired Mono dispatcher, WinForms client,
+or terminal ConsoleUI.
 
 ## Source Layout
 
@@ -128,7 +127,13 @@ available in the cache.
 
 ## Build
 
-Build and publish the self-contained desktop shell:
+The default build produces the self-contained desktop package layout:
+
+```bash
+./build.sh --configuration=Release
+```
+
+Build and publish only the desktop shell:
 
 ```bash
 ./build.sh LinuxGUI --configuration=Release
@@ -137,6 +142,13 @@ Build and publish the self-contained desktop shell:
 Output:
 
 - `_build/publish/CKAN-LinuxGUI/linux-x64/`
+
+Build the optional self-contained scripting CLI separately:
+
+```bash
+./build.sh CLI --configuration=Release
+_build/publish/CKAN-CmdLine/linux-x64/CKAN-CmdLine version
+```
 
 ## Package Layout
 

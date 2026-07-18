@@ -1,60 +1,27 @@
-.PHONY: clean test repo
-
-# Borrow files from .deb
-DEBDIR:=$(shell pwd)/../debian
+.PHONY: package clean test
 
 TOPDIR:=$(shell pwd)/../_build/rpm
-SCRIPTSRC:=$(DEBDIR)/ckan
-MANSRC:=$(DEBDIR)/ckan.1
-DESKTOPSRC:=$(DEBDIR)/ckan.desktop
-CONSOLEUIDESKTOPSRC:=$(DEBDIR)/ckan-consoleui.desktop
-CMDPROMPTDESKTOPSRC:=$(DEBDIR)/ckan-cmdprompt.desktop
-ICONSIZES=16 32 48 64 96 128 256
-ICONSRC:=$(foreach size,$(ICONSIZES),../assets/ckan-$(size).png)
 CONFIGURATION?=Release
-EXESRC:=$(shell pwd)/../_build/repack/$(CONFIGURATION)/ckan.exe
+LINUXGUISTAGE:=$(shell pwd)/../_build/package/ckan-linux/linux-x64
+SOURCE:=$(TOPDIR)/SOURCES/ckan-linux.tar.gz
 CHANGELOGSRC:=../CHANGELOG.md
-VERSION:=$(shell egrep '^\s*\#\#\s+v.*$$' $(CHANGELOGSRC) | head -1 | sed -e 's/^\s*\#\#\s\+v//' -e 's/-/_/g' ).$(shell git show -s --format='%cd' --date=format:'%y%j')
-RPM:=$(TOPDIR)/RPMS/noarch/ckan-$(VERSION)-1.noarch.rpm
+VERSION:=$(shell sed -n -E 's/^..[[:space:]]+v([^[:space:]]+).*/\1/p' $(CHANGELOGSRC) | head -1 | sed -e 's/-/_/g').$(shell git show -s --format='%cd' --date=format:'%y%j')
+RPM:=$(TOPDIR)/RPMS/x86_64/ckan-linux-$(VERSION)-1.x86_64.rpm
 
-CREATEREPO:=$(if $(shell which createrepo),createrepo,createrepo_c)
-REPODIR:=$(TOPDIR)/repo
-CODENAME?=nightly
-REPOFILE:=ckan_$(CODENAME).repo
-REPORPM:=$(REPODIR)/ckan-$(VERSION)-1.noarch.rpm
-REPOXML:=$(REPODIR)/repodata/repomd.xml
-REPOSIG:=$(REPOXML).asc
-GPGNAME:=KSP CKAN <debian@ksp-ckan.space>
+package: $(RPM)
 
-# rpmbuild tries to use $HOME/rpmbuild by default
-# rpmbuild can't handle relative paths for its topdir
-# rpmbuild assumes we'll copy files into its SOURCES dir for it
-
-$(RPM): $(SCRIPTSRC) $(EXESRC) $(MANSRC) $(DESKTOPSRC) $(ICONSRC) $(CONSOLEUIDESKTOPSRC) $(CMDPROMPTDESKTOPSRC)
-	mkdir -p "${TOPDIR}/SOURCES"
-	cp $^ "${TOPDIR}/SOURCES"
+$(RPM): $(SOURCE) ckan.spec
 	rpmbuild --define "_topdir ${TOPDIR}" --define "_version $(VERSION)" -bb ckan.spec
 
-repo: $(REPOSIG)
+$(SOURCE): $(LINUXGUISTAGE)/usr/bin/ckan-linux
+	mkdir -p "$(TOPDIR)/SOURCES"
+	tar -C "$(LINUXGUISTAGE)" -czf "$@" .
 
-$(REPOSIG): $(REPOXML)
-	gpg --detach-sign --armor $<
-
-$(REPOXML): $(REPORPM)
-	$(CREATEREPO) "$(REPODIR)"
-
-$(REPORPM): $(RPM) $(REPOFILE)
-	mkdir -p "$(REPODIR)"
-	cp $^ "$(REPODIR)"
-	rpm --define '%_gpg_name $(GPGNAME)' \
-	    --define '%__gpg $(shell which gpg)' \
-	    --addsign $@
-
-$(EXESRC):
-	cd .. && ./build.sh --configuration=$(CONFIGURATION)
+$(LINUXGUISTAGE)/usr/bin/ckan-linux:
+	cd .. && ./build.sh LinuxGUIPackage --configuration=$(CONFIGURATION)
 
 clean:
-	rm -r "$(TOPDIR)"
+	rm -rf "$(TOPDIR)"
 
 test: $(RPM)
 	rpm -qlp $<

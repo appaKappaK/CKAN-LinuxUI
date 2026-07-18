@@ -39,16 +39,13 @@
 
 # Build files
 *.cake          text
-*.ps1           text
 *.sh            text eol=lf
-Dockerfile      text eol=lf
 
 # Other
 *.ackrc         text
 *.t             text
 
 # Graphics
-*.icns          binary
 *.ico           binary
 *.png           binary
 *.svg           binary

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RunWorkingDirectory>$(MSBuildProjectDirectory)</RunWorkingDirectory>
     <AssemblyName>Build</AssemblyName>
     <OutputPath Condition=" '$(Configuration)' != '' ">..\_build\out\$(AssemblyName)\$(Configuration)\bin\</OutputPath>
@@ -16,17 +16,8 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="18.4.0" />
-    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
     <PackageReference Include="Cake.Frosting" Version="6.1.0" />
     <PackageReference Include="Cake.Frosting.Git" Version="5.0.1" />
-    <PackageReference Include="altcover" Version="9.0.102" />
-    <PackageReference Include="altcover.api" Version="9.0.102" />
-    <PackageReference Include="altcover.cake" Version="9.0.102" />
-    <PackageReference Include="ILRepack" Version="2.0.44">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

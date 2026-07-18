@@ -11,24 +11,12 @@ public class BuildPaths
     public FilePath CmdlineProject { get; }
     public FilePath LinuxGuiProject { get; }
     public FilePath LinuxGuiVisualTestsProject { get; }
+    public FilePath TestsProject { get; }
     public DirectoryPath BuildDirectory { get; }
     public DirectoryPath NugetDirectory { get; }
     public DirectoryPath OutDirectory { get; }
-    public FilePath NupkgFile { get; }
-    public DirectoryPath RepackDirectory { get; }
-    public FilePath CkanFile { get; }
-    public FilePath UpdaterFile { get; }
-    public FilePath NetkanFile { get; }
-    public DirectoryPath ToolsDirectory => BuildDirectory.Combine("tools");
-    public FilePath AltCoverPath => ToolsDirectory.Combine("altcover.api.9.0.1")
-                                                  .Combine("lib")
-                                                  .Combine("net472")
-                                                  .CombineWithFilePath("AltCover.exe");
-    public DirectoryPath CoverageOutputDirectory => BuildDirectory.Combine("test")
-                                                                  .Combine("coverage");
-
-    public FilePath CoverageOutputFile(string filename)
-        => CoverageOutputDirectory.CombineWithFilePath(filename);
+    public DirectoryPath TestResultsDirectory => BuildDirectory.Combine("test")
+                                                               .Combine("results");
 
     public DirectoryPath LinuxGuiPublishDirectory(string runtime)
         => BuildDirectory.Combine("publish")
@@ -40,7 +28,17 @@ public class BuildPaths
                          .Combine("ckan-linux")
                          .Combine(runtime);
 
-    public BuildPaths(DirectoryPath rootDirectory, string configuration, SemVersion version)
+    public DirectoryPath CmdlinePublishDirectory(string runtime)
+        => BuildDirectory.Combine("publish")
+                         .Combine("CKAN-CmdLine")
+                         .Combine(runtime);
+
+    public DirectoryPath NetkanPublishDirectory(string runtime)
+        => BuildDirectory.Combine("publish")
+                         .Combine("CKAN-NetKAN")
+                         .Combine(runtime);
+
+    public BuildPaths(DirectoryPath rootDirectory)
     {
         RootDirectory = rootDirectory;
         CoreProject = rootDirectory.Combine("Core")
@@ -53,23 +51,10 @@ public class BuildPaths
                                       .CombineWithFilePath("CKAN-LinuxGUI.csproj");
         LinuxGuiVisualTestsProject = rootDirectory.Combine("LinuxGUI.VisualTests")
                                                   .CombineWithFilePath("CKAN-LinuxGUI.VisualTests.csproj");
+        TestsProject = rootDirectory.Combine("Tests")
+                                    .CombineWithFilePath("Tests.csproj");
         BuildDirectory = rootDirectory.Combine("_build");
         NugetDirectory = BuildDirectory.Combine("lib").Combine("nuget");
         OutDirectory = BuildDirectory.Combine("out");
-        NupkgFile = OutDirectory
-            .Combine("CKAN")
-            .Combine(configuration)
-            .Combine("bin")
-            .CombineWithFilePath($"CKAN.{version}.nupkg");
-        RepackDirectory = BuildDirectory.Combine("repack");
-        CkanFile = RepackDirectory
-            .Combine(configuration)
-            .CombineWithFilePath("ckan.exe");
-        UpdaterFile = RepackDirectory
-            .Combine(configuration)
-            .CombineWithFilePath("AutoUpdater.exe");
-        NetkanFile = RepackDirectory
-            .Combine(configuration)
-            .CombineWithFilePath("netkan.exe");
     }
 }

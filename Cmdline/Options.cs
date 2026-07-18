@@ -47,14 +47,6 @@ namespace CKAN.CmdLine
     [ExcludeFromCodeCoverage]
     internal class Actions : VerbCommandOptions
     {
-        #if NETFRAMEWORK || WINDOWS
-        [VerbOption("gui", HelpText = "Start the CKAN GUI")]
-        public GuiOptions? GuiOptions { get; set; }
-        #endif
-
-        [VerbOption("consoleui", HelpText = "Start the CKAN console UI")]
-        public ConsoleUIOptions? ConsoleUIOptions { get; set; }
-
         [VerbOption("prompt", HelpText = "Run CKAN prompt for executing multiple commands in a row")]
         public PromptOptions? PromptOptions { get; set; }
 
@@ -188,7 +180,6 @@ namespace CKAN.CmdLine
                         break;
 
                     // Commands with only --flag type options
-                    case "gui":
                     case "list":
                     case "update":
                     case "scan":
@@ -247,8 +238,6 @@ namespace CKAN.CmdLine
 
         public virtual int Handle(GameInstanceManager manager, IUser user)
         {
-            CheckMonoVersion(user);
-
             // Processes in Docker containers normally run as root.
             // If we are running in a Docker container, do not require --asroot.
             // Docker creates a .dockerenv file in the root of each container.
@@ -309,17 +298,6 @@ namespace CKAN.CmdLine
                 NetUserAgent ??= otherOpts.NetUserAgent;
                 Headless     = Headless     || otherOpts.Headless;
                 AsRoot       = AsRoot       || otherOpts.AsRoot;
-            }
-        }
-
-        private static void CheckMonoVersion(IUser user)
-        {
-            if (Platform.MonoVersion != null
-                && Platform.MonoVersion < Platform.RecommendedMonoVersion)
-            {
-                user.RaiseMessage(Properties.Resources.OptionsMonoWarning,
-                                  Platform.MonoVersion.ToString(),
-                                  Platform.RecommendedMonoVersion.ToString());
             }
         }
 
@@ -398,20 +376,6 @@ namespace CKAN.CmdLine
     internal class VersionOptions   : CommonOptions { }
     internal class PromptOptions    : CommonOptions { }
     internal class CleanOptions     : InstanceSpecificOptions { }
-
-    #if NETFRAMEWORK || WINDOWS
-    internal class GuiOptions : InstanceSpecificOptions
-    {
-        [Option("show-console", HelpText = "Shows the console while running the GUI")]
-        public bool ShowConsole { get; set; }
-    }
-    #endif
-
-    internal class ConsoleUIOptions : InstanceSpecificOptions
-    {
-        [Option("theme", HelpText = "Name of color scheme to use, falls back to environment variable CKAN_CONSOLEUI_THEME")]
-        public string? Theme { get; set; }
-    }
 
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class AvailableIdentifiersAttribute : Attribute { }

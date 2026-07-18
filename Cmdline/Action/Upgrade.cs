@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 
 using CKAN.IO;
-using CKAN.Versioning;
-
 namespace CKAN.CmdLine
 {
     public class Upgrade : ICommand
@@ -52,16 +50,6 @@ namespace CKAN.CmdLine
                     user.RaiseError("{0}", h);
                 }
                 return Exit.BADOPT;
-            }
-
-            if (!options.upgrade_all
-                //&& options.modules is ["ckan"]
-                && options.modules != null
-                && options.modules.Count > 0
-                && options.modules[0] is "ckan"
-                && AutoUpdate.CanUpdate)
-            {
-                return UpgradeCkan(options);
             }
 
             try
@@ -111,62 +99,6 @@ namespace CKAN.CmdLine
             }
 
             return Exit.OK;
-        }
-
-        [ExcludeFromCodeCoverage]
-        private int UpgradeCkan(UpgradeOptions options)
-        {
-            if (options.dev_build && options.stable_release)
-            {
-                user.RaiseMessage(Properties.Resources.UpgradeCannotCombineFlags);
-                return Exit.BADOPT;
-            }
-            var config = manager.Configuration;
-            var devBuild = options.dev_build
-                           || (!options.stable_release && (config.DevBuilds ?? false));
-            if (devBuild != config.DevBuilds)
-            {
-                config.DevBuilds = devBuild;
-                user.RaiseMessage(
-                    config.DevBuilds ?? false
-                        ? Properties.Resources.UpgradeSwitchingToDevBuilds
-                        : Properties.Resources.UpgradeSwitchingToStableReleases);
-            }
-
-            user.RaiseMessage(Properties.Resources.UpgradeQueryingCKAN);
-            try
-            {
-                var upd = new AutoUpdate(options.NetUserAgent);
-                var update = upd.GetUpdate(config.DevBuilds ?? false);
-                if (update.Version is CkanModuleVersion latestVersion
-                    && !latestVersion.SameClientVersion(Meta.ReleaseVersion))
-                {
-                    user.RaiseMessage(Properties.Resources.UpgradeNewCKANAvailable,
-                                      latestVersion?.ToString() ?? "");
-                    if (update.ReleaseNotes != null)
-                    {
-                        user.RaiseMessage("{0}", update.ReleaseNotes);
-                    }
-                    user.RaiseMessage("");
-                    user.RaiseMessage("");
-
-                    if (user.RaiseYesNoDialog(Properties.Resources.UpgradeProceed))
-                    {
-                        user.RaiseMessage(Properties.Resources.UpgradePleaseWait);
-                        upd.StartUpdateProcess(false, options.NetUserAgent, config.DevBuilds ?? false, user);
-                    }
-                }
-                else
-                {
-                    user.RaiseMessage(Properties.Resources.UpgradeAlreadyHaveLatest);
-                }
-                return Exit.OK;
-            }
-            catch (Exception exc)
-            {
-                user.RaiseError(Properties.Resources.UpgradeFailed, exc.Message);
-                return Exit.ERROR;
-            }
         }
 
         /// <summary>
@@ -337,14 +269,6 @@ namespace CKAN.CmdLine
 
         [Option("all", DefaultValue = false, HelpText = "Upgrade all available updated modules")]
         public bool upgrade_all { get; set; }
-
-        [Option("dev-build", DefaultValue = false,
-                HelpText = "For `ckan` option only, use dev builds")]
-        public bool dev_build { get; set; }
-
-        [Option("stable-release", DefaultValue = false,
-                HelpText = "For `ckan` option only, use stable releases")]
-        public bool stable_release { get; set; }
 
         [ValueList(typeof (List<string>))]
         [InstalledIdentifiers]

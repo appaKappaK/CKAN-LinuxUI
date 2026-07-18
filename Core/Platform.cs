@@ -1,14 +1,10 @@
 using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 #if NET6_0_OR_GREATER
 using System.Runtime.Versioning;
 #endif
-using System.Text.RegularExpressions;
 using System.Security.Principal;
-
-using CKAN.Extensions;
 
 namespace CKAN
 {
@@ -107,22 +103,5 @@ namespace CKAN
         [DllImport("libc")]
         private static extern uint getuid();
 
-        private static readonly Regex versionMatcher =
-            new Regex("^\\s*(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\s*\\(",
-                      RegexOptions.Compiled);
-
-        public static readonly Version? MonoVersion =
-            Type.GetType("Mono.Runtime")
-                ?.GetMethod("GetDisplayName",
-                            BindingFlags.NonPublic | BindingFlags.Static)
-                ?.Invoke(null, null)
-            is string s
-            && versionMatcher.TryMatch(s, out Match? match)
-                ? new Version(int.Parse(match.Groups["major"].Value),
-                              int.Parse(match.Groups["minor"].Value),
-                              int.Parse(match.Groups["patch"].Value))
-                : null;
-
-        public static readonly Version RecommendedMonoVersion = new Version(5, 0, 0);
     }
 }

@@ -1,10 +1,13 @@
-Package: ckan
+Package: ckan-linux
 Version: @VERSION@
 Architecture: amd64
 Section: utils
 Priority: optional
-Depends: mono-runtime (>=5.0), ca-certificates-mono, libmono-microsoft-csharp4.0-cil, libmono-system-net-http-webrequest4.0-cil, libmono-system-servicemodel4.0a-cil, libmono-system-componentmodel-composition4.0-cil
-Maintainer: The CKAN authors <debian@ksp-ckan.space>
-Description: KSP-CKAN official client.
- Official client for the Comprehensive Kerbal Archive Network (CKAN).
- Acts as a mod manager for Kerbal Space Program mods.
+Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libbrotli1, libbz2-1.0,
+ libfontconfig1, libfreetype6, libglib2.0-0, libgraphite2-3, libharfbuzz0b,
+ libice6, liblzma5, libpng16-16, libsm6, libx11-6, libxext6, libxml2
+Maintainer: CKAN Linux contributors
+Homepage: https://github.com/appaKappaK/CKAN-LinuxUI
+Description: Linux desktop mod manager for Kerbal Space Program
+ CKAN Linux is an Avalonia desktop client for browsing, installing, updating,
+ and removing Kerbal Space Program mods from the CKAN catalog.

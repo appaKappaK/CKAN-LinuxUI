@@ -6,13 +6,9 @@ the self-contained `CKAN-LinuxGUI` Avalonia app. The shell uses the existing
 CKAN core services for metadata, dependency resolution, installs, updates,
 removals, and registry writes.
 
-In Debian packages built from this fork, `/usr/bin/ckan` prefers the Avalonia
-LinuxGUI for graphical no-argument launches. Command-style usage, such as
-`ckan install`, `ckan remove`, or any other invocation with arguments, still
-runs through the existing Mono `ckan.exe` command-line path. If no graphical
-display is available, a no-argument launch opens the console UI instead. If
-`ckan-linux` is unavailable, the wrapper falls back to the legacy `ckan.exe gui`
-path.
+This fork is intentionally LinuxGUI-first. The old WinForms and terminal user
+interfaces are not included. A separate .NET 8 command-line build remains
+available for scripting and headless maintenance.
 ### Status
 
 The LinuxGUI shell is still under active development.
@@ -44,10 +40,22 @@ The optional Rust catalog sidecar is not required for this flow.
 - A native Linux desktop app for CKAN, launched as `ckan-linux`.
 - A local installer that adds `ckan-linux` under `~/.local` without replacing
   an existing system `ckan` command.
-- Graphical no-argument launch integration that keeps CLI and headless CKAN
-  behavior intact.
+- An optional self-contained Linux CLI build for scripts and recovery work.
 - Optional faster catalog browsing through the Rust sidecar index, with normal
   CKAN registry fallback when it is not present.
+
+## Optional Command Line Client
+
+The CLI is deliberately separate from the desktop install:
+
+```bash
+./build.sh CLI --configuration=Release
+_build/publish/CKAN-CmdLine/linux-x64/CKAN-CmdLine version
+```
+
+It supports CKAN's scripting commands but does not launch a GUI, ConsoleUI, or
+replace the desktop app. The old `upgrade ckan` executable-replacement path is
+also disabled; CKAN Linux release checks belong to the desktop update flow.
 
 ## Optional Rust Catalog Sidecar
 

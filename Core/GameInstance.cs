@@ -240,7 +240,7 @@ namespace CKAN
         #region Game Directory Detection and Versioning
 
         /// <summary>
-        /// Returns the path to our portable version of game if ckan.exe is in the same
+        /// Returns the path to our portable version of the game if the CKAN executable is in the same
         /// directory as the game, or if the game is in the current directory.
         /// Otherwise, returns null.
         /// </summary>
