@@ -5372,7 +5372,7 @@
 
     <Border Grid.RowSpan="3"
             ZIndex="100"
-            Background="#C0141A22"
+            Background="Transparent"
             IsVisible="{Binding ShowExecutionOverlay}">
       <Grid>
         <Border Background="#223345"
@@ -5630,6 +5630,9 @@
             </Border>
           </Grid>
         </Border>
+
+        <Border x:Name="ExecutionOverlayScrim"
+                Background="#C0141A22" />
 
         <Border Background="#1A2027"
                 BorderBrush="#36414E"
