@@ -232,8 +232,29 @@ LinuxGUI selects them using the current instance's overall and per-mod stability
 tolerances. Schema v1 sidecars remain readable with their original latest-row
 behavior.
 
-To use the sidecar, generate the file with `ckan-meta-rs` and point the GUI at
-it:
+Install `ckan-meta-rs` once with its installer. LinuxGUI discovers the helper
+from its install prefix, `$XDG_BIN_HOME`, `~/.local/bin`, or `PATH`. After CKAN
+checks for repository updates, LinuxGUI automatically rebuilds a missing or
+stale sidecar from the exact active repository-cache files before loading the
+browser. This includes custom repositories and does not download the metadata a
+second time.
+
+The automatic command is equivalent to:
+
+```bash
+ckan-meta-rs refresh-sidecar \
+  --repository-cache ~/.local/share/CKAN/repos/HASH-KSP-default.json \
+  --output ~/.local/share/CKAN/catalog-index-latest.json
+```
+
+LinuxGUI supplies each active `--repository-cache` path in CKAN priority order
+and attaches a content fingerprint so an index from a different repository set
+is rejected. Generation and validation happen in a sibling temporary file; a
+failure preserves the old index and immediately falls back to the regular CKAN
+registry cache.
+
+For development or externally managed indexes, the explicit environment path
+is still supported:
 
 ```bash
 CKAN_CATALOG_INDEX_PATH=/path/to/catalog-index-latest.json ./scripts/run-linuxgui-dev.sh
@@ -245,7 +266,8 @@ and links it into the isolated dev data home when no explicit
 `CKAN_CATALOG_INDEX_PATH` is set.
 
 For repeated local use outside the dev launcher, either keep using
-`CKAN_CATALOG_INDEX_PATH` or symlink the generated file into app data:
+`CKAN_CATALOG_INDEX_PATH` or symlink a generated file into app data. Automatic
+refresh follows the symlink and replaces its target without removing the link:
 
 ```bash
 mkdir -p ~/.local/share/CKAN
@@ -253,13 +275,9 @@ ln -s /path/to/ckan-meta-rs/data/catalog-index-latest.json \
       ~/.local/share/CKAN/catalog-index-latest.json
 ```
 
-If the sidecar is missing, invalid, or not configured, the browser uses the
-normal CKAN metadata loader.
-
-If a configured sidecar predates CKAN's last repository-content update, the
-browser also falls back to the normal metadata loader until the sidecar is
-regenerated. The `ckan-meta-rs` checkout includes
-`scripts/refresh-ckan-linux-sidecar.sh` for a validated atomic refresh.
+If the helper or sidecar is missing or invalid, the browser uses the normal CKAN
+metadata loader. The fallback is always available and remains authoritative for
+dependency resolution, installs, removals, and registry writes.
 
 Catalog load timings are written to the dev session/debug logs. Look for these
 prefixes when comparing normal mode to sidecar mode:

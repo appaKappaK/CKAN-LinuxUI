@@ -326,7 +326,24 @@ namespace CKAN.App.Services
         {
             var totalWatch = Stopwatch.StartNew();
             var indexWatch = Stopwatch.StartNew();
-            var index = catalogIndexService.TryLoad();
+            var repositoryCachePaths = gameInstanceService.RepositoryData
+                .GetRepositoryCachePaths(context.Registry.Repositories.Values);
+            CatalogIndex? index = null;
+            try
+            {
+                if (repositoryCachePaths.Count > 0)
+                {
+                    var sourceFingerprint = CatalogIndexService
+                        .ComputeSourceFingerprint(repositoryCachePaths);
+                    index = catalogIndexService.TryLoad(repositoryCachePaths,
+                                                        sourceFingerprint);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    $"Mod catalog index fingerprint unavailable: {ex.Message}");
+            }
             indexWatch.Stop();
             if (index == null)
             {

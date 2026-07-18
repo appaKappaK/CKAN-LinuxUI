@@ -297,6 +297,121 @@ namespace Tests.App.Services
             }
         }
 
+        [Test]
+        public void ComputeSourceFingerprint_TracksOrderedCacheContents()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var firstPath  = Path.Combine(dir, "first.json");
+                var secondPath = Path.Combine(dir, "second.json");
+                File.WriteAllText(firstPath, "first");
+                File.WriteAllText(secondPath, "second");
+
+                var fingerprint = CatalogIndexService.ComputeSourceFingerprint(
+                    new[] { firstPath, secondPath });
+                var repeatedFingerprint = CatalogIndexService.ComputeSourceFingerprint(
+                    new[] { firstPath, secondPath });
+                var reversedFingerprint = CatalogIndexService.ComputeSourceFingerprint(
+                    new[] { secondPath, firstPath });
+                File.WriteAllText(secondPath, "changed");
+                var changedFingerprint = CatalogIndexService.ComputeSourceFingerprint(
+                    new[] { firstPath, secondPath });
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(fingerprint, Has.Length.EqualTo(64));
+                    Assert.That(repeatedFingerprint, Is.EqualTo(fingerprint));
+                    Assert.That(reversedFingerprint, Is.Not.EqualTo(fingerprint));
+                    Assert.That(changedFingerprint, Is.Not.EqualTo(fingerprint));
+                });
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Test]
+        public void TryLoad_WithSourceFingerprint_RequiresExactCacheFingerprint()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var repositoryPath = Path.Combine(dir, "repository.json");
+                var indexPath      = Path.Combine(dir, "catalog-index-latest.json");
+                File.WriteAllText(repositoryPath, "repository data");
+                var fingerprint = CatalogIndexService.ComputeSourceFingerprint(
+                    new[] { repositoryPath });
+                File.WriteAllText(indexPath, $@"{{
+                    ""schema_version"": 2,
+                    ""source"": ""fixture"",
+                    ""source_fingerprint"": ""{fingerprint}"",
+                    ""modules"": [
+                        {{ ""identifier"": ""CurrentModule"", ""name"": ""Current Module"", ""is_latest"": true }}
+                    ]
+                }}");
+                File.SetLastWriteTimeUtc(indexPath,
+                                         new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+                File.SetLastWriteTimeUtc(repositoryPath,
+                                         new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+
+                var matching = new CatalogIndexService().TryLoad(
+                    indexPath,
+                    new[] { repositoryPath },
+                    fingerprint);
+                var mismatching = new CatalogIndexService().TryLoad(
+                    indexPath,
+                    new[] { repositoryPath },
+                    new string('0', 64));
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(matching, Is.Not.Null,
+                                "a matching content fingerprint should supersede timestamps");
+                    Assert.That(mismatching, Is.Null);
+                });
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Test]
+        public void TryLoad_LegacyIndexWithoutFingerprint_StillUsesFreshness()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var repositoryPath = Path.Combine(dir, "repository.json");
+                var indexPath      = Path.Combine(dir, "catalog-index-latest.json");
+                File.WriteAllText(repositoryPath, "repository data");
+                File.WriteAllText(indexPath, @"{
+                    ""schema_version"": 1,
+                    ""source"": ""fixture"",
+                    ""modules"": [
+                        { ""identifier"": ""LegacyModule"", ""name"": ""Legacy Module"", ""is_latest"": true }
+                    ]
+                }");
+                File.SetLastWriteTimeUtc(repositoryPath,
+                                         new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+                File.SetLastWriteTimeUtc(indexPath,
+                                         new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+
+                var index = new CatalogIndexService().TryLoad(
+                    indexPath,
+                    new[] { repositoryPath },
+                    new string('0', 64));
+
+                Assert.That(index, Is.Not.Null);
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
         #if NET8_0_OR_GREATER
         [Test]
         public void TryLoad_WithSymlinkedIndex_UsesTargetTimestamp()
@@ -326,6 +441,28 @@ namespace Tests.App.Services
                 var index = new CatalogIndexService().TryLoad(linkPath, repositoryDir);
 
                 Assert.That(index, Is.Null);
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Test]
+        public void ResolveRefreshOutputPath_WithSymlink_ReturnsFinalTarget()
+        {
+            var dir = TestData.NewTempDir();
+            try
+            {
+                var targetPath = Path.Combine(dir, "generated-index.json");
+                var linkPath   = Path.Combine(dir, "catalog-index-latest.json");
+                File.WriteAllText(targetPath, "{}");
+                File.CreateSymbolicLink(linkPath, targetPath);
+
+                var outputPath = CatalogIndexService.ResolveRefreshOutputPath(linkPath);
+
+                Assert.That(outputPath, Is.EqualTo(targetPath));
+                Assert.That(new FileInfo(linkPath).LinkTarget, Is.Not.Null);
             }
             finally
             {

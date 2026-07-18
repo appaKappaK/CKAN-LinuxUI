@@ -12,6 +12,9 @@ namespace CKAN.App.Models
         [JsonProperty("source")]
         public string Source { get; init; } = "";
 
+        [JsonProperty("source_fingerprint")]
+        public string? SourceFingerprint { get; init; }
+
         [JsonProperty("modules")]
         public List<CatalogIndexModule> Modules { get; init; } = new List<CatalogIndexModule>();
     }

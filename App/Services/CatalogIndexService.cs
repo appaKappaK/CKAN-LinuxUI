@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 
 using Newtonsoft.Json;
 
@@ -44,6 +45,43 @@ namespace CKAN.App.Services
             => IsCurrentWithRepositoryCache(path, repositoryCachePath)
                 ? TryLoad(path)
                 : null;
+
+        public CatalogIndex? TryLoad(IReadOnlyList<string> repositoryCachePaths,
+                                     string                expectedSourceFingerprint)
+        {
+            foreach (var path in CandidatePaths())
+            {
+                var index = TryLoad(path,
+                                    repositoryCachePaths,
+                                    expectedSourceFingerprint);
+                if (index != null)
+                {
+                    return index;
+                }
+            }
+            return null;
+        }
+
+        public CatalogIndex? TryLoad(string                path,
+                                     IReadOnlyList<string> repositoryCachePaths,
+                                     string                expectedSourceFingerprint)
+        {
+            var index = TryLoad(path);
+            if (index == null)
+            {
+                return null;
+            }
+
+            return string.IsNullOrWhiteSpace(index.SourceFingerprint)
+                ? IsCurrentWithRepositoryCache(path, repositoryCachePaths)
+                    ? index
+                    : null
+                : string.Equals(index.SourceFingerprint,
+                                expectedSourceFingerprint,
+                                StringComparison.OrdinalIgnoreCase)
+                    ? index
+                    : null;
+        }
 
         public CatalogIndex? TryLoad(string path)
         {
@@ -89,6 +127,65 @@ namespace CKAN.App.Services
             }
         }
 
+        public string ResolveRefreshOutputPath()
+        {
+            var envPath = Environment.GetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH");
+            if (!string.IsNullOrWhiteSpace(envPath))
+            {
+                return ResolveRefreshOutputPath(envPath);
+            }
+
+            var candidates = CandidatePaths().ToArray();
+            var path = candidates.FirstOrDefault(File.Exists)
+                       ?? candidates.First();
+            return ResolveRefreshOutputPath(path);
+        }
+
+        public static string ResolveRefreshOutputPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("A catalog index path is required.", nameof(path));
+            }
+
+            var fullPath = Path.GetFullPath(path);
+            #if NET8_0_OR_GREATER
+            if (File.Exists(fullPath))
+            {
+                var target = File.ResolveLinkTarget(fullPath, returnFinalTarget: true);
+                if (target != null)
+                {
+                    return target.FullName;
+                }
+            }
+            #endif
+            return fullPath;
+        }
+
+        public static string ComputeSourceFingerprint(
+            IReadOnlyList<string> repositoryCachePaths)
+        {
+            if (repositoryCachePaths == null)
+            {
+                throw new ArgumentNullException(nameof(repositoryCachePaths));
+            }
+
+            using var sourceHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (var path in repositoryCachePaths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    throw new ArgumentException("Repository cache paths cannot be blank.",
+                                                nameof(repositoryCachePaths));
+                }
+
+                using var stream = File.OpenRead(path);
+                using var fileHash = SHA256.Create();
+                sourceHash.AppendData(fileHash.ComputeHash(stream));
+            }
+            return Convert.ToHexString(sourceHash.GetHashAndReset()).ToLowerInvariant();
+        }
+
         private static IEnumerable<string> CandidatePaths()
         {
             var envPath = Environment.GetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH");
@@ -120,6 +217,25 @@ namespace CKAN.App.Services
                                    .Max()
                         : DateTime.MinValue;
                 return indexWriteUtc >= repositoryContentWriteUtc;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsCurrentWithRepositoryCache(
+            string                indexPath,
+            IReadOnlyList<string> repositoryCachePaths)
+        {
+            try
+            {
+                var repositoryContentWriteUtc = repositoryCachePaths
+                    .Where(File.Exists)
+                    .Select(File.GetLastWriteTimeUtc)
+                    .DefaultIfEmpty(DateTime.MinValue)
+                    .Max();
+                return LastWriteTimeUtcFollowingLink(indexPath) >= repositoryContentWriteUtc;
             }
             catch
             {

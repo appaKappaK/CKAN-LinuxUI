@@ -78,6 +78,7 @@ namespace CKAN.LinuxGUI
         private readonly IModActionService    modActionService;
         private readonly IDisabledModService  disabledModService;
         private readonly AvaloniaUser         user;
+        private readonly ICatalogSidecarRefreshService? catalogSidecarRefreshService;
         private readonly ObservableAsPropertyHelper<bool> canUseSelectedInstance;
         private readonly SemaphoreSlim        catalogLoadSemaphore = new SemaphoreSlim(1, 1);
 
@@ -245,7 +246,8 @@ namespace CKAN.LinuxGUI
                                    IChangesetService    changesetService,
                                    IModActionService    modActionService,
                                    IDisabledModService  disabledModService,
-                                   AvaloniaUser         user)
+                                   AvaloniaUser         user,
+                                   ICatalogSidecarRefreshService? catalogSidecarRefreshService = null)
         {
             this.appSettingsService   = appSettingsService;
             this.gameInstanceService = gameInstanceService;
@@ -255,6 +257,7 @@ namespace CKAN.LinuxGUI
             this.modActionService    = modActionService;
             this.disabledModService  = disabledModService;
             this.user                = user;
+            this.catalogSidecarRefreshService = catalogSidecarRefreshService;
 
             Instances = new ObservableCollection<InstanceSummary>();
             Mods = new ObservableCollection<ModListItem>();

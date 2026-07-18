@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 
 using NUnit.Framework;
@@ -104,5 +105,36 @@ namespace Tests.Core.Repositories
                 CollectionAssert.IsNotEmpty(sut.GetAllAvailableModules(repos));
             }
         }
+
+        [Test]
+        public void GetRepositoryCachePaths_SortsDeduplicatesAndSkipsMissingFiles()
+        {
+            using (var reposDir = new TemporaryDirectory())
+            {
+                var sut         = new RepositoryDataManager(reposDir);
+                var firstByName = new Repository("Alpha", "https://example.test/alpha", 10);
+                var nextByName  = new Repository("Zulu",  "https://example.test/zulu",  10);
+                var last        = new Repository("Later", "https://example.test/later", 20);
+                var missing     = new Repository("Missing", "https://example.test/missing", 0);
+                var firstPath   = CachePath(reposDir, firstByName);
+                var nextPath    = CachePath(reposDir, nextByName);
+                var lastPath    = CachePath(reposDir, last);
+                File.WriteAllText(firstPath, "{}");
+                File.WriteAllText(nextPath,  "{}");
+                File.WriteAllText(lastPath,  "{}");
+
+                var paths = sut.GetRepositoryCachePaths(new[]
+                {
+                    last, nextByName, missing, firstByName, nextByName,
+                });
+
+                CollectionAssert.AreEqual(new[] { firstPath, nextPath, lastPath }, paths);
+                CollectionAssert.IsEmpty(sut.GetRepositoryCachePaths(null));
+            }
+        }
+
+        private static string CachePath(string reposDir, Repository repo)
+            => Path.Combine(reposDir,
+                            $"{NetFileCache.CreateURLHash(repo.uri)}-{repo.name}.json");
     }
 }

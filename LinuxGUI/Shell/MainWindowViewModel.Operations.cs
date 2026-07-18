@@ -59,9 +59,9 @@ namespace CKAN.LinuxGUI
             ClearApplyResult();
             try
             {
-                await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh);
+                var catalogChanged = await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh);
                 RefreshCurrentRegistryReference();
-                await LoadModCatalogAsync();
+                await LoadModCatalogAsync(forceReload: catalogChanged);
             }
             finally
             {

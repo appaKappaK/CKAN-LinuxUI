@@ -67,6 +67,21 @@ namespace CKAN
             => GetAllAvailDicts(repos).SelectMany(d => d.Values);
 
         /// <summary>
+        /// Return the existing on-disk cache files for the given repositories.
+        /// This does not load repository data or make any network calls.
+        /// </summary>
+        /// <param name="repos">Sequence of repositories whose cache files should be returned</param>
+        /// <returns>Existing cache paths in repository priority and name order</returns>
+        public IReadOnlyList<string> GetRepositoryCachePaths(IEnumerable<Repository>? repos)
+            => repos?.Distinct()
+                     .OrderBy(repo => repo.priority)
+                     .ThenBy(repo => repo.name)
+                     .Select(GetRepoDataPath)
+                     .Where(File.Exists)
+                     .ToArray()
+               ?? Array.Empty<string>();
+
+        /// <summary>
         /// Get the cached download count for a given identifier
         /// </summary>
         /// <param name="repos">The repositories from which to get download count data</param>

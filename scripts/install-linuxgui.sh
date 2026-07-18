@@ -234,6 +234,19 @@ else
 fi
 
 elapsed=$((SECONDS - START_TIME))
+SIDECAR_HELPER=""
+for candidate in \
+    "${CKAN_META_RS_PATH:-}" \
+    "$PREFIX/bin/ckan-meta-rs" \
+    "${XDG_BIN_HOME:+$XDG_BIN_HOME/ckan-meta-rs}" \
+    "$HOME/.local/bin/ckan-meta-rs"
+do
+    if [[ -n "$candidate" && -x "$candidate" ]]; then
+        SIDECAR_HELPER=$candidate
+        break
+    fi
+done
+
 cat <<EOF
 
 ${GREEN}Install complete in ${elapsed}s.${RESET}
@@ -247,3 +260,10 @@ Run it with:
 If that command is not found, add this to your shell profile:
   export PATH="$PREFIX/bin:\$PATH"
 EOF
+
+if [[ -n "$SIDECAR_HELPER" ]]; then
+    ok "Rust catalog auto-refresh is available through $SIDECAR_HELPER"
+else
+    warn "Optional Rust catalog auto-refresh is unavailable (ckan-meta-rs was not found)."
+    detail "The normal CKAN registry catalog remains fully functional."
+fi
