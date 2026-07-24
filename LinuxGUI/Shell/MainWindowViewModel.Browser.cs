@@ -393,13 +393,14 @@ namespace CKAN.LinuxGUI
                 ReloadInstances(loadCatalog: false, updateReadyStatus: !wasReady);
                 if (IsReady)
                 {
-                    if (!wasReady
-                        && !hasRunStartupRepositoryRefresh
-                        && SettingsWindow.RefreshOnStartupEnabled(CurrentInstance))
+                    if (!hasRunStartupRepositoryRefresh)
                     {
                         hasRunStartupRepositoryRefresh = true;
-                        await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
-                        RefreshCurrentRegistryReference();
+                        if (SettingsWindow.RefreshOnStartupEnabled(CurrentInstance))
+                        {
+                            await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
+                            RefreshCurrentRegistryReference();
+                        }
                     }
                     await LoadModCatalogAsync(forceReload: true);
                 }

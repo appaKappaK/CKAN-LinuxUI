@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,6 +47,32 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.That(viewModel.ShowLegacyHeader, Is.False);
                 Assert.That(viewModel.CurrentInstanceName, Is.EqualTo("Career Save"));
             });
+        }
+
+        [AvaloniaTest]
+        public async Task ReadyWarmStartup_HandlesStartupRepositoryRefresh()
+        {
+            var settings = new FakeAppSettingsService();
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(
+                settings,
+                service,
+                new FakeModCatalogService(),
+                new ModSearchService(settings),
+                changes,
+                new FakeModActionService(changes),
+                new FakeDisabledModService(),
+                new AvaloniaUser());
+
+            await WaitForAsync(() => service.ReloadCurrentRegistryCallCount > 0);
+
+            var handledField = typeof(MainWindowViewModel).GetField(
+                "hasRunStartupRepositoryRefresh",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(handledField, Is.Not.Null);
+            Assert.That(handledField!.GetValue(viewModel), Is.True);
         }
 
         [AvaloniaTest]
