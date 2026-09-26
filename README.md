@@ -1,5 +1,13 @@
 # CKAN LinuxGUI
 
+> **⚠️ Warning – Uninstall behavior is currently unreliable**  
+> Uninstalling mods can incorrectly remove other packages.  
+> Example: uninstalling then reinstalling Kopernicus removed Parallax.  
+> Always read the removal confirmation dialog carefully — it may list multiple auto-removals (e.g. the entire Parallax group).  
+> This will be fixed in a future release.
+
+---
+
 CKAN LinuxGUI is this fork's Linux desktop shell for the Comprehensive Kerbal
 Archive Network (CKAN). Its desktop entry point is `ckan-linux`, which launches
 the self-contained `CKAN-LinuxGUI` Avalonia app. The shell uses the existing
