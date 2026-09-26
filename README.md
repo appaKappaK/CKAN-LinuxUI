@@ -19,7 +19,7 @@ interfaces are not included. A separate .NET 8 command-line build remains
 available for scripting and headless maintenance.
 ### Status
 
-The LinuxGUI shell is still under active development.
+The LinuxGUI shell is under passive development.
 
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
