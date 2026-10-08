@@ -1,5 +1,7 @@
 # CKAN LinuxGUI
 
+![AI-assisted development](https://img.shields.io/badge/development-AI--assisted-1f3a5f?style=flat-square)
+
 > **⚠️ Warning – Uninstall behavior is currently unreliable**  
 > Uninstalling mods can incorrectly remove other packages.  
 > Example: uninstalling Kopernicus removed Parallax.  
