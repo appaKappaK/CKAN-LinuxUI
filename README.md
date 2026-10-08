@@ -2,8 +2,7 @@
 
 > **⚠️ Warning – Uninstall behavior is currently unreliable**  
 > Uninstalling mods can incorrectly remove other packages.  
-> Example: uninstalling then reinstalling Kopernicus removed Parallax.  
-> Always read the removal confirmation dialog carefully — it may list multiple auto-removals (e.g. the entire Parallax group).  
+> Example: uninstalling Kopernicus removed Parallax.  
 > This will be fixed in a future release.
 
 ---
