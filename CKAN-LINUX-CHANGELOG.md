@@ -3,6 +3,14 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
+## Unreleased
+
+### Queue and Removal Safety
+- Fixed single-mod version selection so explicit downgrades and installs of an older catalog version are actually queued instead of being silently rejected by the latest-version row state.
+- Show the exact selected version in the queue with a `Download` hint for explicit install/update targets.
+- Added a Settings opt-out for automatic removal of dependent and unused auto-installed mods when removing a mod.
+- Added preview `View` and per-mod `Keep` actions for reviewing automatic removals before applying changes.
+
 ## 2026-07-18
 
 ### Linux-First Product Cleanup
@@ -45,6 +53,7 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 - Fixed cached-state detection so a mod still shows as cached when any available archive for that identifier remains in the download cache, even after the mod is uninstalled.
 - Reworked the Settings update panel for CKAN Linux packaging: CKAN Linux is shown as not versioned until release metadata exists, Linux GUI update checks are disabled, bundled/latest core versions are shown separately, and the releases page can be opened directly.
 - Added an opt-in Settings toggle to prune installation-history snapshots older than 30 days; history pruning is disabled by default.
+- Added an auto-removal preview with browser viewing and per-mod Keep actions, so automatic removal can be reviewed or preserved before apply.
 - Removed Settings controls that do not apply to the current LinuxGUI build, including language selection, tray behavior, unavailable auto-sort behavior, and dev-build update toggles.
 - Clarified Manage Game Instances copy and action labels now that instance-management changes save immediately and switching uses `Open Install`.
 

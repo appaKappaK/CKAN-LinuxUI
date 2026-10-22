@@ -800,7 +800,9 @@ namespace CKAN.IO
                                   ref HashSet<string>?             possibleConfigOnlyDirs,
                                   RegistryManager                  registry_manager,
                                   bool                             ConfirmPrompt = true,
-                                  IReadOnlyCollection<CkanModule>? installing    = null)
+                                  IReadOnlyCollection<CkanModule>? installing    = null,
+                                  bool                             removeDependents = true,
+                                  IReadOnlySet<string>?            preservedIdentifiers = null)
         {
             mods = mods.Memoize();
             installing ??= Array.Empty<CkanModule>();
@@ -820,19 +822,25 @@ namespace CKAN.IO
             }
 
             // Find all the things which need uninstalling.
-            var revdep = mods
-                .Union(registry_manager.registry.FindReverseDependencies(
-                    mods.Except(installing.Select(m => m.identifier)).ToArray(),
-                    installing))
-                .ToArray();
+            var revdep = removeDependents
+                ? mods
+                    .Union(registry_manager.registry.FindReverseDependencies(
+                        mods.Except(installing.Select(m => m.identifier)).ToArray(),
+                        installing))
+                    .ToArray()
+                : mods.ToArray();
 
-            var goners = revdep.Union(
-                                registry_manager.registry.FindRemovableAutoInstalled(installing,
-                                                                                     revdep.ToHashSet(),
-                                                                                     instance)
-                                                         .Select(im => im.identifier))
-                               .Order()
-                               .ToArray();
+            var goners = (removeDependents
+                ? revdep.Union(
+                    registry_manager.registry.FindRemovableAutoInstalled(installing,
+                                                                         revdep.ToHashSet(),
+                                                                         instance)
+                                                     .Select(im => im.identifier))
+                : revdep)
+                .Where(identifier => preservedIdentifiers == null
+                                    || !preservedIdentifiers.Contains(identifier))
+                .Order()
+                .ToArray();
 
             // If there is nothing to uninstall, skip out.
             if (goners.Length == 0)

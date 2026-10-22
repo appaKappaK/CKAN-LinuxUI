@@ -127,13 +127,24 @@ namespace CKAN.LinuxGUI
 
         public bool ShowQueueContextAction(ModListItem mod)
             => !IsApplyingChanges
-               && (changesetService.FindQueuedApplyAction(mod.Identifier) != null
+               && (IsPreviewAutoRemovalScope
+                   || changesetService.FindQueuedApplyAction(mod.Identifier) != null
                || CanQueueInstall(mod)
                || CanQueueUpdate(mod)
                || CanQueueRemove(mod));
 
+        private bool IsPreviewAutoRemovalScope
+            => string.Equals(RelationshipBrowserScopeText,
+                             "Preview auto-removals",
+                             StringComparison.OrdinalIgnoreCase);
+
         public string QueueContextLabel(ModListItem mod)
         {
+            if (IsPreviewAutoRemovalScope)
+            {
+                return "Keep (Do Not Remove)";
+            }
+
             var queued = changesetService.FindQueuedApplyAction(mod.Identifier);
             if (queued != null)
             {
@@ -160,6 +171,13 @@ namespace CKAN.LinuxGUI
         {
             if (IsApplyingChanges)
             {
+                return;
+            }
+
+            if (IsPreviewAutoRemovalScope)
+            {
+                changesetService.PreserveAutoRemoval(mod.Identifier);
+                StatusMessage = $"Keeping {mod.Name}; it will not be removed by this apply.";
                 return;
             }
 

@@ -404,7 +404,7 @@
               Grid.ColumnSpan="2"
               Classes="settings-group"
               Margin="0,0,0,14">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="Download Cache" />
           <Grid Grid.Row="1"
@@ -516,7 +516,7 @@
               Grid.Column="1"
               Grid.ColumnSpan="2"
               Classes="settings-group">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
           <TextBlock Classes="settings-group-title"
                      Text="More Settings" />
           <CheckBox Grid.Row="1"
@@ -536,6 +536,11 @@
                     IsChecked="{Binding PreselectRecommendedMods}"
                     Content="Preselect recommended mods when prompted" />
           <CheckBox Grid.Row="5"
+                    Classes="settings-check"
+                    IsChecked="{Binding AutoRemoveUnusedDependencies}"
+                    ToolTip.Tip="When disabled, removing a mod will leave dependent and unused auto-installed mods for manual review."
+                    Content="Automatically remove unused dependencies" />
+          <CheckBox Grid.Row="6"
                     Classes="settings-check"
                     IsChecked="{Binding PruneInstallHistory}"
                     ToolTip.Tip="When enabled, removes saved installation snapshots older than 30 days."

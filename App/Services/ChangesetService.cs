@@ -11,6 +11,8 @@ namespace CKAN.App.Services
     {
         private readonly Dictionary<string, QueuedActionModel> queue
             = new Dictionary<string, QueuedActionModel>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> preservedAutoRemovalIdentifiers
+            = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public IReadOnlyList<QueuedActionModel> CurrentQueue
             => SortedQueue();
@@ -20,6 +22,9 @@ namespace CKAN.App.Services
 
         public IReadOnlyList<QueuedActionModel> CurrentDownloadQueue
             => SortedQueue(item => item.ActionKind == QueuedActionKind.Download);
+
+        public IReadOnlySet<string> PreservedAutoRemovalIdentifiers
+            => preservedAutoRemovalIdentifiers;
 
         public event Action? QueueChanged;
 
@@ -132,20 +137,39 @@ namespace CKAN.App.Services
 
         public void Clear()
         {
-            if (queue.Count == 0)
+            if (queue.Count == 0 && preservedAutoRemovalIdentifiers.Count == 0)
             {
                 return;
             }
 
             queue.Clear();
+            preservedAutoRemovalIdentifiers.Clear();
             QueueChanged?.Invoke();
         }
 
         public void ClearApplyQueue()
-            => ClearWhere(item => item.ActionKind != QueuedActionKind.Download);
+        {
+            ClearWhere(item => item.ActionKind != QueuedActionKind.Download);
+            if (preservedAutoRemovalIdentifiers.Count > 0)
+            {
+                preservedAutoRemovalIdentifiers.Clear();
+                QueueChanged?.Invoke();
+            }
+        }
 
         public void ClearDownloadQueue()
             => ClearWhere(item => item.ActionKind == QueuedActionKind.Download);
+
+        public void PreserveAutoRemoval(string identifier)
+        {
+            if (string.IsNullOrWhiteSpace(identifier)
+                || !preservedAutoRemovalIdentifiers.Add(identifier.Trim()))
+            {
+                return;
+            }
+
+            QueueChanged?.Invoke();
+        }
 
         private static string UpdateActionText(string installedVersion,
                                                string? targetVersion)

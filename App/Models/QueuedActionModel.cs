@@ -26,6 +26,15 @@ namespace CKAN.App.Models
 
         public bool HasSourceText => !string.IsNullOrWhiteSpace(SourceText);
 
+        public string DownloadText
+            => !string.IsNullOrWhiteSpace(TargetVersion)
+               && (ActionKind == QueuedActionKind.Install
+                   || ActionKind == QueuedActionKind.Update)
+                ? "Download"
+                : "";
+
+        public bool HasDownloadText => !string.IsNullOrWhiteSpace(DownloadText);
+
         public string VersionText
         {
             get

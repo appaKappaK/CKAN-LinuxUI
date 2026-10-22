@@ -458,6 +458,7 @@ namespace CKAN.LinuxGUI
             ViewSelectedModRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("recommendations", SelectedModRecommendations));
             ViewSelectedModSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowRelationshipsInBrowser("suggestions", SelectedModSuggestions));
             ViewPreviewDependenciesInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("dependencies", PreviewDependencies));
+            ViewPreviewAutoRemovalsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("auto-removals", PreviewAutoRemovals));
             ViewPreviewRecommendationsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("recommendations", PreviewRecommendations));
             ViewPreviewSuggestionsInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("suggestions", PreviewSuggestions));
             ViewPreviewSupportersInBrowserCommand = ReactiveCommand.Create(() => ShowPreviewEntriesInBrowser("supporters", PreviewSupporters));
@@ -761,6 +762,9 @@ namespace CKAN.LinuxGUI
         public ReactiveCommand<Unit, Unit> ViewSelectedModSuggestionsInBrowserCommand { get; }
 
         public ReactiveCommand<Unit, Unit> ViewPreviewDependenciesInBrowserCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> ViewPreviewAutoRemovalsInBrowserCommand { get; }
+
 
         public ReactiveCommand<Unit, Unit> ViewPreviewRecommendationsInBrowserCommand { get; }
 
@@ -1520,6 +1524,21 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public bool AutoRemoveUnusedDependencies
+        {
+            get => appSettingsService.AutoRemoveUnusedDependencies;
+            set
+            {
+                if (appSettingsService.AutoRemoveUnusedDependencies == value)
+                {
+                    return;
+                }
+
+                appSettingsService.SaveAutoRemoveUnusedDependencies(value);
+                this.RaisePropertyChanged();
+            }
+        }
+
 
         public bool ShowStartupInstancePanel => !IsReady;
 
@@ -1736,17 +1755,25 @@ namespace CKAN.LinuxGUI
         private bool CanQueueInstallFromSelection(ModListItem mod)
             => HasMultipleSelectedMods
                 ? CanQueueInstall(mod)
-                : !mod.IsInstalled && !mod.IsIncompatible;
+                : !mod.IsInstalled
+                  && (SelectedModVersionChoice != null
+                      ? SelectedModSelectedVersionIsCompatible
+                      : !mod.IsIncompatible);
 
         private bool CanQueueUpdateFromSelection(ModListItem mod)
             => HasMultipleSelectedMods
                 ? CanQueueUpdate(mod)
-                : mod.IsInstalled && mod.HasVersionUpdate;
+                : mod.IsInstalled
+                  && (SelectedModVersionChoice != null
+                      ? !SelectedModSelectedVersionMatchesInstalled
+                      : mod.HasVersionUpdate);
 
         private bool CanQueueRemoveFromSelection(ModListItem mod)
             => HasMultipleSelectedMods
                 ? CanQueueRemove(mod)
-                : mod.IsInstalled;
+                : mod.IsInstalled
+                  && (SelectedModVersionChoice == null
+                      || SelectedModSelectedVersionMatchesInstalled);
 
         public bool IsSelectedModLoading
         {
@@ -1883,6 +1910,8 @@ namespace CKAN.LinuxGUI
 
         public bool HasPreviewDependenciesOrOptional
             => HasPreviewDependencies || HasPreviewOptionalExtras;
+
+        public bool ShowPreviewAutoRemovalsInRightPanel => false;
 
         public bool HasPreviewConflicts => PreviewConflicts.Count > 0;
 

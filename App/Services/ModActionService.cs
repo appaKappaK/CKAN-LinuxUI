@@ -16,14 +16,17 @@ namespace CKAN.App.Services
         private readonly IGameInstanceService gameInstanceService;
         private readonly IChangesetService    changesetService;
         private readonly IUser                user;
+        private readonly IAppSettingsService  appSettingsService;
 
         public ModActionService(IGameInstanceService gameInstanceService,
                                 IChangesetService    changesetService,
-                                IUser                user)
+                                IUser                user,
+                                IAppSettingsService? appSettingsService = null)
         {
             this.gameInstanceService = gameInstanceService;
             this.changesetService    = changesetService;
             this.user                = user;
+            this.appSettingsService  = appSettingsService ?? new AppSettingsService();
         }
 
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
@@ -255,7 +258,9 @@ namespace CKAN.App.Services
                                                             ref possibleConfigOnlyDirs,
                                                             registryManager,
                                                             false,
-                                                            toInstall.Concat(toUpgrade).ToList());
+                                                            toInstall.Concat(toUpgrade).ToList(),
+                                                            appSettingsService.AutoRemoveUnusedDependencies,
+                                                            changesetService.PreservedAutoRemovalIdentifiers);
                                     toUninstall.Clear();
                                 }
 
@@ -707,6 +712,15 @@ namespace CKAN.App.Services
                         autoRemovalModules = registry.FindRemovableAutoInstalled(combinedInstalls,
                                                                                   plannedRemovalIdentifiers,
                                                                                   instance)
+                                                     .Where(im => !changesetService.PreservedAutoRemovalIdentifiers.Contains(im.identifier))
+                                                     .Concat(registry.InstalledModules
+                                                             .Where(im => plannedRemovalIdentifiers.Contains(im.identifier)
+                                                                          && !requestedRemovals.Any(requested => string.Equals(requested.identifier,
+                                                                                                                            im.identifier,
+                                                                                                                            StringComparison.OrdinalIgnoreCase))
+                                                                          && !changesetService.PreservedAutoRemovalIdentifiers.Contains(im.identifier)))
+                                                     .GroupBy(im => im.identifier, StringComparer.OrdinalIgnoreCase)
+                                                     .Select(group => group.First())
                                                      .ToList();
                         autoRemovals.AddRange(
                             BuildAutoRemovalDescriptions(autoRemovalModules,

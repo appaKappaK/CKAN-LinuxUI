@@ -95,6 +95,26 @@ namespace CKAN.App.Services
             }
         }
 
+        public bool AutoRemoveUnusedDependencies
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return settings.AutoRemoveUnusedDependencies;
+                }
+            }
+        }
+
+        public void SaveAutoRemoveUnusedDependencies(bool enabled)
+        {
+            lock (sync)
+            {
+                settings.AutoRemoveUnusedDependencies = enabled;
+                SaveSettings();
+            }
+        }
+
         public ModBrowserColumnLayout ModBrowserColumnLayout
         {
             get
@@ -466,6 +486,8 @@ namespace CKAN.App.Services
             public int UiScalePercent { get; set; } = UiScaleSettings.DefaultPercent;
 
             public bool PreselectRecommendedMods { get; set; }
+
+            public bool AutoRemoveUnusedDependencies { get; set; } = true;
 
             public ModBrowserColumnLayout ModBrowserColumnLayout { get; set; } = new ModBrowserColumnLayout();
 

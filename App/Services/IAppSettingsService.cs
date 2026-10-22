@@ -20,6 +20,8 @@ namespace CKAN.App.Services
 
         bool PreselectRecommendedMods { get; }
 
+        bool AutoRemoveUnusedDependencies { get; }
+
         ModBrowserColumnLayout ModBrowserColumnLayout { get; }
 
         IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; }
@@ -36,6 +38,8 @@ namespace CKAN.App.Services
         void SaveUiScalePercent(int uiScalePercent);
 
         void SavePreselectRecommendedMods(bool preselectRecommendedMods);
+
+        void SaveAutoRemoveUnusedDependencies(bool enabled);
 
         void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout);
 

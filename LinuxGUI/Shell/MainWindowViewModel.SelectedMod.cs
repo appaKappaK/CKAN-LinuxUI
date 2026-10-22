@@ -426,6 +426,20 @@ namespace CKAN.LinuxGUI
             PublishRelationshipBrowserScopeState();
         }
 
+        public void PreservePreviewAutoRemovalFromUi(string entry)
+        {
+            var matchingItem = FindPreviewEntryMod(PreviewEntryModText(entry));
+            if (matchingItem == null)
+            {
+                StatusMessage = "Could not identify that auto-removal in the current catalog.";
+                return;
+            }
+
+            changesetService.PreserveAutoRemoval(matchingItem.Identifier);
+            StatusMessage = $"Keeping {matchingItem.Name}; it will not be removed by this apply.";
+            _ = LoadPreviewAsync();
+        }
+
         private void ShowQueuedActionsInBrowser()
         {
             var queuedActions = QueuedActions

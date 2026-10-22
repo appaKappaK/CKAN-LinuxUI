@@ -4427,11 +4427,13 @@
                     </StackPanel>
                   </Border>
 
-                  <Grid ColumnDefinitions="1.08*,0.92*"
+                  <Grid RowDefinitions="*,Auto"
+                        ColumnDefinitions="1.08*,0.92*"
                         Classes="preview-workspace-content"
                         Classes.conflict-popup-open="{Binding ShowPreviewConflictPopup}"
                         IsVisible="{Binding ShowPreviewActiveWorkspace}">
-                    <Border Background="#1A2027"
+                    <Border Grid.Row="0"
+                            Background="#1A2027"
                             BorderBrush="#40648B"
                             BorderThickness="1"
                             CornerRadius="10"
@@ -4470,7 +4472,7 @@
                                   BorderThickness="0,0,0,1"
                                   Margin="12,0,12,0"
                                   Padding="0">
-                            <Grid ColumnDefinitions="4,*,116,92">
+                            <Grid ColumnDefinitions="4,*,104,132">
                               <Border Background="Transparent"
                                       CornerRadius="7,0,0,0" />
                               <TextBlock Grid.Column="1"
@@ -4517,7 +4519,7 @@
                                         Padding="0"
                                         PointerPressed="PreviewQueueRow_OnPointerPressed">
                                   <Grid>
-                                    <Grid ColumnDefinitions="4,*,116,92">
+                            <Grid ColumnDefinitions="4,*,104,132">
                                       <Border Background="{Binding AccentBrush}"
                                               CornerRadius="5,0,0,5" />
                                       <Border Grid.Column="1"
@@ -4541,7 +4543,7 @@
                                       <Border Grid.Column="2"
                                               BorderBrush="#24303B"
                                               BorderThickness="1,0,0,0"
-                                              Padding="10,0,0,0">
+                                              Padding="0">
                                         <Border Background="{Binding ActionBadgeBackground}"
                                                 BorderBrush="{Binding ActionBadgeBorderBrush}"
                                                 BorderThickness="1"
@@ -4558,10 +4560,15 @@
                                               BorderBrush="#24303B"
                                               BorderThickness="1,0,0,0"
                                               Padding="10,0,0,0">
-                                        <TextBlock Classes="row-version-primary"
-                                                   VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding VersionText}" />
+                                        <StackPanel VerticalAlignment="Center"
+                                                    Spacing="2">
+                                          <TextBlock Classes="row-version-primary"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     Text="{Binding VersionText}" />
+                                          <TextBlock Classes="row-summary"
+                                                     Text="{Binding DownloadText}"
+                                                     IsVisible="{Binding HasDownloadText}" />
+                                        </StackPanel>
                                       </Border>
                                     </Grid>
                                     <Border Classes="queue-row-status-tint"
@@ -4631,7 +4638,75 @@
                       </Grid>
                     </Border>
 
+                    <Border Grid.Row="1"
+                            Background="#171B20"
+                            BorderBrush="#9C6A72"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,12,12,0"
+                            IsVisible="{Binding HasPreviewAutoRemovals}">
+                      <StackPanel Spacing="7">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <TextBlock FontWeight="SemiBold"
+                                     VerticalAlignment="Center"
+                                     Text="Auto-Removals" />
+                          <Button Grid.Column="1"
+                                  Classes="detail-section-action"
+                                  Command="{Binding ViewPreviewAutoRemovalsInBrowserCommand}"
+                                  Content="View" />
+                          <Border Grid.Column="2"
+                                  Background="#4B2734"
+                                  BorderBrush="#8E4A5F"
+                                  BorderThickness="1"
+                                  CornerRadius="999"
+                                  Padding="7,2"
+                                  Margin="8,0,0,0">
+                            <TextBlock FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#FFE6EE"
+                                       Text="{Binding PreviewAutoRemovalCountLabel}" />
+                          </Border>
+                        </Grid>
+                        <Border Background="#12171D"
+                                BorderBrush="#9C6A72"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                ClipToBounds="True">
+                          <ScrollViewer MaxHeight="165"
+                                        Classes="preview-section-scroll"
+                                        VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding PreviewAutoRemovals}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                  <Border Background="#181D23"
+                                          BorderBrush="#202A33"
+                                          BorderThickness="0,0,0,1">
+                                    <Grid ColumnDefinitions="4,*,Auto">
+                                      <Border Background="#9C6A72" />
+                                      <TextBlock Grid.Column="1"
+                                                 Margin="8,6"
+                                                 FontSize="12"
+                                                 MaxLines="1"
+                                                 TextTrimming="CharacterEllipsis"
+                                                 Text="{Binding}" />
+                                      <Button Grid.Column="2"
+                                              Classes="detail-section-action"
+                                              Margin="6,3,4,3"
+                                              Click="PreservePreviewAutoRemovalButton_OnClick"
+                                              Content="Keep" />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </ScrollViewer>
+                        </Border>
+                      </StackPanel>
+                    </Border>
+
                     <Border Grid.Column="1"
+                            Grid.RowSpan="2"
                             Background="Transparent"
                             CornerRadius="10"
                             Padding="16,0,16,16"
@@ -4753,13 +4828,17 @@
                                     CornerRadius="8"
                                     Padding="10"
                                     BoxShadow="0 10 22 0 #22000000"
-                                    IsVisible="{Binding HasPreviewAutoRemovals}">
+                                    IsVisible="{Binding ShowPreviewAutoRemovalsInRightPanel}">
                               <StackPanel Spacing="7">
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
                                   <TextBlock FontWeight="SemiBold"
                                              VerticalAlignment="Center"
                                              Text="Auto-Removals" />
-                                  <Border Grid.Column="1"
+                                  <Button Grid.Column="1"
+                                          Classes="detail-section-action"
+                                          Command="{Binding ViewPreviewAutoRemovalsInBrowserCommand}"
+                                          Content="View" />
+                                  <Border Grid.Column="2"
                                           Background="#4B2734"
                                           BorderBrush="#8E4A5F"
                                           BorderThickness="1"
@@ -4787,7 +4866,7 @@
                                           <Border Background="#181D23"
                                                   BorderBrush="#202A33"
                                                   BorderThickness="0,0,0,1">
-                                            <Grid ColumnDefinitions="4,*">
+                                            <Grid ColumnDefinitions="4,*,Auto">
                                               <Border Background="#9C6A72" />
                                               <TextBlock Grid.Column="1"
                                                          Margin="8,6"
@@ -4795,6 +4874,11 @@
                                                          MaxLines="1"
                                                          TextTrimming="CharacterEllipsis"
                                                          Text="{Binding}" />
+                                              <Button Grid.Column="2"
+                                                      Classes="detail-section-action"
+                                                      Margin="6,3,4,3"
+                                                      Click="PreservePreviewAutoRemovalButton_OnClick"
+                                                      Content="Keep" />
                                             </Grid>
                                           </Border>
                                         </DataTemplate>
@@ -4841,7 +4925,7 @@
                                           BorderThickness="1"
                                           CornerRadius="6"
                                           ClipToBounds="True">
-                                    <ScrollViewer Height="120"
+                                    <ScrollViewer MaxHeight="165"
                                                   Classes="preview-section-scroll"
                                                   VerticalScrollBarVisibility="Auto"
                                                   PointerWheelChanged="PreviewRecommendationsScrollViewer_OnPointerWheelChanged">

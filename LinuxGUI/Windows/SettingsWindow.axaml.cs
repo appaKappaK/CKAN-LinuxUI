@@ -685,6 +685,19 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool AutoRemoveUnusedDependencies
+            {
+                get => mainWindowViewModel?.AutoRemoveUnusedDependencies ?? true;
+                set
+                {
+                    if (mainWindowViewModel != null)
+                    {
+                        mainWindowViewModel.AutoRemoveUnusedDependencies = value;
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
             public IReadOnlyList<ReleaseStatusOption> StabilityToleranceOptions { get; }
 
             public ReleaseStatusOption? SelectedStabilityTolerance

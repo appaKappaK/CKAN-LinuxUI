@@ -21,6 +21,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public bool PreselectRecommendedMods { get; private set; }
 
+        public bool AutoRemoveUnusedDependencies { get; private set; } = true;
+
         public ModBrowserColumnLayout ModBrowserColumnLayout { get; private set; } = new ModBrowserColumnLayout();
 
         public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; private set; }
@@ -46,6 +48,9 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public void SavePreselectRecommendedMods(bool preselectRecommendedMods)
             => PreselectRecommendedMods = preselectRecommendedMods;
+
+        public void SaveAutoRemoveUnusedDependencies(bool enabled)
+            => AutoRemoveUnusedDependencies = enabled;
 
         public void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout)
             => ModBrowserColumnLayout = layout?.Clone() ?? new ModBrowserColumnLayout();

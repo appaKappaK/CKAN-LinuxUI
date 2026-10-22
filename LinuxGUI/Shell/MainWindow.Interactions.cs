@@ -34,6 +34,17 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private void PreservePreviewAutoRemovalButton_OnClick(object? sender,
+                                                               RoutedEventArgs e)
+        {
+            if (sender is Button button
+                && button.DataContext is string entry
+                && DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.PreservePreviewAutoRemovalFromUi(entry);
+            }
+        }
+
         private void PreviewConflictRowButton_OnClick(object? sender,
                                                       RoutedEventArgs e)
         {
