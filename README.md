@@ -7,7 +7,7 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
 > **Review removals before applying:** Removing a mod may also remove mods that
-> depend on it. Check the Auto-Removals section in Preview; use **Keep** for
+> depend on it. Check the Auto-Removals section in Review; use **Keep** for
 > anything you intend to preserve.
 
 ## Status
@@ -35,8 +35,8 @@ directly:
 ## What This Fork Adds
 
 - A native Linux desktop app, launched as `ckan-linux`.
-- A queue-and-preview workflow: installs, updates, removals, and downloads are
-  queued first, and a preview shows what will happen (including dependencies)
+- A queue-and-review workflow: installs, updates, removals, and downloads are
+  queued first, and Review shows what will happen (including dependencies)
   before anything is applied.
 - A local installer that adds `ckan-linux` without touching an existing system
   `ckan` command.

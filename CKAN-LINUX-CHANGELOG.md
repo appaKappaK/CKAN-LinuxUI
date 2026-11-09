@@ -5,6 +5,10 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## Unreleased
 
+### Review
+- Keep optional recommendations available when a recommended mod is already a required dependency.
+- Align queue column headers with their rows when the list gains or loses a scrollbar.
+
 ### Updates
 - Check the latest upstream CKAN release independently of CKAN Linux release checks.
 

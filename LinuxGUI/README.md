@@ -27,7 +27,7 @@ desktop surface by role:
 - `Models/` contains Linux GUI view-model support items used by bindings.
 - `Services/` contains Linux GUI service adapters and controller glue.
 
-## Current Desktop Flow
+## Desktop Workflow
 
 The app starts on the mod browser for the current instance. When no saved
 browser filter is active, the default mod list is `Installed`, so cleanup and
@@ -59,7 +59,7 @@ before rebuilding the browser and rescans unmanaged `GameData` DLLs, so changes
 made outside the current session, including manually installed DLL mods such as
 `scatterer`, are reflected without closing and reopening CKAN Linux.
 
-Actions are queued before they are applied. Use the `Preview` surface to inspect
+Actions are queued before they are applied. Use the `Review` tab to inspect
 what CKAN Linux is about to do:
 
 - direct installs, updates, removals, and downloads
@@ -85,7 +85,7 @@ removes the leftovers and any empty parent mod folders.
 Optional recommendations, suggestions, and supported mods are informational.
 Use the `View` button on each optional section to open Browse filtered to those
 mods, queue any extras you want, then use the `Close` button in the notice above
-the mod list to return to Preview. The `Apply Changes` button does not require
+the mod list to return to Review. The `Apply Changes` button does not require
 reviewing optional extras first.
 
 Required virtual dependencies are different. If several mods provide the same
@@ -106,9 +106,18 @@ The `Mods` menu includes maintenance actions for large cleanup passes:
 - `Queue remove all installed mods` replaces the current apply queue with
   removals for CKAN-managed installed mods.
 
-Removal previews also include dependent removals for installed mods that would
-break, plus auto-removable dependencies where the registry can prove they are
-no longer required by anything that will remain installed.
+Review lists dependent removals and unused auto-installed dependencies under
+`Auto-Removals`. Use `Keep` to preserve an item, or `View` to inspect the list in
+Browse. Keeping a dependent while removing a required dependency can leave that
+mod unable to work until the dependency is restored.
+
+Settings offers a `Show Review counts` switch with individual controls for the
+five Review section badges. Turning the main switch off preserves the individual
+choices for when counts are enabled again.
+
+In Settings, `Automatically remove unused dependencies` controls automatic
+removal of both dependent mods and unused auto-installed dependencies. Turning
+it off leaves them installed for manual review.
 
 `Mods > Installation History` opens as a non-modal utility window. Keep it open
 while browsing the mod list to cross-reference saved snapshots against current
@@ -187,12 +196,18 @@ launch it as `ckan-linux`. Use `--prefix /usr/local` to install somewhere else.
 
 ## Development
 
-Launch the Linux shell with an isolated XDG home so it does not share config,
-cache, or app-data state with your normal CKAN setup:
+Launch the Linux shell with a separate XDG home:
 
 ```bash
 ./scripts/run-linuxgui-dev.sh
 ```
+
+The launcher uses separate configuration and app-data paths, but it links the
+host CKAN repository and download-cache directories into the dev home when
+they exist and the corresponding dev directories are absent or empty. Those
+linked directories are shared, so repository refreshes and cache changes can
+affect the normal CKAN data. Game instances selected in the dev environment
+also point to their actual game directories.
 
 If the checked-in `LinuxGUI`, `App`, `Core`, or `PluginCompat` sources are newer
 than the local framework-dependent dev build, the launcher automatically refreshes
@@ -220,7 +235,13 @@ artifacts as-is:
 CKAN_LINUX_DEV_SKIP_BUILD=1 ./scripts/run-linuxgui-dev.sh
 ```
 
-Run deterministic visual tests:
+Run the NUnit suite:
+
+```bash
+./build.sh Test --configuration=Release
+```
+
+Run the visual regression tests separately:
 
 ```bash
 ./build.sh LinuxGUIVisualTests
@@ -232,14 +253,17 @@ Output:
 
 ## Settings and Logs
 
-The Linux shell keeps its own UI settings separate from the legacy GUI. By
-default it writes:
+The Linux shell stores its app-wide UI settings in a separate file. By default
+it writes:
 
 - settings: `~/.local/share/CKAN/linuxgui.settings.json`
 - shared CKAN data: `~/.local/share/CKAN/`
 
+Some settings are stored per game instance in that instance's
+`CKAN/GUIConfig.json`.
+
 The Linux shell initializes logging from `log4net.linuxgui.xml`. When you use
-`./scripts/run-linuxgui-dev.sh`, the launcher now writes a comprehensive dev
+`./scripts/run-linuxgui-dev.sh`, the launcher writes a dev
 session log and installs a debug-level log4net config in the isolated `run/`
 directory.
 
@@ -253,7 +277,7 @@ The session log captures launcher decisions, selected binary, XDG paths, and
 all stdout/stderr from the app process. The debug app log captures log4net
 output at `DEBUG` level.
 
-By default, `run-linuxgui-dev.sh` now keeps the app's stdout/stderr out of the
+By default, `run-linuxgui-dev.sh` keeps the app's stdout/stderr out of the
 terminal and writes it only to the session log. If you want the old mirrored
 behavior for a debugging session, launch with:
 
