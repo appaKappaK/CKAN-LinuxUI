@@ -115,6 +115,26 @@ namespace CKAN.App.Services
             }
         }
 
+        public ReviewCountSettings ReviewCounts
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return (settings.ReviewCounts ?? new ReviewCountSettings()).Clone();
+                }
+            }
+        }
+
+        public void SaveReviewCounts(ReviewCountSettings value)
+        {
+            lock (sync)
+            {
+                settings.ReviewCounts = value.Clone();
+                SaveSettings();
+            }
+        }
+
         public ModBrowserColumnLayout ModBrowserColumnLayout
         {
             get
@@ -488,6 +508,8 @@ namespace CKAN.App.Services
             public bool PreselectRecommendedMods { get; set; }
 
             public bool AutoRemoveUnusedDependencies { get; set; } = true;
+
+            public ReviewCountSettings ReviewCounts { get; set; } = new ReviewCountSettings();
 
             public ModBrowserColumnLayout ModBrowserColumnLayout { get; set; } = new ModBrowserColumnLayout();
 

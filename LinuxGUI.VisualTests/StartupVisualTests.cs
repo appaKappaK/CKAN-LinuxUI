@@ -20,6 +20,119 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class StartupVisualTests
     {
         [AvaloniaTest]
+        public async Task ReviewQueue_ColumnHeadersAlignWithRowsWhenScrollbarAppears()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings) { Width = 1200, Height = 760 };
+            window.Show();
+            try
+            {
+                await Task.Delay(300);
+                for (var i = 0; i < 30; i++)
+                {
+                    changes.QueueInstall(new CKAN.App.Models.ModListItem
+                    {
+                        Identifier = $"TestMod{i}", Name = $"Test Mod {i}",
+                    });
+                }
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+                await Task.Delay(400);
+                var list = window.FindControl<ListBox>("PreviewQueueList")!;
+                var firstItem = list.GetVisualDescendants().OfType<ListBoxItem>().First();
+                var innerScroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
+                var nineRowMinimum = window.Bounds.Height - innerScroll.Viewport.Height
+                                     + 9 * (firstItem.Bounds.Height + firstItem.Margin.Bottom);
+                Assert.That(window.MinHeight, Is.GreaterThanOrEqualTo(nineRowMinimum));
+                var header = window.GetVisualDescendants().OfType<TextBlock>()
+                    .Single(item => item.Text == "Action").GetVisualParent() as Border;
+                await WaitForAsync(() => list.GetVisualDescendants().OfType<ListBoxItem>()
+                    .Any(item => item.GetVisualDescendants().OfType<Grid>()
+                        .Any(grid => grid.ColumnDefinitions.Count == 4)));
+                var row = list.GetVisualDescendants().OfType<ListBoxItem>()
+                    .First(item => item.GetVisualDescendants().OfType<Grid>()
+                        .Any(grid => grid.ColumnDefinitions.Count == 4))
+                    .GetVisualDescendants().OfType<Grid>()
+                    .First(grid => grid.ColumnDefinitions.Count == 4);
+                var headerX = header!.TranslatePoint(new Point(0, 0), window)!.Value.X;
+                var rowX = row.Children[2].TranslatePoint(new Point(0, 0), window)!.Value.X;
+                Assert.That(rowX, Is.EqualTo(headerX).Within(1));
+
+
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task ReviewLists_AdaptToAvailableHeight()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var entries = Enumerable.Range(1, 5).Select(i => $"Example {i}").ToArray();
+            var actions = new FakeModActionService(changes, updateRecommendations: entries,
+                                                    updateSupporters: entries, updateSuggestions: entries);
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, actions, new FakeDisabledModService(), new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings) { Width = 1200, Height = 760 };
+            window.Show();
+            try
+            {
+                await Task.Delay(300);
+                viewModel.SelectedMod = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                viewModel.QueueUpdateCommand.Execute().Subscribe();
+                viewModel.ShowPreviewSurfaceCommand.Execute().Subscribe();
+                await Task.Delay(300);
+                foreach (var entry in entries)
+                {
+                    viewModel.PreviewDependencies.Add(entry);
+                }
+                await Task.Delay(150);
+                Assert.That(viewModel.PreviewDependencyCountLabel, Is.EqualTo("6 Auto-Installs"));
+                Assert.That(viewModel.PreviewRecommendationCountLabel, Is.EqualTo("5 Recommendations"));
+                Assert.That(viewModel.PreviewSuggestionCountLabel, Is.EqualTo("5 Suggestions"));
+                Assert.That(viewModel.PreviewSupporterCountLabel, Is.EqualTo("5 Supported"));
+                var recommendationBadge = window.GetVisualDescendants().OfType<TextBlock>()
+                    .First(text => text.Text == "5 Recommendations").GetVisualParent() as Border;
+                Assert.That(recommendationBadge!.IsVisible, Is.True);
+                viewModel.ReviewRecommendationCountEnabled = false;
+                Assert.That(recommendationBadge.IsVisible, Is.False);
+                viewModel.ReviewRecommendationCountEnabled = true;
+                Assert.That(recommendationBadge.IsVisible, Is.True);
+                viewModel.ShowReviewCounts = false;
+                Assert.That(recommendationBadge.IsVisible, Is.False);
+                viewModel.ShowReviewCounts = true;
+                Assert.That(recommendationBadge.IsVisible, Is.True);
+                var panel = window.FindControl<ScrollViewer>("PreviewRightPanelScrollViewer")!;
+                var lists = panel.GetVisualDescendants().OfType<ScrollViewer>()
+                    .Where(item => item.Classes.Contains("preview-section-scroll") && item.IsEffectivelyVisible)
+                    .ToArray();
+                Assert.That(lists, Has.Length.EqualTo(4));
+                Assert.That(lists.All(item => item.MaxHeight >= 90 && item.MaxHeight < 150), Is.True);
+                Assert.That(panel.Extent.Height, Is.LessThanOrEqualTo(panel.Viewport.Height + 1));
+
+                window.Height = 900;
+                await Task.Delay(150);
+                Assert.That(panel.Extent.Height, Is.LessThanOrEqualTo(panel.Viewport.Height + 1));
+
+                window.Height = 1100;
+                await Task.Delay(150);
+                Assert.That(lists.All(item => item.MaxHeight == 150), Is.True);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
         public Task LoadingShell_Renders()
             => RenderScenarioAsync(VisualScenario.Loading, "startup-loading");
 

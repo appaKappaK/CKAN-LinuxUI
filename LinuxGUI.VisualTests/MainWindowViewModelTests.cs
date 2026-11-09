@@ -25,6 +25,37 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public void Settings_ModCountsHaveMasterAndIndividualSwitches()
+        {
+            var (viewModel, service) = CreateViewModel();
+            var window = new SettingsWindow(viewModel);
+            window.Show();
+            try
+            {
+                var toggle = window.GetVisualDescendants().OfType<CheckBox>()
+                    .SingleOrDefault(item => Equals(item.Content, "Show Review counts"));
+                Assert.That(toggle, Is.Not.Null);
+                Assert.That(toggle!.IsChecked, Is.True);
+                var dependencies = window.GetVisualDescendants().OfType<CheckBox>()
+                    .Single(item => Equals(item.Content, "Dependencies"));
+                Assert.That(dependencies.IsChecked, Is.True);
+                dependencies.IsChecked = false;
+                toggle.IsChecked = false;
+                Assert.That(viewModel.ShowReviewCounts, Is.False);
+                Assert.That(viewModel.ShowReviewAutoRemovalCount, Is.False);
+                toggle.IsChecked = true;
+                Assert.That(dependencies.IsChecked, Is.False);
+                Assert.That(viewModel.ShowReviewDependencyCount, Is.False);
+                Assert.That(viewModel.ShowReviewAutoRemovalCount, Is.True);
+            }
+            finally
+            {
+                window.Close();
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task DisabledFilters_AreHiddenForEmptyDirectoryWhileDisableRemainsAvailable()
         {
             var disabled = new FakeDisabledModService
@@ -747,12 +778,6 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.ShowPreviewExtrasActionNotice, Is.True);
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("View button"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("click Close"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("above the mod list"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("return to Preview"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("Required dependencies are automatic"));
                     Assert.That(viewModel.ShowPreviewSurface, Is.True);
                 });
 
@@ -869,7 +894,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.Multiple(() =>
                 {
                     Assert.That(viewModel.ShowBrowseSurface, Is.True);
-                    Assert.That(viewModel.RelationshipBrowserScopeText, Is.EqualTo("Preview recommendations"));
+                    Assert.That(viewModel.RelationshipBrowserScopeText, Is.EqualTo("Review recommendations"));
                     Assert.That(viewModel.Mods.Single().Identifier, Is.EqualTo("mechjeb2"));
                 });
             }

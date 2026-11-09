@@ -135,7 +135,7 @@ namespace CKAN.LinuxGUI
         private string  relationshipBrowserScopeText = "";
         private ModVersionChoiceItem? selectedModVersionChoice;
         private string  selectedModBody      = "The details pane will show summary, description, compatibility, and install state.";
-        private string  previewSummary = "Queue install, update, or remove actions to build an apply preview. Right-click a mod to add it to cache.";
+        private string  previewSummary = "Queue install, update, or remove actions to review the changes. Right-click a mod to add it to cache.";
         private string  currentExecutionTitle = "Applying Changes";
         private string  currentExecutionStatusLabel = "Applying changes…";
         private string  applyResultTitle = "";
@@ -1537,6 +1537,66 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        public bool ShowReviewCounts
+        {
+            get => appSettingsService.ReviewCounts.Enabled;
+            set => SetReviewCountSetting(settings => settings.Enabled = value);
+        }
+
+        public bool ReviewDependencyCountEnabled
+        {
+            get => appSettingsService.ReviewCounts.Dependencies;
+            set => SetReviewCountSetting(settings => settings.Dependencies = value);
+        }
+
+        public bool ReviewAutoRemovalCountEnabled
+        {
+            get => appSettingsService.ReviewCounts.AutoRemovals;
+            set => SetReviewCountSetting(settings => settings.AutoRemovals = value);
+        }
+
+        public bool ReviewRecommendationCountEnabled
+        {
+            get => appSettingsService.ReviewCounts.Recommendations;
+            set => SetReviewCountSetting(settings => settings.Recommendations = value);
+        }
+
+        public bool ReviewSuggestionCountEnabled
+        {
+            get => appSettingsService.ReviewCounts.Suggestions;
+            set => SetReviewCountSetting(settings => settings.Suggestions = value);
+        }
+
+        public bool ReviewSupporterCountEnabled
+        {
+            get => appSettingsService.ReviewCounts.Supported;
+            set => SetReviewCountSetting(settings => settings.Supported = value);
+        }
+
+        public bool ShowReviewDependencyCount => ShowReviewCounts && ReviewDependencyCountEnabled;
+        public bool ShowReviewAutoRemovalCount => ShowReviewCounts && ReviewAutoRemovalCountEnabled;
+        public bool ShowReviewRecommendationCount => ShowReviewCounts && ReviewRecommendationCountEnabled;
+        public bool ShowReviewSuggestionCount => ShowReviewCounts && ReviewSuggestionCountEnabled;
+        public bool ShowReviewSupporterCount => ShowReviewCounts && ReviewSupporterCountEnabled;
+
+        private void SetReviewCountSetting(Action<ReviewCountSettings> update)
+        {
+            var settings = appSettingsService.ReviewCounts;
+            update(settings);
+            appSettingsService.SaveReviewCounts(settings);
+            this.RaisePropertyChanged(nameof(ShowReviewCounts));
+            this.RaisePropertyChanged(nameof(ReviewDependencyCountEnabled));
+            this.RaisePropertyChanged(nameof(ReviewAutoRemovalCountEnabled));
+            this.RaisePropertyChanged(nameof(ReviewRecommendationCountEnabled));
+            this.RaisePropertyChanged(nameof(ReviewSuggestionCountEnabled));
+            this.RaisePropertyChanged(nameof(ReviewSupporterCountEnabled));
+            this.RaisePropertyChanged(nameof(ShowReviewDependencyCount));
+            this.RaisePropertyChanged(nameof(ShowReviewAutoRemovalCount));
+            this.RaisePropertyChanged(nameof(ShowReviewRecommendationCount));
+            this.RaisePropertyChanged(nameof(ShowReviewSuggestionCount));
+            this.RaisePropertyChanged(nameof(ShowReviewSupporterCount));
+        }
+
 
         public bool ShowStartupInstancePanel => !IsReady;
 
@@ -1893,18 +1953,6 @@ namespace CKAN.LinuxGUI
 
         public bool HasPreviewOptionalExtras
             => HasPreviewRecommendations || HasPreviewSuggestions || HasPreviewSupporters;
-
-        public bool PreviewExtrasSelectionAvailable
-            => HasQueuedChangeActions
-               && PreviewCanApply
-               && !IsPreviewLoading
-               && !IsApplyingChanges
-               && HasPreviewOptionalExtras;
-
-        public bool ShowPreviewExtrasActionNotice => PreviewExtrasSelectionAvailable;
-
-        public string PreviewExtrasActionNotice
-            => "Optional extras are listed in Preview. Use each section's View button to inspect and queue extras. When Browse opens, click Close in the notice above the mod list to return to Preview. Required dependencies are automatic.";
 
         public bool HasPreviewDependenciesOrOptional
             => HasPreviewDependencies || HasPreviewOptionalExtras;
@@ -2790,9 +2838,6 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
                 this.RaisePropertyChanged(nameof(ApplyChangesButtonLabel));
-                this.RaisePropertyChanged(nameof(PreviewExtrasSelectionAvailable));
-                this.RaisePropertyChanged(nameof(ShowPreviewExtrasActionNotice));
-                this.RaisePropertyChanged(nameof(PreviewExtrasActionNotice));
             }
         }
 
@@ -2872,7 +2917,7 @@ namespace CKAN.LinuxGUI
                             ? HasPreviewAttentionNotes && !HasPreviewConflicts
                                 ? "Apply Blocked by Required Steps"
                                 : "Apply Blocked by Conflicts"
-                            : "No Preview Yet";
+                            : "No Changes to Review";
 
         public string PreviewPanelGuidance
         {
@@ -2880,7 +2925,7 @@ namespace CKAN.LinuxGUI
             {
                 if (PreviewShowsEmptyCard)
                 {
-                    return "Queue install, update, or remove actions from Browse to build an apply preview. Right-click a mod to add it to cache.";
+                    return "Queue install, update, or remove actions from Browse to review the changes. Right-click a mod to add it to cache.";
                 }
 
                 if (!HasQueuedActions && ShowInlineApplyResult)
@@ -2925,7 +2970,7 @@ namespace CKAN.LinuxGUI
             => !HasQueuedActions && ShowInlineApplyResult
                 ? "Review the result, then dismiss it when you are ready to build another changeset."
                 : PreviewShowsEmptyCard
-                    ? "Queue install, update, or remove actions from Browse to build a changeset preview."
+                    ? "Queue install, update, or remove actions from Browse to review the changes."
                     : !HasQueuedChangeActions && HasQueuedDownloadActions
                         ? "Download Files stores archives in the cache without changing GameData."
                         : PreviewCanApply
@@ -3002,7 +3047,15 @@ namespace CKAN.LinuxGUI
         public bool ShowPreviewDownloadCountMetric => PreviewDownloadsRequired.Count > 0;
 
         public string PreviewDependencyCountLabel
-            => CountLabel(PreviewDependencies.Count, "Auto Install", "Auto Installs");
+            => CountLabel(PreviewDependencies.Count, "Auto-Install", "Auto-Installs");
+
+        public string PreviewRecommendationCountLabel
+            => CountLabel(PreviewRecommendations.Count, "Recommendation", "Recommendations");
+
+        public string PreviewSuggestionCountLabel
+            => CountLabel(PreviewSuggestions.Count, "Suggestion", "Suggestions");
+
+        public string PreviewSupporterCountLabel => $"{PreviewSupporters.Count} Supported";
 
         public bool ShowPreviewDependencyMetric => PreviewDependencies.Count > 0;
 

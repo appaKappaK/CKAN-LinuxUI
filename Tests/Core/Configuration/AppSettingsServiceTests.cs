@@ -12,6 +12,37 @@ namespace Tests.Core.Configuration
     public sealed class AppSettingsServiceTests
     {
         [Test]
+        public void ReviewCountSettings_DefaultOnAndPersistIndividualChoices()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), $"ckan-review-counts-{Guid.NewGuid():N}");
+            string settingsPath = Path.Combine(tempDir, "linuxgui.settings.json");
+            try
+            {
+                var first = new AppSettingsService(settingsPath);
+                Assert.That(first.ReviewCounts.Enabled, Is.True);
+                Assert.That(first.ReviewCounts.Dependencies, Is.True);
+                var counts = first.ReviewCounts;
+                counts.Enabled = false;
+                counts.Dependencies = false;
+                first.SaveReviewCounts(counts);
+                var second = new AppSettingsService(settingsPath);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(second.ReviewCounts.Enabled, Is.False);
+                    Assert.That(second.ReviewCounts.Dependencies, Is.False);
+                    Assert.That(second.ReviewCounts.AutoRemovals, Is.True);
+                    Assert.That(second.ReviewCounts.Recommendations, Is.True);
+                    Assert.That(second.ReviewCounts.Suggestions, Is.True);
+                    Assert.That(second.ReviewCounts.Supported, Is.True);
+                });
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
         public void SettingsRoundTripPersistsSessionState()
         {
             string tempDir = Path.Combine(Path.GetTempPath(), $"ckan-linux-settings-tests-{Guid.NewGuid():N}");

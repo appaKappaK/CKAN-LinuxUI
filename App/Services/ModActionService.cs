@@ -573,10 +573,10 @@ namespace CKAN.App.Services
             {
                 return new ExecutionPlan
                 {
-                    SummaryText = "Preview is unavailable until a game instance and registry are loaded.",
+                    SummaryText = "Review is unavailable until a game instance and registry are loaded.",
                     AttentionNotes = new[]
                     {
-                        "Select or reload an install before building an apply preview.",
+                        "Select or reload an install before reviewing changes.",
                     },
                 };
             }
@@ -587,7 +587,7 @@ namespace CKAN.App.Services
                 {
                     Instance        = instance,
                     RegistryManager = registryManager,
-                    SummaryText     = "Queue install, update, or remove actions to build an apply preview.",
+                    SummaryText     = "Queue install, update, or remove actions to review changes.",
                 };
             }
 
@@ -598,7 +598,7 @@ namespace CKAN.App.Services
                     Instance        = instance,
                     RegistryManager = registryManager,
                     RequestedActions = requestedActions,
-                    SummaryText     = "Preview is unavailable because downloaded files are unavailable right now.",
+                    SummaryText     = "Review is unavailable because downloaded files are unavailable right now.",
                     AttentionNotes  = new[]
                     {
                         "Reload instances or restart CKAN Linux to restore access to downloaded files.",
@@ -804,7 +804,7 @@ namespace CKAN.App.Services
                 }
                 catch (Exception ex)
                 {
-                    conflicts.Add($"Preview generation failed: {ex.Message}");
+                    conflicts.Add($"Review generation failed: {ex.Message}");
                 }
             }
 

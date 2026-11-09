@@ -23,6 +23,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public bool AutoRemoveUnusedDependencies { get; private set; } = true;
 
+        public ReviewCountSettings ReviewCounts { get; private set; } = new ReviewCountSettings();
+
         public ModBrowserColumnLayout ModBrowserColumnLayout { get; private set; } = new ModBrowserColumnLayout();
 
         public IReadOnlyList<CatalogSkeletonSnapshotRow> CatalogSkeletonRows { get; private set; }
@@ -51,6 +53,9 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public void SaveAutoRemoveUnusedDependencies(bool enabled)
             => AutoRemoveUnusedDependencies = enabled;
+
+        public void SaveReviewCounts(ReviewCountSettings value)
+            => ReviewCounts = value.Clone();
 
         public void SaveModBrowserColumnLayout(ModBrowserColumnLayout layout)
             => ModBrowserColumnLayout = layout?.Clone() ?? new ModBrowserColumnLayout();

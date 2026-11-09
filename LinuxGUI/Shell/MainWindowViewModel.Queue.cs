@@ -127,7 +127,7 @@ namespace CKAN.LinuxGUI
             }
 
             var existingCount = changesetService.CurrentQueue.Count;
-            var prompt = $"Queue removal for all {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)} in {CurrentInstanceName}? This does not apply immediately; it replaces the current queue and opens the preview so you can review everything before applying.";
+            var prompt = $"Queue removal for all {targets.Count} CKAN-managed installed mod{Pluralize(targets.Count)} in {CurrentInstanceName}? This does not apply immediately; it replaces the current queue and opens Review so you can inspect everything before applying.";
             if (existingCount > 0)
             {
                 prompt += $" The current {existingCount} queued item{Pluralize(existingCount)} will be replaced.";
@@ -1234,9 +1234,6 @@ namespace CKAN.LinuxGUI
 
         private void PublishPreviewActionStateLabels()
         {
-            this.RaisePropertyChanged(nameof(PreviewExtrasSelectionAvailable));
-            this.RaisePropertyChanged(nameof(ShowPreviewExtrasActionNotice));
-            this.RaisePropertyChanged(nameof(PreviewExtrasActionNotice));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBackground));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonBorderBrush));
             this.RaisePropertyChanged(nameof(ApplyChangesButtonLabel));

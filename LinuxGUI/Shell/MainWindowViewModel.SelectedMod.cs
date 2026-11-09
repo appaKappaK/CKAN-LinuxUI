@@ -412,14 +412,14 @@ namespace CKAN.LinuxGUI
 
             if (identifiers.Count == 0)
             {
-                StatusMessage = $"No browser-visible {relationshipName} were found in the preview.";
+                StatusMessage = $"No browser-visible {relationshipName} were found in Review.";
                 return;
             }
 
             relationshipBrowserScopeIdentifiers = identifiers;
             relationshipBrowserScopeQueueSources = queueSources;
             relationshipBrowserScopeReturnsToPreview = true;
-            RelationshipBrowserScopeText = $"Preview {relationshipName}";
+            RelationshipBrowserScopeText = $"Review {relationshipName}";
             pendingModListScrollReset = true;
             ShowBrowseSurfaceTab();
             ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
@@ -521,10 +521,10 @@ namespace CKAN.LinuxGUI
             {
                 return relationshipName switch
                 {
-                    "recommendations"    => "Recommended from preview",
-                    "suggestions"        => "Suggested from preview",
-                    "supporters"         => "Supported from preview",
-                    "dependencies"       => "Required dependency from preview",
+                    "recommendations"    => "Recommended from Review",
+                    "suggestions"        => "Suggested from Review",
+                    "supporters"         => "Supported from Review",
+                    "dependencies"       => "Required dependency from Review",
                     _                    => "",
                 };
             }

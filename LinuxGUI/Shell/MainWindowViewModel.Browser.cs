@@ -135,7 +135,7 @@ namespace CKAN.LinuxGUI
 
         private bool IsPreviewAutoRemovalScope
             => string.Equals(RelationshipBrowserScopeText,
-                             "Preview auto-removals",
+                             "Review auto-removals",
                              StringComparison.OrdinalIgnoreCase);
 
         public string QueueContextLabel(ModListItem mod)

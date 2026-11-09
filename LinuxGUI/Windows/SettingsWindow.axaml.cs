@@ -699,6 +699,42 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool ShowReviewCounts
+            {
+                get => mainWindowViewModel?.ShowReviewCounts ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ShowReviewCounts = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewDependencyCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewDependencyCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewDependencyCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewAutoRemovalCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewAutoRemovalCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewAutoRemovalCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewRecommendationCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewRecommendationCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewRecommendationCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewSuggestionCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewSuggestionCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewSuggestionCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewSupporterCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewSupporterCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewSupporterCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
             public IReadOnlyList<ReleaseStatusOption> StabilityToleranceOptions { get; }
 
             public ReleaseStatusOption? SelectedStabilityTolerance

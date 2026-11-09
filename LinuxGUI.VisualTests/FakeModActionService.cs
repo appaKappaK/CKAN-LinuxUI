@@ -15,12 +15,14 @@ namespace CKAN.LinuxGUI.VisualTests
         private readonly int applyDelayMs;
         private readonly string[] updateRecommendations;
         private readonly string[] updateSupporters;
+        private readonly string[] updateSuggestions;
 
         public FakeModActionService(IChangesetService changesetService,
                                     ApplyChangesResult? applyResult = null,
                                     int applyDelayMs = 0,
                                     string[]? updateRecommendations = null,
-                                    string[]? updateSupporters = null)
+                                    string[]? updateSupporters = null,
+                                    string[]? updateSuggestions = null)
         {
             this.changesetService = changesetService;
             this.applyResult = applyResult ?? new ApplyChangesResult
@@ -33,6 +35,7 @@ namespace CKAN.LinuxGUI.VisualTests
             this.applyDelayMs = applyDelayMs;
             this.updateRecommendations = updateRecommendations ?? new[] { "Module Manager recommended by restock" };
             this.updateSupporters = updateSupporters ?? System.Array.Empty<string>();
+            this.updateSuggestions = updateSuggestions ?? System.Array.Empty<string>();
         }
 
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
@@ -79,7 +82,9 @@ namespace CKAN.LinuxGUI.VisualTests
                     ? new[] { "A provider choice may be required for one virtual dependency during apply." }
                     : System.Array.Empty<string>(),
                 Recommendations    = recommendations,
-                Suggestions        = System.Array.Empty<string>(),
+                Suggestions        = queue.Any(action => action.ActionKind == QueuedActionKind.Update)
+                    ? updateSuggestions
+                    : System.Array.Empty<string>(),
                 Supporters         = supporters,
                 Conflicts          = System.Array.Empty<string>(),
             });
