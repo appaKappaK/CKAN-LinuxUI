@@ -5,6 +5,9 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## Unreleased
 
+### Installer
+- Added a graphical Linux x64 installer for the prebuilt app, with optional cleanup of its matching ZIP and extracted files and an option to open CKAN Linux when finished.
+
 ### Review
 - Keep optional recommendations available when a recommended mod is already a required dependency.
 - Align queue column headers with their rows when the list gains or loses a scrollbar.

@@ -14,19 +14,19 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 
 LinuxGUI is under passive development.
 
-## Quick Start
+## Installation
+
+A downloadable graphical installer is being prepared. Until it is released,
+you can install CKAN Linux from source using Git and the .NET 8 SDK:
 
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
 ./scripts/install-linuxgui.sh
-ckan-linux
 ```
 
-No separate upstream CKAN checkout is needed; the CKAN core is included in this
-repository. The installer puts everything under `~/.local` and does not replace
-any system `ckan` command. If `ckan-linux` is not on your `PATH`, launch it
-directly:
+The installer puts CKAN Linux under `~/.local` without replacing an existing
+`ckan` command. Find it in your application menu, or launch it directly:
 
 ```bash
 ~/.local/bin/ckan-linux
@@ -38,8 +38,8 @@ directly:
 - A queue-and-review workflow: installs, updates, removals, and downloads are
   queued first, and Review shows what will happen (including dependencies)
   before anything is applied.
-- A local installer that adds `ckan-linux` without touching an existing system
-  `ckan` command.
+- A separate `ckan-linux` command that does not replace an existing `ckan`
+  installation.
 
 The former WinForms and terminal interfaces are not included in this fork.
 

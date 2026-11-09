@@ -182,6 +182,20 @@ The staged layout includes:
 
 ## Local Install
 
+For a graphical installer ZIP containing the prebuilt Linux x64 app, run:
+
+```bash
+DOTNET_ROLL_FORWARD=Major bash scripts/build-release-installer.sh
+```
+
+The archive is written to `_build/release-installer/CKAN-Linux-Installer-linux-x64.zip`.
+Extract it and open `CKAN-Linux-Installer`. It installs under `~/.local` and
+replaces any existing CKAN Linux app files there. Git and the .NET SDK are
+needed to build the ZIP, but not to install from it. Some Linux file managers
+may require you to enable execution before opening the installer. The optional
+cleanup removes the extracted installer files and, when found beside the
+extracted folder, the matching ZIP. CKAN settings and game data are preserved.
+
 Install the Linux GUI into a local prefix so it can be launched as
 `~/.local/bin/ckan-linux` without typing the staged package path:
 
