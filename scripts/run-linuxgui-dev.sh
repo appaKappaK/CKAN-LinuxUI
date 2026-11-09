@@ -24,12 +24,8 @@ HOST_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
 DEV_DATA_HOME="$DEV_HOME/data"
 DEV_REPOS_DIR="$DEV_DATA_HOME/CKAN/repos"
 DEV_DOWNLOADS_DIR="$DEV_DATA_HOME/CKAN/downloads"
-DEV_CATALOG_INDEX_LATEST="$DEV_DATA_HOME/CKAN/catalog-index-latest.json"
-DEV_CATALOG_INDEX="$DEV_DATA_HOME/CKAN/catalog-index.json"
 HOST_REPOS_DIR="$HOST_DATA_HOME/CKAN/repos"
 HOST_DOWNLOADS_DIR="$HOST_DATA_HOME/CKAN/downloads"
-HOST_CATALOG_INDEX_LATEST="$HOST_DATA_HOME/CKAN/catalog-index-latest.json"
-HOST_CATALOG_INDEX="$HOST_DATA_HOME/CKAN/catalog-index.json"
 RUN_DIR="$DEV_HOME/run"
 
 # Log configuration
@@ -213,21 +209,6 @@ setup_symlink() {
 setup_symlink "$DEV_REPOS_DIR" "$HOST_REPOS_DIR"
 setup_symlink "$DEV_DOWNLOADS_DIR" "$HOST_DOWNLOADS_DIR"
 
-setup_file_symlink() {
-    local dev_file="$1"
-    local host_file="$2"
-
-    [[ -L "$dev_file" || -e "$dev_file" ]] && return 0
-    [[ -f "$host_file" ]] || return 0
-    ln -s "$host_file" "$dev_file"
-    return 0
-}
-
-if [[ -z "${CKAN_CATALOG_INDEX_PATH:-}" ]]; then
-    setup_file_symlink "$DEV_CATALOG_INDEX_LATEST" "$HOST_CATALOG_INDEX_LATEST"
-    setup_file_symlink "$DEV_CATALOG_INDEX" "$HOST_CATALOG_INDEX"
-fi
-
 # Export environment variables for CKAN to use our dev directories
 export XDG_DATA_HOME="$DEV_DATA_HOME"
 export XDG_CONFIG_HOME="$DEV_HOME/config"
@@ -290,15 +271,6 @@ log_session_line "dev_repos_dir: $DEV_REPOS_DIR"
 log_session_line "host_repos_dir: $HOST_REPOS_DIR"
 log_session_line "dev_downloads_dir: $DEV_DOWNLOADS_DIR"
 log_session_line "host_downloads_dir: $HOST_DOWNLOADS_DIR"
-log_session_line "catalog_index_env: ${CKAN_CATALOG_INDEX_PATH:-}"
-log_session_line "dev_catalog_index_latest: $DEV_CATALOG_INDEX_LATEST"
-log_session_line "dev_catalog_index_latest_exists: $([[ -f "$DEV_CATALOG_INDEX_LATEST" ]] && echo 1 || echo 0)"
-log_session_line "dev_catalog_index: $DEV_CATALOG_INDEX"
-log_session_line "dev_catalog_index_exists: $([[ -f "$DEV_CATALOG_INDEX" ]] && echo 1 || echo 0)"
-log_session_line "host_catalog_index_latest: $HOST_CATALOG_INDEX_LATEST"
-log_session_line "host_catalog_index_latest_exists: $([[ -f "$HOST_CATALOG_INDEX_LATEST" ]] && echo 1 || echo 0)"
-log_session_line "host_catalog_index: $HOST_CATALOG_INDEX"
-log_session_line "host_catalog_index_exists: $([[ -f "$HOST_CATALOG_INDEX" ]] && echo 1 || echo 0)"
 
 # Show symlink targets if applicable
 if [[ -L "$DEV_REPOS_DIR" ]]; then
@@ -307,13 +279,6 @@ fi
 if [[ -L "$DEV_DOWNLOADS_DIR" ]]; then
     log_session_line "dev_downloads_link_target: $(readlink -f "$DEV_DOWNLOADS_DIR")"
 fi
-if [[ -L "$DEV_CATALOG_INDEX_LATEST" ]]; then
-    log_session_line "dev_catalog_index_latest_link_target: $(readlink -f "$DEV_CATALOG_INDEX_LATEST")"
-fi
-if [[ -L "$DEV_CATALOG_INDEX" ]]; then
-    log_session_line "dev_catalog_index_link_target: $(readlink -f "$DEV_CATALOG_INDEX")"
-fi
-
 log_session_line "session_log: $SESSION_LOG"
 log_session_line "latest_session_log: $LATEST_SESSION_LOG"
 log_session_line "debug_log: $RUN_DIR/ckan-linux-debug.log"

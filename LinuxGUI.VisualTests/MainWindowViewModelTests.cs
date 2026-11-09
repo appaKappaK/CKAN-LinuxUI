@@ -24,6 +24,25 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public void Catalog_UsesRegistryEvenWhenSidecarExists()
+        {
+            var path = Path.GetTempFileName();
+            var previous = Environment.GetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", path);
+                using var instances = new FakeGameInstanceService(VisualScenario.Ready);
+                var catalog = new ModCatalogService(instances, new CatalogIndexService(), new FakeDisabledModService());
+                Assert.That(catalog.LoadingSourceDescription, Is.EqualTo("CKAN registry cache"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", previous);
+                File.Delete(path);
+            }
+        }
+
+        [AvaloniaTest]
         public void ReadyStartup_UsesWarmBrowserStateImmediately()
         {
             var settings = new FakeAppSettingsService();

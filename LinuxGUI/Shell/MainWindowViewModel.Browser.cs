@@ -492,60 +492,7 @@ namespace CKAN.LinuxGUI
                     ? "Metadata repositories updated."
                     : "Metadata repositories are already current.";
 
-                if (catalogSidecarRefreshService == null)
-                {
-                    return repositoriesUpdated;
-                }
-
-                var repositoryCachePaths = gameInstanceService.RepositoryData
-                    .GetRepositoryCachePaths(repositories);
-                CatalogSidecarRefreshResult sidecarResult;
-                try
-                {
-                    CatalogStatusMessage = "Checking Rust catalog sidecar...";
-                    sidecarResult = await catalogSidecarRefreshService
-                        .RefreshIfNeededAsync(repositoryCachePaths, CancellationToken.None);
-                }
-                catch (Exception ex)
-                {
-                    Diagnostics = ex.Message;
-                    StatusMessage = repositoriesUpdated
-                        ? "Metadata repositories updated; using the CKAN registry cache."
-                        : "Metadata repositories are current; using the CKAN registry cache.";
-                    return repositoriesUpdated;
-                }
-
-                switch (sidecarResult.Status)
-                {
-                    case CatalogSidecarRefreshStatus.Updated:
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories and Rust catalog updated."
-                            : "Metadata repositories are current; Rust catalog updated.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Current:
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories updated; Rust catalog is current."
-                            : "Metadata repositories and Rust catalog are already current.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Unavailable:
-                    case CatalogSidecarRefreshStatus.Failed:
-                        if (!string.IsNullOrWhiteSpace(sidecarResult.Message))
-                        {
-                            Diagnostics = sidecarResult.Message;
-                        }
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories updated; using the CKAN registry cache."
-                            : "Metadata repositories are current; using the CKAN registry cache.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Skipped:
-                    default:
-                        break;
-                }
-                return repositoriesUpdated
-                       || sidecarResult.Status == CatalogSidecarRefreshStatus.Updated;
+                return repositoriesUpdated;
             }
             catch (Exception ex)
             {
