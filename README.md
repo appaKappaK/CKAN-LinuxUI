@@ -6,10 +6,9 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
-> **⚠️ Warning – Uninstall behavior is currently unreliable**  
-> Uninstalling mods can incorrectly remove other packages.  
-> Example: uninstalling Kopernicus removed Parallax.  
-> This will be fixed in the future.
+> **Review removals before applying:** Removing a mod may also remove mods that
+> depend on it. Check the Auto-Removals section in Preview; use **Keep** for
+> anything you intend to preserve.
 
 ## Status
 
@@ -69,7 +68,7 @@ Linux belong to the desktop app.
 
 ## Development
 
-Build steps, packaging, the dev launcher, logs, benchmarks, and the visual-test
+Build steps, packaging, the dev launcher, logs, and the visual-test
 workflow are documented in [`LinuxGUI/README.md`](LinuxGUI/README.md).
 
 Report problems with the Linux app on this repository's
