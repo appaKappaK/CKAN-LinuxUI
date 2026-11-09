@@ -9,7 +9,7 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 > **⚠️ Warning – Uninstall behavior is currently unreliable**  
 > Uninstalling mods can incorrectly remove other packages.  
 > Example: uninstalling Kopernicus removed Parallax.  
-> This will be fixed in a future release.
+> This will be fixed in the future.
 
 ## Status
 
