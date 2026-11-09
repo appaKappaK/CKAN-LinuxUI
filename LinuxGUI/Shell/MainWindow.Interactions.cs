@@ -200,6 +200,14 @@ namespace CKAN.LinuxGUI
                 menu.Items.Add(queueItem);
             }
 
+            if (!viewModel.HasMultipleSelectedMods && viewModel.ShowAdditionalRemoveContextAction(mod))
+            {
+                var removeItem = new MenuItem { Header = "Queue Remove" };
+                removeItem.Click += (_, _) => viewModel.QueueRemoveFromBrowser(mod);
+                removeItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(removeItem);
+            }
+
             if (viewModel.ShowDownloadOnlyContextAction(mod))
             {
                 var downloadOnlyItem = new MenuItem

@@ -8,8 +8,10 @@ namespace CKAN.LinuxGUI.VisualTests
 {
     internal sealed class FakeDisabledModService : IDisabledModService
     {
+        public DisabledModsSnapshot Snapshot { get; set; } = new DisabledModsSnapshot();
+
         public DisabledModsSnapshot GetCurrentSnapshot()
-            => new DisabledModsSnapshot();
+            => Snapshot;
 
         public Task<DisabledModOperationPreview> PreviewDisableAsync(string identifier,
                                                                       CancellationToken cancellationToken)

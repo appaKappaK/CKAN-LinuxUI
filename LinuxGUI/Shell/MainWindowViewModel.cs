@@ -161,6 +161,7 @@ namespace CKAN.LinuxGUI
         private bool    filterHasReplacementOnly;
         private bool    filterNoReplacementOnly;
         private string? disabledModsDirectoryPath;
+        private bool hasDisabledMods;
         private bool    isRefreshing;
         private bool    showExecutionResultOverlay;
         private bool    returnToBrowseAfterExecutionResult;
@@ -2644,8 +2645,7 @@ namespace CKAN.LinuxGUI
                || SelectedModHasReplacement;
 
         public bool ShowDisabledFilter
-            => filterOptionCounts.Disabled > 0
-               || !string.IsNullOrWhiteSpace(disabledModsDirectoryPath);
+            => hasDisabledMods || FilterDisabledOnly || FilterNotDisabledOnly;
 
         public bool ShowExternalFilter
             => true;

@@ -167,6 +167,25 @@ namespace CKAN.LinuxGUI
             return "";
         }
 
+        public bool ShowAdditionalRemoveContextAction(ModListItem mod)
+            => !IsApplyingChanges
+               && !IsPreviewAutoRemovalScope
+               && changesetService.FindQueuedApplyAction(mod.Identifier) == null
+               && CanQueueUpdate(mod)
+               && CanQueueRemove(mod);
+
+        public void QueueRemoveFromBrowser(ModListItem mod)
+        {
+            if (!ShowAdditionalRemoveContextAction(mod))
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            changesetService.QueueRemove(mod);
+            StatusMessage = $"Queued removal for {mod.Name}.";
+        }
+
         public void ToggleQueueActionFromBrowser(ModListItem mod)
         {
             if (IsApplyingChanges)
@@ -1073,6 +1092,7 @@ namespace CKAN.LinuxGUI
         {
             var snapshot = disabledModService.GetCurrentSnapshot();
             disabledModsDirectoryPath = snapshot.DisabledDirectoryPath;
+            hasDisabledMods = snapshot.Entries.Count > 0;
             this.RaisePropertyChanged(nameof(ShowDisabledFilter));
             this.RaisePropertyChanged(nameof(ShowOpenDisabledModsDirectoryMenuItem));
         }
