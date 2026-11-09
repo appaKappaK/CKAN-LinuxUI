@@ -5,6 +5,12 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## Unreleased
 
+### Updates
+- Check the latest upstream CKAN release independently of CKAN Linux release checks.
+
+### Catalog Loading
+- Removed automatic Rust sidecar checks and use the CKAN registry cache for browsing(there were no real improvements to continue, based off benchmarks).
+
 ### Queue and Removal Safety
 - Fixed single-mod version selection so explicit downgrades and installs of an older catalog version are actually queued instead of being silently rejected by the latest-version row state.
 - Show the exact selected version in the queue with a `Download` hint for explicit install/update targets.

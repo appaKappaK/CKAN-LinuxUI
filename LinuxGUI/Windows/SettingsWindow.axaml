@@ -379,9 +379,8 @@
                 Margin="0,6,0,0">
             <Button Classes="settings-button compact"
                     HorizontalAlignment="Stretch"
-                    IsEnabled="{Binding CanCheckLinuxGuiUpdates}"
                     Click="CheckForUpdatesButton_OnClick"
-                    ToolTip.Tip="CKAN Linux update checks are disabled until releases are configured."
+                    ToolTip.Tip="Check the latest upstream CKAN release and any configured CKAN Linux release."
                     Content="Check for updates" />
             <Button Grid.Column="2"
                     Classes="settings-button compact"
@@ -471,13 +470,15 @@
           <TextBlock Classes="settings-group-title"
                      Text="Behavior" />
           <Grid Grid.Row="1"
-                ColumnDefinitions="140,52,*"
+                ColumnDefinitions="Auto,52,*"
                 Margin="0,2,0,8">
             <TextBlock Classes="settings-label"
                        VerticalAlignment="Center"
-                       Text="Refresh modlist every" />
+                       Margin="0,0,8,0"
+                       Text="Check repositories every" />
             <TextBox Grid.Column="1"
                      Classes="settings-textbox"
+                     ToolTip.Tip="0 disables scheduled checks. The repository check on launch is separate."
                      Text="{Binding RefreshRateText}" />
             <TextBlock Grid.Column="2"
                        Classes="settings-muted"
@@ -494,7 +495,7 @@
                     Classes="settings-check"
                     IsEnabled="{Binding CanPauseRefresh}"
                     IsChecked="{Binding RefreshPaused}"
-                    Content="Pause refreshing" />
+                    Content="Pause automatic checks" />
           <Grid Grid.Row="4"
                 Margin="0,4,0,0"
                 ColumnDefinitions="140,*">

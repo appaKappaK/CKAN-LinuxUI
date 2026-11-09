@@ -34,6 +34,7 @@ namespace CKAN.LinuxGUI
             viewModel = new WindowViewModel(mainWindowViewModel);
             DataContext = viewModel;
             viewModel.RefreshCacheSummary();
+            Opened += async (_, _) => await viewModel.CheckLatestCoreVersionAsync();
         }
 
         public bool RepositoryAdded => viewModel.RepositoryAdded;
@@ -912,6 +913,7 @@ namespace CKAN.LinuxGUI
 
             public async Task CheckForUpdatesAsync()
             {
+                await CheckLatestCoreVersionAsync();
                 if (!CanCheckLinuxGuiUpdates)
                 {
                     LatestLinuxGuiVersion = "Not configured";
@@ -920,7 +922,6 @@ namespace CKAN.LinuxGUI
                 }
 
                 LatestLinuxGuiVersion = "Checking...";
-                LatestCoreVersion = "Checking...";
                 UpdateErrorMessage = "";
 
                 try
@@ -935,6 +936,16 @@ namespace CKAN.LinuxGUI
                     UpdateErrorMessage = ex.Message;
                 }
 
+            }
+
+            public async Task CheckLatestCoreVersionAsync()
+            {
+                if (LatestCoreVersion == "Checking...")
+                {
+                    return;
+                }
+
+                LatestCoreVersion = "Checking...";
                 LatestCoreVersion = await GetLatestCoreVersionTextAsync(includePrereleases: false);
             }
 

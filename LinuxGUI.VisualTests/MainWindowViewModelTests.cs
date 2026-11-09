@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
+using Avalonia.VisualTree;
 
 using NUnit.Framework;
 
@@ -71,6 +72,23 @@ namespace CKAN.LinuxGUI.VisualTests
             finally
             {
                 service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public void Settings_AllowsCheckingForUpdatesWithoutLinuxReleases()
+        {
+            var window = new SettingsWindow();
+            window.Show();
+            try
+            {
+                var button = window.GetVisualDescendants().OfType<Button>()
+                    .Single(item => Equals(item.Content, "Check for updates"));
+                Assert.That(button.IsEnabled, Is.True);
+            }
+            finally
+            {
+                window.Close();
             }
         }
 
