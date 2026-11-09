@@ -16,8 +16,12 @@ LinuxGUI is under passive development.
 
 ## Installation
 
-A downloadable graphical installer is being prepared. Until it is released,
-you can install CKAN Linux from source using Git and the .NET 8 SDK:
+A [graphical installer beta](https://github.com/appaKappaK/CKAN-LinuxUI/releases/tag/ckan-linux-installer-beta.1)
+is available for Linux x64. Download and extract the ZIP, then open
+`CKAN-Linux-Installer`. It includes the app and does not require Git or the
+.NET SDK.
+
+Alternatively, install from source using Git and the .NET 8 SDK:
 
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git

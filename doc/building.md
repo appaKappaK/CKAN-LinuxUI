@@ -11,7 +11,8 @@ build.
 - A POSIX-compatible shell
 - Git
 
-All generated files are written under `_build/`.
+Most generated files are written under `_build/`. The graphical installer
+project also creates `LinuxInstaller/bin/` and `LinuxInstaller/obj/`.
 
 ## Main desktop build
 
@@ -29,6 +30,20 @@ Outputs:
 
 Use `./build.sh LinuxGUI` to publish without staging the package, or
 `./build.sh LinuxGUIPackage` to name the package target explicitly.
+
+## Graphical installer ZIP
+
+Build the self-contained Linux x64 app and its graphical installer (requires
+the `zip` command):
+
+```bash
+DOTNET_ROLL_FORWARD=Major bash scripts/build-release-installer.sh
+```
+
+The ZIP is written to
+`_build/release-installer/CKAN-Linux-Installer-linux-x64.zip`. Extract it and
+open `CKAN-Linux-Installer` to install the app under `~/.local`. Git and the
+.NET SDK are required to build the ZIP, but not to install from it.
 
 ## Optional CLI
 
@@ -76,4 +91,5 @@ After producing the LinuxGUI package layout:
 ```
 
 These packages contain `ckan-linux` only. They do not install a `ckan` command,
-Mono runtime, WinForms client, or ConsoleUI.
+Mono runtime, WinForms client, or ConsoleUI. See [packaging.md](packaging.md)
+for the required packaging tools and output locations.
