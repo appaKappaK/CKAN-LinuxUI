@@ -27,7 +27,7 @@ desktop surface by role:
 - `Models/` contains Linux GUI view-model support items used by bindings.
 - `Services/` contains Linux GUI service adapters and controller glue.
 
-## Current Desktop Flow
+## Desktop Workflow
 
 The app starts on the mod browser for the current instance. When no saved
 browser filter is active, the default mod list is `Installed`, so cleanup and
@@ -59,7 +59,7 @@ before rebuilding the browser and rescans unmanaged `GameData` DLLs, so changes
 made outside the current session, including manually installed DLL mods such as
 `scatterer`, are reflected without closing and reopening CKAN Linux.
 
-Actions are queued before they are applied. Use the `Preview` surface to inspect
+Actions are queued before they are applied. Use the `Review` tab to inspect
 what CKAN Linux is about to do:
 
 - direct installs, updates, removals, and downloads
@@ -85,7 +85,7 @@ removes the leftovers and any empty parent mod folders.
 Optional recommendations, suggestions, and supported mods are informational.
 Use the `View` button on each optional section to open Browse filtered to those
 mods, queue any extras you want, then use the `Close` button in the notice above
-the mod list to return to Preview. The `Apply Changes` button does not require
+the mod list to return to Review. The `Apply Changes` button does not require
 reviewing optional extras first.
 
 Required virtual dependencies are different. If several mods provide the same
@@ -106,9 +106,18 @@ The `Mods` menu includes maintenance actions for large cleanup passes:
 - `Queue remove all installed mods` replaces the current apply queue with
   removals for CKAN-managed installed mods.
 
-Removal previews also include dependent removals for installed mods that would
-break, plus auto-removable dependencies where the registry can prove they are
-no longer required by anything that will remain installed.
+Review lists dependent removals and unused auto-installed dependencies under
+`Auto-Removals`. Use `Keep` to preserve an item, or `View` to inspect the list in
+Browse. Keeping a dependent while removing a required dependency can leave that
+mod unable to work until the dependency is restored.
+
+Settings offers a `Show Review counts` switch with individual controls for the
+five Review section badges. Turning the main switch off preserves the individual
+choices for when counts are enabled again.
+
+In Settings, `Automatically remove unused dependencies` controls automatic
+removal of both dependent mods and unused auto-installed dependencies. Turning
+it off leaves them installed for manual review.
 
 `Mods > Installation History` opens as a non-modal utility window. Keep it open
 while browsing the mod list to cross-reference saved snapshots against current
@@ -187,12 +196,18 @@ launch it as `ckan-linux`. Use `--prefix /usr/local` to install somewhere else.
 
 ## Development
 
-Launch the Linux shell with an isolated XDG home so it does not share config,
-cache, or app-data state with your normal CKAN setup:
+Launch the Linux shell with a separate XDG home:
 
 ```bash
 ./scripts/run-linuxgui-dev.sh
 ```
+
+The launcher uses separate configuration and app-data paths, but it links the
+host CKAN repository and download-cache directories into the dev home when
+they exist and the corresponding dev directories are absent or empty. Those
+linked directories are shared, so repository refreshes and cache changes can
+affect the normal CKAN data. Game instances selected in the dev environment
+also point to their actual game directories.
 
 If the checked-in `LinuxGUI`, `App`, `Core`, or `PluginCompat` sources are newer
 than the local framework-dependent dev build, the launcher automatically refreshes
@@ -213,104 +228,6 @@ You can override the base directory with:
 CKAN_LINUX_DEV_HOME=/path/to/dev-home ./scripts/run-linuxgui-dev.sh
 ```
 
-### Rust Catalog Sidecar
-
-The mod browser can optionally use a Rust-generated catalog sidecar for faster
-catalog/search. Normal LinuxGUI builds and installs do not require Rust, the
-Rust repository, or a sidecar index; if no valid index is configured, the
-browser uses CKAN's normal registry/repository cache.
-
-The LinuxGUI sidecar reader is included in this repository. The external
-generator source is published at
-[`appaKappaK/ckan-meta-rs`](https://github.com/appaKappaK/ckan-meta-rs).
-Sidecar rows include browse-list metadata such as title, summary,
-relationships, compatibility, release date, and download count. CKAN's registry
-remains authoritative for details, installs, updates, and dependency
-resolution.
-Schema v2 sidecars also contain stable, testing, and development candidates;
-LinuxGUI selects them using the current instance's overall and per-mod stability
-tolerances. Schema v1 sidecars remain readable with their original latest-row
-behavior.
-
-Install `ckan-meta-rs` once with its installer. LinuxGUI discovers the helper
-from its install prefix, `$XDG_BIN_HOME`, `~/.local/bin`, or `PATH`. After CKAN
-checks for repository updates, LinuxGUI automatically rebuilds a missing or
-stale sidecar from the exact active repository-cache files before loading the
-browser. This includes custom repositories and does not download the metadata a
-second time.
-
-The automatic command is equivalent to:
-
-```bash
-ckan-meta-rs refresh-sidecar \
-  --repository-cache ~/.local/share/CKAN/repos/HASH-KSP-default.json \
-  --output ~/.local/share/CKAN/catalog-index-latest.json
-```
-
-LinuxGUI supplies each active `--repository-cache` path in CKAN priority order
-and attaches a content fingerprint so an index from a different repository set
-is rejected. Generation and validation happen in a sibling temporary file; a
-failure preserves the old index and immediately falls back to the regular CKAN
-registry cache.
-
-For development or externally managed indexes, the explicit environment path
-is still supported:
-
-```bash
-CKAN_CATALOG_INDEX_PATH=/path/to/catalog-index-latest.json ./scripts/run-linuxgui-dev.sh
-```
-
-In dev runs, `scripts/run-linuxgui-dev.sh` also checks the normal host app-data
-location, `${XDG_DATA_HOME:-$HOME/.local/share}/CKAN/catalog-index-latest.json`,
-and links it into the isolated dev data home when no explicit
-`CKAN_CATALOG_INDEX_PATH` is set.
-
-For repeated local use outside the dev launcher, either keep using
-`CKAN_CATALOG_INDEX_PATH` or symlink a generated file into app data. Automatic
-refresh follows the symlink and replaces its target without removing the link:
-
-```bash
-mkdir -p ~/.local/share/CKAN
-ln -s /path/to/ckan-meta-rs/data/catalog-index-latest.json \
-      ~/.local/share/CKAN/catalog-index-latest.json
-```
-
-If the helper or sidecar is missing or invalid, the browser uses the normal CKAN
-metadata loader. The fallback is always available and remains authoritative for
-dependency resolution, installs, removals, and registry writes.
-
-Catalog load timings are written to the dev session/debug logs. Look for these
-prefixes when comparing normal mode to sidecar mode:
-
-- `Mod catalog service list`
-- `Mod catalog index direct build`
-- `Mod catalog registry build`
-- `LinuxGUI catalog load`
-- `LinuxGUI catalog filter`
-
-The browser diagnostics text also includes whether the last load used the Rust
-catalog-index sidecar or the CKAN registry fallback.
-
-For repeatable local measurements, run:
-
-```bash
-./scripts/benchmark-linuxgui-catalog.sh --iterations 3
-```
-
-On 2026-05-13 against the `KSP-Steam` instance, 98 installed mods, and the
-cached CKAN repository data in `~/.local/share/CKAN/repos`, the benchmark
-reported:
-
-| Path | Items | First run | Best run | Average |
-| --- | ---: | ---: | ---: | ---: |
-| Installed snapshot | 98 | 26 ms | 2 ms | 10 ms |
-| CKAN registry cache | 3,505 | 6,345 ms | 2,886 ms | 4,057 ms |
-| Rust sidecar index | 3,495 | 3,000 ms | 2,956 ms | 2,971 ms |
-
-These numbers are local cache timings, not network update timings. The script
-does not update repositories and uses read-only registry access so it can be run
-while comparing catalog load paths.
-
 Skip the automatic rebuild check if you deliberately want to launch the current
 artifacts as-is:
 
@@ -318,7 +235,13 @@ artifacts as-is:
 CKAN_LINUX_DEV_SKIP_BUILD=1 ./scripts/run-linuxgui-dev.sh
 ```
 
-Run deterministic visual tests:
+Run the NUnit suite:
+
+```bash
+./build.sh Test --configuration=Release
+```
+
+Run the visual regression tests separately:
 
 ```bash
 ./build.sh LinuxGUIVisualTests
@@ -330,14 +253,17 @@ Output:
 
 ## Settings and Logs
 
-The Linux shell keeps its own UI settings separate from the legacy GUI. By
-default it writes:
+The Linux shell stores its app-wide UI settings in a separate file. By default
+it writes:
 
 - settings: `~/.local/share/CKAN/linuxgui.settings.json`
 - shared CKAN data: `~/.local/share/CKAN/`
 
+Some settings are stored per game instance in that instance's
+`CKAN/GUIConfig.json`.
+
 The Linux shell initializes logging from `log4net.linuxgui.xml`. When you use
-`./scripts/run-linuxgui-dev.sh`, the launcher now writes a comprehensive dev
+`./scripts/run-linuxgui-dev.sh`, the launcher writes a dev
 session log and installs a debug-level log4net config in the isolated `run/`
 directory.
 
@@ -351,7 +277,7 @@ The session log captures launcher decisions, selected binary, XDG paths, and
 all stdout/stderr from the app process. The debug app log captures log4net
 output at `DEBUG` level.
 
-By default, `run-linuxgui-dev.sh` now keeps the app's stdout/stderr out of the
+By default, `run-linuxgui-dev.sh` keeps the app's stdout/stderr out of the
 terminal and writes it only to the session log. If you want the old mirrored
 behavior for a debugging session, launch with:
 

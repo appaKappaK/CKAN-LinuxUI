@@ -20,6 +20,36 @@ namespace Tests.App.Services
     public sealed class ModActionServiceTests
     {
         [Test]
+        public async Task PreviewChanges_RecommendedDependency_DoesNotHideOtherOptionalMods()
+        {
+            var user = new NullUser();
+            using (var inst = new DisposableKSP())
+            using (var config = new FakeConfiguration(inst.KSP, inst.KSP.Name))
+            using (var repo = new TemporaryRepository(RequiredRootMetadata, RecommendingRootMetadata,
+                                                       SharedRecommendedMetadata, OptionalExtraMetadata))
+            using (var repoData = new TemporaryRepositoryData(user, repo.repo))
+            using (var regMgr = RegistryManager.Instance(inst.KSP, repoData.Manager,
+                                                          new Repository[] { repo.repo }))
+            using (var gameService = new TestGameInstanceService(inst.KSP, config, repoData.Manager, regMgr))
+            {
+                var changes = new ChangesetService();
+                changes.QueueInstall(new ModListItem { Identifier = "RecommendingRoot", Name = "Recommending Root" });
+                changes.QueueInstall(new ModListItem { Identifier = "RequiredRoot", Name = "Required Root" });
+                var result = await new ModActionService(gameService, changes, user)
+                    .PreviewChangesAsync(CancellationToken.None);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.CanApply, Is.True);
+                    Assert.That(result.DependencyInstalls, Has.Some.Contains("SharedRecommended"));
+                    Assert.That(result.Recommendations, Has.Some.Contains("OptionalExtra"));
+                    Assert.That(result.Recommendations, Has.None.Contains("SharedRecommended"));
+                    Assert.That(result.AttentionNotes, Is.Empty);
+                });
+            }
+        }
+
+        [Test]
         public async Task PreviewChanges_RemoveOnly_ShowsUnusedAutoInstalledDependencies()
         {
             var user = new NullUser();
@@ -364,6 +394,31 @@ namespace Tests.App.Services
             public void Dispose()
                 => Manager.Dispose();
         }
+
+        private const string RequiredRootMetadata = @"{
+            ""spec_version"": 1, ""identifier"": ""RequiredRoot"", ""name"": ""Required Root"",
+            ""abstract"": ""Requires a shared mod."", ""author"": ""Test Author"", ""version"": ""1.0"",
+            ""download"": ""https://example.com/required.zip"", ""depends"": [{ ""name"": ""SharedRecommended"", ""suppress_recommendations"": true }]
+        }";
+
+        private const string RecommendingRootMetadata = @"{
+            ""spec_version"": 1, ""identifier"": ""RecommendingRoot"", ""name"": ""Recommending Root"",
+            ""abstract"": ""Recommends the shared mod and an extra."", ""author"": ""Test Author"", ""version"": ""1.0"",
+            ""download"": ""https://example.com/recommending.zip"",
+            ""recommends"": [{ ""name"": ""SharedRecommended"" }, { ""name"": ""OptionalExtra"" }]
+        }";
+
+        private const string SharedRecommendedMetadata = @"{
+            ""spec_version"": 1, ""identifier"": ""SharedRecommended"", ""name"": ""Shared Recommended"",
+            ""abstract"": ""Shared dependency."", ""author"": ""Test Author"", ""version"": ""1.0"",
+            ""download"": ""https://example.com/shared.zip""
+        }";
+
+        private const string OptionalExtraMetadata = @"{
+            ""spec_version"": 1, ""identifier"": ""OptionalExtra"", ""name"": ""Optional Extra"",
+            ""abstract"": ""Optional recommendation."", ""author"": ""Test Author"", ""version"": ""1.0"",
+            ""download"": ""https://example.com/extra.zip""
+        }";
 
         private const string RemovingModMetadata = @"{
             ""spec_version"": 1,

@@ -52,7 +52,48 @@ namespace Tests.App.Services
                 Assert.That(action.ActionKind, Is.EqualTo(QueuedActionKind.Install));
                 Assert.That(action.TargetVersion, Is.EqualTo("0.11.0"));
                 Assert.That(action.DetailText, Is.EqualTo("Install 0.11.0"));
+                Assert.That(action.VersionText, Is.EqualTo("0.11.0"));
+                Assert.That(action.DownloadText, Is.EqualTo("Download"));
             });
+        }
+
+        [Test]
+        public void QueueUpdate_WithExplicitOlderTarget_ShowsTheSelectedVersionAndDownloadAction()
+        {
+            var changes = new ChangesetService();
+
+            changes.QueueUpdate(new ModListItem
+            {
+                Identifier       = "Kopernicus",
+                Name             = "Kopernicus",
+                InstalledVersion = "2:release-1.12.1-249",
+                LatestVersion    = "2:release-1.12.1-249",
+                HasVersionUpdate = false,
+            }, "2:release-1.12.1-247");
+
+            var action = changes.CurrentApplyQueue.Single();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(action.ActionText, Is.EqualTo("Downgrade"));
+                Assert.That(action.VersionText, Is.EqualTo("2:release-1.12.1-247"));
+                Assert.That(action.DownloadText, Is.EqualTo("Download"));
+            });
+        }
+
+        [Test]
+        public void PreserveAutoRemoval_AddsIdentifierUntilApplyQueueIsCleared()
+        {
+            var changes = new ChangesetService();
+
+            changes.PreserveAutoRemoval("ParallaxContinued");
+
+            Assert.That(changes.PreservedAutoRemovalIdentifiers,
+                        Does.Contain("ParallaxContinued"));
+
+            changes.ClearApplyQueue();
+
+            Assert.That(changes.PreservedAutoRemovalIdentifiers, Is.Empty);
         }
 
         [Test]

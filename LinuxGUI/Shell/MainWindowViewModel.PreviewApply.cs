@@ -86,12 +86,12 @@ namespace CKAN.LinuxGUI
             catch (Exception ex)
             {
                 Diagnostics = ex.Message;
-                PreviewSummary = "Preview generation failed.";
+                PreviewSummary = "Review could not be generated.";
                 lastSolverPreviewCanApply = false;
                 PreviewCanApply = false;
                 ReplacePreviewCollection(PreviewConflicts, new[]
                 {
-                    $"Preview failed: {ex.Message}",
+                    $"Review failed: {ex.Message}",
                 });
                 ReplacePreviewCollection(PreviewDownloadsRequired, Array.Empty<string>());
                 ReplacePreviewCollection(PreviewDependencies, Array.Empty<string>());
@@ -813,6 +813,9 @@ namespace CKAN.LinuxGUI
             this.RaisePropertyChanged(nameof(PreviewDownloadMetricTitle));
             this.RaisePropertyChanged(nameof(PreviewDownloadCountLabel));
             this.RaisePropertyChanged(nameof(PreviewDependencyCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewRecommendationCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewSuggestionCountLabel));
+            this.RaisePropertyChanged(nameof(PreviewSupporterCountLabel));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewQueuedDownloadMetric));
             this.RaisePropertyChanged(nameof(ShowPreviewDownloadCountMetric));

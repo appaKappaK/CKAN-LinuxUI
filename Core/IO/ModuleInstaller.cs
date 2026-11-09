@@ -800,7 +800,9 @@ namespace CKAN.IO
                                   ref HashSet<string>?             possibleConfigOnlyDirs,
                                   RegistryManager                  registry_manager,
                                   bool                             ConfirmPrompt = true,
-                                  IReadOnlyCollection<CkanModule>? installing    = null)
+                                  IReadOnlyCollection<CkanModule>? installing    = null,
+                                  bool                             removeDependents = true,
+                                  IReadOnlySet<string>?            preservedIdentifiers = null)
         {
             mods = mods.Memoize();
             installing ??= Array.Empty<CkanModule>();
@@ -820,19 +822,25 @@ namespace CKAN.IO
             }
 
             // Find all the things which need uninstalling.
-            var revdep = mods
-                .Union(registry_manager.registry.FindReverseDependencies(
-                    mods.Except(installing.Select(m => m.identifier)).ToArray(),
-                    installing))
-                .ToArray();
+            var revdep = removeDependents
+                ? mods
+                    .Union(registry_manager.registry.FindReverseDependencies(
+                        mods.Except(installing.Select(m => m.identifier)).ToArray(),
+                        installing))
+                    .ToArray()
+                : mods.ToArray();
 
-            var goners = revdep.Union(
-                                registry_manager.registry.FindRemovableAutoInstalled(installing,
-                                                                                     revdep.ToHashSet(),
-                                                                                     instance)
-                                                         .Select(im => im.identifier))
-                               .Order()
-                               .ToArray();
+            var goners = (removeDependents
+                ? revdep.Union(
+                    registry_manager.registry.FindRemovableAutoInstalled(installing,
+                                                                         revdep.ToHashSet(),
+                                                                         instance)
+                                                     .Select(im => im.identifier))
+                : revdep)
+                .Where(identifier => preservedIdentifiers == null
+                                    || !preservedIdentifiers.Contains(identifier))
+                .Order()
+                .ToArray();
 
             // If there is nothing to uninstall, skip out.
             if (goners.Length == 0)
@@ -1594,9 +1602,12 @@ namespace CKAN.IO
                                                     registry, instance.Game, crit);
             var recommenders = resolver.Dependencies().ToHashSet();
             log.DebugFormat("Recommenders: {0}", string.Join(", ", recommenders));
+            var installingIdentifiers = toInstall.Select(m => m.identifier)
+                                                  .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var checkedRecs = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !installingIdentifiers.Contains(m.identifier))
                                       .Where(m => resolver.ReasonsFor(m)
                                                           .Any(r => r is SelectionReason.Recommended { ProvidesIndex: 0 }))
                                       .ToHashSet();
@@ -1609,6 +1620,7 @@ namespace CKAN.IO
 
             recommendations = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !installingIdentifiers.Contains(m.identifier))
                                       .ToDictionary(m => m,
                                                     m => new Tuple<bool, List<string>>(
                                                              checkedRecs.Contains(m),
@@ -1622,6 +1634,7 @@ namespace CKAN.IO
             suggestions = resolver.Suggestions(recommenders,
                                                recommendations.Keys.ToList())
                                   .Except(exclude)
+                                  .Where(m => !installingIdentifiers.Contains(m.identifier))
                                   .ToDictionary(m => m,
                                                 m => resolver.ReasonsFor(m)
                                                              .OfType<SelectionReason.Suggested>()
@@ -1636,6 +1649,7 @@ namespace CKAN.IO
                                              recommenders.Concat(recommendations.Keys)
                                                          .Concat(suggestions.Keys))
                                  .Where(kvp => !exclude.Contains(kvp.Key)
+                                               && !installingIdentifiers.Contains(kvp.Key.identifier)
                                                && CanInstall(toInstall.Append(kvp.Key).ToList(), toRemove,
                                                              opts, registry, instance.Game, crit))
                                  .ToDictionary();

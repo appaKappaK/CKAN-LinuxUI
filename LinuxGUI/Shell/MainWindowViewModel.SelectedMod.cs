@@ -412,18 +412,32 @@ namespace CKAN.LinuxGUI
 
             if (identifiers.Count == 0)
             {
-                StatusMessage = $"No browser-visible {relationshipName} were found in the preview.";
+                StatusMessage = $"No browser-visible {relationshipName} were found in Review.";
                 return;
             }
 
             relationshipBrowserScopeIdentifiers = identifiers;
             relationshipBrowserScopeQueueSources = queueSources;
             relationshipBrowserScopeReturnsToPreview = true;
-            RelationshipBrowserScopeText = $"Preview {relationshipName}";
+            RelationshipBrowserScopeText = $"Review {relationshipName}";
             pendingModListScrollReset = true;
             ShowBrowseSurfaceTab();
             ApplyCatalogFilterToLoadedItems(identifiers.FirstOrDefault());
             PublishRelationshipBrowserScopeState();
+        }
+
+        public void PreservePreviewAutoRemovalFromUi(string entry)
+        {
+            var matchingItem = FindPreviewEntryMod(PreviewEntryModText(entry));
+            if (matchingItem == null)
+            {
+                StatusMessage = "Could not identify that auto-removal in the current catalog.";
+                return;
+            }
+
+            changesetService.PreserveAutoRemoval(matchingItem.Identifier);
+            StatusMessage = $"Keeping {matchingItem.Name}; it will not be removed by this apply.";
+            _ = LoadPreviewAsync();
         }
 
         private void ShowQueuedActionsInBrowser()
@@ -507,10 +521,10 @@ namespace CKAN.LinuxGUI
             {
                 return relationshipName switch
                 {
-                    "recommendations"    => "Recommended from preview",
-                    "suggestions"        => "Suggested from preview",
-                    "supporters"         => "Supported from preview",
-                    "dependencies"       => "Required dependency from preview",
+                    "recommendations"    => "Recommended from Review",
+                    "suggestions"        => "Suggested from Review",
+                    "supporters"         => "Supported from Review",
+                    "dependencies"       => "Required dependency from Review",
                     _                    => "",
                 };
             }

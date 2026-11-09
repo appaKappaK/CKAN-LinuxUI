@@ -34,6 +34,17 @@ namespace CKAN.LinuxGUI
             }
         }
 
+        private void PreservePreviewAutoRemovalButton_OnClick(object? sender,
+                                                               RoutedEventArgs e)
+        {
+            if (sender is Button button
+                && button.DataContext is string entry
+                && DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.PreservePreviewAutoRemovalFromUi(entry);
+            }
+        }
+
         private void PreviewConflictRowButton_OnClick(object? sender,
                                                       RoutedEventArgs e)
         {
@@ -187,6 +198,14 @@ namespace CKAN.LinuxGUI
                 queueItem.Click += (_, _) => viewModel.ToggleQueueActionFromBrowser(mod);
                 queueItem.Classes.Add("mod-row-menu-item");
                 menu.Items.Add(queueItem);
+            }
+
+            if (!viewModel.HasMultipleSelectedMods && viewModel.ShowAdditionalRemoveContextAction(mod))
+            {
+                var removeItem = new MenuItem { Header = "Queue Remove" };
+                removeItem.Click += (_, _) => viewModel.QueueRemoveFromBrowser(mod);
+                removeItem.Classes.Add("mod-row-menu-item");
+                menu.Items.Add(removeItem);
             }
 
             if (viewModel.ShowDownloadOnlyContextAction(mod))

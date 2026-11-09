@@ -22,6 +22,7 @@ venv/
 **/.idea/
 /.agents/
 /.codex/
+/.kilo/
 
 # Build results
 [Dd]ebug/

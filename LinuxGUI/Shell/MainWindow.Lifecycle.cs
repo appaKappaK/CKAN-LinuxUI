@@ -23,6 +23,72 @@ namespace CKAN.LinuxGUI
 {
     public partial class MainWindow : Window
     {
+        private void UpdateReviewQueueHeaderAlignment(object? sender, EventArgs e)
+        {
+            var scroll = PreviewQueueList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+            if (scroll == null || scroll.Viewport.Width <= 0)
+            {
+                return;
+            }
+
+            var gutter = Math.Max(0, PreviewQueueList.Bounds.Width - scroll.Viewport.Width);
+            var margin = new Thickness(12, 0, 12 + gutter, 0);
+            if (ReviewQueueHeader.Margin != margin)
+            {
+                ReviewQueueHeader.Margin = margin;
+            }
+        }
+
+        private void UpdateReviewListHeights(object? sender, EventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel viewModel
+                || !PreviewRightPanelScrollViewer.IsEffectivelyVisible
+                || PreviewRightPanelScrollViewer.Bounds.Height <= 0)
+            {
+                return;
+            }
+
+            var counts = new[]
+            {
+                viewModel.PreviewDependencies.Count,
+                viewModel.PreviewRecommendations.Count,
+                viewModel.PreviewSuggestions.Count,
+                viewModel.PreviewSupporters.Count,
+            }.Where(count => count > 0).ToArray();
+            if (counts.Length == 0)
+            {
+                return;
+            }
+
+            // Each card has a heading, padding and border; adjacent cards have a gap.
+            var available = PreviewRightPanelScrollViewer.Bounds.Height
+                            - counts.Length * 54 - (counts.Length - 1) * 10;
+            double low = 90, high = 150;
+            for (var i = 0; i < 12; i++)
+            {
+                var middle = (low + high) / 2;
+                if (counts.Sum(count => Math.Min(count * 30, middle)) <= available)
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            var height = available >= counts.Sum(count => Math.Min(count * 30, 150))
+                ? 150 : Math.Floor(low);
+            foreach (var list in new[] { ReviewDependenciesList, ReviewRecommendationsList,
+                                         ReviewSuggestionsList, ReviewSupportersList })
+            {
+                if (Math.Abs(list.MaxHeight - height) > 0.1)
+                {
+                    list.MaxHeight = height;
+                }
+            }
+        }
+
         private void OnOpened(object? sender,
                               EventArgs e)
         {

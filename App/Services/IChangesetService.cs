@@ -12,6 +12,8 @@ namespace CKAN.App.Services
 
         IReadOnlyList<QueuedActionModel> CurrentDownloadQueue { get; }
 
+        IReadOnlySet<string> PreservedAutoRemovalIdentifiers { get; }
+
         event System.Action? QueueChanged;
 
         QueuedActionModel? FindQueuedAction(string identifier);
@@ -37,5 +39,7 @@ namespace CKAN.App.Services
         void ClearApplyQueue();
 
         void ClearDownloadQueue();
+
+        void PreserveAutoRemoval(string identifier);
     }
 }

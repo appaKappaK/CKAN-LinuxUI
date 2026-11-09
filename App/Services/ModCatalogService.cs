@@ -29,10 +29,7 @@ namespace CKAN.App.Services
 
         public string LastSource { get; private set; } = "unknown";
 
-        public string LoadingSourceDescription
-            => catalogIndexService.HasCandidateFile()
-                ? "Rust catalog sidecar"
-                : "CKAN registry cache";
+        public string LoadingSourceDescription => "CKAN registry cache";
 
         public Task<IReadOnlyList<ModListItem>> GetAllModListAsync(CancellationToken cancellationToken)
             => Task.Run(() =>
@@ -240,14 +237,6 @@ namespace CKAN.App.Services
                                                     out string     source,
                                                     out long       primeMs)
         {
-            var indexedItems = BuildItemsFromCatalogIndex(context);
-            if (indexedItems != null)
-            {
-                source = "catalog-index";
-                primeMs = 0;
-                return indexedItems;
-            }
-
             var primeWatch = Stopwatch.StartNew();
             PrimeRepositoryCache(context);
             primeWatch.Stop();

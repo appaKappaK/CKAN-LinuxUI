@@ -34,6 +34,7 @@ namespace CKAN.LinuxGUI
             viewModel = new WindowViewModel(mainWindowViewModel);
             DataContext = viewModel;
             viewModel.RefreshCacheSummary();
+            Opened += async (_, _) => await viewModel.CheckLatestCoreVersionAsync();
         }
 
         public bool RepositoryAdded => viewModel.RepositoryAdded;
@@ -685,6 +686,55 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool AutoRemoveUnusedDependencies
+            {
+                get => mainWindowViewModel?.AutoRemoveUnusedDependencies ?? true;
+                set
+                {
+                    if (mainWindowViewModel != null)
+                    {
+                        mainWindowViewModel.AutoRemoveUnusedDependencies = value;
+                        this.RaisePropertyChanged();
+                    }
+                }
+            }
+
+            public bool ShowReviewCounts
+            {
+                get => mainWindowViewModel?.ShowReviewCounts ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ShowReviewCounts = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewDependencyCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewDependencyCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewDependencyCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewAutoRemovalCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewAutoRemovalCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewAutoRemovalCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewRecommendationCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewRecommendationCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewRecommendationCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewSuggestionCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewSuggestionCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewSuggestionCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
+            public bool ReviewSupporterCountEnabled
+            {
+                get => mainWindowViewModel?.ReviewSupporterCountEnabled ?? true;
+                set { if (mainWindowViewModel != null) { mainWindowViewModel.ReviewSupporterCountEnabled = value; this.RaisePropertyChanged(); } }
+            }
+
             public IReadOnlyList<ReleaseStatusOption> StabilityToleranceOptions { get; }
 
             public ReleaseStatusOption? SelectedStabilityTolerance
@@ -899,6 +949,7 @@ namespace CKAN.LinuxGUI
 
             public async Task CheckForUpdatesAsync()
             {
+                await CheckLatestCoreVersionAsync();
                 if (!CanCheckLinuxGuiUpdates)
                 {
                     LatestLinuxGuiVersion = "Not configured";
@@ -907,7 +958,6 @@ namespace CKAN.LinuxGUI
                 }
 
                 LatestLinuxGuiVersion = "Checking...";
-                LatestCoreVersion = "Checking...";
                 UpdateErrorMessage = "";
 
                 try
@@ -922,6 +972,16 @@ namespace CKAN.LinuxGUI
                     UpdateErrorMessage = ex.Message;
                 }
 
+            }
+
+            public async Task CheckLatestCoreVersionAsync()
+            {
+                if (LatestCoreVersion == "Checking...")
+                {
+                    return;
+                }
+
+                LatestCoreVersion = "Checking...";
                 LatestCoreVersion = await GetLatestCoreVersionTextAsync(includePrereleases: false);
             }
 

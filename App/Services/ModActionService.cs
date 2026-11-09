@@ -16,14 +16,17 @@ namespace CKAN.App.Services
         private readonly IGameInstanceService gameInstanceService;
         private readonly IChangesetService    changesetService;
         private readonly IUser                user;
+        private readonly IAppSettingsService  appSettingsService;
 
         public ModActionService(IGameInstanceService gameInstanceService,
                                 IChangesetService    changesetService,
-                                IUser                user)
+                                IUser                user,
+                                IAppSettingsService? appSettingsService = null)
         {
             this.gameInstanceService = gameInstanceService;
             this.changesetService    = changesetService;
             this.user                = user;
+            this.appSettingsService  = appSettingsService ?? new AppSettingsService();
         }
 
         public Task<ChangesetPreviewModel> PreviewChangesAsync(CancellationToken cancellationToken)
@@ -255,7 +258,9 @@ namespace CKAN.App.Services
                                                             ref possibleConfigOnlyDirs,
                                                             registryManager,
                                                             false,
-                                                            toInstall.Concat(toUpgrade).ToList());
+                                                            toInstall.Concat(toUpgrade).ToList(),
+                                                            appSettingsService.AutoRemoveUnusedDependencies,
+                                                            changesetService.PreservedAutoRemovalIdentifiers);
                                     toUninstall.Clear();
                                 }
 
@@ -568,10 +573,10 @@ namespace CKAN.App.Services
             {
                 return new ExecutionPlan
                 {
-                    SummaryText = "Preview is unavailable until a game instance and registry are loaded.",
+                    SummaryText = "Review is unavailable until a game instance and registry are loaded.",
                     AttentionNotes = new[]
                     {
-                        "Select or reload an install before building an apply preview.",
+                        "Select or reload an install before reviewing changes.",
                     },
                 };
             }
@@ -582,7 +587,7 @@ namespace CKAN.App.Services
                 {
                     Instance        = instance,
                     RegistryManager = registryManager,
-                    SummaryText     = "Queue install, update, or remove actions to build an apply preview.",
+                    SummaryText     = "Queue install, update, or remove actions to review changes.",
                 };
             }
 
@@ -593,7 +598,7 @@ namespace CKAN.App.Services
                     Instance        = instance,
                     RegistryManager = registryManager,
                     RequestedActions = requestedActions,
-                    SummaryText     = "Preview is unavailable because downloaded files are unavailable right now.",
+                    SummaryText     = "Review is unavailable because downloaded files are unavailable right now.",
                     AttentionNotes  = new[]
                     {
                         "Reload instances or restart CKAN Linux to restore access to downloaded files.",
@@ -707,6 +712,15 @@ namespace CKAN.App.Services
                         autoRemovalModules = registry.FindRemovableAutoInstalled(combinedInstalls,
                                                                                   plannedRemovalIdentifiers,
                                                                                   instance)
+                                                     .Where(im => !changesetService.PreservedAutoRemovalIdentifiers.Contains(im.identifier))
+                                                     .Concat(registry.InstalledModules
+                                                             .Where(im => plannedRemovalIdentifiers.Contains(im.identifier)
+                                                                          && !requestedRemovals.Any(requested => string.Equals(requested.identifier,
+                                                                                                                            im.identifier,
+                                                                                                                            StringComparison.OrdinalIgnoreCase))
+                                                                          && !changesetService.PreservedAutoRemovalIdentifiers.Contains(im.identifier)))
+                                                     .GroupBy(im => im.identifier, StringComparer.OrdinalIgnoreCase)
+                                                     .Select(group => group.First())
                                                      .ToList();
                         autoRemovals.AddRange(
                             BuildAutoRemovalDescriptions(autoRemovalModules,
@@ -790,7 +804,7 @@ namespace CKAN.App.Services
                 }
                 catch (Exception ex)
                 {
-                    conflicts.Add($"Preview generation failed: {ex.Message}");
+                    conflicts.Add($"Review generation failed: {ex.Message}");
                 }
             }
 

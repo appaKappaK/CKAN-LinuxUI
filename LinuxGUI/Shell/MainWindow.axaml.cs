@@ -64,6 +64,8 @@ namespace CKAN.LinuxGUI
         public MainWindow()
         {
             InitializeComponent();
+            PreviewRightPanelScrollViewer.LayoutUpdated += UpdateReviewListHeights;
+            PreviewQueueList.LayoutUpdated += UpdateReviewQueueHeaderAlignment;
             Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://CKAN-LinuxGUI/Assets/ckan.ico")));
             AddHandler(InputElement.PointerWheelChangedEvent,
                        Window_OnPointerWheelChanged,

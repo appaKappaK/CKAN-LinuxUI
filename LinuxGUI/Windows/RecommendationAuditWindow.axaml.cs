@@ -74,7 +74,7 @@ namespace CKAN.LinuxGUI
             {
                 Items = new ObservableCollection<RecommendationAuditItem>(items);
                 Rows = BuildRows(items);
-                SummaryText = $"Review recommended, suggested, and supporting mods for {instanceName}. Checked items will be added to the Preview queue.";
+                SummaryText = $"Review recommended, suggested, and supporting mods for {instanceName}. Checked items will be added to the Review queue.";
 
                 foreach (var item in Items)
                 {

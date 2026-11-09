@@ -106,7 +106,7 @@ namespace CKAN.LinuxGUI
             => mod.IsInstalled && !mod.IsDisabled && mod.HasVersionUpdate;
 
         private static bool CanQueueRemove(ModListItem mod)
-            => mod.IsInstalled && !mod.IsAutodetected && !mod.IsDisabled && !mod.HasVersionUpdate;
+            => mod.IsInstalled && !mod.IsAutodetected && !mod.IsDisabled;
 
         private static string CountLabel(int count,
                                          string singular,

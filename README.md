@@ -6,23 +6,13 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 
 ![CKAN LinuxGUI mod browser](assets/CKAN-LINUX-UI.png)
 
-> **⚠️ Warning – Uninstall behavior is currently unreliable**  
-> Uninstalling mods can incorrectly remove other packages.  
-> Example: uninstalling Kopernicus removed Parallax.  
-> This will be fixed in the future.
+> **Review removals before applying:** Removing a mod may also remove mods that
+> depend on it. Check the Auto-Removals section in Review; use **Keep** for
+> anything you intend to preserve.
 
 ## Status
 
-LinuxGUI is under passive development. It was designed and directed by me and
-implemented with AI assistance. The queue and preview logic is tested against a
-real CKAN registry (`Tests/App/Services/`), including removal previews for
-unused dependencies. Removing a mod that other installed mods depend on is not
-covered by tests yet. The UI is covered by view-model tests and screenshot
-baselines (`LinuxGUI.VisualTests/`). To run the visual tests:
-
-```bash
-./build.sh LinuxGUIVisualTests
-```
+LinuxGUI is under passive development.
 
 ## Quick Start
 
@@ -45,32 +35,20 @@ directly:
 ## What This Fork Adds
 
 - A native Linux desktop app, launched as `ckan-linux`.
-- A queue-and-preview workflow: installs, updates, removals, and downloads are
-  queued first, and a preview shows what will happen (including dependencies)
+- A queue-and-review workflow: installs, updates, removals, and downloads are
+  queued first, and Review shows what will happen (including dependencies)
   before anything is applied.
 - A local installer that adds `ckan-linux` without touching an existing system
   `ckan` command.
-- An optional self-contained command-line build for scripts and recovery work.
 
 The former WinForms and terminal interfaces are not included in this fork.
 
-## Optional Command-Line Client
-
-A separate .NET 8 build for scripting and headless maintenance. It does not
-launch a GUI.
-
-```bash
-./build.sh CLI --configuration=Release
-_build/publish/CKAN-CmdLine/linux-x64/CKAN-CmdLine version
-```
-
-The old `upgrade ckan` self-replacement path is disabled. Update checks for CKAN
-Linux belong to the desktop app.
-
 ## Development
 
-Build steps, packaging, the dev launcher, logs, benchmarks, and the visual-test
+Build steps, packaging, the dev launcher, logs, and the visual-test
 workflow are documented in [`LinuxGUI/README.md`](LinuxGUI/README.md).
+An optional CLI build for scripting and recovery is described in
+[`doc/building.md`](doc/building.md).
 
 Report problems with the Linux app on this repository's
 [issue tracker](https://github.com/appaKappaK/CKAN-LinuxUI/issues/new).

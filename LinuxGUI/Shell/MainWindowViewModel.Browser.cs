@@ -127,13 +127,24 @@ namespace CKAN.LinuxGUI
 
         public bool ShowQueueContextAction(ModListItem mod)
             => !IsApplyingChanges
-               && (changesetService.FindQueuedApplyAction(mod.Identifier) != null
+               && (IsPreviewAutoRemovalScope
+                   || changesetService.FindQueuedApplyAction(mod.Identifier) != null
                || CanQueueInstall(mod)
                || CanQueueUpdate(mod)
                || CanQueueRemove(mod));
 
+        private bool IsPreviewAutoRemovalScope
+            => string.Equals(RelationshipBrowserScopeText,
+                             "Review auto-removals",
+                             StringComparison.OrdinalIgnoreCase);
+
         public string QueueContextLabel(ModListItem mod)
         {
+            if (IsPreviewAutoRemovalScope)
+            {
+                return "Keep (Do Not Remove)";
+            }
+
             var queued = changesetService.FindQueuedApplyAction(mod.Identifier);
             if (queued != null)
             {
@@ -156,10 +167,36 @@ namespace CKAN.LinuxGUI
             return "";
         }
 
+        public bool ShowAdditionalRemoveContextAction(ModListItem mod)
+            => !IsApplyingChanges
+               && !IsPreviewAutoRemovalScope
+               && changesetService.FindQueuedApplyAction(mod.Identifier) == null
+               && CanQueueUpdate(mod)
+               && CanQueueRemove(mod);
+
+        public void QueueRemoveFromBrowser(ModListItem mod)
+        {
+            if (!ShowAdditionalRemoveContextAction(mod))
+            {
+                return;
+            }
+
+            ClearApplyResult();
+            changesetService.QueueRemove(mod);
+            StatusMessage = $"Queued removal for {mod.Name}.";
+        }
+
         public void ToggleQueueActionFromBrowser(ModListItem mod)
         {
             if (IsApplyingChanges)
             {
+                return;
+            }
+
+            if (IsPreviewAutoRemovalScope)
+            {
+                changesetService.PreserveAutoRemoval(mod.Identifier);
+                StatusMessage = $"Keeping {mod.Name}; it will not be removed by this apply.";
                 return;
             }
 
@@ -474,60 +511,7 @@ namespace CKAN.LinuxGUI
                     ? "Metadata repositories updated."
                     : "Metadata repositories are already current.";
 
-                if (catalogSidecarRefreshService == null)
-                {
-                    return repositoriesUpdated;
-                }
-
-                var repositoryCachePaths = gameInstanceService.RepositoryData
-                    .GetRepositoryCachePaths(repositories);
-                CatalogSidecarRefreshResult sidecarResult;
-                try
-                {
-                    CatalogStatusMessage = "Checking Rust catalog sidecar...";
-                    sidecarResult = await catalogSidecarRefreshService
-                        .RefreshIfNeededAsync(repositoryCachePaths, CancellationToken.None);
-                }
-                catch (Exception ex)
-                {
-                    Diagnostics = ex.Message;
-                    StatusMessage = repositoriesUpdated
-                        ? "Metadata repositories updated; using the CKAN registry cache."
-                        : "Metadata repositories are current; using the CKAN registry cache.";
-                    return repositoriesUpdated;
-                }
-
-                switch (sidecarResult.Status)
-                {
-                    case CatalogSidecarRefreshStatus.Updated:
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories and Rust catalog updated."
-                            : "Metadata repositories are current; Rust catalog updated.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Current:
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories updated; Rust catalog is current."
-                            : "Metadata repositories and Rust catalog are already current.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Unavailable:
-                    case CatalogSidecarRefreshStatus.Failed:
-                        if (!string.IsNullOrWhiteSpace(sidecarResult.Message))
-                        {
-                            Diagnostics = sidecarResult.Message;
-                        }
-                        StatusMessage = repositoriesUpdated
-                            ? "Metadata repositories updated; using the CKAN registry cache."
-                            : "Metadata repositories are current; using the CKAN registry cache.";
-                        break;
-
-                    case CatalogSidecarRefreshStatus.Skipped:
-                    default:
-                        break;
-                }
-                return repositoriesUpdated
-                       || sidecarResult.Status == CatalogSidecarRefreshStatus.Updated;
+                return repositoriesUpdated;
             }
             catch (Exception ex)
             {
@@ -1108,6 +1092,7 @@ namespace CKAN.LinuxGUI
         {
             var snapshot = disabledModService.GetCurrentSnapshot();
             disabledModsDirectoryPath = snapshot.DisabledDirectoryPath;
+            hasDisabledMods = snapshot.Entries.Count > 0;
             this.RaisePropertyChanged(nameof(ShowDisabledFilter));
             this.RaisePropertyChanged(nameof(ShowOpenDisabledModsDirectoryMenuItem));
         }

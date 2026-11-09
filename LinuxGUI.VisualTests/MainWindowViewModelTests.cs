@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
+using Avalonia.VisualTree;
 
 using NUnit.Framework;
 
@@ -23,6 +24,124 @@ namespace CKAN.LinuxGUI.VisualTests
     [TestFixture]
     public sealed class MainWindowViewModelTests
     {
+        [AvaloniaTest]
+        public void Settings_ModCountsHaveMasterAndIndividualSwitches()
+        {
+            var (viewModel, service) = CreateViewModel();
+            var window = new SettingsWindow(viewModel);
+            window.Show();
+            try
+            {
+                var toggle = window.GetVisualDescendants().OfType<CheckBox>()
+                    .SingleOrDefault(item => Equals(item.Content, "Show Review counts"));
+                Assert.That(toggle, Is.Not.Null);
+                Assert.That(toggle!.IsChecked, Is.True);
+                var dependencies = window.GetVisualDescendants().OfType<CheckBox>()
+                    .Single(item => Equals(item.Content, "Dependencies"));
+                Assert.That(dependencies.IsChecked, Is.True);
+                dependencies.IsChecked = false;
+                toggle.IsChecked = false;
+                Assert.That(viewModel.ShowReviewCounts, Is.False);
+                Assert.That(viewModel.ShowReviewAutoRemovalCount, Is.False);
+                toggle.IsChecked = true;
+                Assert.That(dependencies.IsChecked, Is.False);
+                Assert.That(viewModel.ShowReviewDependencyCount, Is.False);
+                Assert.That(viewModel.ShowReviewAutoRemovalCount, Is.True);
+            }
+            finally
+            {
+                window.Close();
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task DisabledFilters_AreHiddenForEmptyDirectoryWhileDisableRemainsAvailable()
+        {
+            var disabled = new FakeDisabledModService
+            {
+                Snapshot = new DisabledModsSnapshot { DisabledDirectoryPath = "/disabled" },
+            };
+            var (viewModel, service) = CreateViewModel(disabledMods: disabled);
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "mechjeb2")
+                                          && !viewModel.IsCatalogLoading);
+                var mod = viewModel.Mods.First(item => item.Identifier == "mechjeb2");
+                Assert.That(viewModel.ShowDisabledFilter, Is.False);
+                Assert.That(viewModel.ShowToggleDisabledContextAction(mod), Is.True);
+
+                viewModel.FilterNotDisabledOnly = true;
+                Assert.That(viewModel.ShowDisabledFilter, Is.True);
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task DisabledFilters_RemainVisibleWhenDisabledModsAreOutsideCurrentFilter()
+        {
+            var disabled = new FakeDisabledModService
+            {
+                Snapshot = new DisabledModsSnapshot
+                {
+                    DisabledDirectoryPath = "/disabled",
+                    Entries = new Dictionary<string, DisabledModEntry>
+                    {
+                        ["example"] = new DisabledModEntry { Identifier = "example" },
+                    },
+                },
+            };
+            var (viewModel, service) = CreateViewModel(disabledMods: disabled);
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Count > 0 && !viewModel.IsCatalogLoading);
+                Assert.That(viewModel.ShowDisabledFilter, Is.True);
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public void Settings_AllowsCheckingForUpdatesWithoutLinuxReleases()
+        {
+            var window = new SettingsWindow();
+            window.Show();
+            try
+            {
+                var button = window.GetVisualDescendants().OfType<Button>()
+                    .Single(item => Equals(item.Content, "Check for updates"));
+                Assert.That(button.IsEnabled, Is.True);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
+        public void Catalog_UsesRegistryEvenWhenSidecarExists()
+        {
+            var path = Path.GetTempFileName();
+            var previous = Environment.GetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", path);
+                using var instances = new FakeGameInstanceService(VisualScenario.Ready);
+                var catalog = new ModCatalogService(instances, new CatalogIndexService(), new FakeDisabledModService());
+                Assert.That(catalog.LoadingSourceDescription, Is.EqualTo("CKAN registry cache"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("CKAN_CATALOG_INDEX_PATH", previous);
+                File.Delete(path);
+            }
+        }
+
         [AvaloniaTest]
         public void ReadyStartup_UsesWarmBrowserStateImmediately()
         {
@@ -112,6 +231,57 @@ namespace CKAN.LinuxGUI.VisualTests
         }
 
         [AvaloniaTest]
+        public async Task UpdatableMod_ContextOffersRemovalAndCanCancelIt()
+        {
+            var (viewModel, service) = CreateViewModel();
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "restock")
+                                          && !viewModel.IsCatalogLoading);
+                var mod = viewModel.Mods.First(item => item.Identifier == "restock");
+                Assert.That(viewModel.QueueContextLabel(mod), Is.EqualTo("Queue Update"));
+                Assert.That(viewModel.ShowAdditionalRemoveContextAction(mod), Is.True);
+
+                viewModel.QueueRemoveFromBrowser(mod);
+                Assert.That(viewModel.QueueContextLabel(mod), Is.EqualTo("Cancel Remove"));
+                Assert.That(viewModel.ShowAdditionalRemoveContextAction(mod), Is.False);
+
+                viewModel.ToggleQueueActionFromBrowser(mod);
+                Assert.That(viewModel.QueueContextLabel(mod), Is.EqualTo("Queue Update"));
+                Assert.That(viewModel.ShowAdditionalRemoveContextAction(mod), Is.True);
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
+        public async Task BrowserMultiSelection_CanRemoveModsWithUpdatesAvailable()
+        {
+            var (viewModel, service) = CreateViewModel();
+            try
+            {
+                await WaitForAsync(() => viewModel.Mods.Any(mod => mod.Identifier == "restock")
+                                          && viewModel.Mods.Any(mod => mod.Identifier == "mechjeb2")
+                                          && !viewModel.IsCatalogLoading);
+                var update = viewModel.Mods.First(mod => mod.Identifier == "restock");
+                var installed = viewModel.Mods.First(mod => mod.Identifier == "mechjeb2");
+                viewModel.UpdateBrowserSelection(new[] { update, installed }, update);
+
+                Assert.That(viewModel.BulkRemoveCount, Is.EqualTo(2));
+                viewModel.QueueRemoveCommand.Execute().Subscribe(_ => { });
+                await WaitForAsync(() => viewModel.QueuedActions.Count == 2);
+                Assert.That(viewModel.QueuedActions.Select(action => action.ActionText),
+                            Is.All.EqualTo("Remove"));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [AvaloniaTest]
         public async Task BrowserMultiSelection_QueuesEachEligibleActionType()
         {
             var (viewModel, service) = CreateViewModel();
@@ -132,13 +302,14 @@ namespace CKAN.LinuxGUI.VisualTests
                     Assert.That(viewModel.HasMultipleSelectedMods, Is.True);
                     Assert.That(viewModel.BulkInstallCount, Is.EqualTo(1));
                     Assert.That(viewModel.BulkUpdateCount, Is.EqualTo(1));
-                    Assert.That(viewModel.BulkRemoveCount, Is.EqualTo(1));
+                    Assert.That(viewModel.BulkRemoveCount, Is.EqualTo(2));
                     Assert.That(viewModel.BulkInstallActionLabel, Is.EqualTo("Queue Install (1)"));
                     Assert.That(viewModel.ShowPrimarySelectedModAction, Is.False);
                 });
 
                 viewModel.QueueInstallCommand.Execute().Subscribe(_ => { });
                 viewModel.QueueUpdateCommand.Execute().Subscribe(_ => { });
+                viewModel.UpdateBrowserSelection(new[] { remove }, remove);
                 viewModel.QueueRemoveCommand.Execute().Subscribe(_ => { });
                 await WaitForAsync(() => viewModel.QueuedActions.Count == 3);
 
@@ -607,12 +778,6 @@ namespace CKAN.LinuxGUI.VisualTests
 
                 Assert.Multiple(() =>
                 {
-                    Assert.That(viewModel.ShowPreviewExtrasActionNotice, Is.True);
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("View button"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("click Close"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("above the mod list"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("return to Preview"));
-                    Assert.That(viewModel.PreviewExtrasActionNotice, Does.Contain("Required dependencies are automatic"));
                     Assert.That(viewModel.ShowPreviewSurface, Is.True);
                 });
 
@@ -729,7 +894,7 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.Multiple(() =>
                 {
                     Assert.That(viewModel.ShowBrowseSurface, Is.True);
-                    Assert.That(viewModel.RelationshipBrowserScopeText, Is.EqualTo("Preview recommendations"));
+                    Assert.That(viewModel.RelationshipBrowserScopeText, Is.EqualTo("Review recommendations"));
                     Assert.That(viewModel.Mods.Single().Identifier, Is.EqualTo("mechjeb2"));
                 });
             }
@@ -1760,7 +1925,8 @@ namespace CKAN.LinuxGUI.VisualTests
                                                                                                         IModCatalogService?  catalog = null,
                                                                                                         string[]?           updateRecommendations = null,
                                                                                                         string[]?           updateSupporters = null,
-                                                                                                        int                 applyDelayMs = 0)
+                                                                                                        int                 applyDelayMs = 0,
+                                                                                                        IDisabledModService? disabledMods = null)
         {
             var service = new FakeGameInstanceService(VisualScenario.Ready);
             var settings = new FakeAppSettingsService();
@@ -1772,7 +1938,7 @@ namespace CKAN.LinuxGUI.VisualTests
                                                    updateRecommendations: updateRecommendations,
                                                    updateSupporters: updateSupporters);
             var user = new AvaloniaUser();
-            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, new FakeDisabledModService(), user);
+            var viewModel = new MainWindowViewModel(settings, service, catalog ?? new FakeModCatalogService(), search, changes, actions, disabledMods ?? new FakeDisabledModService(), user);
             return (viewModel, service);
         }
 
