@@ -1602,9 +1602,12 @@ namespace CKAN.IO
                                                     registry, instance.Game, crit);
             var recommenders = resolver.Dependencies().ToHashSet();
             log.DebugFormat("Recommenders: {0}", string.Join(", ", recommenders));
+            var installingIdentifiers = toInstall.Select(m => m.identifier)
+                                                  .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var checkedRecs = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !installingIdentifiers.Contains(m.identifier))
                                       .Where(m => resolver.ReasonsFor(m)
                                                           .Any(r => r is SelectionReason.Recommended { ProvidesIndex: 0 }))
                                       .ToHashSet();
@@ -1617,6 +1620,7 @@ namespace CKAN.IO
 
             recommendations = resolver.Recommendations(recommenders)
                                       .Except(exclude)
+                                      .Where(m => !installingIdentifiers.Contains(m.identifier))
                                       .ToDictionary(m => m,
                                                     m => new Tuple<bool, List<string>>(
                                                              checkedRecs.Contains(m),
@@ -1630,6 +1634,7 @@ namespace CKAN.IO
             suggestions = resolver.Suggestions(recommenders,
                                                recommendations.Keys.ToList())
                                   .Except(exclude)
+                                  .Where(m => !installingIdentifiers.Contains(m.identifier))
                                   .ToDictionary(m => m,
                                                 m => resolver.ReasonsFor(m)
                                                              .OfType<SelectionReason.Suggested>()
@@ -1644,6 +1649,7 @@ namespace CKAN.IO
                                              recommenders.Concat(recommendations.Keys)
                                                          .Concat(suggestions.Keys))
                                  .Where(kvp => !exclude.Contains(kvp.Key)
+                                               && !installingIdentifiers.Contains(kvp.Key.identifier)
                                                && CanInstall(toInstall.Append(kvp.Key).ToList(), toRemove,
                                                              opts, registry, instance.Game, crit))
                                  .ToDictionary();
