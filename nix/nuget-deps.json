@@ -291,8 +291,8 @@
   },
   {
     "pname": "Tmds.DBus.Protocol",
-    "version": "0.92.0",
-    "hash": "sha256-WZSB9eqSOIzsBfnpOJDIIopIhNxAH+UcZuD6W94PIN4="
+    "version": "0.21.3",
+    "hash": "sha256-HVEIHSeSe29ergHxsNvWYu3o7Ai8VZKo09yFn+miTnI="
   },
   {
     "pname": "TxFileManager",

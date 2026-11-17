@@ -28,8 +28,8 @@
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
     <PackageReference Include="ReactiveUI" Version="20.1.1" />
-    <!-- Avalonia's older D-Bus dependency can crash during dispatcher shutdown. -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
+    <!-- Avalonia 11 requires the 0.21 API, including Variant for Linux file dialogs. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
     <PackageReference Include="log4net" Version="3.3.0" />
   </ItemGroup>
