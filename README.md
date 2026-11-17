@@ -47,6 +47,8 @@ nix --extra-experimental-features 'nix-command flakes' profile add .#default
 Launch **CKAN Linux** from your app menu, or run `ckan-linux`. If Nix
 flakes is already enabled, the `--extra-experimental-features` option can be
 left out. The package uses a Nix profile rather than the `~/.local` installer.
+After installation, you can delete the cloned `CKAN-LinuxUI` folder. Keep it
+if you want to update from the same checkout later.
 
 ### Build from source
 
