@@ -3,7 +3,7 @@
 This file tracks the Linux-first shell work added in this repository.
 It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
-## Unreleased
+## 2026-11-09
 
 ### Review
 - Keep optional recommendations available when a recommended mod is already a required dependency.
