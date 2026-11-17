@@ -8,7 +8,7 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 ### NixOS
 - Added a Nix package for x86-64 Linux, including an application menu entry and icon. Installation and mod management have been tested on NixOS.
 - Fixed the Linux folder picker after a D-Bus dependency update made it crash.
-- Known issue: CKAN Linux may report a crash when closing.
+- Known issue: CKAN Linux may report a crash when closing (not just on nixos).
 
 ### First Run and Startup
 - Added a direct way to open Manage Game Instances when no KSP install is registered.
