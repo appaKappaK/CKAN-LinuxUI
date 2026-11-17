@@ -537,6 +537,7 @@ namespace CKAN.LinuxGUI
 
             var showInlineSelectionError = NeedsSelection;
             IsRefreshing = true;
+            IsCatalogLoading = true;
             StatusMessage = $"Switching to {SelectedInstance.Name}…";
             StageTitle = "Switching Install";
             StageDescription = "Reloading the selected instance and refreshing the browser.";
@@ -579,6 +580,7 @@ namespace CKAN.LinuxGUI
             finally
             {
                 IsOpeningFirstInstance = false;
+                IsCatalogLoading = false;
                 IsRefreshing = false;
             }
         }
@@ -1000,7 +1002,7 @@ namespace CKAN.LinuxGUI
                 {
                     ApplyCatalogFilterToLoadedItems();
                 }
-                else
+                else if (!IsRefreshing)
                 {
                     _ = LoadModCatalogAsync();
                 }

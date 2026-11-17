@@ -25,6 +25,36 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public async Task OpeningFirstInstance_DoesNotShowEmptyResultsDuringCatalogStartup()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var catalog = new DelayedModCatalogService(listDelayMs: 300);
+            var viewModel = new MainWindowViewModel(settings, service, catalog,
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            await WaitForAsync(() => viewModel.NeedsSelection && !viewModel.IsRefreshing);
+            bool showedEmptyDuringStartup = false;
+            viewModel.PropertyChanged += (_, _) =>
+            {
+                if (viewModel.IsReady && viewModel.IsRefreshing && viewModel.ShowEmptyModResults)
+                {
+                    showedEmptyDuringStartup = true;
+                }
+            };
+            viewModel.SelectedInstance = viewModel.Instances.First();
+
+            await viewModel.TrySwitchSelectedInstanceAsync(_ => Task.FromResult(true));
+            await WaitForAsync(() => !viewModel.IsRefreshing && !viewModel.IsCatalogLoading);
+
+            Assert.That(showedEmptyDuringStartup, Is.False,
+                "A new instance must not show an empty result while its catalog is still loading.");
+            Assert.That(catalog.ModListRequestCount, Is.EqualTo(1),
+                "Opening an instance should load the catalog once.");
+        }
+
+        [AvaloniaTest]
         public async Task OpeningFirstInstance_HidesSelectorWhileSwitching()
         {
             using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);
