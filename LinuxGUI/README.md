@@ -188,7 +188,7 @@ not run on a default NixOS installation. The Nix package builds the app and
 provides its native dependencies instead. From the repository root, run:
 
 ```bash
-nix --extra-experimental-features 'nix-command flakes' profile install .#default
+nix --extra-experimental-features 'nix-command flakes' profile add .#default
 ```
 
 Launch `ckan-linux` or select CKAN Linux in the application menu. To try it

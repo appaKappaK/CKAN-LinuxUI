@@ -39,7 +39,8 @@ buildDotnetModule {
   postInstall = ''
     mkdir -p "$out/share/applications" "$out/share/icons/hicolor/256x256/apps"
     substitute LinuxGUI/packaging/ckan-linux.desktop "$out/share/applications/ckan-linux.desktop" \
-      --replace-fail /usr/bin/ckan-linux "$out/bin/ckan-linux"
+      --replace-fail /usr/bin/ckan-linux "$out/bin/ckan-linux" \
+      --replace-fail 'Icon=ckan-linux' "Icon=$out/share/icons/hicolor/256x256/apps/ckan-linux.png"
     install -m644 assets/ckan-256.png "$out/share/icons/hicolor/256x256/apps/ckan-linux.png"
   '';
 
