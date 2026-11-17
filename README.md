@@ -34,11 +34,11 @@ command. Find it in your application menu, or run `~/.local/bin/ckan-linux`.
 
 ### NixOS
 
-**NixOS support is in testing.** The Nix package has been built, installed,
-and launched on NixOS; managing a KSP installation and its mods still needs
-testing. The graphical installer above does not run on a default NixOS setup.
+The Nix package is available from the `dev` branch. It has been tested on
+NixOS with KSP instance registration and mod installation. The graphical
+installer above does not run on a default NixOS setup.
 
-The package is currently available from the `dev` branch. To install it, open a terminal and run:
+To install it, open a terminal and run:
 
 ```bash
 git clone -b dev https://github.com/appaKappaK/CKAN-LinuxUI.git
@@ -46,11 +46,31 @@ cd CKAN-LinuxUI
 nix --extra-experimental-features 'nix-command flakes' profile add .#default
 ```
 
-Launch **CKAN Linux** from your app menu, or run `ckan-linux`. If Nix
-flakes is already enabled, the `--extra-experimental-features` option can be
-left out. The package uses a Nix profile rather than the `~/.local` installer.
+Launch **CKAN Linux** from your app menu, or run `ckan-linux`. If it doesn't
+appear in the app menu immediately, log out and back in. If both
+`nix-command` and `flakes` are already enabled, the
+`--extra-experimental-features` option can be left out. The package uses a
+Nix profile rather than the `~/.local` installer.
 After installation, you can delete the cloned `CKAN-LinuxUI` folder. Keep it
 if you want to update from the same checkout later.
+
+To remove the package installed using the commands above, run:
+
+```bash
+nix --extra-experimental-features nix-command profile remove CKAN-LinuxUI
+```
+
+To reinstall or update it, first remove it with the command above. Then, from
+inside the cloned `CKAN-LinuxUI` folder, run:
+
+```bash
+git pull --ff-only
+nix --extra-experimental-features 'nix-command flakes' profile add .#default
+```
+
+If you deleted the clone, use the install commands above to clone it again.
+Removing the package does not remove your game files or CKAN's game-instance
+data. If the application menu still shows an old entry, log out and back in.
 
 ### Build from source
 
@@ -58,7 +78,7 @@ On conventional Linux distributions, you can also build and install from source
 using Git and the .NET 8 SDK:
 
 ```bash
-git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
+git clone -b dev https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
 ./scripts/install-linuxgui.sh
 ~/.local/bin/ckan-linux

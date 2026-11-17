@@ -5,6 +5,17 @@ It is intentionally separate from upstream CKAN release notes in `CHANGELOG.md`.
 
 ## Unreleased
 
+### NixOS
+- Added a Nix package for x86-64 Linux, including an application menu entry and icon. Installation and mod management have been tested on NixOS.
+- Fixed the Linux folder picker after a D-Bus dependency update made it crash.
+- Known issue: CKAN Linux may report a crash when closing.
+
+### First Run and Startup
+- Added a direct way to open Manage Game Instances when no KSP install is registered.
+- Keep a selected game folder pending until the user opens it, and allow it to be set as the default at the same time.
+- Refresh repositories when opening the first registered instance.
+- Show the loading skeleton during startup and prevent overlapping catalog loads and brief empty-result screens.
+
 ### Installer
 - Added a graphical Linux x64 installer for the prebuilt app, with optional cleanup of its matching ZIP and extracted files and an option to open CKAN Linux when finished.
 
