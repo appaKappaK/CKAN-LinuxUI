@@ -41,6 +41,8 @@ namespace CKAN.LinuxGUI.VisualTests
             Assert.That(switched, Is.True);
             Assert.That(viewModel.IsReady, Is.True);
             Assert.That(service.CurrentInstance, Is.Not.Null);
+            Assert.That(service.RefreshCurrentRegistryCallCount, Is.EqualTo(1),
+                "The first selected instance must receive the startup repository refresh.");
         }
 
         [AvaloniaTest]

@@ -430,15 +430,7 @@ namespace CKAN.LinuxGUI
                 ReloadInstances(loadCatalog: false, updateReadyStatus: !wasReady);
                 if (IsReady)
                 {
-                    if (!hasRunStartupRepositoryRefresh)
-                    {
-                        hasRunStartupRepositoryRefresh = true;
-                        if (SettingsWindow.RefreshOnStartupEnabled(CurrentInstance))
-                        {
-                            await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
-                            RefreshCurrentRegistryReference();
-                        }
-                    }
+                    await RefreshRepositoriesOnStartupAsync();
                     await LoadModCatalogAsync(forceReload: true);
                 }
                 else if (wasReady)
@@ -461,6 +453,21 @@ namespace CKAN.LinuxGUI
             finally
             {
                 IsRefreshing = false;
+            }
+        }
+
+        private async Task RefreshRepositoriesOnStartupAsync()
+        {
+            if (hasRunStartupRepositoryRefresh)
+            {
+                return;
+            }
+
+            hasRunStartupRepositoryRefresh = true;
+            if (SettingsWindow.RefreshOnStartupEnabled(CurrentInstance))
+            {
+                await UpdateRepositoriesForCurrentInstanceAsync(forceFullRefresh: false);
+                RefreshCurrentRegistryReference();
             }
         }
 
@@ -540,6 +547,7 @@ namespace CKAN.LinuxGUI
                 ReloadInstances(loadCatalog: false);
                 if (IsReady)
                 {
+                    await RefreshRepositoriesOnStartupAsync();
                     await LoadModCatalogAsync();
                 }
             }
