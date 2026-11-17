@@ -30,7 +30,15 @@ namespace CKAN.LinuxGUI.VisualTests
         public void InstanceManager_OpenRegistersFolder()
             => AssertFolderRegistration(confirm: true);
 
-        private static void AssertFolderRegistration(bool confirm)
+        [AvaloniaTest]
+        public void InstanceManager_PendingDefaultIsSavedOnOpen()
+            => AssertFolderRegistration(confirm: true, makeDefault: true);
+
+        [AvaloniaTest]
+        public void InstanceManager_PendingDefaultIsDiscardedOnCancel()
+            => AssertFolderRegistration(confirm: false, makeDefault: true);
+
+        private static void AssertFolderRegistration(bool confirm, bool makeDefault = false)
         {
             var path = Path.Combine(Path.GetTempPath(), $"ckan-pending-{Guid.NewGuid():N}");
             Directory.CreateDirectory(Path.Combine(path, "GameData"));
@@ -49,6 +57,15 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.False);
                 Assert.That(Directory.Exists(Path.Combine(path, "CKAN")), Is.False,
                     "Selecting a folder must not initialize CKAN files before confirmation.");
+                if (makeDefault)
+                {
+                    var defaultBox = window.GetVisualDescendants().OfType<CheckBox>()
+                        .Single(item => Equals(item.Content, "Set as default"));
+                    Assert.That(defaultBox.IsEnabled, Is.True);
+                    defaultBox.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Assert.That(defaultBox.IsChecked, Is.True);
+                    Assert.That(manager.Configuration.AutoStartInstance, Is.Null.Or.Empty);
+                }
                 if (confirm)
                 {
                     var open = window.GetVisualDescendants().OfType<Button>()
@@ -57,11 +74,17 @@ namespace CKAN.LinuxGUI.VisualTests
                     open.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.True,
                         string.Join(" | ", window.GetVisualDescendants().OfType<TextBlock>().Select(item => item.Text)));
+                    if (makeDefault)
+                    {
+                        Assert.That(manager.Configuration.AutoStartInstance,
+                                    Is.EqualTo(manager.Instances.Values.Single(instance => instance.GameDir == path).Name));
+                    }
                 }
                 else
                 {
                     window.Close();
                     Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.False);
+                    Assert.That(manager.Configuration.AutoStartInstance, Is.Null.Or.Empty);
                 }
             }
             finally

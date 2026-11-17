@@ -72,6 +72,10 @@ namespace CKAN.LinuxGUI
                         return;
                     }
                     viewModel.MarkChanged();
+                    if (viewModel.PendingIsDefault)
+                    {
+                        manager.SetAutoStart(registered.Name);
+                    }
                     pendingInstance = null;
                     viewModel.PendingInstance = null;
                     RefreshInstances(registered.Name);
@@ -90,6 +94,12 @@ namespace CKAN.LinuxGUI
         {
             if (manager == null || viewModel.SelectedInstance == null)
             {
+                return;
+            }
+
+            if (ReferenceEquals(viewModel.SelectedInstance, pendingInstance))
+            {
+                viewModel.PendingIsDefault = !viewModel.PendingIsDefault;
                 return;
             }
 
@@ -256,6 +266,7 @@ namespace CKAN.LinuxGUI
                 {
                     viewModel.Instances.Remove(pendingInstance);
                 }
+                viewModel.PendingIsDefault = false;
                 pendingInstance = new InstanceSummary
                 {
                     Name = instanceName,
@@ -333,6 +344,7 @@ namespace CKAN.LinuxGUI
         {
             private InstanceSummary? selectedInstance;
             private InstanceSummary? pendingInstance;
+            private bool pendingIsDefault;
             private string? statusMessage;
 
             public WindowViewModel()
@@ -386,6 +398,16 @@ namespace CKAN.LinuxGUI
                 }
             }
 
+            public bool PendingIsDefault
+            {
+                get => pendingIsDefault;
+                set
+                {
+                    pendingIsDefault = value;
+                    this.RaisePropertyChanged(nameof(IsSelectedDefault));
+                }
+            }
+
             public void ReplaceInstances(IReadOnlyCollection<InstanceSummary> instances,
                                          string?                             preferredSelectionName)
             {
@@ -427,10 +449,11 @@ namespace CKAN.LinuxGUI
                                            && !ReferenceEquals(SelectedInstance, PendingInstance)
                                            && !SelectedInstance.IsCurrent;
 
-            public bool CanSetDefault => CanManageInstances && SelectedInstance != null
-                                         && !ReferenceEquals(SelectedInstance, PendingInstance);
+            public bool CanSetDefault => CanManageInstances && SelectedInstance != null;
 
-            public bool IsSelectedDefault => SelectedInstance?.IsDefault == true;
+            public bool IsSelectedDefault => SelectedInstance != null
+                                             && ReferenceEquals(SelectedInstance, PendingInstance)
+                ? PendingIsDefault : SelectedInstance?.IsDefault == true;
 
             public string SelectedStatusText
                 => SelectedInstance == null
