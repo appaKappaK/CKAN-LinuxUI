@@ -36,8 +36,7 @@ command. Find it in your application menu, or run `~/.local/bin/ckan-linux`.
 and launched on NixOS; managing a KSP installation and its mods still needs
 testing. The graphical installer above does not run on a default NixOS setup.
 
-The package is currently available from the `dev` branch. To install it from
-a checkout, open a terminal and run:
+The package is currently available from the `dev` branch. To install it, open a terminal and run:
 
 ```bash
 git clone -b dev https://github.com/appaKappaK/CKAN-LinuxUI.git
@@ -45,9 +44,9 @@ cd CKAN-LinuxUI
 nix --extra-experimental-features 'nix-command flakes' profile add .#default
 ```
 
-Launch **CKAN Linux** from your application menu, or run `ckan-linux`. If Nix
-flakes are already enabled, the `--extra-experimental-features` option can be
-omitted. The package uses a Nix profile rather than the `~/.local` installer.
+Launch **CKAN Linux** from your app menu, or run `ckan-linux`. If Nix
+flakes is already enabled, the `--extra-experimental-features` option can be
+left out. The package uses a Nix profile rather than the `~/.local` installer.
 
 ### Build from source
 
