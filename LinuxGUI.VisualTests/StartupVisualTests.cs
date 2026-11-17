@@ -227,7 +227,7 @@ namespace CKAN.LinuxGUI.VisualTests
             {
                 await WaitForAsync(() => viewModel.IsEmpty);
                 var button = window.GetVisualDescendants().OfType<Button>()
-                    .SingleOrDefault(item => Equals(item.Content, "Add Game Folder") && item.IsEffectivelyVisible);
+                    .SingleOrDefault(item => Equals(item.Content, "Manage Game Instances") && item.IsEffectivelyVisible);
                 Assert.That(button, Is.Not.Null, "The first-run screen must offer a way to add a game folder.");
                 Assert.That(button!.IsEnabled, Is.True);
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

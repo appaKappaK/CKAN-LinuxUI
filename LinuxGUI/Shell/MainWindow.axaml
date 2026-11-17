@@ -2949,11 +2949,11 @@
                            TextWrapping="Wrap"
                            Opacity="0.85"
                            Text="Add your KSP folder to open the mod browser." />
-                <Button Width="170"
+                <Button Width="210"
                         Classes="command-button primary"
                         HorizontalAlignment="Center"
                         Click="ManageGameInstancesMenuItem_OnClick"
-                        Content="Add Game Folder" />
+                        Content="Manage Game Instances" />
                 <Button Width="170"
                         Classes="command-button"
                         HorizontalAlignment="Center"
