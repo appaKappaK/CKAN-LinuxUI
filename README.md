@@ -36,6 +36,9 @@ The installer puts CKAN Linux under `~/.local` without replacing an existing
 ~/.local/bin/ckan-linux
 ```
 
+**NixOS:** The graphical installer does not run on a default NixOS installation.
+An experimental install is in the works.
+
 ## What This Fork Adds
 
 - A native Linux desktop app, launched as `ckan-linux`.

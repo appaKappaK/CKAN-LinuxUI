@@ -180,6 +180,28 @@ The staged layout includes:
 - `usr/share/icons/hicolor/*/apps/ckan-linux.png`
 - `usr/share/doc/ckan-linux/README.md`
 
+## NixOS Package
+
+The `dev` branch includes an experimental package for x86-64 NixOS. The
+graphical installer ZIP requires a conventional Linux dynamic loader and does
+not run on a default NixOS installation. The Nix package builds the app and
+provides its native dependencies instead. From the repository root, run:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' profile install .#default
+```
+
+Launch `ckan-linux` or select CKAN Linux in the application menu. To try it
+without installing it into your profile, use:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run .#default
+```
+
+After changing .NET package references, regenerate the dependency lock with
+`nix build .#default.passthru.fetch-deps -o fetch-deps` followed by
+`./fetch-deps nix/nuget-deps.json`. Flakes must be enabled for these commands.
+
 ## Local Install
 
 For a graphical installer ZIP containing the prebuilt Linux x64 app, run:
