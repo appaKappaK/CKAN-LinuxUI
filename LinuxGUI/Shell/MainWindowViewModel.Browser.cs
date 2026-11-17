@@ -543,6 +543,7 @@ namespace CKAN.LinuxGUI
             StartupSelectionError = "";
             if (showInlineSelectionError)
             {
+                IsOpeningFirstInstance = true;
                 StartupStage = StartupStage.Loading;
             }
             try
@@ -577,6 +578,7 @@ namespace CKAN.LinuxGUI
             }
             finally
             {
+                IsOpeningFirstInstance = false;
                 IsRefreshing = false;
             }
         }

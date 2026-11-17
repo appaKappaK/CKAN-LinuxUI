@@ -34,6 +34,8 @@ namespace CKAN.LinuxGUI.VisualTests
             var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
                 new ModSearchService(settings), changes, new FakeModActionService(changes),
                 new FakeDisabledModService(), new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings) { Width = 1200, Height = 760 };
+            window.Show();
             await WaitForAsync(() => viewModel.NeedsSelection);
             viewModel.SelectedInstance = viewModel.Instances.First();
             var switching = viewModel.TrySwitchSelectedInstanceAsync(_ => Task.FromResult(true));
@@ -42,11 +44,16 @@ namespace CKAN.LinuxGUI.VisualTests
                 Assert.That(viewModel.ShowStartupModalBackground, Is.False,
                     "The instance picker should not appear while the chosen install opens.");
                 Assert.That(viewModel.IsLoading, Is.True);
+                Assert.That(viewModel.ShowInitialLoading, Is.False);
+                var skeleton = window.GetVisualDescendants().OfType<StartupInstancePickerView>().Single();
+                Assert.That(skeleton.IsEffectivelyVisible, Is.True,
+                    "The browser skeleton should remain visible while the install opens.");
             }
             finally
             {
                 service.SwitchGate.SetResult(true);
                 await switching;
+                window.Close();
             }
         }
 

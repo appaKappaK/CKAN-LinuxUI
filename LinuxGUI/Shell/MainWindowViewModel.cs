@@ -215,6 +215,7 @@ namespace CKAN.LinuxGUI
         private bool    suppressQueueChangedRefresh;
         private bool    pendingQueueChangedRefresh;
         private bool    hasRunStartupRepositoryRefresh;
+        private bool    isOpeningFirstInstance;
         private bool    previewConflictPopupDismissed;
         private bool    lastSolverPreviewCanApply;
         private string  dismissedPreviewConflictKey = "";
@@ -818,6 +819,8 @@ namespace CKAN.LinuxGUI
                 this.RaisePropertyChanged(nameof(IsReady));
                 this.RaisePropertyChanged(nameof(HasError));
                 this.RaisePropertyChanged(nameof(ShowStartupModalBackground));
+                this.RaisePropertyChanged(nameof(ShowStartupSkeleton));
+                this.RaisePropertyChanged(nameof(ShowInitialLoading));
                 this.RaisePropertyChanged(nameof(ShowLegacyHeader));
                 this.RaisePropertyChanged(nameof(ShowReadyHeader));
                 this.RaisePropertyChanged(nameof(ShowHeaderStagePill));
@@ -1435,9 +1438,27 @@ namespace CKAN.LinuxGUI
 
         public bool ShowStartupModalBackground => NeedsSelection || HasError;
 
-        public bool ShowLegacyHeader => IsLoading;
+        private bool IsOpeningFirstInstance
+        {
+            get => isOpeningFirstInstance;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref isOpeningFirstInstance, value);
+                this.RaisePropertyChanged(nameof(ShowStartupSkeleton));
+                this.RaisePropertyChanged(nameof(ShowInitialLoading));
+                this.RaisePropertyChanged(nameof(ShowLegacyHeader));
+                this.RaisePropertyChanged(nameof(ShowReadyHeader));
+                this.RaisePropertyChanged(nameof(ShowPassiveHeaderInstanceLabel));
+            }
+        }
 
-        public bool ShowReadyHeader => !IsLoading;
+        public bool ShowStartupSkeleton => ShowStartupModalBackground || (IsLoading && IsOpeningFirstInstance);
+
+        public bool ShowInitialLoading => IsLoading && !IsOpeningFirstInstance;
+
+        public bool ShowLegacyHeader => ShowInitialLoading;
+
+        public bool ShowReadyHeader => !ShowInitialLoading;
 
         public bool ShowWorkspaceTabs => IsReady;
 
