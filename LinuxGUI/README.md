@@ -182,8 +182,8 @@ The staged layout includes:
 
 ## NixOS Package
 
-The `dev` branch includes a package for x86-64 NixOS that is still being
-tested. The graphical installer ZIP requires a conventional Linux dynamic
+The `dev` branch includes a package tested on x86-64 NixOS. The graphical
+installer ZIP requires a conventional Linux dynamic
 loader and does not run on a default NixOS installation. The Nix package
 builds the app and provides its native dependencies instead. From the repository
 root, run:
@@ -198,6 +198,25 @@ without installing it into your profile, use:
 ```bash
 nix --extra-experimental-features 'nix-command flakes' run .#default
 ```
+
+To remove the package installed from a `CKAN-LinuxUI` clone, run:
+
+```bash
+nix --extra-experimental-features nix-command profile remove CKAN-LinuxUI
+```
+
+To reinstall or update it, first remove it with the command above. Then, from
+inside the cloned `CKAN-LinuxUI` folder, run:
+
+```bash
+git pull --ff-only
+nix --extra-experimental-features 'nix-command flakes' profile add .#default
+```
+
+If you deleted the clone, follow the installation steps in the
+[main README](../README.md#nixos) to clone it again. Removing the package does
+not remove your game files or CKAN's game-instance data. If the application
+menu still shows an old entry, log out and back in.
 
 After changing .NET package references, regenerate the dependency lock with
 `nix build .#default.passthru.fetch-deps -o fetch-deps` followed by

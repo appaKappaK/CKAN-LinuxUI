@@ -54,23 +54,8 @@ Nix profile rather than the `~/.local` installer.
 After installation, you can delete the cloned `CKAN-LinuxUI` folder. Keep it
 if you want to update from the same checkout later.
 
-To remove the package installed using the commands above, run:
-
-```bash
-nix --extra-experimental-features nix-command profile remove CKAN-LinuxUI
-```
-
-To reinstall or update it, first remove it with the command above. Then, from
-inside the cloned `CKAN-LinuxUI` folder, run:
-
-```bash
-git pull --ff-only
-nix --extra-experimental-features 'nix-command flakes' profile add .#default
-```
-
-If you deleted the clone, use the install commands above to clone it again.
-Removing the package does not remove your game files or CKAN's game-instance
-data. If the application menu still shows an old entry, log out and back in.
+For removal and reinstall instructions, see the
+[developer guide](LinuxGUI/README.md#nixos-package).
 
 ### Build from source
 
