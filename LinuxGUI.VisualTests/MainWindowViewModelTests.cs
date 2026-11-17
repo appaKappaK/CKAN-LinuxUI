@@ -25,6 +25,25 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public async Task InstanceManager_CanOpenSelectionWithoutCurrentInstance()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            await WaitForAsync(() => viewModel.NeedsSelection);
+            viewModel.SelectedInstance = viewModel.Instances.First();
+
+            var switched = await viewModel.TrySwitchSelectedInstanceAsync(_ => Task.FromResult(true));
+
+            Assert.That(switched, Is.True);
+            Assert.That(viewModel.IsReady, Is.True);
+            Assert.That(service.CurrentInstance, Is.Not.Null);
+        }
+
+        [AvaloniaTest]
         public void Settings_ModCountsHaveMasterAndIndividualSwitches()
         {
             var (viewModel, service) = CreateViewModel();

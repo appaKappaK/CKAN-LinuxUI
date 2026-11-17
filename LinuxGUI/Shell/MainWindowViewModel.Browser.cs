@@ -571,7 +571,7 @@ namespace CKAN.LinuxGUI
 
         public async Task<bool> TrySwitchSelectedInstanceAsync(Func<string, Task<bool>> confirmDiscardQueueAsync)
         {
-            if (!IsReady || SelectedInstance == null || SelectedInstance.IsCurrent)
+            if ((!IsReady && !NeedsSelection) || SelectedInstance == null || SelectedInstance.IsCurrent)
             {
                 return false;
             }

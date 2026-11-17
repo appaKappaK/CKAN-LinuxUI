@@ -8,6 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 
 using NUnit.Framework;
@@ -139,6 +140,38 @@ namespace CKAN.LinuxGUI.VisualTests
         [AvaloniaTest]
         public Task EmptyShell_Renders()
             => RenderScenarioAsync(VisualScenario.Empty, "startup-empty");
+
+        [AvaloniaTest]
+        public async Task EmptyShell_CanOpenInstanceManager()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Empty);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings) { Width = 1200, Height = 760 };
+            window.Show();
+            try
+            {
+                await WaitForAsync(() => viewModel.IsEmpty);
+                var button = window.GetVisualDescendants().OfType<Button>()
+                    .SingleOrDefault(item => Equals(item.Content, "Add Game Folder") && item.IsEffectivelyVisible);
+                Assert.That(button, Is.Not.Null, "The first-run screen must offer a way to add a game folder.");
+                Assert.That(button!.IsEnabled, Is.True);
+                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await WaitForAsync(() => window.OwnedWindows.OfType<ManageInstancesWindow>().Any());
+                var dialog = window.OwnedWindows.OfType<ManageInstancesWindow>().Single();
+                var addFolder = dialog.GetVisualDescendants().OfType<Button>()
+                    .Single(item => Equals(item.Content, "Add Folder"));
+                Assert.That(addFolder.IsEnabled, Is.True);
+                dialog.Close();
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
 
         [AvaloniaTest]
         public async Task EmptyShell_CentersMessageAndRetryButton()

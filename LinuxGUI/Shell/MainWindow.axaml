@@ -2019,7 +2019,6 @@
           <MenuItem Header="File">
             <MenuItem Classes="app-menu-item menu-popup-top-edge"
                       Header="Manage game instances"
-                      IsEnabled="{Binding HasCurrentInstance}"
                       Click="ManageGameInstancesMenuItem_OnClick" />
             <MenuItem Classes="app-menu-item"
                       Header="Open game directory"
@@ -2284,7 +2283,6 @@
               </MenuItem.Header>
               <MenuItem Classes="app-menu-item menu-popup-top-edge"
                         Header="Manage game instances"
-                        IsEnabled="{Binding HasCurrentInstance}"
                         Click="ManageGameInstancesMenuItem_OnClick" />
               <MenuItem Classes="app-menu-item"
                         Header="Open game directory"
@@ -2950,9 +2948,14 @@
                 <TextBlock TextAlignment="Center"
                            TextWrapping="Wrap"
                            Opacity="0.85"
-                           Text="Register a KSP install, then reload to open the mod browser." />
+                           Text="Add your KSP folder to open the mod browser." />
                 <Button Width="170"
                         Classes="command-button primary"
+                        HorizontalAlignment="Center"
+                        Click="ManageGameInstancesMenuItem_OnClick"
+                        Content="Add Game Folder" />
+                <Button Width="170"
+                        Classes="command-button"
                         HorizontalAlignment="Center"
                         Command="{Binding RefreshCommand}"
                         Content="Try Again" />
