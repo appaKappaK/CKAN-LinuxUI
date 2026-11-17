@@ -10,6 +10,8 @@ A native Linux desktop app for the Comprehensive Kerbal Archive Network (CKAN), 
 > depend on it. Check the Auto-Removals section in Review; use **Keep** for
 > anything you intend to preserve.
 
+> **Known issue:** May report a crash when closing.
+
 ## Status
 
 LinuxGUI is under passive development.
