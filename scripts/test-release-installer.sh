@@ -14,7 +14,7 @@ printf icon > "$stage/share/icons/hicolor/16x16/apps/ckan-linux.png"
 mkdir -p "$prefix/lib/ckan-linux" "$prefix/share/ckan"
 printf old > "$prefix/lib/ckan-linux/old"
 printf userdata > "$prefix/share/ckan/userdata"
-bash "$root/scripts/install-release-payload.sh" "$stage" "$prefix"
+bash "$root/scripts/install-release-files.sh" "$stage" "$prefix"
 test -x "$prefix/bin/ckan-linux"
 test -x "$prefix/lib/ckan-linux/CKAN-LinuxGUI"
 test ! -e "$prefix/lib/ckan-linux/old"
@@ -22,7 +22,7 @@ test "$(cat "$prefix/share/ckan/userdata")" = userdata
 grep -Fx "Exec=\"$prefix/bin/ckan-linux\"" "$prefix/share/applications/ckan-linux.desktop"
 test -f "$prefix/share/icons/hicolor/16x16/apps/ckan-linux.png"
 rm "$stage/lib/ckan-linux/CKAN-LinuxGUI"
-if bash "$root/scripts/install-release-payload.sh" "$stage" "$prefix"; then
+if bash "$root/scripts/install-release-files.sh" "$stage" "$prefix"; then
     echo 'Missing executable was accepted' >&2
     exit 1
 fi

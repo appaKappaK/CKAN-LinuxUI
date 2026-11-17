@@ -41,6 +41,6 @@ exit 1
     env['CKAN_TEST_ACTION'] = sys.argv[1] if len(sys.argv) > 1 else 'keep'
     subprocess.run(['xvfb-run', '-a', 'bash', '-c', script, '_', str(temp / 'CKAN-Linux-Installer/CKAN-Linux-Installer')], env=env, check=True)
     assert (home / 'launched').read_text() == 'launched'
-    payload = temp / 'CKAN-Linux-Installer/payload'
-    assert payload.exists() == (env['CKAN_TEST_ACTION'] == 'keep')
+    install_files = temp / 'CKAN-Linux-Installer/install-files'
+    assert install_files.exists() == (env['CKAN_TEST_ACTION'] == 'keep')
     print(f"Installer launched CKAN Linux after {env['CKAN_TEST_ACTION']}.")

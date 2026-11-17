@@ -112,11 +112,11 @@ internal sealed class InstallerWindow : Window
         var minimumDisplay = Task.Delay(TimeSpan.FromSeconds(1));
         try
         {
-            var script = Path.Combine(bundle, "install-payload.sh");
-            var payload = Path.Combine(bundle, "payload");
+            var script = Path.Combine(bundle, "install-files.sh");
+            var installFiles = Path.Combine(bundle, "install-files");
             var start = new ProcessStartInfo("/bin/bash") { UseShellExecute = false, RedirectStandardError = true, RedirectStandardOutput = true };
             start.ArgumentList.Add(script);
-            start.ArgumentList.Add(payload);
+            start.ArgumentList.Add(installFiles);
             start.ArgumentList.Add(prefix);
             using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start the installer.");
             var errorTask = process.StandardError.ReadToEndAsync();
@@ -175,8 +175,8 @@ internal sealed class InstallerWindow : Window
             if (!File.Exists(Path.Combine(bundle, ".ckan-linux-installer-bundle"))) throw new InvalidOperationException("Installer bundle marker is missing.");
             var archive = MatchingArchive();
             if (archive != null) File.Delete(archive);
-            Directory.Delete(Path.Combine(bundle, "payload"), true);
-            File.Delete(Path.Combine(bundle, "install-payload.sh"));
+            Directory.Delete(Path.Combine(bundle, "install-files"), true);
+            File.Delete(Path.Combine(bundle, "install-files.sh"));
             File.Delete(Path.Combine(bundle, ".ckan-linux-installer-bundle"));
             if (Environment.ProcessPath is string executable && Path.GetDirectoryName(executable) == Path.TrimEndingDirectorySeparator(bundle)) File.Delete(executable);
             Finish(open);

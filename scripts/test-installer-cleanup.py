@@ -42,7 +42,7 @@ exit 1
     env['HOME'] = str(home)
     subprocess.run(['xvfb-run', '-a', 'bash', '-c', script, '_', str(bundle / 'CKAN-Linux-Installer')], env=env, check=True)
     assert archive.exists() != matches, 'Only the matching downloaded ZIP should be removed'
-    assert not (bundle / 'payload').exists(), 'Bundled payload was not removed'
+    assert not (bundle / 'install-files').exists(), 'Bundled installation files were not removed'
     assert (home / '.local/lib/ckan-linux/CKAN-LinuxGUI').exists(), 'Installed app was removed'
     assert not (home / 'launched').exists(), 'CKAN Linux launched after the box was cleared'
     print('Matching ZIP removed.' if matches else 'Unrelated ZIP preserved.')
