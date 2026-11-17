@@ -182,10 +182,11 @@ The staged layout includes:
 
 ## NixOS Package
 
-The `dev` branch includes an experimental package for x86-64 NixOS. The
-graphical installer ZIP requires a conventional Linux dynamic loader and does
-not run on a default NixOS installation. The Nix package builds the app and
-provides its native dependencies instead. From the repository root, run:
+The `dev` branch includes a package for x86-64 NixOS that is still being
+tested. The graphical installer ZIP requires a conventional Linux dynamic
+loader and does not run on a default NixOS installation. The Nix package
+builds the app and provides its native dependencies instead. From the repository
+root, run:
 
 ```bash
 nix --extra-experimental-features 'nix-command flakes' profile add .#default

@@ -16,39 +16,50 @@ LinuxGUI is under passive development.
 
 ## Installation
 
-A [graphical installer beta](https://github.com/appaKappaK/CKAN-LinuxUI/releases/tag/ckan-linux-installer-beta.1)
-is available for Linux x64. Download and extract the ZIP, then open
-`CKAN-Linux-Installer`. It includes the app and does not require Git or the
-.NET SDK.
+CKAN Linux is available for **x86-64 Linux**. Choose the installation method
+for your distribution:
 
-Alternatively, install from source using Git and the .NET 8 SDK:
+### Ubuntu, Debian, Fedora, and similar distributions
+
+A [graphical installer beta](https://github.com/appaKappaK/CKAN-LinuxUI/releases/tag/ckan-linux-installer-beta.1)
+is available for common Linux systems. Download and extract the ZIP,
+then open `CKAN-Linux-Installer`. Some file managers may ask to allow it
+to run first. The download includes the app and does not require Git or the
+.NET SDK. The installer is a beta; compatibility can vary by distribution.
+
+It installs CKAN Linux under `~/.local` without replacing an existing `ckan`
+command. Find it in your application menu, or run `~/.local/bin/ckan-linux`.
+
+### NixOS
+
+**NixOS support is in testing.** The Nix package has been built, installed,
+and launched on NixOS; managing a KSP installation and its mods still needs
+testing. The graphical installer above does not run on a default NixOS setup.
+
+The package is currently available from the `dev` branch. To install it from
+a checkout, open a terminal and run:
+
+```bash
+git clone -b dev https://github.com/appaKappaK/CKAN-LinuxUI.git
+cd CKAN-LinuxUI
+nix --extra-experimental-features 'nix-command flakes' profile add .#default
+```
+
+Launch **CKAN Linux** from your application menu, or run `ckan-linux`. If Nix
+flakes are already enabled, the `--extra-experimental-features` option can be
+omitted. The package uses a Nix profile rather than the `~/.local` installer.
+
+### Build from source
+
+On conventional Linux distributions, you can also build and install from source
+using Git and the .NET 8 SDK:
 
 ```bash
 git clone https://github.com/appaKappaK/CKAN-LinuxUI.git
 cd CKAN-LinuxUI
 ./scripts/install-linuxgui.sh
-```
-
-The installer puts CKAN Linux under `~/.local` without replacing an existing
-`ckan` command. Find it in your application menu, or launch it directly:
-
-```bash
 ~/.local/bin/ckan-linux
 ```
-
-**NixOS:** The graphical installer does not run on a default NixOS installation.
-An experimental install is in the works.
-
-## What This Fork Adds
-
-- A native Linux desktop app, launched as `ckan-linux`.
-- A queue-and-review workflow: installs, updates, removals, and downloads are
-  queued first, and Review shows what will happen (including dependencies)
-  before anything is applied.
-- A separate `ckan-linux` command that does not replace an existing `ckan`
-  installation.
-
-The former WinForms and terminal interfaces are not included in this fork.
 
 ## Development
 
