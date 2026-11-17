@@ -60,6 +60,14 @@ cd CKAN-LinuxUI
 ~/.local/bin/ckan-linux
 ```
 
+## What This Fork Adds
+
+- A native Linux desktop app, launched as `ckan-linux`.
+- A separate `ckan-linux` command that does not replace an existing `ckan`
+  installation.
+
+The former WinForms and terminal interfaces are not included in this fork.
+
 ## Development
 
 Build steps, packaging, the dev launcher, logs, and the visual-test
