@@ -102,22 +102,20 @@ namespace CKAN.LinuxGUI.VisualTests
         public int ReloadCurrentRegistryCallCount { get; private set; }
         public int RefreshCurrentRegistryCallCount { get; private set; }
         public TaskCompletionSource<bool>? SwitchGate { get; set; }
+        public TaskCompletionSource<bool>? InitializeGate { get; set; }
 
         public event Action<GameInstance?>? CurrentInstanceChanged;
 
-        public Task InitializeAsync(CancellationToken cancellationToken)
+        public async Task InitializeAsync(CancellationToken cancellationToken)
         {
+            if (InitializeGate != null)
+            {
+                await InitializeGate.Task;
+            }
             if (loadingGate != null)
             {
-                return loadingGate.Task;
+                await loadingGate.Task;
             }
-
-            if (Instances.Count == 0 && CurrentInstance == null)
-            {
-                return Task.CompletedTask;
-            }
-
-            return Task.CompletedTask;
         }
 
         public async Task SetCurrentInstanceAsync(string name, CancellationToken cancellationToken)

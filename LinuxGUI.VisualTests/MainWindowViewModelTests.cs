@@ -25,6 +25,35 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public async Task WarmStartup_ShowsSkeletonAndLoadsCatalogOnce()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Ready);
+            service.InitializeGate = new TaskCompletionSource<bool>();
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var catalog = new DelayedModCatalogService(listDelayMs: 150);
+            var viewModel = new MainWindowViewModel(settings, service, catalog,
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+
+            try
+            {
+                Assert.That(viewModel.ShowCatalogSkeleton, Is.True);
+                Assert.That(viewModel.ShowEmptyModResults, Is.False);
+                await Task.Delay(400);
+                Assert.That(catalog.ModListRequestCount, Is.Zero,
+                    "The catalog must wait until instance initialization and repository refresh finish.");
+            }
+            finally
+            {
+                service.InitializeGate.SetResult(true);
+            }
+
+            await WaitForAsync(() => !viewModel.IsRefreshing && !viewModel.IsCatalogLoading);
+            Assert.That(catalog.ModListRequestCount, Is.EqualTo(1));
+        }
+
+        [AvaloniaTest]
         public async Task OpeningFirstInstance_DoesNotShowEmptyResultsDuringCatalogStartup()
         {
             using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);
@@ -2068,12 +2097,15 @@ namespace CKAN.LinuxGUI.VisualTests
                 File.WriteAllText(Path.Combine(gameDir, "buildID64.txt"), "3190");
                 File.WriteAllText(Path.Combine(gameDir, "readme.txt"), "Kerbal Space Program");
 
-                Configuration = new JsonConfiguration();
+                Configuration = new JsonConfiguration(Path.Combine(tempDir, "config.json"));
                 RepositoryData = new RepositoryDataManager(Path.Combine(tempDir, "repos"));
                 Manager = new GameInstanceManager(new NullUser(), Configuration);
                 CurrentInstance = new GameInstance(new KerbalSpaceProgram(),
                                                    gameDir,
                                                    "Missing Registry Test");
+                Directory.CreateDirectory(CurrentInstance.CkanDir);
+                File.WriteAllText(Path.Combine(CurrentInstance.CkanDir, "GUIConfig.json"),
+                                  "{\"RefreshOnStartup\":false}");
                 CurrentInstance.SetCompatibleVersions(new[] { new GameVersion(1, 12, 5) });
                 CurrentRegistryManager = RegistryManager.Instance(CurrentInstance, RepositoryData);
                 CurrentRegistry = CurrentRegistryManager.registry;

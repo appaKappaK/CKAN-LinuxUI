@@ -933,7 +933,8 @@ namespace CKAN.LinuxGUI.VisualTests
 
             await WaitForAsync(() => viewModel.ShowCatalogSkeleton);
 
-            VisualTestSupport.CaptureAndAssert(window, "browser-loading");
+            // The animated progress indicator can move by a pixel between frames.
+            VisualTestSupport.CaptureAndAssert(window, "browser-loading", tolerance: 0.00002);
         }
 
         [AvaloniaTest]

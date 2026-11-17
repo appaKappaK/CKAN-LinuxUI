@@ -14,7 +14,7 @@ namespace CKAN.LinuxGUI.VisualTests
     {
         private const string UpdateBaselinesVar = "CKAN_LINUX_UPDATE_BASELINES";
 
-        public static void CaptureAndAssert(Window window, string scenarioName)
+        public static void CaptureAndAssert(Window window, string scenarioName, double tolerance = 0D)
         {
             string repoRoot = FindRepoRoot();
             string actualDir = Path.Combine(repoRoot, "_build", "visual-tests", "actual");
@@ -41,7 +41,7 @@ namespace CKAN.LinuxGUI.VisualTests
             using var actualStream = File.OpenRead(actualPath);
             using var expected = WriteableBitmap.Decode(expectedStream);
             using var actual = WriteableBitmap.Decode(actualStream);
-            Assert.That(ImageDiffRatio(expected, actual), Is.EqualTo(0D),
+            Assert.That(ImageDiffRatio(expected, actual), Is.LessThanOrEqualTo(tolerance),
                 $"Visual regression mismatch for {scenarioName}. Expected {baselinePath}, actual {actualPath}.");
         }
 

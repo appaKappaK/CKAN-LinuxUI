@@ -301,6 +301,9 @@ namespace CKAN.LinuxGUI
             showDetailsPane = false;
             ApplyStoredFilterState(modSearchService.Current);
             SeedWarmStartupState();
+            // Filter subscriptions emit their initial values immediately. Keep them
+            // from starting a catalog load before startup initialization begins.
+            IsRefreshing = true;
 
             var canRefresh = this.WhenAnyValue(vm => vm.IsRefreshing,
                                                vm => vm.IsApplyingChanges,
