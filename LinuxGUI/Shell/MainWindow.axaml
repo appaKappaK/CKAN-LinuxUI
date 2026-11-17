@@ -2950,10 +2950,6 @@
                 <TextBlock TextAlignment="Center"
                            TextWrapping="Wrap"
                            Opacity="0.85"
-                           Text="{Binding StageDescription}" />
-                <TextBlock TextAlignment="Center"
-                           TextWrapping="Wrap"
-                           Opacity="0.85"
                            Text="Register a KSP install, then reload to open the mod browser." />
                 <Button Width="170"
                         Classes="command-button primary"
