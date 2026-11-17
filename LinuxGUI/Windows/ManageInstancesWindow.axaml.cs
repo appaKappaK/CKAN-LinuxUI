@@ -19,6 +19,7 @@ namespace CKAN.LinuxGUI
         private readonly WindowViewModel viewModel;
         private readonly GameInstanceManager? manager;
         private readonly IUser? user;
+        private InstanceSummary? pendingInstance;
 
         public ManageInstancesWindow()
         {
@@ -56,11 +57,33 @@ namespace CKAN.LinuxGUI
 
         private void UseSelectedButton_OnClick(object? sender,
                                                Avalonia.Interactivity.RoutedEventArgs e)
-            => Close(true);
-
-        private void CloseButton_OnClick(object? sender,
-                                         Avalonia.Interactivity.RoutedEventArgs e)
-            => Close(false);
+        {
+            if (manager != null && pendingInstance != null
+                && ReferenceEquals(viewModel.SelectedInstance, pendingInstance))
+            {
+                try
+                {
+                    var registered = manager.AddInstance(pendingInstance.GameDir,
+                                                         pendingInstance.Name,
+                                                         user ?? new NullUser());
+                    if (registered == null)
+                    {
+                        viewModel.SetStatus("The selected folder could not be registered.");
+                        return;
+                    }
+                    viewModel.MarkChanged();
+                    pendingInstance = null;
+                    viewModel.PendingInstance = null;
+                    RefreshInstances(registered.Name);
+                }
+                catch (Exception ex)
+                {
+                    viewModel.SetStatus(ex.Message);
+                    return;
+                }
+            }
+            Close(true);
+        }
 
         private void SetDefaultCheckBox_OnClick(object? sender,
                                                 Avalonia.Interactivity.RoutedEventArgs e)
@@ -203,6 +226,16 @@ namespace CKAN.LinuxGUI
                 return;
             }
 
+            StageFolder(directory);
+        }
+
+        private void StageFolder(string directory)
+        {
+            if (manager == null)
+            {
+                return;
+            }
+
             var anchorFile = KnownGames.AllInstanceAnchorFiles
                                        .FirstOrDefault(file => File.Exists(Path.Combine(directory, file)));
             if (anchorFile == null)
@@ -219,10 +252,22 @@ namespace CKAN.LinuxGUI
                     baseName = directory;
                 }
                 var instanceName = manager.GetNextValidInstanceName(baseName);
-                manager.AddInstance(directory, instanceName, user ?? new NullUser());
-                viewModel.MarkChanged();
-                viewModel.SetStatus($"Registered {instanceName}.");
-                RefreshInstances(instanceName);
+                if (pendingInstance != null)
+                {
+                    viewModel.Instances.Remove(pendingInstance);
+                }
+                pendingInstance = new InstanceSummary
+                {
+                    Name = instanceName,
+                    GameDir = directory,
+                    GameName = KnownGames.knownGames
+                        .FirstOrDefault(game => game.GameInFolder(new DirectoryInfo(directory)))?.ShortName ?? "",
+                    VersionText = "Pending",
+                };
+                viewModel.PendingInstance = pendingInstance;
+                viewModel.Instances.Add(pendingInstance);
+                viewModel.SelectedInstance = pendingInstance;
+                viewModel.SetStatus("Select Open Install to register this folder.");
             }
             catch (Exception ex)
             {
@@ -287,6 +332,7 @@ namespace CKAN.LinuxGUI
         private sealed class WindowViewModel : ReactiveObject
         {
             private InstanceSummary? selectedInstance;
+            private InstanceSummary? pendingInstance;
             private string? statusMessage;
 
             public WindowViewModel()
@@ -319,6 +365,16 @@ namespace CKAN.LinuxGUI
             public bool CanManageInstances { get; }
 
             public bool CanImportSteam { get; }
+
+            public InstanceSummary? PendingInstance
+            {
+                get => pendingInstance;
+                set
+                {
+                    pendingInstance = value;
+                    RaiseSelectionStateChanged();
+                }
+            }
 
             public InstanceSummary? SelectedInstance
             {
@@ -363,13 +419,16 @@ namespace CKAN.LinuxGUI
 
             public bool CanUseSelection => SelectedInstance != null && !SelectedInstance.IsCurrent;
 
-            public bool CanRenameSelection => CanManageInstances && SelectedInstance != null;
+            public bool CanRenameSelection => CanManageInstances && SelectedInstance != null
+                                              && !ReferenceEquals(SelectedInstance, PendingInstance);
 
             public bool CanForgetSelection => CanManageInstances
                                            && SelectedInstance != null
+                                           && !ReferenceEquals(SelectedInstance, PendingInstance)
                                            && !SelectedInstance.IsCurrent;
 
-            public bool CanSetDefault => CanManageInstances && SelectedInstance != null;
+            public bool CanSetDefault => CanManageInstances && SelectedInstance != null
+                                         && !ReferenceEquals(SelectedInstance, PendingInstance);
 
             public bool IsSelectedDefault => SelectedInstance?.IsDefault == true;
 

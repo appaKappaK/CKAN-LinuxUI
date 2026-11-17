@@ -60,7 +60,7 @@
             <TextBlock FontSize="12"
                        Opacity="0.68"
                        TextWrapping="Wrap"
-                       Text="Management changes are saved immediately. Select another instance to open it in the mod browser." />
+                       Text="Choose a folder, then open it to register it. Other management changes are saved immediately." />
           </StackPanel>
           <StackPanel Grid.Column="1"
                       Orientation="Horizontal"
@@ -237,14 +237,8 @@
                 BorderBrush="#5A86B4"
                 Foreground="#F4F6F8"
                 Click="UseSelectedButton_OnClick"
-                IsVisible="{Binding CanUseSelection}"
+                IsEnabled="{Binding CanUseSelection}"
                 Content="Open Install" />
-        <Button Classes="dialog-action"
-                Background="#20262D"
-                BorderBrush="#39424E"
-                Foreground="#F4F6F8"
-                Click="CloseButton_OnClick"
-                Content="Done" />
       </StackPanel>
     </Grid>
   </Grid>

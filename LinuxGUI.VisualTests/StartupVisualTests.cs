@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.IO;
+using System.Reflection;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 
@@ -20,6 +22,75 @@ namespace CKAN.LinuxGUI.VisualTests
     [TestFixture]
     public sealed class StartupVisualTests
     {
+        [AvaloniaTest]
+        public void InstanceManager_CancelDoesNotRegisterFolder()
+            => AssertFolderRegistration(confirm: false);
+
+        [AvaloniaTest]
+        public void InstanceManager_OpenRegistersFolder()
+            => AssertFolderRegistration(confirm: true);
+
+        private static void AssertFolderRegistration(bool confirm)
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"ckan-pending-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path.Combine(path, "GameData"));
+            File.WriteAllText(Path.Combine(path, "KSP.x86_64"), "");
+            File.WriteAllText(Path.Combine(path, "buildID64.txt"), "build id = 03190");
+            using var manager = new CKAN.GameInstanceManager(new CKAN.NullUser(),
+                new CKAN.Configuration.JsonConfiguration(Path.Combine(path, "config.json")));
+            var window = new ManageInstancesWindow(Array.Empty<CKAN.App.Models.InstanceSummary>(), null,
+                manager, new CKAN.NullUser());
+            window.Show();
+            try
+            {
+                var stage = typeof(ManageInstancesWindow).GetMethod("StageFolder", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.That(stage, Is.Not.Null, "The selected folder must remain pending until confirmation.");
+                stage!.Invoke(window, new object[] { path });
+                Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.False);
+                Assert.That(Directory.Exists(Path.Combine(path, "CKAN")), Is.False,
+                    "Selecting a folder must not initialize CKAN files before confirmation.");
+                if (confirm)
+                {
+                    var open = window.GetVisualDescendants().OfType<Button>()
+                        .Single(item => Equals(item.Content, "Open Install"));
+                    Assert.That(open.IsEnabled, Is.True);
+                    open.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.True,
+                        string.Join(" | ", window.GetVisualDescendants().OfType<TextBlock>().Select(item => item.Text)));
+                }
+                else
+                {
+                    window.Close();
+                    Assert.That(manager.Instances.Values.Any(instance => instance.GameDir == path), Is.False);
+                }
+            }
+            finally
+            {
+                window.Close();
+                Directory.Delete(path, true);
+            }
+        }
+
+        [AvaloniaTest]
+        public void InstanceManager_OffersOneOpenAction()
+        {
+            var window = new ManageInstancesWindow(new[]
+            {
+                new CKAN.App.Models.InstanceSummary { Name = "KSP", GameDir = "/games/ksp" },
+            }, null);
+            window.Show();
+            try
+            {
+                var buttons = window.GetVisualDescendants().OfType<Button>().ToArray();
+                Assert.That(buttons.Any(button => Equals(button.Content, "Open Install") && button.IsVisible), Is.True);
+                Assert.That(buttons.Any(button => Equals(button.Content, "Done") && button.IsVisible), Is.False);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
         [AvaloniaTest]
         public async Task ReviewQueue_ColumnHeadersAlignWithRowsWhenScrollbarAppears()
         {
