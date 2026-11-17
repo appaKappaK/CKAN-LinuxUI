@@ -141,6 +141,35 @@ namespace CKAN.LinuxGUI.VisualTests
             => RenderScenarioAsync(VisualScenario.Empty, "startup-empty");
 
         [AvaloniaTest]
+        public async Task EmptyShell_CentersMessageAndRetryButton()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.Empty);
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            var window = new MainWindow(viewModel, settings) { Width = 1200, Height = 760 };
+            window.Show();
+            try
+            {
+                await WaitForAsync(() => viewModel.IsEmpty);
+                var title = window.GetVisualDescendants().OfType<TextBlock>()
+                    .Single(item => item.Text == "No Instances Found" && item.IsEffectivelyVisible);
+                var button = window.GetVisualDescendants().OfType<Button>()
+                    .Single(item => Equals(item.Content, "Try Again") && item.IsEffectivelyVisible);
+                var titleCenter = title.TranslatePoint(new Point(title.Bounds.Width / 2, 0), window)!.Value.X;
+                var buttonCenter = button.TranslatePoint(new Point(button.Bounds.Width / 2, 0), window)!.Value.X;
+                Assert.That(titleCenter, Is.EqualTo(window.Bounds.Width / 2).Within(3));
+                Assert.That(buttonCenter, Is.EqualTo(titleCenter).Within(3));
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [AvaloniaTest]
         public Task SelectionRequiredShell_Renders()
             => RenderScenarioAsync(VisualScenario.SelectionRequired, "startup-selection-required");
 

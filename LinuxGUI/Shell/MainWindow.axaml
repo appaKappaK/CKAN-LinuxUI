@@ -2931,31 +2931,37 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#161B21"
-                  BorderBrush="#33404B"
-                  BorderThickness="1"
-                  CornerRadius="12"
-                  Padding="16"
-                  IsVisible="{Binding IsEmpty}">
-            <StackPanel Spacing="16">
-              <TextBlock FontSize="24"
-                         FontWeight="SemiBold"
-                         Text="{Binding StageTitle}" />
-              <TextBlock TextWrapping="Wrap"
-                         Opacity="0.85"
-                         Text="{Binding StageDescription}" />
-              <Border Background="#161B21"
-                      CornerRadius="10"
-                      Padding="16">
-                <TextBlock TextWrapping="Wrap"
+          <Border IsVisible="{Binding IsEmpty}"
+                  Padding="24">
+            <Border Background="#222C36"
+                    BorderBrush="#405160"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="32"
+                    MaxWidth="560"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+              <StackPanel Spacing="16">
+                <TextBlock FontSize="24"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Text="{Binding StageTitle}" />
+                <TextBlock TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Opacity="0.85"
+                           Text="{Binding StageDescription}" />
+                <TextBlock TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Opacity="0.85"
                            Text="Register a KSP install, then reload to open the mod browser." />
-              </Border>
-              <Button Width="170"
-                      Classes="command-button primary"
-                      HorizontalAlignment="Left"
-                      Command="{Binding RefreshCommand}"
-                      Content="Scan Again" />
-            </StackPanel>
+                <Button Width="170"
+                        Classes="command-button primary"
+                        HorizontalAlignment="Center"
+                        Command="{Binding RefreshCommand}"
+                        Content="Try Again" />
+              </StackPanel>
+            </Border>
           </Border>
 
           <views:StartupInstancePickerView IsVisible="{Binding ShowStartupModalBackground}"
