@@ -101,6 +101,7 @@ namespace CKAN.LinuxGUI.VisualTests
 
         public int ReloadCurrentRegistryCallCount { get; private set; }
         public int RefreshCurrentRegistryCallCount { get; private set; }
+        public TaskCompletionSource<bool>? SwitchGate { get; set; }
 
         public event Action<GameInstance?>? CurrentInstanceChanged;
 
@@ -119,8 +120,12 @@ namespace CKAN.LinuxGUI.VisualTests
             return Task.CompletedTask;
         }
 
-        public Task SetCurrentInstanceAsync(string name, CancellationToken cancellationToken)
+        public async Task SetCurrentInstanceAsync(string name, CancellationToken cancellationToken)
         {
+            if (SwitchGate != null)
+            {
+                await SwitchGate.Task;
+            }
             foreach (var inst in Instances)
             {
                 if (inst.Name == name)
@@ -131,7 +136,6 @@ namespace CKAN.LinuxGUI.VisualTests
                     break;
                 }
             }
-            return Task.CompletedTask;
         }
 
         public RegistryManager? AcquireWriteRegistryManager()

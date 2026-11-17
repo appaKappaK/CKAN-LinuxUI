@@ -25,6 +25,32 @@ namespace CKAN.LinuxGUI.VisualTests
     public sealed class MainWindowViewModelTests
     {
         [AvaloniaTest]
+        public async Task OpeningFirstInstance_HidesSelectorWhileSwitching()
+        {
+            using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);
+            service.SwitchGate = new TaskCompletionSource<bool>();
+            var settings = new FakeAppSettingsService();
+            var changes = new ChangesetService();
+            var viewModel = new MainWindowViewModel(settings, service, new FakeModCatalogService(),
+                new ModSearchService(settings), changes, new FakeModActionService(changes),
+                new FakeDisabledModService(), new AvaloniaUser());
+            await WaitForAsync(() => viewModel.NeedsSelection);
+            viewModel.SelectedInstance = viewModel.Instances.First();
+            var switching = viewModel.TrySwitchSelectedInstanceAsync(_ => Task.FromResult(true));
+            try
+            {
+                Assert.That(viewModel.ShowStartupModalBackground, Is.False,
+                    "The instance picker should not appear while the chosen install opens.");
+                Assert.That(viewModel.IsLoading, Is.True);
+            }
+            finally
+            {
+                service.SwitchGate.SetResult(true);
+                await switching;
+            }
+        }
+
+        [AvaloniaTest]
         public async Task InstanceManager_CanOpenSelectionWithoutCurrentInstance()
         {
             using var service = new FakeGameInstanceService(VisualScenario.SelectionRequired);

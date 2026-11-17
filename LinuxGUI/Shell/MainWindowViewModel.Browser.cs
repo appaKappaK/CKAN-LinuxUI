@@ -541,6 +541,10 @@ namespace CKAN.LinuxGUI
             StageTitle = "Switching Install";
             StageDescription = "Reloading the selected instance and refreshing the browser.";
             StartupSelectionError = "";
+            if (showInlineSelectionError)
+            {
+                StartupStage = StartupStage.Loading;
+            }
             try
             {
                 await gameInstanceService.SetCurrentInstanceAsync(SelectedInstance.Name, CancellationToken.None);
